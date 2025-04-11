@@ -1149,6 +1149,48 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
+// Change password endpoint
+app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        // Validate request
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Current and new passwords are required' });
+        }
+        
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+        }
+        
+        // Get current user
+        const userId = req.user.id;
+        const user = userModel.findUserById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        // Verify current password
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+        
+        // Update password
+        await userModel.updateUser(userId, { password: newPassword });
+        
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        res.status(500).json({ 
+            error: 'Failed to change password', 
+            message: error.message 
+        });
+    }
+});
+
 async function startServer() {
     // Initialize price cache before starting the server
     await priceCache.initialize();

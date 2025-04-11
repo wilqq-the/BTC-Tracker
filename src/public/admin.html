@@ -406,6 +406,35 @@
                     <p>Last updated: <span id="ratesTimestamp">loading...</span></p>
                 </div>
             </div>
+
+            <div class="card user-settings-card">
+                <h2><i class="fas fa-user-shield"></i> User Settings</h2>
+                
+                <form id="changePasswordForm" class="form">
+                    <div class="form-group">
+                        <label for="currentPassword"><i class="fas fa-lock"></i> Current Password</label>
+                        <input type="password" id="currentPassword" name="currentPassword" required>
+                        <p class="help-text">Enter your current password to confirm changes</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword"><i class="fas fa-key"></i> New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" required>
+                        <p class="help-text">Password must be at least 6 characters long</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmNewPassword"><i class="fas fa-check-circle"></i> Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" name="confirmNewPassword" required>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Change Password
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1177,6 +1206,66 @@
                 alert('Error importing data: ' + error.message);
             }
         }
+
+        // Password change form handler
+        document.getElementById('changePasswordForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
+            
+            // Validate passwords
+            if (newPassword.length < 6) {
+                alert('New password must be at least 6 characters long');
+                return;
+            }
+            
+            if (newPassword !== confirmNewPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+                
+                // Check for authentication redirects
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    alert('Password changed successfully!');
+                    
+                    // Reset form
+                    document.getElementById('changePasswordForm').reset();
+                } else {
+                    // Error
+                    alert(result.error || 'Failed to change password');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                
+                // Check for authentication issues
+                if (handleAuthError && handleAuthError(error)) return;
+                
+                alert('Error changing password: ' + error.message);
+            }
+        });
     </script>
 </body>
 </html> 
