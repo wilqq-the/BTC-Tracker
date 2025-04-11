@@ -1,0 +1,14 @@
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.git
+.github
+.gitignore
+data/
+*.md
+!README.md
+docker-compose*
+Dockerfile*
+.dockerignore
+# Don't ignore .env file for Docker Compose, but we'll configure it properly 

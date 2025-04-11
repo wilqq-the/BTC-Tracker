@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker - Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Bitcoin-themed scrollbar */
+        .table-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .table-container::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 6px;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb {
+            background: #f7931a; /* Bitcoin orange */
+            border-radius: 6px;
+            border: 2px solid #1a1a1a;
+        }
+        
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #e67e00; /* Darker orange on hover */
+        }
+        
+        /* For Firefox */
+        .table-container {
+            scrollbar-width: thin;
+            scrollbar-color: #f7931a #1a1a1a;
+            max-height: 400px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border-radius: 8px;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* API Key Testing */
+        .api-key-container {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .api-key-container input {
+            flex: 1;
+        }
+        
+        .api-status {
+            margin-top: 5px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .api-status.success {
+            background-color: rgba(39, 174, 96, 0.2);
+            color: #27ae60;
+        }
+        
+        .api-status.error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+        
+        .api-status.loading {
+            background-color: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+        }
+        
+        /* Loading spinner styling */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        /* Transactions table styling */
+        #transactionsTable {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+        }
+        
+        #transactionsTable th {
+            background-color: #1a1a1a;
+            color: #f7931a;
+            padding: 12px 15px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            white-space: nowrap;
+        }
+        
+        #transactionsTable td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        
+        /* Column width adjustments for admin table */
+        #transactionsTable th:nth-child(1) { width: 100px; } /* Date */
+        #transactionsTable th:nth-child(2) { width: 80px; }  /* Type */
+        #transactionsTable th:nth-child(3) { width: 130px; } /* Amount */
+        #transactionsTable th:nth-child(4) { width: 100px; } /* Price */
+        #transactionsTable th:nth-child(5) { width: 120px; } /* Cost */
+        #transactionsTable th:nth-child(6) { width: 140px; } /* Actions */
+        
+        #transactionsTable tr:hover {
+            background-color: rgba(247, 147, 26, 0.1);
+        }
+        
+        #transactionsTable .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+        }
+        
+        .modal-content h2 {
+            color: #f7931a;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #222;
+            color: #eee;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #f7931a;
+            outline: none;
+        }
+        
+        .form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #f7931a;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background-color: #e67e00;
+        }
+        
+        .btn-secondary {
+            background-color: #333;
+            color: #eee;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #444;
+        }
+        
+        .help-text {
+            color: #888;
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        #calculatedCost {
+            padding: 10px;
+            background-color: #333;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        /* Add Transaction Button */
+        .add-transaction-container {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        /* Responsive styles for small screens */
+        @media (max-width: 1200px) {
+            .table-container {
+                max-width: 100%;
+                overflow-x: auto;
+            }
+            
+            #transactionsTable {
+                min-width: 900px; /* Ensure table doesn't get too small */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
+            <nav>
+                <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/admin.html" class="active"><i class="fas fa-cog"></i> Admin Panel</a>
+                <button id="themeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <i class="fas fa-sun"></i>
+                </button>
+            </nav>
+        </header>
+
+        <div class="admin-section">
+            <div class="card">
+                <h2><i class="fas fa-file-import"></i> Import/Export Transactions</h2>
+                <form id="importForm" class="form">
+                    <div class="form-group">
+                        <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
+                        <input type="file" id="csvFile" accept=".csv" required>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="exportTransactionsCSV()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="downloadCSVTemplate()">
+                            <i class="fas fa-file-download"></i> CSV Template
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="danger-zone">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
+                    <p>The following actions are destructive and cannot be undone:</p>
+                    <button type="button" class="btn btn-danger" onclick="deleteAllTransactions()">
+                        <i class="fas fa-trash-alt"></i> Delete All Transactions
+                    </button>
+                </div>
+                
+                <div class="help-note">
+                    <h4>CSV Format</h4>
+                    <p>Your CSV file should have the following columns:</p>
+                    <ul>
+                        <li><strong>Date</strong>: Transaction date in YYYY-MM-DD format</li>
+                        <li><strong>Type</strong>: "buy" or "sell"</li>
+                        <li><strong>Price</strong>: Price per BTC in the specified currency</li>
+                        <li><strong>Cost</strong>: Total cost in the specified currency</li>
+                        <li><strong>Fee</strong>: Transaction fee in the specified currency</li>
+                        <li><strong>Amount (BTC)</strong>: BTC amount bought or sold</li>
+                        <li><strong>Currency</strong>: Currency code (EUR, USD, PLN, etc.)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card transactions-card">
+                <h2>
+                    <i class="fas fa-list-ul"></i> Manage Transactions
+                </h2>
+                <div class="loading" id="tableLoading" style="display: flex;">
+                    <div class="loading-spinner"></div>
+                </div>
+                <div id="transactionError" style="display: none; color: red; margin: 10px 0;"></div>
+                <div class="add-transaction-container" style="margin-bottom: 15px;">
+                    <button class="btn btn-primary" onclick="addTransaction()">
+                        <i class="fas fa-plus"></i> Add Transaction
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table id="transactionsTable">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-calendar"></i> Date</th>
+                                <th><i class="fas fa-exchange-alt"></i> Type</th>
+                                <th><i class="fab fa-bitcoin"></i> BTC Amount</th>
+                                <th><i class="fas fa-money-bill"></i> Price</th>
+                                <th><i class="fas fa-money-bill-wave"></i> Cost</th>
+                                <th><i class="fas fa-cogs"></i> Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card settings-card">
+                <h2><i class="fas fa-cog"></i> Display Settings</h2>
+                
+                <form id="settingsForm" class="form">
+                    <div class="form-group">
+                        <label for="mainCurrency">Main Currency</label>
+                        <select id="mainCurrency" required>
+                            <option value="EUR">Euro (EUR)</option>
+                            <option value="USD">US Dollar (USD)</option>
+                        </select>
+                        <p class="help-text">Default currency for displaying Bitcoin prices and transactions</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="secondaryCurrency">Secondary Currency</label>
+                        <select id="secondaryCurrency" required>
+                            <option value="PLN">Polish Złoty (PLN)</option>
+                            <option value="USD">US Dollar (USD)</option>
+                            <option value="GBP">British Pound (GBP)</option>
+                            <option value="JPY">Japanese Yen (JPY)</option>
+                            <option value="CHF">Swiss Franc (CHF)</option>
+                            <option value="EUR">Euro (EUR)</option>
+                        </select>
+                        <p class="help-text">Show P&L in this currency alongside the main currency</p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="coingeckoApiKey"><i class="fas fa-key"></i> CoinGecko API Key (optional):</label>
+                        <div class="api-key-container">
+                            <input type="text" id="coingeckoApiKey" name="coingeckoApiKey" placeholder="Enter your CoinGecko API key">
+                            <button type="button" id="testApiKeyBtn" class="btn btn-secondary">
+                                <i class="fas fa-vial"></i> Test Key
+                            </button>
+                        </div>
+                        <p id="apiKeyStatus" class="api-status" style="display: none;"></p>
+                        <p class="help-text">Get a free API key at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">CoinGecko</a> for higher rate limits.</p>
+                    </div>
+                    
+                    <div class="form-buttons">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Display current exchange rates -->
+                <div class="exchange-rates">
+                    <h3>Current Exchange Rates</h3>
+                    <p>1 EUR = <span id="usdRate">loading...</span> USD</p>
+                    <p>1 EUR = <span id="plnRate">loading...</span> PLN</p>
+                    <p>Last updated: <span id="ratesTimestamp">loading...</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let config = {};
+        let transactions = [];
+
+        async function loadTransactions() {
+            try {
+                document.getElementById('tableLoading').style.display = 'flex';
+                document.getElementById('transactionError').style.display = 'none';
+                
+                const response = await fetch('/api/summary');
+                if (!response.ok) {
+                    throw new Error('Failed to load transactions');
+                }
+                const data = await response.json();
+                console.log('Loading transactions from API:', data);
+                
+                if (!data.transactions) {
+                    throw new Error('No transactions found in API response');
+                }
+                
+                transactions = data.transactions || [];
+                console.log('Parsed transactions:', transactions);
+                updateTransactionsTable();
+            } catch (error) {
+                console.error('Error loading transactions:', error);
+                const errorDiv = document.getElementById('transactionError');
+                errorDiv.textContent = 'Error: ' + error.message;
+                errorDiv.style.display = 'block';
+            } finally {
+                document.getElementById('tableLoading').style.display = 'none';
+            }
+        }
+
+        function updateTransactionsTable() {
+            const tbody = document.querySelector('#transactionsTable tbody');
+            tbody.innerHTML = '';
+            
+            if (!transactions || transactions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="6" class="no-data">No transactions found</td>';
+                tbody.appendChild(row);
+                console.log('No transactions to display');
+                return;
+            }
+            
+            console.log('Updating transactions table with', transactions.length, 'transactions');
+            transactions.forEach((tx, index) => {
+                console.log('Processing transaction:', tx);
+                const row = document.createElement('tr');
+                // Get the currency symbol
+                const currency = tx.currency || 'EUR';
+                const currencySymbol = getCurrencySymbol(currency);
+                
+                row.innerHTML = `
+                    <td>${new Date(tx.date).toLocaleDateString()}</td>
+                    <td>${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
+                    <td>${tx.amount.toFixed(8)} ₿</td>
+                    <td>${tx.price.toFixed(2)} ${currencySymbol}</td>
+                    <td>${tx.cost.toFixed(2)} ${currencySymbol}</td>
+                    <td>
+                        <button class="edit-btn" onclick="editTransaction(${JSON.stringify({
+                            id: tx.id || index.toString(),
+                            date: tx.date,
+                            type: tx.type,
+                            amount: tx.amount,
+                            price: tx.price,
+                            cost: tx.cost,
+                            fee: tx.fee || 0,
+                            currency: tx.currency || 'EUR'
+                        }).replace(/"/g, '&quot;')})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="delete-btn" onclick="deleteTransaction('${tx.id || index}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Helper function to get currency symbol
+        function getCurrencySymbol(currency) {
+            const symbols = {
+                'EUR': '€',
+                'USD': '$',
+                'PLN': 'zł',
+                'GBP': '£',
+                'JPY': '¥',
+                'CHF': 'Fr',
+                'BTC': '₿'
+            };
+            
+            return symbols[currency] || currency;
+        }
+
+        // Add Transaction function
+        function addTransaction() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            
+            // Get current date and time in ISO format for default value
+            const now = new Date();
+            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2><i class="fas fa-plus"></i> Add New Transaction</h2>
+                    <form id="addTransactionForm">
+                        <div class="form-group">
+                            <label for="addDate"><i class="fas fa-calendar"></i> Date</label>
+                            <input type="datetime-local" id="addDate" value="${localISOString}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="addType"><i class="fas fa-exchange-alt"></i> Type</label>
+                            <select id="addType" required>
+                                <option value="buy">🔵 Buy</option>
+                                <option value="sell">🔴 Sell</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="addAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <input type="number" id="addAmount" step="0.00000001" placeholder="0.12345678" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="addPrice"><i class="fas fa-money-bill"></i> Price</label>
+                                <input type="number" id="addPrice" step="0.01" placeholder="25000.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="addCurrency"><i class="fas fa-globe"></i> Currency</label>
+                                <select id="addCurrency" required>
+                                    <option value="EUR" selected>EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    <option value="PLN">PLN (zł)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                    <option value="JPY">JPY (¥)</option>
+                                    <option value="CHF">CHF (Fr)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="addFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
+                            <input type="number" id="addFee" step="0.01" placeholder="5.00" value="0">
+                            <p class="help-text">Transaction fee in the specified currency</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div id="calculatedCost" style="margin-top: 10px; font-weight: bold;">
+                                Calculated Cost: <span>0.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-buttons">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Transaction
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            
+            // Add event listeners for price and amount to calculate cost automatically
+            const priceInput = document.getElementById('addPrice');
+            const amountInput = document.getElementById('addAmount');
+            const costDisplay = document.querySelector('#calculatedCost span');
+            
+            const updateCalculatedCost = () => {
+                const price = parseFloat(priceInput.value) || 0;
+                const amount = parseFloat(amountInput.value) || 0;
+                const cost = price * amount;
+                costDisplay.textContent = cost.toFixed(2);
+            };
+            
+            priceInput.addEventListener('input', updateCalculatedCost);
+            amountInput.addEventListener('input', updateCalculatedCost);
+
+            const form = modal.querySelector('#addTransactionForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const newTransaction = {
+                        date: new Date(document.getElementById('addDate').value).toISOString(),
+                        type: document.getElementById('addType').value,
+                        amount: parseFloat(document.getElementById('addAmount').value),
+                        price: parseFloat(document.getElementById('addPrice').value),
+                        currency: document.getElementById('addCurrency').value,
+                        fee: parseFloat(document.getElementById('addFee').value) || 0
+                    };
+                    
+                    // Calculate cost
+                    newTransaction.cost = newTransaction.amount * newTransaction.price;
+                    
+                    // Add the transaction
+                    const response = await fetch('/api/admin/transactions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(newTransaction)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to add transaction');
+                    }
+                    
+                    modal.remove();
+                    loadTransactions(); // Refresh the data
+                } catch (error) {
+                    console.error('Error adding transaction:', error);
+                    alert('Error adding transaction: ' + error.message);
+                }
+            });
+        }
+
+        function editTransaction(tx) {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2><i class="fas fa-edit"></i> Edit Transaction</h2>
+                    <form id="editTransactionForm">
+                        <div class="form-group">
+                            <label for="editDate"><i class="fas fa-calendar"></i> Date</label>
+                            <input type="datetime-local" id="editDate" value="${new Date(tx.date).toISOString().slice(0, 16)}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editType"><i class="fas fa-exchange-alt"></i> Type</label>
+                            <select id="editType" required>
+                                <option value="buy" ${tx.type === 'buy' ? 'selected' : ''}>🔵 Buy</option>
+                                <option value="sell" ${tx.type === 'sell' ? 'selected' : ''}>🔴 Sell</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <input type="number" id="editAmount" step="0.00000001" value="${tx.amount}" required>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editPrice"><i class="fas fa-money-bill"></i> Price</label>
+                                <input type="number" id="editPrice" step="0.01" value="${tx.price}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="editCurrency"><i class="fas fa-globe"></i> Currency</label>
+                                <select id="editCurrency" required>
+                                    <option value="EUR" ${(tx.currency || 'EUR') === 'EUR' ? 'selected' : ''}>EUR (€)</option>
+                                    <option value="USD" ${tx.currency === 'USD' ? 'selected' : ''}>USD ($)</option>
+                                    <option value="PLN" ${tx.currency === 'PLN' ? 'selected' : ''}>PLN (zł)</option>
+                                    <option value="GBP" ${tx.currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
+                                    <option value="JPY" ${tx.currency === 'JPY' ? 'selected' : ''}>JPY (¥)</option>
+                                    <option value="CHF" ${tx.currency === 'CHF' ? 'selected' : ''}>CHF (Fr)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="editFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
+                            <input type="number" id="editFee" step="0.01" value="${tx.fee || 0}">
+                        </div>
+                        <div class="form-buttons">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            const form = modal.querySelector('#editTransactionForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                try {
+                    const updatedTx = {
+                        ...tx,
+                        date: new Date(document.getElementById('editDate').value).toISOString(),
+                        type: document.getElementById('editType').value,
+                        amount: parseFloat(document.getElementById('editAmount').value),
+                        price: parseFloat(document.getElementById('editPrice').value),
+                        currency: document.getElementById('editCurrency').value,
+                        fee: parseFloat(document.getElementById('editFee').value) || 0
+                    };
+
+                    const response = await fetch(`/api/transactions/${tx.id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updatedTx)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to update transaction');
+                    }
+
+                    modal.remove();
+                    loadTransactions(); // Refresh the data
+                } catch (error) {
+                    console.error('Error updating transaction:', error);
+                    alert('Error updating transaction. Please try again.');
+                }
+            });
+        }
+
+        async function deleteTransaction(id) {
+            if (!confirm('❗ Are you sure you want to delete this transaction?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/transactions/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete transaction');
+                }
+
+                loadTransactions(); // Refresh the data
+            } catch (error) {
+                console.error('Error deleting transaction:', error);
+                alert('Error deleting transaction. Please try again.');
+            }
+        }
+
+        document.getElementById('importForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/admin/import', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to import transactions');
+                }
+
+                alert('✅ Transactions imported successfully');
+                fileInput.value = ''; // Clear the file input
+                loadTransactions(); // Refresh the data
+            } catch (error) {
+                console.error('Error importing transactions:', error);
+                alert('❌ Error importing transactions. Please try again.');
+            }
+        });
+
+        // Function to delete all transactions
+        async function deleteAllTransactions() {
+            // Show a more serious confirmation dialog
+            const confirmed = confirm(
+                '⚠️ WARNING: You are about to delete ALL transactions! ⚠️\n\n' +
+                'This action CANNOT be undone. All transaction history will be permanently erased.\n\n' +
+                'Are you absolutely sure you want to proceed?'
+            );
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Double-check with a second confirmation
+            const doubleConfirmed = confirm(
+                '🔴 FINAL WARNING 🔴\n\n' +
+                'You are about to permanently delete ALL your transaction data.\n\n' +
+                'Type "DELETE" in the next prompt to confirm.'
+            );
+            
+            if (!doubleConfirmed) {
+                return;
+            }
+            
+            const verification = prompt('Type "DELETE" to confirm:');
+            if (verification !== 'DELETE') {
+                alert('Operation cancelled.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/transactions/delete-all', {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete all transactions');
+                }
+
+                alert('All transactions have been successfully deleted.');
+                loadTransactions(); // Refresh the table
+            } catch (error) {
+                console.error('Error deleting all transactions:', error);
+                alert('Error: ' + error.message);
+            }
+        }
+
+        // Add these export functions if they're not already in admin.html
+        function exportTransactionsCSV() {
+            if (!transactions || transactions.length === 0) {
+                alert('No transactions to export.');
+                return;
+            }
+            
+            // Open export endpoint in a new window
+            window.open('/api/transactions/export-csv', '_blank');
+        }
+
+        function downloadCSVTemplate() {
+            // Open template download endpoint in a new window
+            window.open('/api/transactions/template-csv', '_blank');
+        }
+
+        // Load settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                if (!response.ok) {
+                    throw new Error('Failed to load settings');
+                }
+                
+                const settings = await response.json();
+                
+                // Populate form fields
+                document.getElementById('secondaryCurrency').value = settings.secondaryCurrency || 'PLN';
+                document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
+                
+                // Populate API key if available
+                if (settings.coingeckoApiKey) {
+                    document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
+                }
+                
+                // Trigger exchange rates update based on main currency
+                loadExchangeRates();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showError('Failed to load settings. Please try again.');
+            }
+        }
+        
+        // Save settings
+        async function saveSettings(event) {
+            event.preventDefault();
+            
+            try {
+                const formData = {
+                    secondaryCurrency: document.getElementById('secondaryCurrency').value,
+                    mainCurrency: document.getElementById('mainCurrency').value,
+                    coingeckoApiKey: document.getElementById('coingeckoApiKey').value.trim()
+                };
+                
+                const response = await fetch('/api/settings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save settings');
+                }
+                
+                const result = await response.json();
+                showSuccess('Settings saved successfully!');
+                
+                // Reload exchange rates with new settings
+                loadExchangeRates();
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showError('Failed to save settings. Please try again.');
+            }
+        }
+
+        // Function to load exchange rates
+        async function loadExchangeRates() {
+            try {
+                const response = await fetch('/api/summary?priceOnly=true');
+                if (!response.ok) {
+                    throw new Error('Failed to load rates');
+                }
+                
+                const data = await response.json();
+                
+                // Get current main currency
+                const mainCurrency = document.getElementById('mainCurrency').value;
+                
+                // Update the rates display based on the main currency
+                const ratesContainer = document.querySelector('.exchange-rates');
+                ratesContainer.innerHTML = '<h3>Current Exchange Rates</h3>';
+                
+                // Show BTC price in main currency
+                const btcPrice = mainCurrency === 'EUR' ? data.priceEUR : data.priceUSD;
+                const btcPriceElement = document.createElement('p');
+                btcPriceElement.innerHTML = `Current BTC price: <strong>${btcPrice ? btcPrice.toFixed(2) : 'N/A'} ${getCurrencySymbol(mainCurrency)}</strong>`;
+                ratesContainer.appendChild(btcPriceElement);
+                
+                // Show exchange rates
+                if (mainCurrency === 'EUR') {
+                    // Show EUR to other rates
+                    const usdRate = document.createElement('p');
+                    usdRate.innerHTML = `1 EUR = <span>${data.eurUsd ? data.eurUsd.toFixed(4) : 'N/A'} USD</span>`;
+                    ratesContainer.appendChild(usdRate);
+                    
+                    const plnRate = document.createElement('p');
+                    plnRate.innerHTML = `1 EUR = <span>${data.eurPln ? data.eurPln.toFixed(4) : 'N/A'} PLN</span>`;
+                    ratesContainer.appendChild(plnRate);
+                } else if (mainCurrency === 'USD') {
+                    // Show USD to other rates
+                    const eurRate = document.createElement('p');
+                    const usdToEur = data.exchangeRates?.USD?.EUR || (1 / data.eurUsd);
+                    eurRate.innerHTML = `1 USD = <span>${usdToEur ? usdToEur.toFixed(4) : 'N/A'} EUR</span>`;
+                    ratesContainer.appendChild(eurRate);
+                    
+                    const plnRate = document.createElement('p');
+                    const usdToPln = data.exchangeRates?.USD?.PLN || (data.eurPln / data.eurUsd);
+                    plnRate.innerHTML = `1 USD = <span>${usdToPln ? usdToPln.toFixed(4) : 'N/A'} PLN</span>`;
+                    ratesContainer.appendChild(plnRate);
+                }
+                
+                // Format the timestamp
+                const timestamp = data.timestamp ? new Date(data.timestamp) : new Date();
+                const timestampElement = document.createElement('p');
+                timestampElement.innerHTML = `Last updated: <span>${timestamp.toLocaleString()}</span>`;
+                ratesContainer.appendChild(timestampElement);
+            } catch (error) {
+                console.error('Error loading exchange rates:', error);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('settingsForm').addEventListener('submit', saveSettings);
+
+        // Add event listener to reload exchange rates when main currency changes
+        document.getElementById('mainCurrency').addEventListener('change', loadExchangeRates);
+
+        // Function to setup theme toggle
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Check if user has a saved preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            
+            // Add click event listener
+            themeToggle.addEventListener('click', () => {
+                // Toggle the theme
+                document.body.classList.toggle('light-theme');
+                
+                // Save the preference to localStorage
+                const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+                localStorage.setItem('theme', currentTheme);
+            });
+        }
+
+        // Load settings on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadTransactions();
+            setupThemeToggle();
+        });
+
+        // Test CoinGecko API key
+        document.getElementById('testApiKeyBtn').addEventListener('click', async function() {
+            const apiKey = document.getElementById('coingeckoApiKey').value.trim();
+            const apiKeyStatus = document.getElementById('apiKeyStatus');
+            
+            if (!apiKey) {
+                apiKeyStatus.textContent = 'Please enter an API key first';
+                apiKeyStatus.className = 'api-status error';
+                apiKeyStatus.style.display = 'block';
+                return;
+            }
+            
+            apiKeyStatus.textContent = 'Testing API key...';
+            apiKeyStatus.className = 'api-status loading';
+            apiKeyStatus.style.display = 'block';
+            
+            try {
+                const response = await fetch('/api/settings/test-coingecko-key', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ apiKey })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    apiKeyStatus.textContent = result.message + (result.currentPrice ? ` Current BTC price: $${result.currentPrice}` : '');
+                    apiKeyStatus.className = 'api-status success';
+                } else {
+                    apiKeyStatus.textContent = result.message || 'API key test failed';
+                    apiKeyStatus.className = 'api-status error';
+                }
+            } catch (error) {
+                apiKeyStatus.textContent = 'Error testing API key: ' + error.message;
+                apiKeyStatus.className = 'api-status error';
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,14 @@
+version: '3'
+
+services:
+  btc-tracker:
+    build: .
+    container_name: ${CONTAINER_NAME:-btc-tracker}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ${DATA_PATH:-./src/data}:/app/src/data
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV:-production}
+      - PORT=3000 

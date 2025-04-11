@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
+            <nav>
+                <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                <button id="themeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <i class="fas fa-sun"></i>
+                </button>
+            </nav>
+        </header>
+
+        <div class="summary-cards">
+            <div class="card">
+                <h3><i class="fab fa-bitcoin"></i> Total BTC</h3>
+                <p id="totalBtc">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-euro-sign" id="currencyIcon"></i> Current Price</h3>
+                <p id="currentBtcPrice">Loading...</p>
+                <p id="currentBtcPriceUSD" class="secondary-value">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-money-bill-wave"></i> Total Cost</h3>
+                <p id="totalCost">Loading...</p>
+                <p id="totalCostPLN" class="secondary-value">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-wallet"></i> Current Value</h3>
+                <p id="currentValue">Loading...</p>
+                <p id="currentValuePLN" class="secondary-value">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-chart-bar"></i> P&L</h3>
+                <p id="pnl" class="pnl">Loading...</p>
+                <p id="pnlPLN" class="pnl secondary-value">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-percentage"></i> P&L (%)</h3>
+                <p id="pnlPercentage" class="pnl">Loading...</p>
+            </div>
+            <div class="card">
+                <h3><i class="fas fa-tag"></i> Average Price</h3>
+                <p id="averagePrice">Loading...</p>
+                <p id="averagePricePLN" class="secondary-value">Loading...</p>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <h2><i class="fas fa-chart-line"></i> BTC Price and Accumulation</h2>
+            <div class="chart-controls">
+                <div class="time-range-buttons">
+                    <button class="time-range-btn active" data-range="30">1M</button>
+                    <button class="time-range-btn" data-range="90">3M</button>
+                    <button class="time-range-btn" data-range="180">6M</button>
+                    <button class="time-range-btn" data-range="365">1Y</button>
+                    <button class="time-range-btn" data-range="0">All</button>
+                </div>
+                <div class="density-control">
+                    <label for="dataDensity">Data Density:</label>
+                    <input type="range" id="dataDensity" min="1" max="10" value="5">
+                    <span id="densityValue">Medium</span>
+                </div>
+                <button id="refreshBtn" class="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="loading" id="chartLoading">
+                <div class="loading-spinner"></div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="combinedChart" width="1200" height="600"></canvas>
+            </div>
+            <div class="price-update" id="priceUpdate">Last updated: <span id="lastUpdate">-</span></div>
+        </div>
+    </div>
+
+    <script>
+        let combinedChart;
+        let lastUpdateTime = null;
+        const REAL_TIME_UPDATE_INTERVAL = 300000; // 5 minutes in milliseconds
+        let currentTimeRange = 30; // Default to 1 month
+        let currentDensity = 5; // Default density
+        let transactionsWithCumulative = []; // Store transactions globally
+        let secondaryCurrency = 'PLN'; // Default secondary currency
+        let secondaryRate = null; // Store exchange rate globally
+
+        // Add chart controls functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Time range buttons
+            document.querySelectorAll('.time-range-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentTimeRange = parseInt(btn.dataset.range);
+                    loadData(true);
+                });
+                
+                // Set the active class on the 1M button by default
+                if (btn.dataset.range === '30') {
+                    btn.classList.add('active');
+                } else if (btn.dataset.range === '365') {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Density slider
+            const densitySlider = document.getElementById('dataDensity');
+            const densityValue = document.getElementById('densityValue');
+            
+            densitySlider.addEventListener('input', () => {
+                currentDensity = parseInt(densitySlider.value);
+                const densityLabels = [
+                    'Minimal',     // 1
+                    'Very Low',    // 2
+                    'Low',         // 3
+                    'Medium Low',  // 4
+                    'Medium',      // 5
+                    'Medium High', // 6
+                    'High',        // 7
+                    'Very High',   // 8
+                    'Ultra High',  // 9
+                    'Maximum'      // 10
+                ];
+                densityValue.textContent = densityLabels[currentDensity - 1];
+                loadData(true);
+            });
+        });
+
+        function filterAndSampleData(data, days, density) {
+            const now = new Date();
+            const cutoffDate = days > 0 ? new Date(now.getTime() - days * 24 * 60 * 60 * 1000) : null;
+            
+            let filteredData = data;
+            if (cutoffDate) {
+                filteredData = data.filter(item => {
+                    const itemDate = new Date(item.timestamp);
+                    return itemDate >= cutoffDate && itemDate <= now;
+                });
+            }
+
+            // Enhanced density calculation
+            // Using an exponential scale for more aggressive density at higher values
+            const densityFactor = Math.pow(2, density / 2);
+            const sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 5)));
+            
+            if (sampleSize > 1) {
+                // For maximum density (10), show almost all points
+                if (density === 10) {
+                    return filteredData.filter((_, index) => index % 2 === 0);
+                }
+                // For other densities, use the calculated sample size
+                filteredData = filteredData.filter((_, index) => index % sampleSize === 0);
+            }
+
+            return filteredData;
+        }
+
+        // Function to update all price-dependent displays
+        function updatePriceDisplays(priceData) {
+            if (!priceData || typeof priceData.price === 'undefined') return;
+            
+            // Get the appropriate currency symbol
+            const mainCurrencySymbol = getCurrencySymbol(priceData.mainCurrency || 'EUR');
+            const secondaryCurrencySymbol = getCurrencySymbol(secondaryCurrency);
+            
+            // Update currency icon in the header
+            const currencyIcon = document.getElementById('currencyIcon');
+            if (currencyIcon) {
+                if (priceData.mainCurrency === 'USD') {
+                    currencyIcon.className = 'fas fa-dollar-sign';
+                } else {
+                    currencyIcon.className = 'fas fa-euro-sign';
+                }
+            }
+
+            // Update price displays with null checks
+            document.getElementById('currentBtcPrice').textContent = 
+                `${priceData.price.toFixed(2)} ${mainCurrencySymbol}`;
+            
+            // Update secondary currency price display
+            const secondaryPriceElement = document.getElementById('currentBtcPriceUSD');
+            if (secondaryCurrency === priceData.mainCurrency) {
+                secondaryPriceElement.style.display = 'none'; // Hide if same as main
+            } else {
+                secondaryPriceElement.style.display = 'block';
+                if (secondaryCurrency === 'USD' && priceData.priceUSD) {
+                    secondaryPriceElement.textContent = `${priceData.priceUSD.toFixed(2)} $`;
+                } else if (secondaryCurrency === 'EUR' && priceData.priceEUR) {
+                    secondaryPriceElement.textContent = `${priceData.priceEUR.toFixed(2)} €`;
+                } else if (secondaryCurrency === 'PLN' && priceData.eurPln) {
+                    // If main is EUR, convert directly, otherwise go through EUR
+                    const plnPrice = priceData.mainCurrency === 'EUR' ?
+                        priceData.price * priceData.eurPln :
+                        priceData.priceEUR * priceData.eurPln;
+                    secondaryPriceElement.textContent = `${plnPrice.toFixed(2)} zł`;
+                } else if (secondaryCurrency === 'GBP' && priceData.eurGbp) {
+                    const gbpPrice = priceData.mainCurrency === 'EUR' ?
+                        priceData.price * priceData.eurGbp :
+                        priceData.priceEUR * priceData.eurGbp;
+                    secondaryPriceElement.textContent = `${gbpPrice.toFixed(2)} £`;
+                } else if (secondaryCurrency === 'JPY' && priceData.eurJpy) {
+                    const jpyPrice = priceData.mainCurrency === 'EUR' ?
+                        priceData.price * priceData.eurJpy :
+                        priceData.priceEUR * priceData.eurJpy;
+                    secondaryPriceElement.textContent = `${jpyPrice.toFixed(2)} ¥`;
+                } else if (secondaryCurrency === 'CHF' && priceData.eurChf) {
+                    const chfPrice = priceData.mainCurrency === 'EUR' ?
+                        priceData.price * priceData.eurChf :
+                        priceData.priceEUR * priceData.eurChf;
+                    secondaryPriceElement.textContent = `${chfPrice.toFixed(2)} Fr`;
+                } else {
+                    secondaryPriceElement.textContent = 'N/A';
+                }
+            }
+
+            // For transactions-related metrics, either display values from transactions or zeros
+            if (transactionsWithCumulative.length > 0) {
+                // If we have transactions, display the real values
+                const lastTx = transactionsWithCumulative[transactionsWithCumulative.length - 1];
+                const currentValue = lastTx.cumulativeBtc * priceData.price;
+                const pnlValue = currentValue - lastTx.cumulativeCost;
+                const pnlPercentage = lastTx.cumulativeCost > 0 ? (pnlValue / lastTx.cumulativeCost) * 100 : 0;
+
+                // Update current value with secondary currency
+                document.getElementById('currentValue').textContent = 
+                    `${currentValue.toFixed(2)} ${mainCurrencySymbol}`;
+                const currentValueSecElement = document.getElementById('currentValuePLN');
+                
+                if (secondaryCurrency === priceData.mainCurrency) {
+                    currentValueSecElement.style.display = 'none';
+                } else {
+                    currentValueSecElement.style.display = 'block';
+                    const secondaryCurrentValue = secondaryRate ? (currentValue * secondaryRate) : null;
+                    currentValueSecElement.textContent = secondaryCurrentValue ? 
+                        `${secondaryCurrentValue.toFixed(2)} ${secondaryCurrencySymbol}` : 'N/A';
+                }
+
+                // Update P&L
+                const pnlElement = document.getElementById('pnl');
+                pnlElement.textContent = `${pnlValue.toFixed(2)} ${mainCurrencySymbol}`;
+                pnlElement.className = `pnl ${pnlValue >= 0 ? 'positive' : 'negative'}`;
+
+                const pnlSecElement = document.getElementById('pnlPLN');
+                if (secondaryCurrency === priceData.mainCurrency) {
+                    pnlSecElement.style.display = 'none';
+                } else {
+                    pnlSecElement.style.display = 'block';
+                    if (secondaryRate) {
+                        const pnlSecValue = pnlValue * secondaryRate;
+                        pnlSecElement.textContent = `${pnlSecValue.toFixed(2)} ${secondaryCurrencySymbol}`;
+                        pnlSecElement.className = `pnl secondary-value ${pnlSecValue >= 0 ? 'positive' : 'negative'}`;
+                    } else {
+                        pnlSecElement.textContent = 'N/A';
+                        pnlSecElement.className = 'pnl secondary-value';
+                    }
+                }
+
+                // Update P&L percentage
+                const pnlPercentageElement = document.getElementById('pnlPercentage');
+                pnlPercentageElement.textContent = `${pnlPercentage.toFixed(2)}%`;
+                pnlPercentageElement.className = `pnl ${pnlPercentage >= 0 ? 'positive' : 'negative'}`;
+                
+                // Update total cost
+                document.getElementById('totalCost').textContent = 
+                    `${lastTx.cumulativeCost.toFixed(2)} ${mainCurrencySymbol}`;
+                
+                const totalCostSecElement = document.getElementById('totalCostPLN');
+                if (secondaryCurrency === priceData.mainCurrency) {
+                    totalCostSecElement.style.display = 'none';
+                } else {
+                    totalCostSecElement.style.display = 'block';
+                    const secondaryTotalCost = secondaryRate ? (lastTx.cumulativeCost * secondaryRate) : null;
+                    totalCostSecElement.textContent = secondaryTotalCost ? 
+                        `${secondaryTotalCost.toFixed(2)} ${secondaryCurrencySymbol}` : 'N/A';
+                }
+                
+                // Update average price
+                const avgPrice = lastTx.cumulativeCost / lastTx.cumulativeBtc;
+                document.getElementById('averagePrice').textContent = 
+                    `${avgPrice.toFixed(2)} ${mainCurrencySymbol}`;
+                
+                const avgPriceSecElement = document.getElementById('averagePricePLN');
+                if (secondaryCurrency === priceData.mainCurrency) {
+                    avgPriceSecElement.style.display = 'none';
+                } else {
+                    avgPriceSecElement.style.display = 'block';
+                    const secondaryAvgPrice = secondaryRate ? (avgPrice * secondaryRate) : null;
+                    avgPriceSecElement.textContent = secondaryAvgPrice ? 
+                        `${secondaryAvgPrice.toFixed(2)} ${secondaryCurrencySymbol}` : 'N/A';
+                }
+            } else {
+                // No transactions, show zero values instead of loading indicators
+                document.getElementById('currentValue').textContent = `0.00 ${mainCurrencySymbol}`;
+                document.getElementById('currentValuePLN').textContent = `0.00 ${secondaryCurrencySymbol}`;
+                document.getElementById('totalCost').textContent = `0.00 ${mainCurrencySymbol}`;
+                document.getElementById('totalCostPLN').textContent = `0.00 ${secondaryCurrencySymbol}`;
+                document.getElementById('averagePrice').textContent = `0.00 ${mainCurrencySymbol}`;
+                document.getElementById('averagePricePLN').textContent = `0.00 ${secondaryCurrencySymbol}`;
+                
+                // P&L is 0 (neutral)
+                const pnlElement = document.getElementById('pnl');
+                pnlElement.textContent = `0.00 ${mainCurrencySymbol}`;
+                pnlElement.className = 'pnl';
+                
+                const pnlSecElement = document.getElementById('pnlPLN');
+                if (secondaryCurrency === priceData.mainCurrency) {
+                    pnlSecElement.style.display = 'none';
+                } else {
+                    pnlSecElement.style.display = 'block';
+                    pnlSecElement.textContent = `0.00 ${secondaryCurrencySymbol}`;
+                    pnlSecElement.className = 'pnl secondary-value';
+                }
+                
+                // P&L percentage is 0%
+                const pnlPercentageElement = document.getElementById('pnlPercentage');
+                pnlPercentageElement.textContent = `0.00%`;
+                pnlPercentageElement.className = 'pnl';
+            }
+        }
+        
+        // Helper function to get currency symbol
+        function getCurrencySymbol(currency) {
+            const symbols = {
+                'EUR': '€',
+                'USD': '$',
+                'PLN': 'zł',
+                'GBP': '£',
+                'JPY': '¥',
+                'CHF': 'Fr',
+                'BTC': '₿'
+            };
+            
+            return symbols[currency] || currency;
+        }
+
+        // Function to update chart with current price
+        function updateChartWithLatestPrice(chart, priceData) {
+            if (!chart || !priceData) return;
+
+            const currentDate = new Date();
+            const datasets = chart.data.datasets;
+            
+            // Update chart title to show the correct currency
+            chart.options.scales.y.title.text = priceData.mainCurrency || 'EUR';
+
+            // Update chart y-axis tick format with the correct currency symbol
+            const mainCurrencySymbol = getCurrencySymbol(priceData.mainCurrency || 'EUR');
+            chart.options.scales.y.ticks.callback = function(value) {
+                return value.toLocaleString() + ' ' + mainCurrencySymbol;
+            };
+            
+            // Get the last transaction data for cumulative BTC and cost
+            const lastTx = transactionsWithCumulative.length > 0 ? 
+                transactionsWithCumulative[transactionsWithCumulative.length - 1] : null;
+                
+            // If no transactions, we can't update P&L data
+            if (!lastTx) return;
+            
+            // Calculate latest P&L values
+            const pnlValue = (lastTx.cumulativeBtc * priceData.price) - lastTx.cumulativeCost;
+            const pnlPercentage = lastTx.cumulativeCost > 0 ? 
+                (pnlValue / lastTx.cumulativeCost) * 100 : 0;
+
+            // Format just the date part (year, month, day) for comparison
+            const formatDateOnly = (date) => {
+                return date.toISOString().split('T')[0];
+            };
+            
+            const todayDateString = formatDateOnly(currentDate);
+            
+            console.log(`Updating chart with real-time price: ${priceData.price} ${mainCurrencySymbol}`);
+            
+            // Update or add data points based on current date
+            if (datasets[0].data.length > 0) {
+                // Find today's data point if it exists
+                let todayIndex = -1;
+                for (let i = datasets[0].data.length - 1; i >= 0; i--) {
+                    const pointDate = new Date(datasets[0].data[i].x);
+                    if (formatDateOnly(pointDate) === todayDateString) {
+                        todayIndex = i;
+                        break;
+                    }
+                }
+                
+                if (todayIndex !== -1) {
+                    // Update today's data points with current values
+                    datasets[0].data[todayIndex].y = priceData.price;
+                    
+                    // Make sure all datasets have the same number of points
+                    if (datasets[1].data.length > todayIndex) {
+                        datasets[1].data[todayIndex].y = lastTx.cumulativeBtc;
+                    }
+                    
+                    if (datasets[2].data.length > todayIndex) {
+                        datasets[2].data[todayIndex].y = pnlValue;
+                    }
+                    
+                    if (datasets[3].data.length > todayIndex) {
+                        datasets[3].data[todayIndex].y = pnlValue * secondaryRate;
+                    }
+                    
+                    if (datasets[4].data.length > todayIndex) {
+                        datasets[4].data[todayIndex].y = pnlPercentage;
+                    }
+                    
+                    console.log(`Updated today's data point at index ${todayIndex} with price: ${priceData.price}`);
+                } else {
+                    // No data point for today, add new points
+                    console.log(`No data point found for today, adding new point with price: ${priceData.price}`);
+                    
+                    // Add a new point to each dataset
+                    datasets[0].data.push({ x: currentDate, y: priceData.price });
+                    datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
+                    datasets[2].data.push({ x: currentDate, y: pnlValue });
+                    datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
+                    datasets[4].data.push({ x: currentDate, y: pnlPercentage });
+                }
+                
+                // Always update the last point (in case it's not today's point)
+                const lastIndex = datasets[0].data.length - 1;
+                datasets[0].data[lastIndex].y = priceData.price;
+                datasets[1].data[lastIndex].y = lastTx.cumulativeBtc;
+                datasets[2].data[lastIndex].y = pnlValue;
+                datasets[3].data[lastIndex].y = pnlValue * secondaryRate;
+                datasets[4].data[lastIndex].y = pnlPercentage;
+                
+                // Update dataset labels to display the correct currency
+                datasets[0].label = `BTC Price (${priceData.mainCurrency || 'EUR'})`;
+                datasets[2].label = `P&L (${priceData.mainCurrency || 'EUR'})`;
+                datasets[3].label = `P&L (${secondaryCurrency})`;
+            } else {
+                // No data points yet, add initial points
+                datasets[0].data.push({ x: currentDate, y: priceData.price });
+                datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
+                datasets[2].data.push({ x: currentDate, y: pnlValue });
+                datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
+                datasets[4].data.push({ x: currentDate, y: pnlPercentage });
+                console.log(`Added initial data points with price: ${priceData.price}`);
+            }
+
+            // Apply changes to chart with animation disabled for smoother updates
+            chart.update();
+        }
+
+        // Function to create the initial chart
+        function createChart(data) {
+            // Get the main currency
+            const mainCurrency = data.mainCurrency || 'EUR';
+            
+            // Check if we should use light or dark theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const gridColor = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            const textColor = isLightTheme ? '#333333' : '#ffffff';
+            
+            // Filter and sample historical data based on current settings
+            const filteredHistoricalData = filterAndSampleData(
+                data.historicalBTCData,
+                currentTimeRange,
+                currentDensity
+            );
+
+            // Create or update chart
+            const ctx = document.getElementById('combinedChart').getContext('2d');
+            if (combinedChart) {
+                combinedChart.destroy();
+            }
+
+            // Prepare data arrays with aligned timestamps
+            const btcPrices = [];
+            const cumulativeBtcData = [];
+            const pnlData = [];
+            const pnlPLNData = [];
+            const pnlPercentageData = [];
+
+            // Calculate data points with timestamp alignment
+            filteredHistoricalData.forEach(item => {
+                const currentDate = new Date(item.timestamp);
+                const relevantTransactions = transactionsWithCumulative.filter(tx => 
+                    new Date(tx.date) <= currentDate
+                );
+                
+                // Get the appropriate price based on main currency
+                const price = mainCurrency === 'EUR' ? 
+                    (item.priceEUR || item.price) : 
+                    (item.priceUSD || (item.priceEUR * data.eurUsd));
+                
+                // Only add points if we have both price and transaction data
+                if (relevantTransactions.length > 0) {
+                    const lastTx = relevantTransactions[relevantTransactions.length - 1];
+                    const pnlValue = (lastTx.cumulativeBtc * price) - lastTx.cumulativeCost;
+                    
+                    const timePoint = currentDate;
+                    
+                    btcPrices.push({
+                        x: timePoint,
+                        y: price
+                    });
+                    
+                    cumulativeBtcData.push({
+                        x: timePoint,
+                        y: lastTx.cumulativeBtc
+                    });
+                    
+                    pnlData.push({
+                        x: timePoint,
+                        y: pnlValue
+                    });
+                    
+                    // Use the appropriate secondary currency rate
+                    pnlPLNData.push({
+                        x: timePoint,
+                        y: pnlValue * secondaryRate
+                    });
+                    
+                    pnlPercentageData.push({
+                        x: timePoint,
+                        y: lastTx.cumulativeCost > 0 ? (pnlValue / lastTx.cumulativeCost) * 100 : 0
+                    });
+                }
+            });
+            
+            // Always add the current latest price point if we have transactions
+            if (transactionsWithCumulative.length > 0) {
+                const lastTx = transactionsWithCumulative[transactionsWithCumulative.length - 1];
+                const currentDate = new Date();
+                
+                // Get the current cached price
+                const currentPrice = mainCurrency === 'EUR' ? 
+                    (data.priceEUR || data.price) : 
+                    (data.priceUSD || (data.priceEUR * data.eurUsd));
+                    
+                // Calculate current P&L values
+                const currentPnlValue = (lastTx.cumulativeBtc * currentPrice) - lastTx.cumulativeCost;
+                const currentPnlPercentage = lastTx.cumulativeCost > 0 ? 
+                    (currentPnlValue / lastTx.cumulativeCost) * 100 : 0;
+                    
+                // Check if the last point is from today
+                let shouldAddCurrentPoint = true;
+                
+                if (btcPrices.length > 0) {
+                    const lastPoint = btcPrices[btcPrices.length - 1];
+                    const lastPointDate = new Date(lastPoint.x);
+                    
+                    // If the last point is from today, update it instead of adding a new one
+                    if (lastPointDate.toDateString() === currentDate.toDateString()) {
+                        lastPoint.y = currentPrice;
+                        cumulativeBtcData[cumulativeBtcData.length - 1].y = lastTx.cumulativeBtc;
+                        pnlData[pnlData.length - 1].y = currentPnlValue;
+                        pnlPLNData[pnlPLNData.length - 1].y = currentPnlValue * secondaryRate;
+                        pnlPercentageData[pnlPercentageData.length - 1].y = currentPnlPercentage;
+                        shouldAddCurrentPoint = false;
+                    }
+                }
+                
+                // If there's no point for today, add a new one
+                if (shouldAddCurrentPoint) {
+                    btcPrices.push({
+                        x: currentDate,
+                        y: currentPrice
+                    });
+                    
+                    cumulativeBtcData.push({
+                        x: currentDate,
+                        y: lastTx.cumulativeBtc
+                    });
+                    
+                    pnlData.push({
+                        x: currentDate,
+                        y: currentPnlValue
+                    });
+                    
+                    pnlPLNData.push({
+                        x: currentDate,
+                        y: currentPnlValue * secondaryRate
+                    });
+                    
+                    pnlPercentageData.push({
+                        x: currentDate,
+                        y: currentPnlPercentage
+                    });
+                }
+                
+                console.log('Added/updated current price point:', currentPrice);
+            }
+
+            // Create chart configuration
+            const chartData = {
+                datasets: [
+                    {
+                        label: `BTC Price (${data.mainCurrency || 'EUR'})`,
+                        data: btcPrices,
+                        borderColor: '#f7931a',
+                        backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Cumulative BTC',
+                        data: cumulativeBtcData,
+                        borderColor: '#ffb347',
+                        backgroundColor: 'rgba(255, 179, 71, 0.1)',
+                        yAxisID: 'y1',
+                        tension: 0.4
+                    },
+                    {
+                        label: `P&L (${data.mainCurrency || 'EUR'})`,
+                        data: pnlData,
+                        borderColor: '#00b894',
+                        backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                        yAxisID: 'y',
+                        tension: 0.4
+                    },
+                    {
+                        label: `P&L (${secondaryCurrency})`,
+                        data: pnlPLNData,
+                        borderColor: '#e17055',
+                        backgroundColor: 'rgba(225, 112, 85, 0.1)',
+                        yAxisID: 'y3',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'P&L (%)',
+                        data: pnlPercentageData,
+                        borderColor: '#6c5ce7',
+                        backgroundColor: 'rgba(108, 92, 231, 0.1)',
+                        yAxisID: 'y2',
+                        tension: 0.4
+                    }
+                ]
+            };
+
+            // Create chart with configuration
+            combinedChart = new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            right: 55,
+                            bottom: 20,
+                            left: 35
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                        axis: 'x'
+                    },
+                    events: ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'],
+                    animation: {
+                        duration: 0
+                    },
+                    elements: {
+                        point: {
+                            radius: 0,
+                            hitRadius: 5,
+                            hoverRadius: 5
+                        },
+                        line: {
+                            borderWidth: 2,
+                            tension: 0
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            enabled: true,
+                            mode: 'index',
+                            intersect: false,
+                            position: 'nearest',
+                            caretPadding: 10,
+                            caretSize: 0,
+                            padding: 12,
+                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                            titleColor: isLightTheme ? '#333' : '#fff',
+                            bodyColor: isLightTheme ? '#555' : '#ddd',
+                            borderColor: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold',
+                                family: "'JetBrains Mono', monospace"
+                            },
+                            bodyFont: {
+                                size: 13,
+                                family: "'JetBrains Mono', monospace"
+                            },
+                            usePointStyle: true,
+                            boxPadding: 6,
+                            itemSort: null,
+                            callbacks: {
+                                title: function(context) {
+                                    if (context[0]) {
+                                        const date = new Date(context[0].parsed.x);
+                                        return date.toLocaleDateString('en-US', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric'
+                                        });
+                                    }
+                                    return '';
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.datasetIndex === 1) {
+                                        label += context.parsed.y.toFixed(8) + ' ₿';
+                                    } else if (context.datasetIndex === 3) {
+                                        // Display the secondary currency with proper symbol
+                                        let currencySymbol = getCurrencySymbol(secondaryCurrency);
+                                        label += context.parsed.y.toFixed(2) + ' ' + currencySymbol;
+                                    } else if (context.datasetIndex === 4) {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    } else {
+                                        // Main currency (BTC price or P&L)
+                                        let mainCurrencySymbol = getCurrencySymbol(data.mainCurrency || 'EUR');
+                                        label += context.parsed.y.toFixed(2) + ' ' + mainCurrencySymbol;
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 13,
+                                    family: "'JetBrains Mono', monospace"
+                                },
+                                padding: 20,
+                                usePointStyle: true,
+                                boxWidth: 8,
+                                color: textColor
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                displayFormats: {
+                                    day: 'MMM d, yyyy'
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                color: textColor
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                maxRotation: 45,
+                                minRotation: 45,
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: data.mainCurrency || 'EUR',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                color: textColor
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                callback: function(value) {
+                                    const mainCurrencySymbol = getCurrencySymbol(data.mainCurrency || 'EUR');
+                                    return value.toLocaleString() + ' ' + mainCurrencySymbol;
+                                },
+                                color: textColor
+                            },
+                            grid: {
+                                color: gridColor
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'BTC',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                color: textColor
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(8) + ' ₿';
+                                },
+                                color: textColor
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: gridColor
+                            }
+                        },
+                        y2: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'P&L %',
+                                font: {
+                                    size: 13,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                color: textColor
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                callback: function(value) {
+                                    return value.toFixed(2) + '%';
+                                },
+                                color: textColor
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: gridColor
+                            }
+                        },
+                        y3: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: secondaryCurrency,
+                                font: {
+                                    size: 13,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                color: textColor
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11,
+                                    family: "'Segoe UI', sans-serif"
+                                },
+                                callback: function(value) {
+                                    const currencySymbol = getCurrencySymbol(secondaryCurrency);
+                                    return value.toLocaleString() + ' ' + currencySymbol;
+                                },
+                                color: textColor
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                                color: gridColor
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modified loadData function
+        async function loadData(isFullRefresh = true) {
+            try {
+                if (isFullRefresh) {
+                    document.getElementById('chartLoading').style.display = 'flex';
+                    
+                    // Fetch all data including cached prices from summary endpoint
+                    const response = await fetch('/api/summary');
+                    if (!response.ok) {
+                        throw new Error('Failed to load data');
+                    }
+                    const data = await response.json();
+
+                    // Get secondary currency settings
+                    secondaryCurrency = data.secondaryCurrency || 'PLN';
+                    secondaryRate = data.secondaryRate || 1;
+                    
+                    // Check if main currency has changed
+                    const mainCurrency = data.mainCurrency || 'EUR';
+                    const mainCurrencyChanged = window.currentMainCurrency && window.currentMainCurrency !== mainCurrency;
+                    window.currentMainCurrency = mainCurrency;
+                    
+                    // Store current transaction count to check for changes
+                    const oldTransactionCount = transactionsWithCumulative.length;
+                    
+                    // Store transactions globally with safe access
+                    let cumulativeBtc = 0;
+                    let cumulativeCost = 0;
+                    transactionsWithCumulative = (data.transactions || []).map(tx => {
+                        cumulativeBtc += tx.type === 'buy' ? tx.amount : -tx.amount;
+                        cumulativeCost += tx.type === 'buy' ? tx.cost : -tx.cost;
+                        return {
+                            ...tx,
+                            cumulativeBtc,
+                            cumulativeCost
+                        };
+                    });
+                    
+                    // Check if transaction count has changed
+                    const transactionCountChanged = oldTransactionCount !== transactionsWithCumulative.length;
+                    
+                    // If main currency changed or transactions changed, force re-creation of chart
+                    if ((mainCurrencyChanged || transactionCountChanged) && combinedChart) {
+                        console.log('Recreating chart due to currency change or transaction change');
+                        combinedChart.destroy();
+                        combinedChart = null;
+                    }
+
+                    // Get main currency price
+                    const price = mainCurrency === 'EUR' ? 
+                        data.priceEUR || data.price || 0 : 
+                        data.priceUSD || 0;
+                    
+                    // Prepare price data for display updates
+                    const priceData = {
+                        price: price,
+                        priceEUR: data.priceEUR || data.price || 0,
+                        priceUSD: data.priceUSD || 0,
+                        mainCurrency: mainCurrency,
+                        eurUsd: data.eurUsd || 1.1,
+                        eurPln: data.eurPln || 4.5,
+                        eurGbp: data.eurGbp || 0.85,
+                        eurJpy: data.eurJpy || 160,
+                        eurChf: data.eurChf || 0.95,
+                        timestamp: data.priceTimestamp || data.timestamp || new Date().toISOString(),
+                        exchangeRates: data.exchangeRates || {},
+                        isCached: true
+                    };
+                    
+                    // Update all displays with safe access
+                    updatePriceDisplays(priceData);
+                    
+                    // Safely update basic info with fallbacks for undefined values
+                    const safeData = {
+                        totalBTC: data.totalBTC || 0,
+                        totalCost: data.totalCost || 0,
+                        averagePrice: data.averagePrice || 0,
+                    };
+                    
+                    document.getElementById('totalBtc').textContent = safeData.totalBTC.toFixed(8);
+                    
+                    // Create/update chart with historical data
+                    createChart(data);
+                    
+                    // Update last update time
+                    lastUpdateTime = new Date(data.priceTimestamp || data.timestamp || new Date());
+                    document.getElementById('lastUpdate').textContent = 
+                        `${lastUpdateTime.toLocaleTimeString()} (cached)`;
+                    document.getElementById('priceUpdate').classList.add('pulsing');
+                    setTimeout(() => {
+                        document.getElementById('priceUpdate').classList.remove('pulsing');
+                    }, 1000);
+                } else {
+                    // For non-full refresh, just get summary without historical data
+                    const response = await fetch('/api/summary?priceOnly=true&fresh=true');
+                    if (!response.ok) {
+                        throw new Error('Failed to load price update');
+                    }
+                    const data = await response.json();
+                    
+                    // Update secondary currency if it has changed
+                    if (data.secondaryCurrency && data.secondaryCurrency !== secondaryCurrency) {
+                        secondaryCurrency = data.secondaryCurrency;
+                        secondaryRate = data.secondaryRate || 1;
+                    }
+                    
+                    // Check if main currency has changed
+                    const mainCurrency = data.mainCurrency || 'EUR';
+                    if (window.currentMainCurrency !== mainCurrency) {
+                        console.log('Main currency changed from', window.currentMainCurrency, 'to', mainCurrency);
+                        window.currentMainCurrency = mainCurrency;
+                        // Main currency changed, do a full refresh
+                        loadData(true);
+                        return;
+                    }
+                    
+                    // Get main currency and appropriate price
+                    const price = mainCurrency === 'EUR' ? 
+                        data.priceEUR || data.price || 0 : 
+                        data.priceUSD || 0;
+                    
+                    // Store current transaction count to check for changes
+                    const oldTransactionCount = transactionsWithCumulative.length;
+                    
+                    // Refresh transactions data to ensure we have the latest
+                    let cumulativeBtc = 0;
+                    let cumulativeCost = 0;
+                    if (data.transactions && data.transactions.length > 0) {
+                        transactionsWithCumulative = (data.transactions || []).map(tx => {
+                            cumulativeBtc += tx.type === 'buy' ? tx.amount : -tx.amount;
+                            cumulativeCost += tx.type === 'buy' ? tx.cost : -tx.cost;
+                            return {
+                                ...tx,
+                                cumulativeBtc,
+                                cumulativeCost
+                            };
+                        });
+                    }
+                    
+                    // Check if transaction count has changed
+                    const transactionCountChanged = oldTransactionCount !== transactionsWithCumulative.length;
+                    
+                    // If transactions changed, force re-creation of chart
+                    if (transactionCountChanged && combinedChart) {
+                        console.log('Recreating chart due to transaction change during price update');
+                        combinedChart.destroy();
+                        combinedChart = null;
+                        loadData(true);
+                        return;
+                    }
+                    
+                    const priceData = {
+                        price: price,
+                        priceEUR: data.priceEUR || data.price || 0,
+                        priceUSD: data.priceUSD || 0,
+                        mainCurrency: mainCurrency,
+                        eurUsd: data.eurUsd || 1.1,
+                        eurPln: data.eurPln || 4.5,
+                        eurGbp: data.eurGbp || 0.85,
+                        eurJpy: data.eurJpy || 160,
+                        eurChf: data.eurChf || 0.95,
+                        timestamp: data.priceTimestamp || data.timestamp || new Date().toISOString(),
+                        exchangeRates: data.exchangeRates || {},
+                        isCached: true
+                    };
+                    
+                    // Update displays with the new price data
+                    updatePriceDisplays(priceData);
+                    
+                    // Always update the chart with the latest price data
+                    if (combinedChart) {
+                        console.log('Updating chart with latest price:', price);
+                        updateChartWithLatestPrice(combinedChart, priceData);
+                    } else {
+                        // If chart doesn't exist for some reason, create it
+                        console.log('Chart not found during price update, creating new chart');
+                        createChart(data);
+                    }
+                    
+                    // Update last update time
+                    lastUpdateTime = new Date(data.priceTimestamp || data.timestamp || new Date());
+                    document.getElementById('lastUpdate').textContent = 
+                        `${lastUpdateTime.toLocaleTimeString()} (cached)`;
+                    document.getElementById('priceUpdate').classList.add('pulsing');
+                    setTimeout(() => {
+                        document.getElementById('priceUpdate').classList.remove('pulsing');
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                // Update UI to show error state
+                document.getElementById('totalBtc').textContent = 'Error';
+                document.getElementById('totalCost').textContent = 'Error';
+                document.getElementById('currentValue').textContent = 'Error';
+                document.getElementById('pnl').textContent = 'Error';
+                document.getElementById('pnlPercentage').textContent = 'Error';
+                document.getElementById('averagePrice').textContent = 'Error';
+                
+                // Show error message to user
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'error-message';
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.style.color = 'var(--loss-color)';
+                errorMessage.style.textAlign = 'center';
+                errorMessage.style.margin = '1rem 0';
+                
+                const container = document.querySelector('.container');
+                const existingError = container.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+                container.insertBefore(errorMessage, container.firstChild);
+            } finally {
+                if (isFullRefresh) {
+                    document.getElementById('chartLoading').style.display = 'none';
+                }
+            }
+        }
+
+        // Initial load and setup intervals
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(true);  // Initial full load
+            
+            // Set up intervals
+            setInterval(() => loadData(true), 24 * 60 * 60 * 1000); // Full refresh once per day
+            setInterval(() => loadData(false), 60 * 1000); // Price update every minute
+            
+            // Setup refresh button
+            document.getElementById('refreshBtn').addEventListener('click', async () => {
+                console.log('Manual refresh triggered');
+                try {
+                    // Directly fetch fresh price
+                    const response = await fetch('/api/current-price?fresh=true');
+                    if (response.ok) {
+                        const freshPriceData = await response.json();
+                        console.log('Fetched fresh price data:', freshPriceData);
+                        
+                        // Update the UI immediately with the fresh price
+                        if (combinedChart) {
+                            const priceData = {
+                                price: freshPriceData.priceEUR,
+                                priceEUR: freshPriceData.priceEUR,
+                                priceUSD: freshPriceData.priceUSD,
+                                mainCurrency: window.currentMainCurrency || 'EUR',
+                                eurUsd: freshPriceData.eurUsd,
+                                eurPln: freshPriceData.eurPln,
+                                timestamp: freshPriceData.timestamp,
+                                isCached: false
+                            };
+                            
+                            // Update displays and chart with fresh price
+                            updatePriceDisplays(priceData);
+                            updateChartWithLatestPrice(combinedChart, priceData);
+                            
+                            // Update last update time
+                            lastUpdateTime = new Date(freshPriceData.timestamp);
+                            document.getElementById('lastUpdate').textContent = 
+                                `${lastUpdateTime.toLocaleTimeString()} (fresh)`;
+                            document.getElementById('priceUpdate').classList.add('pulsing');
+                            setTimeout(() => {
+                                document.getElementById('priceUpdate').classList.remove('pulsing');
+                            }, 1000);
+                        }
+                    } else {
+                        // If direct price fetch fails, fallback to regular refresh
+                        loadData(false);
+                    }
+                } catch (error) {
+                    console.error('Error fetching fresh price:', error);
+                    // Fallback to regular refresh
+                    loadData(false);
+                }
+            });
+            
+            // Trigger refresh when returning to the page to catch any added transactions
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    console.log('Page visible again - refreshing data to check for new transactions');
+                    loadData(true); // Do a full refresh when coming back to the page
+                }
+            });
+
+            // Theme toggle functionality
+            setupThemeToggle();
+        });
+
+        // Function to setup theme toggle
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Check if user has a saved preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            
+            // Add click event listener
+            themeToggle.addEventListener('click', () => {
+                // Toggle the theme
+                document.body.classList.toggle('light-theme');
+                
+                // Save the preference to localStorage
+                const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+                localStorage.setItem('theme', currentTheme);
+                
+                // If we have a chart, update it to match the new theme
+                if (combinedChart) {
+                    updateChartTheme();
+                    combinedChart.update();
+                }
+            });
+        }
+        
+        // Function to update chart theme based on current theme
+        function updateChartTheme() {
+            if (!combinedChart) return;
+            
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Update grid colors
+            combinedChart.options.scales.x.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            combinedChart.options.scales.y.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            combinedChart.options.scales.y1.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            combinedChart.options.scales.y2.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            combinedChart.options.scales.y3.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            
+            // Update text colors
+            const textColor = isLightTheme ? '#333333' : '#ffffff';
+            
+            // Update title colors
+            combinedChart.options.scales.x.title.color = textColor;
+            combinedChart.options.scales.y.title.color = textColor;
+            combinedChart.options.scales.y1.title.color = textColor;
+            combinedChart.options.scales.y2.title.color = textColor;
+            combinedChart.options.scales.y3.title.color = textColor;
+            
+            // Update tick colors
+            combinedChart.options.scales.x.ticks.color = textColor;
+            combinedChart.options.scales.y.ticks.color = textColor;
+            combinedChart.options.scales.y1.ticks.color = textColor;
+            combinedChart.options.scales.y2.ticks.color = textColor;
+            combinedChart.options.scales.y3.ticks.color = textColor;
+        }
+
+        // Add touch support for mobile
+        document.addEventListener('touchstart', function() {}, true);
+    </script>
+</body>
+</html> 
