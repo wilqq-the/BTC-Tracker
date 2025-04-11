@@ -20,7 +20,7 @@ A simple, powerful application to track your Bitcoin investments and monitor the
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/BTC-tracker.git
+   git clone https://github.com/wilqq-the/BTC-tracker.git
    cd BTC-tracker
    ```
 
@@ -44,7 +44,7 @@ That's it! The script automatically:
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/BTC-tracker.git
+   git clone https://github.com/wilqq-the/BTC-tracker.git
    cd BTC-tracker
    ```
 
