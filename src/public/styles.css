@@ -1222,4 +1222,22 @@ header h1 i.fab.fa-bitcoin {
 .exchange-rates p {
     margin: 5px 0;
     font-size: 0.9rem;
+}
+
+/* Logout button styling */
+.logout-btn {
+    background-color: rgba(231, 76, 60, 0.2) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    margin-left: auto;
+}
+
+.logout-btn:hover {
+    background-color: rgba(231, 76, 60, 0.4) !important;
+    border-color: rgba(231, 76, 60, 0.5);
+}
+
+/* Adjust theme toggle position when logout is present */
+.logout-btn + .theme-toggle {
+    margin-left: 0.5rem;
 } 

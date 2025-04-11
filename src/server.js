@@ -7,6 +7,30 @@ const { parse } = require('csv-parse');
 const axios = require('axios');
 const fileUpload = require('express-fileupload');
 const priceCache = require('./server/priceCache');
+const session = require('express-session');
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+const bcrypt = require('bcrypt');
+const flash = require('connect-flash');
+const userModel = require('./server/userModel');
+
+// Middleware to check if setup is needed
+function isSetupNeeded(req, res, next) {
+    // If users exist, continue to login page
+    if (userModel.hasUsers()) {
+        return next();
+    }
+    // Otherwise redirect to setup page
+    res.redirect('/setup');
+}
+
+// Middleware to check if the user is authenticated
+function isAuthenticated(req, res, next) {
+    if (req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect('/login');
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +47,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 const HISTORICAL_BTC_FILE = path.join(DATA_DIR, 'historical_btc.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'app-settings.json');
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
@@ -34,6 +59,59 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(fileUpload());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: true }));
+
+// Session setup
+app.use(session({
+  secret: 'btc-tracker-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash()); // For flash messages (login errors, etc.)
+
+// Configure Passport
+passport.use(new LocalStrategy(
+    async (username, password, done) => {
+        try {
+            // Find user
+            const user = userModel.findUserByUsername(username);
+            
+            // User not found
+            if (!user) {
+                return done(null, false, { message: 'Incorrect username' });
+            }
+            
+            // Check password
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return done(null, false, { message: 'Incorrect password' });
+            }
+            
+            // Success
+            return done(null, user);
+        } catch (error) {
+            return done(error);
+        }
+    }
+));
+
+// Session serialization
+passport.serializeUser((user, done) => {
+    done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+    const user = userModel.findUserById(id);
+    done(null, user);
+});
 
 // Load data from files
 function loadData() {
@@ -320,11 +398,11 @@ function importCSVData(csvFilePath) {
 }
 
 // Routes for API
-app.get('/api/transactions', (req, res) => {
+app.get('/api/transactions', isAuthenticated, (req, res) => {
     res.json(transactions);
 });
 
-app.get('/api/transactions/summary', (req, res) => {
+app.get('/api/transactions/summary', isAuthenticated, (req, res) => {
     // Get rates from price cache instead
     const cachedPrices = priceCache.getCachedPrices();
 
@@ -359,12 +437,12 @@ app.get('/api/transactions/summary', (req, res) => {
     });
 });
 
-app.get('/api/transactions/historical', (req, res) => {
+app.get('/api/transactions/historical', isAuthenticated, (req, res) => {
     res.json(historicalBTCData);
 });
 
 // Update the /api/summary endpoint
-app.get('/api/summary', async (req, res) => {
+app.get('/api/summary', isAuthenticated, async (req, res) => {
     try {
         const cachedPrices = priceCache.getCachedPrices();
         const settings = loadSettings();
@@ -557,7 +635,7 @@ async function getExchangeRates() {
 }
 
 // Add new endpoint for current price
-app.get('/api/current-price', async (req, res) => {
+app.get('/api/current-price', isAuthenticated, async (req, res) => {
     try {
         console.log('Processing /api/current-price request...');
         
@@ -635,7 +713,7 @@ app.get('/api/current-price', async (req, res) => {
 });
 
 // Admin routes
-app.post('/api/admin/import', async (req, res) => {
+app.post('/api/admin/import', isAuthenticated, async (req, res) => {
     try {
         if (!req.files || !req.files.file) {
             return res.status(400).json({ error: 'No file uploaded' });
@@ -655,7 +733,7 @@ app.post('/api/admin/import', async (req, res) => {
 });
 
 // Add new transaction endpoint
-app.post('/api/admin/transactions', (req, res) => {
+app.post('/api/admin/transactions', isAuthenticated, (req, res) => {
     try {
         const newTransaction = req.body;
         
@@ -696,7 +774,7 @@ app.post('/api/admin/transactions', (req, res) => {
     }
 });
 
-app.put('/api/admin/transactions/:id', (req, res) => {
+app.put('/api/admin/transactions/:id', isAuthenticated, (req, res) => {
     const { id } = req.params;
     const updatedTransaction = req.body;
     
@@ -724,7 +802,7 @@ app.put('/api/admin/transactions/:id', (req, res) => {
     }
 });
 
-app.delete('/api/admin/transactions/:id', (req, res) => {
+app.delete('/api/admin/transactions/:id', isAuthenticated, (req, res) => {
     const { id } = req.params;
     
     // First try to find by exact id match
@@ -748,7 +826,7 @@ app.delete('/api/admin/transactions/:id', (req, res) => {
 });
 
 // Update transaction
-app.put('/api/transactions/:id', (req, res) => {
+app.put('/api/transactions/:id', isAuthenticated, (req, res) => {
     try {
         const { id } = req.params;
         const updatedTx = req.body;
@@ -781,7 +859,7 @@ app.put('/api/transactions/:id', (req, res) => {
 });
 
 // CSV export endpoint with English headers
-app.get('/api/transactions/export-csv', (req, res) => {
+app.get('/api/transactions/export-csv', isAuthenticated, (req, res) => {
     try {
         // Create CSV header in English
         let csv = 'Date,Type,Price,Cost,Fee,Amount (BTC),Currency\n';
@@ -817,7 +895,7 @@ app.get('/api/transactions/export-csv', (req, res) => {
     }
 });
 
-app.get('/api/transactions/template-csv', (req, res) => {
+app.get('/api/transactions/template-csv', isAuthenticated, (req, res) => {
     // Create a template CSV with English headers and example data
     const template = 
         'Date,Type,Price,Cost,Fee,Amount (BTC),Currency\n' +
@@ -831,7 +909,7 @@ app.get('/api/transactions/template-csv', (req, res) => {
 });
 
 // Endpoint to delete all transactions
-app.delete('/api/transactions/delete-all', (req, res) => {
+app.delete('/api/transactions/delete-all', isAuthenticated, (req, res) => {
     try {
         // Clear all transactions
         transactions = [];
@@ -885,13 +963,13 @@ function saveSettings(settings) {
 }
 
 // Get settings endpoint
-app.get('/api/settings', (req, res) => {
+app.get('/api/settings', isAuthenticated, (req, res) => {
     const settings = loadSettings();
     res.json(settings);
 });
 
 // Update settings endpoint
-app.put('/api/settings', (req, res) => {
+app.put('/api/settings', isAuthenticated, (req, res) => {
     try {
         const newSettings = req.body;
         
@@ -913,7 +991,7 @@ app.put('/api/settings', (req, res) => {
 });
 
 // Test CoinGecko API key
-app.post('/api/settings/test-coingecko-key', async (req, res) => {
+app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) => {
     try {
         const { apiKey } = req.body;
         
@@ -972,9 +1050,89 @@ app.post('/api/settings/test-coingecko-key', async (req, res) => {
     }
 });
 
+// Login page
+app.get('/login', isSetupNeeded, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
+// Login form submission
+app.post('/login', passport.authenticate('local', {
+    successRedirect: '/',
+    failureRedirect: '/login',
+    failureFlash: true
+}));
+
+// Setup page (first run)
+app.get('/setup', (req, res) => {
+    // If users already exist, redirect to login
+    if (userModel.hasUsers()) {
+        return res.redirect('/login');
+    }
+    res.sendFile(path.join(__dirname, 'public', 'setup.html'));
+});
+
+// Setup form submission
+app.post('/setup', async (req, res) => {
+    try {
+        console.log('Setup form submission received:', req.body);
+        
+        // If users already exist, redirect to login
+        if (userModel.hasUsers()) {
+            return res.redirect('/login');
+        }
+        
+        const { username, password, confirmPassword } = req.body;
+        
+        // Validate username and password are provided
+        if (!username || !password) {
+            console.error('Setup error: Username and password are required');
+            return res.redirect('/setup?error=' + encodeURIComponent('Username and password are required'));
+        }
+        
+        // Validate passwords match
+        if (password !== confirmPassword) {
+            console.error('Setup error: Passwords do not match');
+            return res.redirect('/setup?error=' + encodeURIComponent('Passwords do not match'));
+        }
+        
+        // Create user
+        console.log('Creating new user:', username);
+        await userModel.createUser(username, password);
+        console.log('User created successfully');
+        
+        // Redirect to login
+        res.redirect('/login');
+    } catch (error) {
+        console.error('Setup error:', error);
+        res.redirect('/setup?error=' + encodeURIComponent(error.message));
+    }
+});
+
+// Logout
+app.get('/logout', (req, res) => {
+    req.logout(function(err) {
+        if (err) { return next(err); }
+        res.redirect('/login');
+    });
+});
+
 // Serve index.html for all other routes
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    // Check if this is a login-related path that should not be protected
+    const publicPaths = ['/login', '/setup', '/logout'];
+    const isPublicPath = publicPaths.includes(req.path) || req.path.startsWith('/public/');
+    
+    // If not a public path and not authenticated, redirect to login
+    if (!isPublicPath && !req.isAuthenticated()) {
+        return res.redirect('/login');
+    }
+    
+    // If it's a public path, or user is authenticated, serve the requested file
+    if (req.path === '/login' || req.path === '/setup') {
+        res.sendFile(path.join(__dirname, 'public', req.path + '.html'));
+    } else {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    }
 });
 
 // Error handling middleware

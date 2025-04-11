@@ -19,6 +19,7 @@
                 <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <button id="themeToggle" class="theme-toggle">
                     <i class="fas fa-moon"></i>
                     <i class="fas fa-sun"></i>
@@ -918,8 +919,17 @@
                     // Fetch all data including cached prices from summary endpoint
                     const response = await fetch('/api/summary');
                     if (!response.ok) {
+                        // If we get redirected to login (status 302), the browser may follow the redirect
+                        // Check the content type to see if we received HTML instead of JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('text/html')) {
+                            // We're being redirected to the login page, so redirect
+                            window.location.href = '/login';
+                            return;
+                        }
                         throw new Error('Failed to load data');
                     }
+                    
                     const data = await response.json();
 
                     // Get secondary currency settings
@@ -1005,6 +1015,14 @@
                     // For non-full refresh, just get summary without historical data
                     const response = await fetch('/api/summary?priceOnly=true&fresh=true');
                     if (!response.ok) {
+                        // If we get redirected to login (status 302), the browser may follow the redirect
+                        // Check the content type to see if we received HTML instead of JSON
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('text/html')) {
+                            // We're being redirected to the login page, so redirect
+                            window.location.href = '/login';
+                            return;
+                        }
                         throw new Error('Failed to load price update');
                     }
                     const data = await response.json();
@@ -1099,6 +1117,18 @@
                 }
             } catch (error) {
                 console.error('Error loading data:', error);
+                
+                // Check if the error is due to receiving HTML instead of JSON (redirect to login)
+                if (error.message && (
+                    error.message.includes('Unexpected token') || 
+                    error.message.includes('<!DOCTYPE') || 
+                    error.message.includes('SyntaxError')
+                )) {
+                    console.log('Authentication issue detected. Redirecting to login...');
+                    window.location.href = '/login';
+                    return;
+                }
+                
                 // Update UI to show error state
                 document.getElementById('totalBtc').textContent = 'Error';
                 document.getElementById('totalCost').textContent = 'Error';

@@ -271,6 +271,7 @@
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/admin.html" class="active"><i class="fas fa-cog"></i> Admin Panel</a>
+                <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <button id="themeToggle" class="theme-toggle">
                     <i class="fas fa-moon"></i>
                     <i class="fas fa-sun"></i>
@@ -863,37 +864,80 @@
             }
         }
         
-        // Save settings
+        // Update saveSettings with auth handling
         async function saveSettings(event) {
             event.preventDefault();
-            
+
             try {
-                const formData = {
-                    secondaryCurrency: document.getElementById('secondaryCurrency').value,
-                    mainCurrency: document.getElementById('mainCurrency').value,
-                    coingeckoApiKey: document.getElementById('coingeckoApiKey').value.trim()
+                // Get form values
+                const secondaryCurrency = document.getElementById('secondaryCurrency').value;
+                const mainCurrency = document.getElementById('mainCurrency').value;
+                const coingeckoApiKey = document.getElementById('coingeckoApiKey').value;
+                
+                // Create settings object
+                const settings = {
+                    secondaryCurrency,
+                    mainCurrency
                 };
+                
+                // Only include API key if it's provided
+                if (coingeckoApiKey.trim()) {
+                    settings.coingeckoApiKey = coingeckoApiKey.trim();
+                }
+                
+                console.log('Saving settings:', settings);
                 
                 const response = await fetch('/api/settings', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(settings)
                 });
                 
                 if (!response.ok) {
+                    // Check for HTML response (login redirect)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        window.location.href = '/login';
+                        return;
+                    }
                     throw new Error('Failed to save settings');
                 }
                 
                 const result = await response.json();
-                showSuccess('Settings saved successfully!');
                 
-                // Reload exchange rates with new settings
-                loadExchangeRates();
+                // Show success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'success-message';
+                successMessage.textContent = 'Settings saved successfully!';
+                
+                const settingsForm = document.getElementById('settingsForm');
+                const existingMessage = settingsForm.querySelector('.success-message');
+                
+                if (existingMessage) {
+                    existingMessage.remove();
+                }
+                
+                settingsForm.appendChild(successMessage);
+                
+                // Auto-remove message after 3 seconds
+                setTimeout(() => {
+                    successMessage.remove();
+                }, 3000);
+                
+                // Refresh current price with new settings
+                if (typeof refreshPrice === 'function') {
+                    refreshPrice();
+                }
+                
+                console.log('Settings saved:', result);
             } catch (error) {
                 console.error('Error saving settings:', error);
-                showError('Failed to save settings. Please try again.');
+                if (handleAuthError(error)) return;
+                
+                // Show error message
+                alert('Error saving settings: ' + error.message);
             }
         }
 
@@ -987,21 +1031,20 @@
             setupThemeToggle();
         });
 
-        // Test CoinGecko API key
+        // Update the testApiKeyBtn click handler with auth handling
         document.getElementById('testApiKeyBtn').addEventListener('click', async function() {
-            const apiKey = document.getElementById('coingeckoApiKey').value.trim();
-            const apiKeyStatus = document.getElementById('apiKeyStatus');
+            const apiKeyInput = document.getElementById('coingeckoApiKey');
+            const apiKey = apiKeyInput.value.trim();
             
             if (!apiKey) {
-                apiKeyStatus.textContent = 'Please enter an API key first';
-                apiKeyStatus.className = 'api-status error';
-                apiKeyStatus.style.display = 'block';
+                alert('Please enter an API key to test');
                 return;
             }
             
-            apiKeyStatus.textContent = 'Testing API key...';
-            apiKeyStatus.className = 'api-status loading';
-            apiKeyStatus.style.display = 'block';
+            const testBtn = this;
+            const originalText = testBtn.innerHTML;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            testBtn.disabled = true;
             
             try {
                 const response = await fetch('/api/settings/test-coingecko-key', {
@@ -1012,20 +1055,128 @@
                     body: JSON.stringify({ apiKey })
                 });
                 
+                if (!response.ok) {
+                    // Check for HTML response (login redirect)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('API test failed');
+                }
+                
                 const result = await response.json();
                 
-                if (response.ok && result.success) {
-                    apiKeyStatus.textContent = result.message + (result.currentPrice ? ` Current BTC price: $${result.currentPrice}` : '');
-                    apiKeyStatus.className = 'api-status success';
+                if (result.success) {
+                    // Show success message
+                    alert(`API key is valid! Current BTC price: $${result.currentPrice}`);
                 } else {
-                    apiKeyStatus.textContent = result.message || 'API key test failed';
-                    apiKeyStatus.className = 'api-status error';
+                    // Show error message
+                    alert(`API key test failed: ${result.message}`);
                 }
             } catch (error) {
-                apiKeyStatus.textContent = 'Error testing API key: ' + error.message;
-                apiKeyStatus.className = 'api-status error';
+                console.error('Error testing API key:', error);
+                if (handleAuthError(error)) return;
+                
+                alert('Error testing API key: ' + error.message);
+            } finally {
+                testBtn.innerHTML = originalText;
+                testBtn.disabled = false;
             }
         });
+
+        // Helper function to handle auth-related fetch errors
+        function handleAuthError(error) {
+            if (error.message && (
+                error.message.includes('Unexpected token') || 
+                error.message.includes('<!DOCTYPE') || 
+                error.message.includes('SyntaxError')
+            )) {
+                console.log('Authentication issue detected. Redirecting to login...');
+                window.location.href = '/login';
+                return true;
+            }
+            return false;
+        }
+
+        // Updated fetchCurrentSettings function with auth handling
+        async function fetchCurrentSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                
+                if (!response.ok) {
+                    // Check for HTML response (login redirect)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to load settings');
+                }
+                
+                const settings = await response.json();
+                
+                // Update secondary currency field
+                document.getElementById('secondaryCurrency').value = settings.secondaryCurrency || 'PLN';
+                
+                // Update main currency field
+                document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
+                
+                // Update CoinGecko API key field
+                if (settings.coingeckoApiKey) {
+                    document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
+                }
+                
+                // Update last fetched time
+                const lastUpdated = document.getElementById('settingsLastUpdated');
+                lastUpdated.textContent = new Date().toLocaleTimeString();
+                lastUpdated.classList.add('highlight');
+                
+                setTimeout(() => {
+                    lastUpdated.classList.remove('highlight');
+                }, 2000);
+                
+                console.log('Settings loaded successfully:', settings);
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                if (handleAuthError(error)) return;
+                
+                // Display error
+                alert('Error loading settings: ' + error.message);
+            }
+        }
+
+        // Update importTransactions with auth handling
+        async function importTransactions(formData) {
+            try {
+                const response = await fetch('/api/admin/import', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    // Check for HTML response (login redirect)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Import failed');
+                }
+                
+                const result = await response.json();
+                alert('Data imported successfully!');
+                
+                // Refresh transactions if needed
+                if (typeof loadTransactions === 'function') {
+                    loadTransactions();
+                }
+            } catch (error) {
+                console.error('Error importing transactions:', error);
+                if (handleAuthError(error)) return;
+                alert('Error importing data: ' + error.message);
+            }
+        }
     </script>
 </body>
 </html> 
