@@ -15,6 +15,13 @@
         <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
         <p>A simple and powerful Bitcoin transaction tracker for monitoring your investment</p>
     </header>
+    
+    <nav class="main-nav">
+        <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+        <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
+        <a href="features.html"><i class="fas fa-star"></i> Features</a>
+        <a href="screenshots.html"><i class="fas fa-images"></i> Screenshots</a>
+    </nav>
 
     <main>
         <section>
@@ -36,6 +43,7 @@
                             <div class="slide-caption">
                                 <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
                                 <p>The main dashboard displaying current Bitcoin price, portfolio value, and profit/loss metrics.</p>
+                                <a href="images/dashboard.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -45,6 +53,7 @@
                             <div class="slide-caption">
                                 <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
                                 <p>View, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
+                                <a href="images/transactions.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -54,6 +63,7 @@
                             <div class="slide-caption">
                                 <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
                                 <p>Advanced configuration options and administrative controls for your BTC Tracker instance.</p>
+                                <a href="images/admin.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -63,6 +73,7 @@
                             <div class="slide-caption">
                                 <h3><i class="fas fa-lock"></i> Secure Login</h3>
                                 <p>Secure authentication system to protect your financial data.</p>
+                                <a href="images/login.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -72,6 +83,7 @@
                             <div class="slide-caption">
                                 <h3><i class="fas fa-tools"></i> Easy Setup</h3>
                                 <p>Simple setup process to get your BTC tracker up and running quickly.</p>
+                                <a href="images/setup.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
                             </div>
                         </div>
                     </div>
@@ -83,28 +95,8 @@
                 <div class="swiper-button-prev"></div>
             </div>
 
-            <!-- Thumbnail Gallery for non-JS fallback -->
-            <div class="thumbnail-gallery">
-                <div class="thumbnail">
-                    <img src="images/dashboard.png" alt="Dashboard" class="thumbnail-img">
-                    <p><i class="fas fa-chart-line"></i> Dashboard</p>
-                </div>
-                <div class="thumbnail">
-                    <img src="images/transactions.png" alt="Transactions" class="thumbnail-img">
-                    <p><i class="fas fa-exchange-alt"></i> Transactions</p>
-                </div>
-                <div class="thumbnail">
-                    <img src="images/admin.png" alt="Admin Panel" class="thumbnail-img">
-                    <p><i class="fas fa-cogs"></i> Admin Panel</p>
-                </div>
-                <div class="thumbnail">
-                    <img src="images/login.png" alt="Login Page" class="thumbnail-img">
-                    <p><i class="fas fa-lock"></i> Login Page</p>
-                </div>
-                <div class="thumbnail">
-                    <img src="images/setup.png" alt="Setup Page" class="thumbnail-img">
-                    <p><i class="fas fa-tools"></i> Setup Page</p>
-                </div>
+            <div class="cta">
+                <a href="screenshots.html" class="button"><i class="fas fa-images"></i> View All Screenshots</a>
             </div>
         </section>
 
@@ -123,46 +115,29 @@
                     <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
                     <p>Monitor your investment performance with profit/loss calculations and percentages.</p>
                 </div>
-                <div class="feature">
-                    <h3><i class="fas fa-history"></i> Historical Data</h3>
-                    <p>View historical Bitcoin price data to analyze market trends.</p>
-                </div>
-                <div class="feature">
-                    <h3><i class="fas fa-file-csv"></i> CSV Import/Export</h3>
-                    <p>Import transactions from CSV files or export your data for backup or analysis.</p>
-                </div>
-                <div class="feature">
-                    <h3><i class="fas fa-globe"></i> Multi-currency Support</h3>
-                    <p>Support for multiple currencies with automatic exchange rate conversion.</p>
-                </div>
+            </div>
+            <div class="cta">
+                <a href="features.html" class="button"><i class="fas fa-star"></i> View All Features</a>
             </div>
         </section>
 
         <section>
-            <h2><i class="fas fa-rocket"></i> Getting Started</h2>
+            <h2><i class="fas fa-rocket"></i> Quick Start</h2>
             <p>You can run BTC Tracker using Docker for a quick and easy setup:</p>
             <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
 docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
             
-            <p>Or use Docker Compose for more configuration options:</p>
-            <pre><code>services:
-  btc-tracker:
-    image: docker.io/thewilqq/btc-tracker:latest
-    container_name: ${CONTAINER_NAME:-btc-tracker}
-    ports:
-      - "${PORT:-3000}:3000"
-    volumes:
-      - ${DATA_PATH:-./src/data}:/app/src/data
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PORT=3000</code></pre>
+            <div class="cta">
+                <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Full Installation Guide</a>
+            </div>
         </section>
 
         <div class="cta">
             <a href="https://github.com/yourusername/btc-tracker" class="button"><i class="fab fa-github"></i> View on GitHub</a>
         </div>
     </main>
+
+    <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
     <footer>
         <p>BTC Tracker is an open-source project released under the MIT License</p>
@@ -195,7 +170,30 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
             });
 
             // Hide the fallback gallery when JS is enabled
-            document.querySelector('.thumbnail-gallery').style.display = 'none';
+            const fallbackGallery = document.querySelector('.thumbnail-gallery');
+            if (fallbackGallery) {
+                fallbackGallery.style.display = 'none';
+            }
+            
+            // Back to top button functionality
+            const backToTopBtn = document.getElementById('backToTop');
+            if (backToTopBtn) {
+                window.addEventListener('scroll', function() {
+                    if (window.pageYOffset > 300) {
+                        backToTopBtn.classList.add('visible');
+                    } else {
+                        backToTopBtn.classList.remove('visible');
+                    }
+                });
+                
+                backToTopBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            }
         });
     </script>
 </body>

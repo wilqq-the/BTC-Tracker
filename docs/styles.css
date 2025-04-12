@@ -60,6 +60,41 @@ header p {
     color: var(--text-secondary-color);
 }
 
+/* Navigation */
+.main-nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.main-nav a {
+    padding: 0.8rem 1.5rem;
+    background-color: var(--card-background);
+    color: var(--text-color);
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.main-nav a:hover {
+    background-color: var(--hover-color);
+    transform: translateY(-2px);
+}
+
+.main-nav a.active {
+    background-color: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
 /* Bitcoin icon animation */
 @keyframes rotate {
     0% { transform: rotate(0deg); }
@@ -83,6 +118,7 @@ header h1::before {
     box-shadow: 0 4px 10px var(--shadow-color);
     margin: 40px 0;
     border: 1px solid var(--border-color);
+    height: 650px; /* Set a fixed height for the container */
 }
 
 .swiper-container h2 {
@@ -103,8 +139,10 @@ header h1::before {
 .swiper-slide {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     padding: 20px;
+    overflow: hidden;
+    height: 100%;
 }
 
 .slide-content {
@@ -113,6 +151,8 @@ header h1::before {
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: auto;
+    max-height: 520px; /* Limit content height */
 }
 
 .slide-caption {
@@ -138,14 +178,29 @@ header h1::before {
 .screenshot {
     max-width: 100%;
     height: auto;
+    max-height: 400px; /* Limit image height */
     border-radius: 8px;
     box-shadow: 0 5px 15px var(--shadow-color);
     transition: transform 0.3s ease;
     border: 1px solid var(--border-color);
+    object-fit: contain; /* Maintain aspect ratio */
 }
 
 .screenshot:hover {
     transform: scale(1.02);
+}
+
+/* View Full Size link */
+.view-full-size {
+    display: inline-block;
+    margin-top: 10px;
+    color: var(--accent-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.view-full-size:hover {
+    text-decoration: underline;
 }
 
 /* Fallback Thumbnail Gallery */
@@ -166,11 +221,12 @@ header h1::before {
 
 .thumbnail-img {
     width: 100%;
-    height: auto;
+    height: 200px; /* Fixed height */
     border-radius: 8px;
     box-shadow: 0 3px 10px var(--shadow-color);
     transition: transform 0.3s ease;
     border: 1px solid var(--border-color);
+    object-fit: cover; /* Cover the container */
 }
 
 .thumbnail-img:hover {
@@ -288,6 +344,35 @@ section p {
     margin-bottom: 1rem;
 }
 
+/* Back to top link */
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: var(--accent-color);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    text-decoration: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.back-to-top.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.back-to-top:hover {
+    background-color: var(--secondary-color);
+}
+
 footer {
     text-align: center;
     margin-top: 100px;
@@ -317,5 +402,25 @@ footer {
     
     pre {
         font-size: 14px;
+    }
+    
+    .swiper-container {
+        height: 550px;
+    }
+    
+    .slide-content {
+        max-height: 420px;
+    }
+    
+    .screenshot {
+        max-height: 300px;
+    }
+    
+    .main-nav {
+        flex-direction: column;
+    }
+    
+    .main-nav a {
+        width: 100%;
     }
 } 
