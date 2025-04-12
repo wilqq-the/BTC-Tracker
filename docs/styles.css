@@ -55,6 +55,13 @@ header h1 {
     gap: 0.5rem;
 }
 
+.bitcoin-logo {
+    width: 40px;
+    height: 40px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
 header p {
     font-size: 1.3rem;
     color: var(--text-secondary-color);
@@ -131,16 +138,17 @@ header p {
     display: flex;
     justify-content: center;
     align-items: center;
+    max-width: 60%;
 }
 
 .hero-image img {
-    max-width: 100%;
-    max-height: 300px;
+    width: 100%;
+    max-height: 250px;
     border-radius: 8px;
     box-shadow: 0 5px 15px var(--shadow-color);
     transition: transform 0.3s ease;
     border: 1px solid var(--border-color);
-    object-fit: contain;
+    object-fit: cover;
 }
 
 .hero-image img:hover {
@@ -159,19 +167,6 @@ header p {
     display: flex;
     gap: 1rem;
     margin-top: 1.5rem;
-}
-
-/* Bitcoin icon animation */
-@keyframes rotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-header h1::before {
-    content: "₿";
-    display: inline-block;
-    animation: rotate 4s linear infinite;
-    color: var(--accent-color);
 }
 
 /* View Full Size link */
@@ -387,6 +382,12 @@ footer {
     
     .hero-image {
         order: 1;
+        max-width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .hero-image img {
+        max-height: 200px;
     }
     
     .hero-buttons {

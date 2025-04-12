@@ -18,6 +18,7 @@
             padding: 20px;
             box-shadow: 0 4px 10px var(--shadow-color);
             border: 1px solid var(--border-color);
+            overflow: hidden; /* Ensure nothing spills out */
         }
         
         .swiper-main {
@@ -31,6 +32,18 @@
             display: flex;
             flex-direction: column;
             height: 480px; /* Fixed height slightly less than container */
+            overflow: hidden; /* Prevent content from spilling out */
+            position: relative;
+        }
+        
+        .swiper-container {
+            overflow: hidden; /* Ensure no overflow */
+            width: 100%;
+        }
+        
+        .swiper-wrapper {
+            display: flex;
+            align-items: stretch;
         }
         
         .swiper-main .swiper-wrapper {
@@ -43,6 +56,7 @@
             border-radius: 8px 8px 0 0;
             border: 1px solid var(--border-color);
             object-fit: cover; /* Cover to maintain aspect ratio and fill area */
+            display: block; /* Prevent image gap */
         }
         
         .swiper-thumbs {
@@ -83,6 +97,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
+            overflow: auto; /* Allow scrolling if content is too large */
         }
         
         .screenshot-info h3 {
@@ -130,7 +145,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>BTC Tracker</h1>
+            <h1><img src="images/bitcoin-logo.png" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
             <p>Track your Bitcoin investments and monitor your portfolio performance</p>
         </header>
 
@@ -139,7 +154,7 @@
             <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
             <a href="features.html"><i class="fas fa-list-check"></i> Features</a>
             <a href="screenshots.html" class="active"><i class="fas fa-image"></i> Screenshots</a>
-            <a href="https://github.com/yourusername/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
         </nav>
 
         <main class="screenshots-page">
@@ -278,7 +293,12 @@
                 },
                 thumbs: {
                     swiper: swiperThumbs
-                }
+                },
+                slideActiveClass: 'swiper-slide-active',
+                slideVisibleClass: 'swiper-slide-visible',
+                slideDuplicateClass: 'swiper-slide-duplicate',
+                watchOverflow: true,
+                watchSlidesProgress: true
             });
             
             // Back to top button functionality
