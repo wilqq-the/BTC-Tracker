@@ -145,7 +145,7 @@ header p {
     transform: scale(1.03);
 }
 
-.hero-cta {
+.hero-buttons {
     display: flex;
     gap: 1rem;
     margin-top: 1.5rem;
@@ -254,9 +254,21 @@ pre code {
     transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
+.button-primary {
+    background-color: var(--accent-color);
+}
+
+.button-secondary {
+    background-color: #555;
+}
+
 .btn:hover, .button:hover {
     background-color: var(--secondary-color);
     transform: translateY(-2px);
+}
+
+.button-secondary:hover {
+    background-color: #444;
 }
 
 .cta {
@@ -367,7 +379,7 @@ footer {
         order: 1;
     }
     
-    .hero-cta {
+    .hero-buttons {
         flex-direction: column;
     }
 } 

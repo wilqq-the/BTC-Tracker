@@ -7,49 +7,78 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
     <style>
-        .screenshots-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 30px;
+        /* Carousel Styles */
+        .screenshots-carousel {
+            position: relative;
             margin: 40px 0;
-        }
-        
-        .screenshot-card {
             background: var(--card-background);
             border-radius: 8px;
+            padding: 20px;
             box-shadow: 0 4px 10px var(--shadow-color);
             border: 1px solid var(--border-color);
+        }
+        
+        .swiper-main {
+            margin-bottom: 20px;
+            border-radius: 8px;
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         
-        .screenshot-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 15px var(--shadow-color);
-        }
-        
-        .screenshot-img {
+        .swiper-slide img {
             width: 100%;
             height: auto;
-            border-bottom: 1px solid var(--border-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .swiper-thumbs {
+            height: 100px;
+        }
+        
+        .swiper-thumbs .swiper-slide {
+            opacity: 0.5;
+            cursor: pointer;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .swiper-thumbs .swiper-slide-thumb-active {
+            opacity: 1;
+            border-color: var(--accent-color);
         }
         
         .screenshot-info {
-            padding: 15px;
+            text-align: center;
+            margin-top: 20px;
+            padding: 0 20px;
         }
         
         .screenshot-info h3 {
             color: var(--accent-color);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
         }
         
         .screenshot-info p {
             margin-bottom: 10px;
-            font-size: 0.9rem;
+            max-width: 800px;
+            margin: 0 auto 15px;
+        }
+        
+        .swiper-button-next,
+        .swiper-button-prev {
+            color: var(--accent-color);
+        }
+        
+        .swiper-pagination-bullet-active {
+            background-color: var(--accent-color);
         }
         
         .view-btn {
@@ -60,17 +89,12 @@
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: 500;
+            margin-top: 10px;
             transition: color 0.2s ease;
         }
         
         .view-btn:hover {
             color: var(--secondary-color);
-        }
-        
-        @media (max-width: 768px) {
-            .screenshots-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
@@ -96,59 +120,87 @@
                     Take a closer look at BTC Tracker's interface. These screenshots showcase the main features and UI of the application.
                 </p>
                 
-                <div class="screenshots-grid">
-                    <div class="screenshot-card">
-                        <img src="images/dashboard.png" alt="BTC Tracker Dashboard" class="screenshot-img">
-                        <div class="screenshot-info">
-                            <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
-                            <p>The main dashboard displays current Bitcoin price, portfolio value, and profit/loss metrics at a glance.</p>
-                            <a href="images/dashboard.png" target="_blank" class="view-btn">
-                                View full size <i class="fas fa-external-link-alt"></i>
-                            </a>
+                <!-- Screenshots Carousel -->
+                <div class="screenshots-carousel">
+                    <!-- Main Swiper -->
+                    <div class="swiper-container swiper-main">
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide">
+                                <img src="images/dashboard.png" alt="BTC Tracker Dashboard">
+                                <div class="screenshot-info">
+                                    <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
+                                    <p>The main dashboard displays current Bitcoin price, portfolio value, and profit/loss metrics at a glance.</p>
+                                    <a href="images/dashboard.png" target="_blank" class="view-btn">
+                                        View full size <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/transactions.png" alt="BTC Tracker Transactions">
+                                <div class="screenshot-info">
+                                    <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
+                                    <p>The transactions page allows you to view, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
+                                    <a href="images/transactions.png" target="_blank" class="view-btn">
+                                        View full size <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/admin.png" alt="BTC Tracker Admin Panel">
+                                <div class="screenshot-info">
+                                    <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
+                                    <p>The admin panel provides advanced configuration options and administrative controls for your BTC Tracker instance.</p>
+                                    <a href="images/admin.png" target="_blank" class="view-btn">
+                                        View full size <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/login.png" alt="BTC Tracker Login Page">
+                                <div class="screenshot-info">
+                                    <h3><i class="fas fa-lock"></i> Secure Login</h3>
+                                    <p>The login page provides a secure authentication system to protect your financial data.</p>
+                                    <a href="images/login.png" target="_blank" class="view-btn">
+                                        View full size <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/setup.png" alt="BTC Tracker Setup Page">
+                                <div class="screenshot-info">
+                                    <h3><i class="fas fa-tools"></i> Easy Setup</h3>
+                                    <p>The setup page guides you through the simple process to get your BTC tracker up and running quickly.</p>
+                                    <a href="images/setup.png" target="_blank" class="view-btn">
+                                        View full size <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
+                            </div>
                         </div>
+                        <!-- Add Pagination -->
+                        <div class="swiper-pagination"></div>
+                        <!-- Add Navigation -->
+                        <div class="swiper-button-next"></div>
+                        <div class="swiper-button-prev"></div>
                     </div>
                     
-                    <div class="screenshot-card">
-                        <img src="images/transactions.png" alt="BTC Tracker Transactions" class="screenshot-img">
-                        <div class="screenshot-info">
-                            <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
-                            <p>The transactions page allows you to view, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
-                            <a href="images/transactions.png" target="_blank" class="view-btn">
-                                View full size <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <img src="images/admin.png" alt="BTC Tracker Admin Panel" class="screenshot-img">
-                        <div class="screenshot-info">
-                            <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
-                            <p>The admin panel provides advanced configuration options and administrative controls for your BTC Tracker instance.</p>
-                            <a href="images/admin.png" target="_blank" class="view-btn">
-                                View full size <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <img src="images/login.png" alt="BTC Tracker Login Page" class="screenshot-img">
-                        <div class="screenshot-info">
-                            <h3><i class="fas fa-lock"></i> Secure Login</h3>
-                            <p>The login page provides a secure authentication system to protect your financial data.</p>
-                            <a href="images/login.png" target="_blank" class="view-btn">
-                                View full size <i class="fas fa-external-link-alt"></i>
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="screenshot-card">
-                        <img src="images/setup.png" alt="BTC Tracker Setup Page" class="screenshot-img">
-                        <div class="screenshot-info">
-                            <h3><i class="fas fa-tools"></i> Easy Setup</h3>
-                            <p>The setup page guides you through the simple process to get your BTC tracker up and running quickly.</p>
-                            <a href="images/setup.png" target="_blank" class="view-btn">
-                                View full size <i class="fas fa-external-link-alt"></i>
-                            </a>
+                    <!-- Thumbnail Swiper -->
+                    <div class="swiper-container swiper-thumbs">
+                        <div class="swiper-wrapper">
+                            <div class="swiper-slide">
+                                <img src="images/dashboard.png" alt="Dashboard Thumbnail">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/transactions.png" alt="Transactions Thumbnail">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/admin.png" alt="Admin Panel Thumbnail">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/login.png" alt="Login Page Thumbnail">
+                            </div>
+                            <div class="swiper-slide">
+                                <img src="images/setup.png" alt="Setup Page Thumbnail">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -167,8 +219,39 @@
         </footer>
     </div>
 
+    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Swiper thumbnails
+            var swiperThumbs = new Swiper('.swiper-thumbs', {
+                spaceBetween: 10,
+                slidesPerView: 5,
+                freeMode: true,
+                watchSlidesProgress: true,
+                breakpoints: {
+                    // when window width is <= 768px
+                    768: {
+                        slidesPerView: 3,
+                    }
+                }
+            });
+            
+            // Initialize main Swiper
+            var swiperMain = new Swiper('.swiper-main', {
+                spaceBetween: 10,
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                thumbs: {
+                    swiper: swiperThumbs
+                }
+            });
+            
             // Back to top button functionality
             const backToTopBtn = document.getElementById('backToTop');
             window.addEventListener('scroll', function() {
