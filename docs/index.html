@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker - Bitcoin Transaction Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>BTC Tracker</h1>
+        <p>A simple and powerful Bitcoin transaction tracker for monitoring your investment</p>
+    </header>
+
+    <main>
+        <section>
+            <h2>About BTC Tracker</h2>
+            <p>
+                BTC Tracker is a self-hosted web application that helps you track your Bitcoin transactions and monitor the performance of your investment. It's designed to be simple to use, secure, and privacy-focused.
+            </p>
+            <p>
+                With BTC Tracker, you can manage your Bitcoin transactions, see the current price of Bitcoin, calculate your profit/loss, view historical performance, and export your data for tax reporting or backup purposes.
+            </p>
+            
+            <div class="screenshot-container">
+                <img src="images/dashboard.jpg" alt="BTC Tracker Dashboard" class="screenshot">
+                <p><em>The BTC Tracker dashboard showing transaction history and performance metrics</em></p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature">
+                    <h3>Transaction Management</h3>
+                    <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies.</p>
+                </div>
+                <div class="feature">
+                    <h3>Real-time Price Updates</h3>
+                    <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko.</p>
+                </div>
+                <div class="feature">
+                    <h3>Performance Tracking</h3>
+                    <p>Monitor your investment performance with profit/loss calculations and percentages.</p>
+                </div>
+                <div class="feature">
+                    <h3>Historical Data</h3>
+                    <p>View historical Bitcoin price data to analyze market trends.</p>
+                </div>
+                <div class="feature">
+                    <h3>CSV Import/Export</h3>
+                    <p>Import transactions from CSV files or export your data for backup or analysis.</p>
+                </div>
+                <div class="feature">
+                    <h3>Multi-currency Support</h3>
+                    <p>Support for multiple currencies with automatic exchange rate conversion.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Getting Started</h2>
+            <p>You can run BTC Tracker using Docker for a quick and easy setup:</p>
+            <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
+docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
+            
+            <p>Or use Docker Compose for more configuration options:</p>
+            <pre><code>services:
+  btc-tracker:
+    image: docker.io/thewilqq/btc-tracker:latest
+    container_name: btc-tracker
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/src/data
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=3000</code></pre>
+        </section>
+
+        <div class="cta">
+            <a href="https://github.com/yourusername/btc-tracker" class="button">View on GitHub</a>
+        </div>
+    </main>
+
+    <footer>
+        <p>BTC Tracker is an open-source project released under the MIT License</p>
+    </footer>
+</body>
+</html> 
