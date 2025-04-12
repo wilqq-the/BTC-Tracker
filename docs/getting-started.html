@@ -3,42 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Getting Started - BTC Tracker</title>
+    <title>BTC Tracker - Getting Started</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
-        <p>A simple and powerful Bitcoin transaction tracker for monitoring your investment</p>
-    </header>
-    
-    <nav class="main-nav">
-        <a href="index.html"><i class="fas fa-home"></i> Home</a>
-        <a href="getting-started.html" class="active"><i class="fas fa-rocket"></i> Getting Started</a>
-        <a href="features.html"><i class="fas fa-star"></i> Features</a>
-        <a href="screenshots.html"><i class="fas fa-images"></i> Screenshots</a>
-    </nav>
+    <div class="container">
+        <header>
+            <h1>BTC Tracker</h1>
+            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
+        </header>
 
-    <main>
-        <section>
-            <h2><i class="fas fa-rocket"></i> Getting Started with BTC Tracker</h2>
-            <p>
-                BTC Tracker is designed to be simple to set up and use. Follow these instructions to get your Bitcoin tracking application up and running quickly.
-            </p>
-            
-            <div class="card">
-                <h3><i class="fab fa-docker"></i> Using Docker (Recommended)</h3>
-                <p>The easiest way to run BTC Tracker is using Docker. Make sure you have Docker installed on your system.</p>
+        <nav class="app-nav">
+            <a href="index.html"><i class="fas fa-home"></i> Home</a>
+            <a href="getting-started.html" class="active"><i class="fas fa-rocket"></i> Getting Started</a>
+            <a href="features.html"><i class="fas fa-list-check"></i> Features</a>
+            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
+            <a href="https://github.com/yourusername/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        </nav>
+
+        <main class="getting-started-page">
+            <section>
+                <h2><i class="fas fa-rocket"></i> Getting Started with BTC Tracker</h2>
+                <p>
+                    BTC Tracker is designed to be simple to set up and use. Follow these instructions to get your Bitcoin tracking application up and running quickly.
+                </p>
                 
-                <h4>Quick Start with Docker Run</h4>
-                <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
+                <div class="card">
+                    <h3><i class="fab fa-docker"></i> Using Docker (Recommended)</h3>
+                    <p>The easiest way to run BTC Tracker is using Docker. Make sure you have Docker installed on your system.</p>
+                    
+                    <h4>Quick Start with Docker Run</h4>
+                    <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
 docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
-                
-                <h4>Using Docker Compose (Recommended)</h4>
-                <p>For more configuration options, create a <code>docker-compose.yml</code> file with the following content:</p>
-                <pre><code>services:
+                    
+                    <h4>Using Docker Compose (Recommended)</h4>
+                    <p>For more configuration options, create a <code>docker-compose.yml</code> file with the following content:</p>
+                    <pre><code>services:
   btc-tracker:
     image: docker.io/thewilqq/btc-tracker:latest
     container_name: ${CONTAINER_NAME:-btc-tracker}
@@ -50,32 +52,32 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
     environment:
       - NODE_ENV=${NODE_ENV:-production}
       - PORT=3000</code></pre>
+                    
+                    <p>Then run the application with:</p>
+                    <pre><code>docker-compose up -d</code></pre>
+                    
+                    <h4>Configuration Options</h4>
+                    <p>You can customize the following environment variables:</p>
+                    <ul>
+                        <li><code>CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
+                        <li><code>PORT</code>: Port to access the application (default: 3000)</li>
+                        <li><code>DATA_PATH</code>: Local path to store application data (default: ./src/data)</li>
+                        <li><code>NODE_ENV</code>: Environment setting (default: production)</li>
+                    </ul>
+                </div>
                 
-                <p>Then run the application with:</p>
-                <pre><code>docker-compose up -d</code></pre>
-                
-                <h4>Configuration Options</h4>
-                <p>You can customize the following environment variables:</p>
-                <ul>
-                    <li><code>CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
-                    <li><code>PORT</code>: Port to access the application (default: 3000)</li>
-                    <li><code>DATA_PATH</code>: Local path to store application data (default: ./src/data)</li>
-                    <li><code>NODE_ENV</code>: Environment setting (default: production)</li>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <h3><i class="fab fa-node-js"></i> Manual Installation</h3>
-                <p>If you prefer to run BTC Tracker without Docker, follow these steps:</p>
-                
-                <h4>Prerequisites</h4>
-                <ul>
-                    <li>Node.js (v14 or higher)</li>
-                    <li>npm or yarn</li>
-                </ul>
-                
-                <h4>Installation Steps</h4>
-                <pre><code># Clone the repository
+                <div class="card">
+                    <h3><i class="fab fa-node-js"></i> Manual Installation</h3>
+                    <p>If you prefer to run BTC Tracker without Docker, follow these steps:</p>
+                    
+                    <h4>Prerequisites</h4>
+                    <ul>
+                        <li>Node.js (v14 or higher)</li>
+                        <li>npm or yarn</li>
+                    </ul>
+                    
+                    <h4>Installation Steps</h4>
+                    <pre><code># Clone the repository
 git clone https://github.com/yourusername/btc-tracker.git
 cd btc-tracker
 
@@ -84,34 +86,35 @@ npm install
 
 # Start the application
 npm start</code></pre>
+                    
+                    <p>The application will be available at <code>http://localhost:3000</code>.</p>
+                </div>
                 
-                <p>The application will be available at <code>http://localhost:3000</code>.</p>
+                <div class="card">
+                    <h3><i class="fas fa-user-plus"></i> First-Time Setup</h3>
+                    <p>When you first access BTC Tracker, you'll need to create an admin account:</p>
+                    <ol>
+                        <li>Open your browser and navigate to <code>http://localhost:3000</code></li>
+                        <li>You'll be redirected to the setup page</li>
+                        <li>Create an admin username and password</li>
+                        <li>Log in with your new credentials</li>
+                    </ol>
+                    <p>After setup, you'll be able to add transactions, view your Bitcoin portfolio, and track your investment performance.</p>
+                </div>
+            </section>
+
+            <div class="cta">
+                <a href="features.html" class="button"><i class="fas fa-star"></i> Explore Features</a>
             </div>
-            
-            <div class="card">
-                <h3><i class="fas fa-user-plus"></i> First-Time Setup</h3>
-                <p>When you first access BTC Tracker, you'll need to create an admin account:</p>
-                <ol>
-                    <li>Open your browser and navigate to <code>http://localhost:3000</code></li>
-                    <li>You'll be redirected to the setup page</li>
-                    <li>Create an admin username and password</li>
-                    <li>Log in with your new credentials</li>
-                </ol>
-                <p>After setup, you'll be able to add transactions, view your Bitcoin portfolio, and track your investment performance.</p>
-            </div>
-        </section>
+        </main>
 
-        <div class="cta">
-            <a href="features.html" class="button"><i class="fas fa-star"></i> Explore Features</a>
-        </div>
-    </main>
+        <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
-    <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
-
-    <footer>
-        <p>BTC Tracker is an open-source project released under the MIT License</p>
-        <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
-    </footer>
+        <footer>
+            <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+        </footer>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

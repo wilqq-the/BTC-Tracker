@@ -3,105 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Features - BTC Tracker</title>
+    <title>BTC Tracker - Features</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
-        <p>A simple and powerful Bitcoin transaction tracker for monitoring your investment</p>
-    </header>
-    
-    <nav class="main-nav">
-        <a href="index.html"><i class="fas fa-home"></i> Home</a>
-        <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
-        <a href="features.html" class="active"><i class="fas fa-star"></i> Features</a>
-        <a href="screenshots.html"><i class="fas fa-images"></i> Screenshots</a>
-    </nav>
+    <div class="container">
+        <header>
+            <h1>BTC Tracker</h1>
+            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
+        </header>
 
-    <main>
-        <section>
-            <h2><i class="fas fa-star"></i> BTC Tracker Features</h2>
-            <p>
-                BTC Tracker is packed with powerful features designed to help you monitor and manage your Bitcoin investments. Here's a comprehensive overview of what you can do with our application.
-            </p>
-            
-            <div class="features">
-                <div class="feature">
-                    <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
-                    <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies. Track buys, sells, and other transaction types with detailed information.</p>
-                </div>
+        <nav class="app-nav">
+            <a href="index.html"><i class="fas fa-home"></i> Home</a>
+            <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
+            <a href="features.html" class="active"><i class="fas fa-list-check"></i> Features</a>
+            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
+            <a href="https://github.com/yourusername/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        </nav>
+
+        <main class="features-page">
+            <section>
+                <h2><i class="fas fa-star"></i> BTC Tracker Features</h2>
+                <p>
+                    BTC Tracker is packed with powerful features designed to help you monitor and manage your Bitcoin investments. Here's a comprehensive overview of what you can do with our application.
+                </p>
                 
-                <div class="feature">
-                    <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
-                    <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko. Price information is automatically refreshed to ensure your portfolio value is always current.</p>
+                <div class="features">
+                    <div class="feature">
+                        <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
+                        <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies. Track buys, sells, and other transaction types with detailed information.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
+                        <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko. Price information is automatically refreshed to ensure your portfolio value is always current.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
+                        <p>Monitor your investment performance with profit/loss calculations and percentages. See how your Bitcoin holdings are performing at a glance.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-history"></i> Historical Data</h3>
+                        <p>View historical Bitcoin price data to analyze market trends. Track how your investments have performed over time and make informed decisions.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-file-csv"></i> CSV Import/Export</h3>
+                        <p>Import transactions from CSV files or export your data for backup or analysis. Makes it easy to migrate from other tracking solutions or create backups.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-globe"></i> Multi-currency Support</h3>
+                        <p>Support for multiple currencies with automatic exchange rate conversion. View your portfolio value in your preferred currency.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-lock"></i> Secure Authentication</h3>
+                        <p>Protect your financial data with secure user authentication. Your investment information remains private and accessible only to you.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-server"></i> Self-Hosted</h3>
+                        <p>Run BTC Tracker on your own infrastructure for complete control and privacy. Your data never leaves your server and isn't shared with third parties.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-moon"></i> Dark Mode</h3>
+                        <p>Built-in dark mode support for comfortable viewing in low-light environments. Easy on the eyes and looks great on any device.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-mobile-alt"></i> Responsive Design</h3>
+                        <p>Access BTC Tracker from any device with a responsive design that adapts to your screen size. Works well on desktop, tablet, and mobile devices.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fas fa-database"></i> Local Data Storage</h3>
+                        <p>All data is stored locally in a SQLite database for simplicity and portability. Easy to backup, move, or restore your transaction history.</p>
+                    </div>
+                    
+                    <div class="feature">
+                        <h3><i class="fab fa-docker"></i> Docker Support</h3>
+                        <p>Easy deployment using Docker and Docker Compose. Get up and running in minutes with minimal configuration.</p>
+                    </div>
                 </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
-                    <p>Monitor your investment performance with profit/loss calculations and percentages. See how your Bitcoin holdings are performing at a glance.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-history"></i> Historical Data</h3>
-                    <p>View historical Bitcoin price data to analyze market trends. Track how your investments have performed over time and make informed decisions.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-file-csv"></i> CSV Import/Export</h3>
-                    <p>Import transactions from CSV files or export your data for backup or analysis. Makes it easy to migrate from other tracking solutions or create backups.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-globe"></i> Multi-currency Support</h3>
-                    <p>Support for multiple currencies with automatic exchange rate conversion. View your portfolio value in your preferred currency.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-lock"></i> Secure Authentication</h3>
-                    <p>Protect your financial data with secure user authentication. Your investment information remains private and accessible only to you.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-server"></i> Self-Hosted</h3>
-                    <p>Run BTC Tracker on your own infrastructure for complete control and privacy. Your data never leaves your server and isn't shared with third parties.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-moon"></i> Dark Mode</h3>
-                    <p>Built-in dark mode support for comfortable viewing in low-light environments. Easy on the eyes and looks great on any device.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-mobile-alt"></i> Responsive Design</h3>
-                    <p>Access BTC Tracker from any device with a responsive design that adapts to your screen size. Works well on desktop, tablet, and mobile devices.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fas fa-database"></i> Local Data Storage</h3>
-                    <p>All data is stored locally in a SQLite database for simplicity and portability. Easy to backup, move, or restore your transaction history.</p>
-                </div>
-                
-                <div class="feature">
-                    <h3><i class="fab fa-docker"></i> Docker Support</h3>
-                    <p>Easy deployment using Docker and Docker Compose. Get up and running in minutes with minimal configuration.</p>
-                </div>
+            </section>
+
+            <div class="cta">
+                <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Get Started Now</a>
             </div>
-        </section>
+        </main>
 
-        <div class="cta">
-            <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Get Started Now</a>
-        </div>
-    </main>
+        <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
-    <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
-
-    <footer>
-        <p>BTC Tracker is an open-source project released under the MIT License</p>
-        <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
-    </footer>
+        <footer>
+            <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+        </footer>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {

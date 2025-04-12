@@ -3,178 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BTC Tracker - Bitcoin Transaction Tracker</title>
+    <title>BTC Tracker - Monitor Your Bitcoin Investments</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap">
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js" defer></script>
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <h1><i class="fab fa-bitcoin"></i> BTC Tracker</h1>
-        <p>A simple and powerful Bitcoin transaction tracker for monitoring your investment</p>
-    </header>
-    
-    <nav class="main-nav">
-        <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
-        <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
-        <a href="features.html"><i class="fas fa-star"></i> Features</a>
-        <a href="screenshots.html"><i class="fas fa-images"></i> Screenshots</a>
-    </nav>
+    <div class="container">
+        <header>
+            <h1>BTC Tracker</h1>
+            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
+        </header>
 
-    <main>
-        <section>
-            <h2><i class="fas fa-info-circle"></i> About BTC Tracker</h2>
-            <p>
-                BTC Tracker is a self-hosted web application that helps you track your Bitcoin transactions and monitor the performance of your investment. It's designed to be simple to use, secure, and privacy-focused.
-            </p>
-            <p>
-                With BTC Tracker, you can manage your Bitcoin transactions, see the current price of Bitcoin, calculate your profit/loss, view historical performance, and export your data for tax reporting or backup purposes.
-            </p>
-            
-            <!-- Swiper Gallery -->
-            <div class="swiper-container">
-                <h2><i class="fas fa-images"></i> Application Screenshots</h2>
-                <div class="swiper-wrapper">
-                    <div class="swiper-slide">
-                        <div class="slide-content">
-                            <img src="images/dashboard.png" alt="BTC Tracker Dashboard" class="screenshot">
-                            <div class="slide-caption">
-                                <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
-                                <p>The main dashboard displaying current Bitcoin price, portfolio value, and profit/loss metrics.</p>
-                                <a href="images/dashboard.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="swiper-slide">
-                        <div class="slide-content">
-                            <img src="images/transactions.png" alt="BTC Tracker Transactions" class="screenshot">
-                            <div class="slide-caption">
-                                <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
-                                <p>View, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
-                                <a href="images/transactions.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="swiper-slide">
-                        <div class="slide-content">
-                            <img src="images/admin.png" alt="BTC Tracker Admin Panel" class="screenshot">
-                            <div class="slide-caption">
-                                <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
-                                <p>Advanced configuration options and administrative controls for your BTC Tracker instance.</p>
-                                <a href="images/admin.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="swiper-slide">
-                        <div class="slide-content">
-                            <img src="images/login.png" alt="BTC Tracker Login Page" class="screenshot">
-                            <div class="slide-caption">
-                                <h3><i class="fas fa-lock"></i> Secure Login</h3>
-                                <p>Secure authentication system to protect your financial data.</p>
-                                <a href="images/login.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="swiper-slide">
-                        <div class="slide-content">
-                            <img src="images/setup.png" alt="BTC Tracker Setup Page" class="screenshot">
-                            <div class="slide-caption">
-                                <h3><i class="fas fa-tools"></i> Easy Setup</h3>
-                                <p>Simple setup process to get your BTC tracker up and running quickly.</p>
-                                <a href="images/setup.png" target="_blank" class="view-full-size">View full size <i class="fas fa-external-link-alt"></i></a>
-                            </div>
-                        </div>
-                    </div>
+        <nav class="app-nav">
+            <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+            <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
+            <a href="features.html"><i class="fas fa-list-check"></i> Features</a>
+            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
+            <a href="https://github.com/yourusername/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        </nav>
+
+        <section class="hero-section">
+            <div class="hero-content">
+                <h2>Track Your Bitcoin Journey</h2>
+                <p>Monitor your investments, analyze performance, and keep your portfolio organized in one place.</p>
+                <div class="hero-buttons">
+                    <a href="getting-started.html" class="btn btn-primary">Get Started</a>
+                    <a href="features.html" class="btn btn-secondary">See Features</a>
                 </div>
-                <!-- Add Pagination -->
-                <div class="swiper-pagination"></div>
-                <!-- Add Navigation -->
-                <div class="swiper-button-next"></div>
-                <div class="swiper-button-prev"></div>
             </div>
-
-            <div class="cta">
-                <a href="screenshots.html" class="button"><i class="fas fa-images"></i> View All Screenshots</a>
+            <div class="hero-image">
+                <img src="images/btc-dashboard.png" alt="BTC Tracker Dashboard">
             </div>
         </section>
 
-        <section>
-            <h2><i class="fas fa-key"></i> Key Features</h2>
-            <div class="features">
-                <div class="feature">
-                    <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
-                    <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies.</p>
+        <section class="main-content">
+            <section>
+                <h2><i class="fas fa-key"></i> Key Features</h2>
+                <div class="features">
+                    <div class="feature">
+                        <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
+                        <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
+                        <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
+                        <p>Monitor your investment performance with profit/loss calculations and percentages.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-moon"></i> Dark & Light Themes</h3>
+                        <p>Choose between dark and light themes for comfortable viewing in any environment.</p>
+                    </div>
                 </div>
-                <div class="feature">
-                    <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
-                    <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko.</p>
+                <div class="cta">
+                    <a href="features.html" class="button"><i class="fas fa-star"></i> View All Features</a>
                 </div>
-                <div class="feature">
-                    <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
-                    <p>Monitor your investment performance with profit/loss calculations and percentages.</p>
-                </div>
-            </div>
-            <div class="cta">
-                <a href="features.html" class="button"><i class="fas fa-star"></i> View All Features</a>
-            </div>
-        </section>
+            </section>
 
-        <section>
-            <h2><i class="fas fa-rocket"></i> Quick Start</h2>
-            <p>You can run BTC Tracker using Docker for a quick and easy setup:</p>
-            <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
+            <section>
+                <h2><i class="fas fa-rocket"></i> Quick Start</h2>
+                <p>You can run BTC Tracker using Docker for a quick and easy setup:</p>
+                <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
 docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
-            
-            <div class="cta">
-                <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Full Installation Guide</a>
-            </div>
+                
+                <div class="cta">
+                    <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Full Installation Guide</a>
+                </div>
+            </section>
         </section>
 
-        <div class="cta">
-            <a href="https://github.com/yourusername/btc-tracker" class="button"><i class="fab fa-github"></i> View on GitHub</a>
-        </div>
-    </main>
+        <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
-    <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
-
-    <footer>
-        <p>BTC Tracker is an open-source project released under the MIT License</p>
-        <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
-    </footer>
+        <footer>
+            <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+        </footer>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Swiper
-            const swiper = new Swiper('.swiper-container', {
-                // Optional parameters
-                loop: true,
-                slidesPerView: 1,
-                spaceBetween: 30,
-                autoplay: {
-                    delay: 5000,
-                },
-                
-                // Pagination
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                
-                // Navigation arrows
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
-                },
-            });
-
-            // Hide the fallback gallery when JS is enabled
-            const fallbackGallery = document.querySelector('.thumbnail-gallery');
-            if (fallbackGallery) {
-                fallbackGallery.style.display = 'none';
-            }
-            
             // Back to top button functionality
             const backToTopBtn = document.getElementById('backToTop');
             if (backToTopBtn) {
