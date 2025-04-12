@@ -1,8 +1,6 @@
-version: '3'
-
 services:
   btc-tracker:
-    build: .
+    image: thewilqq/btc-tracker:latest
     container_name: ${CONTAINER_NAME:-btc-tracker}
     ports:
       - "${PORT:-3000}:3000"

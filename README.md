@@ -2,15 +2,13 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
-## Why I Created This
+## Why BTC Tracker?
 
 I created BTC Tracker because I needed a simpler solution for tracking Bitcoin investments. Existing applications were either too complex, designed for tracking entire portfolios, or difficult to configure.
 
 Privacy was another major concern. I didn't want to share wallet addresses or transaction details with third-party services. BTC Tracker solves this by running locally and keeping all data on your machine.
 
 The result is a focused tool that tracks Bitcoin investments while respecting privacy - no unnecessary features, no data sharing.
-
-![BTC Tracker](https://raw.githubusercontent.com/bitcoin/bitcoin/master/share/pixmaps/bitcoin128.png)
 
 ## Features
 
@@ -43,9 +41,32 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 
 That's it! The script automatically:
 - Detects if you have Docker or Podman installed
-- Sets up the environment
-- Builds and runs the application
+- Pulls the latest image from Docker Hub
+- Runs the application
 - Persists your data between runs
+
+## Using Docker Hub Image Directly
+
+You can also run BTC Tracker directly from Docker Hub without cloning the repository:
+
+```bash
+# Create a directory for your data
+mkdir -p btc-tracker-data
+
+# Run the container
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" thewilqq/btc-tracker:latest
+
+# Access the application at http://localhost:3000
+```
+
+To update to the latest version:
+
+```bash
+docker pull thewilqq/btc-tracker:latest
+docker stop btc-tracker
+docker rm btc-tracker
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" thewilqq/btc-tracker:latest
+```
 
 ## Alternative Installation Methods
 
