@@ -102,6 +102,11 @@
         /* Thumbnails */
         .thumbnail-carousel {
             margin-top: 40px;
+            padding: 10px 0;
+        }
+        
+        #thumbnail-carousel {
+            margin-bottom: 20px;
         }
         
         .thumbnail-carousel .splide__slide {
@@ -111,19 +116,28 @@
             transition: opacity 0.3s, border-color 0.3s;
             border-radius: 4px;
             overflow: hidden;
+            height: 100px;
         }
         
         .thumbnail-carousel .splide__slide.is-active {
             opacity: 1;
             border-color: var(--accent-color);
+            border-width: 3px;
+            transform: scale(1.05);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.2);
         }
         
         .thumbnail-carousel .splide__slide img {
-            height: 80px;
+            height: 100px;
             width: 100%;
             object-fit: cover;
             border-radius: 0;
             border: none;
+        }
+        
+        /* Main carousel adjustments */
+        #main-carousel {
+            margin-bottom: 60px; /* Increased space for thumbnails */
         }
     </style>
 </head>
@@ -270,12 +284,13 @@
             // Set up the thumbnail carousel
             var thumbnails = new Splide('#thumbnail-carousel', {
                 perPage: 5,
-                gap: '0.5rem',
+                gap: '1rem',
                 rewind: true,
                 pagination: false,
                 arrows: false,
                 isNavigation: true,
                 focus: 'center',
+                height: '120px',
                 breakpoints: {
                     768: {
                         perPage: 3,
