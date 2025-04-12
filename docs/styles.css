@@ -37,6 +37,7 @@ body {
     max-width: 1400px;
     margin: 0 auto;
     padding: 0 1rem;
+    overflow-x: hidden;
 }
 
 header {
@@ -191,6 +192,8 @@ header p {
     box-shadow: 0 4px 10px var(--shadow-color);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     border: 1px solid var(--border-color);
+    width: 100%;
+    overflow: hidden;
 }
 
 .feature:hover {
@@ -227,6 +230,7 @@ code {
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace, 'Courier New', monospace;
     color: #333;
+    word-break: break-word;
 }
 
 pre {
@@ -236,12 +240,16 @@ pre {
     overflow-x: auto;
     margin: 20px 0;
     border: 1px solid var(--border-color);
+    max-width: 100%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 pre code {
     background-color: transparent;
     padding: 0;
     color: #333;
+    word-break: break-word;
 }
 
 /* Buttons */
@@ -393,4 +401,71 @@ footer {
     .hero-buttons {
         flex-direction: column;
     }
+}
+
+/* Lists inside cards */
+.card ul, .card ol {
+    padding-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+.card li {
+    margin-bottom: 0.5rem;
+}
+
+/* Configuration options */
+.config-options {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.config-options li {
+    margin-bottom: 0.8rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+
+.env-var {
+    font-weight: bold;
+    margin-right: 0.5rem;
+    display: inline-block;
+}
+
+/* Responsive pre blocks */
+@media (max-width: 768px) {
+    pre {
+        font-size: 0.9rem;
+        padding: 10px;
+    }
+    
+    .card, .feature {
+        padding: 1.2rem;
+    }
+}
+
+/* Docker compose example */
+.docker-compose {
+    font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+    .docker-compose {
+        font-size: 0.85rem;
+        padding: 8px;
+    }
+}
+
+/* Setup steps */
+.setup-steps {
+    padding-left: 2rem;
+}
+
+.setup-steps li {
+    margin-bottom: 0.8rem;
+}
+
+.step-code {
+    font-weight: 500;
+    word-break: break-all;
 } 

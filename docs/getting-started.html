@@ -40,7 +40,7 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
                     
                     <h4>Using Docker Compose (Recommended)</h4>
                     <p>For more configuration options, create a <code>docker-compose.yml</code> file with the following content:</p>
-                    <pre><code>services:
+                    <pre class="docker-compose"><code>services:
   btc-tracker:
     image: docker.io/thewilqq/btc-tracker:latest
     container_name: ${CONTAINER_NAME:-btc-tracker}
@@ -58,11 +58,11 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
                     
                     <h4>Configuration Options</h4>
                     <p>You can customize the following environment variables:</p>
-                    <ul>
-                        <li><code>CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
-                        <li><code>PORT</code>: Port to access the application (default: 3000)</li>
-                        <li><code>DATA_PATH</code>: Local path to store application data (default: ./src/data)</li>
-                        <li><code>NODE_ENV</code>: Environment setting (default: production)</li>
+                    <ul class="config-options">
+                        <li><code class="env-var">CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
+                        <li><code class="env-var">PORT</code>: Port to access the application (default: 3000)</li>
+                        <li><code class="env-var">DATA_PATH</code>: Local path to store application data (default: ./src/data)</li>
+                        <li><code class="env-var">NODE_ENV</code>: Environment setting (default: production)</li>
                     </ul>
                 </div>
                 
@@ -93,8 +93,8 @@ npm start</code></pre>
                 <div class="card">
                     <h3><i class="fas fa-user-plus"></i> First-Time Setup</h3>
                     <p>When you first access BTC Tracker, you'll need to create an admin account:</p>
-                    <ol>
-                        <li>Open your browser and navigate to <code>http://localhost:3000</code></li>
+                    <ol class="setup-steps">
+                        <li>Open your browser and navigate to <code class="step-code">http://localhost:3000</code></li>
                         <li>You'll be redirected to the setup page</li>
                         <li>Create an admin username and password</li>
                         <li>Log in with your new credentials</li>
