@@ -133,16 +133,26 @@ header p {
     align-items: center;
 }
 
+.hero-image img {
+    max-width: 100%;
+    max-height: 300px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    transition: transform 0.3s ease;
+    border: 1px solid var(--border-color);
+    object-fit: contain;
+}
+
+.hero-image img:hover {
+    transform: scale(1.03);
+}
+
 .preview-screenshot {
     max-width: 100%;
     border-radius: 8px;
     box-shadow: 0 5px 15px var(--shadow-color);
     transition: transform 0.3s ease;
     border: 1px solid var(--border-color);
-}
-
-.preview-screenshot:hover {
-    transform: scale(1.03);
 }
 
 .hero-buttons {
