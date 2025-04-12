@@ -64,7 +64,7 @@ echo -e "${GREEN}✓${NC} Ensured data directory exists"
 # Pull the latest image
 echo
 echo -e "${YELLOW}Pulling latest BTC Tracker image...${NC}"
-$CONTAINER_ENGINE pull thewilqq/btc-tracker:latest
+$CONTAINER_ENGINE pull docker.io/thewilqq/btc-tracker:latest
 echo -e "${GREEN}✓${NC} Successfully pulled the latest image"
 
 # Run the application using the appropriate method
