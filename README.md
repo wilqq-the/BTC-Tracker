@@ -2,6 +2,14 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
+## Why I Created This
+
+I created BTC Tracker because I needed a simpler solution for tracking Bitcoin investments. Existing applications were either too complex, designed for tracking entire portfolios, or difficult to configure.
+
+Privacy was another major concern. I didn't want to share wallet addresses or transaction details with third-party services. BTC Tracker solves this by running locally and keeping all data on your machine.
+
+The result is a focused tool that tracks Bitcoin investments while respecting privacy - no unnecessary features, no data sharing.
+
 ![BTC Tracker](https://raw.githubusercontent.com/bitcoin/bitcoin/master/share/pixmaps/bitcoin128.png)
 
 ## Features
@@ -13,6 +21,7 @@ A simple, powerful application to track your Bitcoin investments and monitor the
 - **Responsive Design**: Works on desktop and mobile devices
 - **CSV Import/Export**: Easy data migration
 - **Dark/Light Theme**: Choose your preferred visual style
+- **Secure Authentication**: User authentication with password protection and session management
 - **CoinGecko API Integration**: Optional API key support for higher rate limits
 - **Containerized**: Runs in Docker or Podman with minimal setup
 
@@ -66,6 +75,18 @@ See [DOCKER.md](DOCKER.md) for detailed instructions on running with Docker or P
 
 ## Usage
 
+### First-Time Setup
+
+When you first run the application, you'll be prompted to create an administrator account. This account will be used to access the application and manage your data.
+
+### Authentication
+
+- **Login**: Access the application using your username and password
+- **Remember Me**: Option to stay logged in for 30 days
+- **Password Change**: Change your password through the Admin Panel
+- **Session Management**: Sessions automatically expire after 24 hours (or 30 days with Remember Me)
+- **Security**: Passwords are securely hashed and stored using bcrypt
+
 ### Adding Transactions
 
 1. Navigate to the Admin Panel
@@ -98,6 +119,9 @@ All data is stored locally in JSON files within the `/src/data` directory and pe
 - Node.js and Express for the backend
 - Vanilla JavaScript for the frontend
 - Chart.js for data visualization
+- Passport.js for authentication
+- Bcrypt for secure password hashing
+- Express Session for session management
 - External APIs:
   - CoinGecko API for BTC prices
   - ExchangeRate API for currency conversion

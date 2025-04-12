@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker - Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .bitcoin-logo {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+        </header>
+
+        <div class="card" style="max-width: 400px; margin: 50px auto;">
+            <h2 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-sign-in-alt"></i> Login</h2>
+            <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center; padding: 10px; border-radius: 4px; background-color: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); display: none;"></div>
+            
+            <form action="/login" method="POST">
+                <div class="form-group">
+                    <label for="username"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="username" name="username" required 
+                           style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="password" name="password" required
+                           style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; margin: 15px 0;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="rememberMe" name="rememberMe" style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;" title="Stay logged in for 30 days">
+                        <label for="rememberMe" style="color: var(--text-secondary-color); cursor: pointer; margin: 0;">Remember me</label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" 
+                        style="width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px;">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check for error parameter in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('error')) {
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = decodeURIComponent(urlParams.get('error'));
+            errorElement.style.display = 'block';
+            
+            // Shake the error message for attention
+            errorElement.classList.add('shake');
+            setTimeout(() => {
+                errorElement.classList.remove('shake');
+            }, 500);
+        }
+        
+        // Check if user has a saved theme preference
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+        });
+    </script>
+</body>
+</html>
