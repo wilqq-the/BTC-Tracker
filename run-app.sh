@@ -61,13 +61,18 @@ echo -e "${GREEN}✓${NC} Created/updated .env file with port $PORT"
 mkdir -p src/data
 echo -e "${GREEN}✓${NC} Ensured data directory exists"
 
+# Pull the latest image
+echo
+echo -e "${YELLOW}Pulling latest BTC Tracker image...${NC}"
+$CONTAINER_ENGINE pull thewilqq/btc-tracker:latest
+echo -e "${GREEN}✓${NC} Successfully pulled the latest image"
+
 # Run the application using the appropriate method
 echo
-echo -e "${YELLOW}Building and starting BTC Tracker...${NC}"
+echo -e "${YELLOW}Starting BTC Tracker...${NC}"
 
 if [ "$COMPOSE_ENGINE" != "" ]; then
   # Using Docker/Podman Compose
-  $COMPOSE_ENGINE build
   $COMPOSE_ENGINE up -d
   
   echo
@@ -80,14 +85,12 @@ if [ "$COMPOSE_ENGINE" != "" ]; then
   echo -e "To stop the application, run: ${YELLOW}$COMPOSE_ENGINE down${NC}"
 else
   # Using native Docker/Podman commands
-  $CONTAINER_ENGINE build -t btc-tracker .
-  
   # Stop and remove any existing container
   $CONTAINER_ENGINE stop btc-tracker 2>/dev/null
   $CONTAINER_ENGINE rm btc-tracker 2>/dev/null
   
   # Run the container
-  $CONTAINER_ENGINE run -d --name btc-tracker -p $PORT:3000 -v ./src/data:/app/src/data btc-tracker
+  $CONTAINER_ENGINE run -d --name btc-tracker -p $PORT:3000 -v ./src/data:/app/src/data thewilqq/btc-tracker:latest
   
   echo
   echo -e "${GREEN}✓${NC} BTC Tracker is now running!"
