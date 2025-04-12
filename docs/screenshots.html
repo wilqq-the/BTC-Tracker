@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+    <!-- Splide CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css">
     <style>
         /* Carousel Styles */
         .screenshots-carousel {
@@ -18,72 +19,22 @@
             padding: 20px;
             box-shadow: 0 4px 10px var(--shadow-color);
             border: 1px solid var(--border-color);
-            overflow: hidden; /* Ensure nothing spills out */
         }
         
-        .swiper-main {
-            margin-bottom: 20px;
+        .splide__slide {
             border-radius: 8px;
             overflow: hidden;
-            height: 500px; /* Fixed height for the main carousel */
+            box-shadow: 0 2px 5px var(--shadow-color);
+            background: white;
         }
         
-        .swiper-slide {
-            display: flex;
-            flex-direction: column;
-            height: 480px; /* Fixed height slightly less than container */
-            overflow: hidden; /* Prevent content from spilling out */
-            position: relative;
-        }
-        
-        .swiper-container {
-            overflow: hidden; /* Ensure no overflow */
+        .splide__slide img {
             width: 100%;
-        }
-        
-        .swiper-wrapper {
-            display: flex;
-            align-items: stretch;
-        }
-        
-        .swiper-main .swiper-wrapper {
-            align-items: stretch;
-        }
-        
-        .swiper-slide img {
-            width: 100%;
-            height: 300px; /* Fixed height for all images */
+            height: 300px;
+            object-fit: cover;
             border-radius: 8px 8px 0 0;
             border: 1px solid var(--border-color);
-            object-fit: cover; /* Cover to maintain aspect ratio and fill area */
-            display: block; /* Prevent image gap */
-        }
-        
-        .swiper-thumbs {
-            height: 100px;
-            margin-top: 20px; /* Add some space between main carousel and thumbnails */
-        }
-        
-        .swiper-thumbs .swiper-slide {
-            opacity: 0.5;
-            cursor: pointer;
-            border-radius: 5px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            height: 80px; /* Fixed height for thumbnails */
-        }
-        
-        .swiper-thumbs .swiper-slide img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Cover to maintain aspect ratio and fill area */
-            border: none;
-        }
-        
-        .swiper-thumbs .swiper-slide-thumb-active {
-            opacity: 1;
-            border-color: var(--accent-color);
+            display: block;
         }
         
         .screenshot-info {
@@ -93,11 +44,6 @@
             border-radius: 0 0 8px 8px;
             border: 1px solid var(--border-color);
             border-top: none;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            overflow: auto; /* Allow scrolling if content is too large */
         }
         
         .screenshot-info h3 {
@@ -116,15 +62,6 @@
             line-height: 1.5;
         }
         
-        .swiper-button-next,
-        .swiper-button-prev {
-            color: var(--accent-color);
-        }
-        
-        .swiper-pagination-bullet-active {
-            background-color: var(--accent-color);
-        }
-        
         .view-btn {
             display: inline-flex;
             align-items: center;
@@ -140,12 +77,60 @@
         .view-btn:hover {
             color: var(--secondary-color);
         }
+        
+        .splide__pagination {
+            bottom: -2.5em;
+        }
+        
+        .splide__pagination__page.is-active {
+            background: var(--accent-color);
+        }
+        
+        .splide__arrow {
+            background: var(--accent-color);
+            opacity: 0.7;
+        }
+        
+        .splide__arrow:hover {
+            opacity: 1;
+        }
+        
+        .splide__arrow svg {
+            fill: white;
+        }
+        
+        /* Thumbnails */
+        .thumbnail-carousel {
+            margin-top: 40px;
+        }
+        
+        .thumbnail-carousel .splide__slide {
+            opacity: 0.6;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: opacity 0.3s, border-color 0.3s;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .thumbnail-carousel .splide__slide.is-active {
+            opacity: 1;
+            border-color: var(--accent-color);
+        }
+        
+        .thumbnail-carousel .splide__slide img {
+            height: 80px;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 0;
+            border: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><img src="images/bitcoin-logo.png" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
+            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
             <p>Track your Bitcoin investments and monitor your portfolio performance</p>
         </header>
 
@@ -166,85 +151,84 @@
                 
                 <!-- Screenshots Carousel -->
                 <div class="screenshots-carousel">
-                    <!-- Main Swiper -->
-                    <div class="swiper-container swiper-main">
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide">
-                                <img src="images/dashboard.png" alt="BTC Tracker Dashboard">
-                                <div class="screenshot-info">
-                                    <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
-                                    <p>The main dashboard displays current Bitcoin price, portfolio value, and profit/loss metrics at a glance.</p>
-                                    <a href="images/dashboard.png" target="_blank" class="view-btn">
-                                        View full size <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/transactions.png" alt="BTC Tracker Transactions">
-                                <div class="screenshot-info">
-                                    <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
-                                    <p>The transactions page allows you to view, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
-                                    <a href="images/transactions.png" target="_blank" class="view-btn">
-                                        View full size <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/admin.png" alt="BTC Tracker Admin Panel">
-                                <div class="screenshot-info">
-                                    <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
-                                    <p>The admin panel provides advanced configuration options and administrative controls for your BTC Tracker instance.</p>
-                                    <a href="images/admin.png" target="_blank" class="view-btn">
-                                        View full size <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/login.png" alt="BTC Tracker Login Page">
-                                <div class="screenshot-info">
-                                    <h3><i class="fas fa-lock"></i> Secure Login</h3>
-                                    <p>The login page provides a secure authentication system to protect your financial data.</p>
-                                    <a href="images/login.png" target="_blank" class="view-btn">
-                                        View full size <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/setup.png" alt="BTC Tracker Setup Page">
-                                <div class="screenshot-info">
-                                    <h3><i class="fas fa-tools"></i> Easy Setup</h3>
-                                    <p>The setup page guides you through the simple process to get your BTC tracker up and running quickly.</p>
-                                    <a href="images/setup.png" target="_blank" class="view-btn">
-                                        View full size <i class="fas fa-external-link-alt"></i>
-                                    </a>
-                                </div>
-                            </div>
+                    <!-- Main Splide -->
+                    <div id="main-carousel" class="splide">
+                        <div class="splide__track">
+                            <ul class="splide__list">
+                                <li class="splide__slide">
+                                    <img src="images/dashboard.png" alt="BTC Tracker Dashboard">
+                                    <div class="screenshot-info">
+                                        <h3><i class="fas fa-chart-line"></i> Dashboard</h3>
+                                        <p>The main dashboard displays current Bitcoin price, portfolio value, and profit/loss metrics at a glance.</p>
+                                        <a href="images/dashboard.png" target="_blank" class="view-btn">
+                                            View full size <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/transactions.png" alt="BTC Tracker Transactions">
+                                    <div class="screenshot-info">
+                                        <h3><i class="fas fa-exchange-alt"></i> Transactions</h3>
+                                        <p>The transactions page allows you to view, add, edit, and manage all your Bitcoin transactions with detailed information.</p>
+                                        <a href="images/transactions.png" target="_blank" class="view-btn">
+                                            View full size <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/admin.png" alt="BTC Tracker Admin Panel">
+                                    <div class="screenshot-info">
+                                        <h3><i class="fas fa-cogs"></i> Admin Panel</h3>
+                                        <p>The admin panel provides advanced configuration options and administrative controls for your BTC Tracker instance.</p>
+                                        <a href="images/admin.png" target="_blank" class="view-btn">
+                                            View full size <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/login.png" alt="BTC Tracker Login Page">
+                                    <div class="screenshot-info">
+                                        <h3><i class="fas fa-lock"></i> Secure Login</h3>
+                                        <p>The login page provides a secure authentication system to protect your financial data.</p>
+                                        <a href="images/login.png" target="_blank" class="view-btn">
+                                            View full size <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/setup.png" alt="BTC Tracker Setup Page">
+                                    <div class="screenshot-info">
+                                        <h3><i class="fas fa-tools"></i> Easy Setup</h3>
+                                        <p>The setup page guides you through the simple process to get your BTC tracker up and running quickly.</p>
+                                        <a href="images/setup.png" target="_blank" class="view-btn">
+                                            View full size <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    </div>
+                                </li>
+                            </ul>
                         </div>
-                        <!-- Add Pagination -->
-                        <div class="swiper-pagination"></div>
-                        <!-- Add Navigation -->
-                        <div class="swiper-button-next"></div>
-                        <div class="swiper-button-prev"></div>
                     </div>
                     
-                    <!-- Thumbnail Swiper -->
-                    <div class="swiper-container swiper-thumbs">
-                        <div class="swiper-wrapper">
-                            <div class="swiper-slide">
-                                <img src="images/dashboard.png" alt="Dashboard Thumbnail">
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/transactions.png" alt="Transactions Thumbnail">
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/admin.png" alt="Admin Panel Thumbnail">
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/login.png" alt="Login Page Thumbnail">
-                            </div>
-                            <div class="swiper-slide">
-                                <img src="images/setup.png" alt="Setup Page Thumbnail">
-                            </div>
+                    <!-- Thumbnail Carousel -->
+                    <div id="thumbnail-carousel" class="splide thumbnail-carousel">
+                        <div class="splide__track">
+                            <ul class="splide__list">
+                                <li class="splide__slide">
+                                    <img src="images/dashboard.png" alt="Dashboard Thumbnail">
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/transactions.png" alt="Transactions Thumbnail">
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/admin.png" alt="Admin Panel Thumbnail">
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/login.png" alt="Login Page Thumbnail">
+                                </li>
+                                <li class="splide__slide">
+                                    <img src="images/setup.png" alt="Setup Page Thumbnail">
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
@@ -263,43 +247,46 @@
         </footer>
     </div>
 
-    <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+    <!-- Splide.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Swiper thumbnails
-            var swiperThumbs = new Swiper('.swiper-thumbs', {
-                spaceBetween: 10,
-                slidesPerView: 5,
-                freeMode: true,
-                watchSlidesProgress: true,
+            // Set up the main carousel
+            var main = new Splide('#main-carousel', {
+                type: 'slide',
+                perPage: 1,
+                perMove: 1,
+                gap: '1rem',
+                pagination: true,
+                arrows: true,
+                height: '550px',
                 breakpoints: {
-                    // when window width is <= 768px
                     768: {
-                        slidesPerView: 3,
+                        height: '600px',
                     }
                 }
             });
             
-            // Initialize main Swiper
-            var swiperMain = new Swiper('.swiper-main', {
-                spaceBetween: 10,
-                navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
-                },
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                thumbs: {
-                    swiper: swiperThumbs
-                },
-                slideActiveClass: 'swiper-slide-active',
-                slideVisibleClass: 'swiper-slide-visible',
-                slideDuplicateClass: 'swiper-slide-duplicate',
-                watchOverflow: true,
-                watchSlidesProgress: true
+            // Set up the thumbnail carousel
+            var thumbnails = new Splide('#thumbnail-carousel', {
+                perPage: 5,
+                gap: '0.5rem',
+                rewind: true,
+                pagination: false,
+                arrows: false,
+                isNavigation: true,
+                focus: 'center',
+                breakpoints: {
+                    768: {
+                        perPage: 3,
+                    }
+                }
             });
+            
+            // Connect the thumbnails to the main carousel
+            main.sync(thumbnails);
+            main.mount();
+            thumbnails.mount();
             
             // Back to top button functionality
             const backToTopBtn = document.getElementById('backToTop');
