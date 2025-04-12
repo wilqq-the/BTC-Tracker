@@ -2,6 +2,10 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
+## Documentation
+
+📚 **[Visit BTC Tracker Site](https://wilqq-the.github.io/BTC-tracker/)** - About project, screenshots, and setup instructions.
+
 ## Why BTC Tracker?
 
 I created BTC Tracker because I needed a simpler solution for tracking Bitcoin investments. Existing applications were either too complex, designed for tracking entire portfolios, or difficult to configure.
@@ -22,6 +26,15 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 - **Secure Authentication**: User authentication with password protection and session management
 - **CoinGecko API Integration**: Optional API key support for higher rate limits
 - **Containerized**: Runs in Docker or Podman with minimal setup
+
+## GH Pages
+
+Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-tracker/) provides comprehensive information about BTC Tracker:
+- **🚀 Getting Started**: Detailed installation and setup instructions
+- **📸 Screenshots**: See the application interface and features in action
+- **⭐ Features**: Complete overview of all BTC Tracker capabilities
+
+
 
 ## Quick Start (Easiest Method) 🚀
 
@@ -54,7 +67,7 @@ You can also run BTC Tracker directly from Docker Hub without cloning the reposi
 mkdir -p btc-tracker-data
 
 # Run the container
-docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" thewilqq/btc-tracker:latest
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
 
 # Access the application at http://localhost:3000
 ```
@@ -62,10 +75,10 @@ docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/s
 To update to the latest version:
 
 ```bash
-docker pull thewilqq/btc-tracker:latest
+docker pull docker.io/thewilqq/btc-tracker:latest
 docker stop btc-tracker
 docker rm btc-tracker
-docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" thewilqq/btc-tracker:latest
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
 ```
 
 ## Alternative Installation Methods
@@ -168,6 +181,12 @@ BTC-tracker/
 ## License
 
 MIT
+
+## Resources
+
+- **[GitHub Repository](https://github.com/wilqq-the/BTC-tracker)**: Source code and project files
+- **[Documentation](https://wilqq-the.github.io/BTC-tracker/)**: Comprehensive guides and screenshots
+- **[Docker Hub](https://hub.docker.com/r/thewilqq/btc-tracker)**: Pre-built Docker images
 
 ## Author
 

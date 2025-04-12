@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker - Monitor Your Bitcoin Investments</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
+            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
+        </header>
+
+        <nav class="app-nav">
+            <a href="index.html" class="active"><i class="fas fa-home"></i> Home</a>
+            <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
+            <a href="features.html"><i class="fas fa-list-check"></i> Features</a>
+            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        </nav>
+
+        <section class="hero-section">
+            <div class="hero-content">
+                <h2>Track Your Bitcoin Journey</h2>
+                <p>Monitor your investments, analyze performance, and keep your portfolio organized in one place.</p>
+                <div class="hero-buttons">
+                    <a href="getting-started.html" class="button button-primary">Get Started</a>
+                    <a href="features.html" class="button button-secondary">See Features</a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="images/dashboard.png" alt="BTC Tracker Dashboard">
+            </div>
+        </section>
+
+        <section class="main-content">
+            <section>
+                <h2><i class="fas fa-key"></i> Key Features</h2>
+                <div class="features">
+                    <div class="feature">
+                        <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
+                        <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
+                        <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
+                        <p>Monitor your investment performance with profit/loss calculations and percentages.</p>
+                    </div>
+                    <div class="feature">
+                        <h3><i class="fas fa-moon"></i> Dark & Light Themes</h3>
+                        <p>Choose between dark and light themes for comfortable viewing in any environment.</p>
+                    </div>
+                </div>
+                <div class="cta">
+                    <a href="features.html" class="button"><i class="fas fa-star"></i> View All Features</a>
+                </div>
+            </section>
+
+            <section>
+                <h2><i class="fas fa-rocket"></i> Quick Start</h2>
+                <p>You can run BTC Tracker using Docker for a quick and easy setup:</p>
+                <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
+docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
+                
+                <div class="cta">
+                    <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Full Installation Guide</a>
+                </div>
+            </section>
+        </section>
+
+        <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
+
+        <footer>
+            <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Back to top button functionality
+            const backToTopBtn = document.getElementById('backToTop');
+            if (backToTopBtn) {
+                window.addEventListener('scroll', function() {
+                    if (window.pageYOffset > 300) {
+                        backToTopBtn.classList.add('visible');
+                    } else {
+                        backToTopBtn.classList.remove('visible');
+                    }
+                });
+                
+                backToTopBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
