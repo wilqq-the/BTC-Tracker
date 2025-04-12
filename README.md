@@ -2,13 +2,16 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
-## Documentation
+## GH Pages
 
-📚 **[Visit BTC Tracker Site](https://wilqq-the.github.io/BTC-tracker/)** - About project, screenshots, and setup instructions.
+Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-tracker/) provides comprehensive information about BTC Tracker:
+- **🚀 Getting Started**: Detailed installation and setup instructions
+- **📸 Screenshots**: See the application interface and features in action
+- **⭐ Features**: Complete overview of all BTC Tracker capabilities
 
 ## Why BTC Tracker?
 
-I created BTC Tracker because I needed a simpler solution for tracking Bitcoin investments. Existing applications were either too complex, designed for tracking entire portfolios, or difficult to configure.
+I've created BTC Tracker because I needed a simpler solution for tracking Bitcoin investments. Existing applications were either too complex, designed for tracking entire portfolios, or difficult to configure.
 
 Privacy was another major concern. I didn't want to share wallet addresses or transaction details with third-party services. BTC Tracker solves this by running locally and keeping all data on your machine.
 
@@ -27,15 +30,7 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 - **CoinGecko API Integration**: Optional API key support for higher rate limits
 - **Containerized**: Runs in Docker or Podman with minimal setup
 
-## GH Pages
-
-Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-tracker/) provides comprehensive information about BTC Tracker:
-- **🚀 Getting Started**: Detailed installation and setup instructions
-- **📸 Screenshots**: See the application interface and features in action
-- **⭐ Features**: Complete overview of all BTC Tracker capabilities
-
-
-
+  
 ## Quick Start (Easiest Method) 🚀
 
 1. Clone the repository:
