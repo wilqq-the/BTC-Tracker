@@ -7,6 +7,17 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -16,7 +27,7 @@
 
         <div class="card" style="max-width: 400px; margin: 50px auto;">
             <h2 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-sign-in-alt"></i> Login</h2>
-            <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center;"></div>
+            <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center; padding: 10px; border-radius: 4px; background-color: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); display: none;"></div>
             
             <form action="/login" method="POST">
                 <div class="form-group">
@@ -41,7 +52,15 @@
         // Check for error parameter in URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('error')) {
-            document.getElementById('error-message').textContent = 'Invalid username or password';
+            const errorElement = document.getElementById('error-message');
+            errorElement.textContent = decodeURIComponent(urlParams.get('error'));
+            errorElement.style.display = 'block';
+            
+            // Shake the error message for attention
+            errorElement.classList.add('shake');
+            setTimeout(() => {
+                errorElement.classList.remove('shake');
+            }, 500);
         }
         
         // Check if user has a saved theme preference

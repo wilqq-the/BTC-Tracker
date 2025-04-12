@@ -1052,15 +1052,52 @@ app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) =
 
 // Login page
 app.get('/login', isSetupNeeded, (req, res) => {
+    // Check if there's an error message from a failed login attempt
+    let errorParam = '';
+    if (req.query.error) {
+        errorParam = `?error=${encodeURIComponent(req.query.error)}`;
+    } else if (req.session && req.session.messages && req.session.messages.length > 0) {
+        // Get error from passport flash messages
+        errorParam = `?error=${encodeURIComponent(req.session.messages[0])}`;
+        // Clear the messages
+        req.session.messages = [];
+    }
+    
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
+    
+    // Log failed login attempt for debugging
+    if (errorParam) {
+        console.log('Login failed:', decodeURIComponent(errorParam.substring(7)));
+    }
 });
 
-// Login form submission
-app.post('/login', passport.authenticate('local', {
-    successRedirect: '/',
-    failureRedirect: '/login',
-    failureFlash: true
-}));
+// Login form submission - Update the failure redirect to include the error
+app.post('/login', (req, res, next) => {
+    passport.authenticate('local', (err, user, info) => {
+        if (err) {
+            console.error('Login error:', err);
+            return res.redirect('/login?error=' + encodeURIComponent('An error occurred during login'));
+        }
+        
+        if (!user) {
+            // Login failed
+            const errorMessage = info && info.message ? info.message : 'Invalid username or password';
+            console.log('Login failed:', errorMessage);
+            return res.redirect('/login?error=' + encodeURIComponent(errorMessage));
+        }
+        
+        // Login successful, establish a session
+        req.logIn(user, (err) => {
+            if (err) {
+                console.error('Session error:', err);
+                return res.redirect('/login?error=' + encodeURIComponent('Failed to establish session'));
+            }
+            
+            // Successful login
+            return res.redirect('/');
+        });
+    })(req, res, next);
+});
 
 // Setup page (first run)
 app.get('/setup', (req, res) => {
@@ -1116,40 +1153,7 @@ app.get('/logout', (req, res) => {
     });
 });
 
-// Serve index.html for all other routes
-app.get('*', (req, res) => {
-    // Check if this is a login-related path that should not be protected
-    const publicPaths = ['/login', '/setup', '/logout'];
-    const isPublicPath = publicPaths.includes(req.path) || req.path.startsWith('/public/');
-    
-    // If not a public path and not authenticated, redirect to login
-    if (!isPublicPath && !req.isAuthenticated()) {
-        return res.redirect('/login');
-    }
-    
-    // If it's a public path, or user is authenticated, serve the requested file
-    if (req.path === '/login' || req.path === '/setup') {
-        res.sendFile(path.join(__dirname, 'public', req.path + '.html'));
-    } else {
-        res.sendFile(path.join(__dirname, 'public', 'index.html'));
-    }
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({ 
-        error: 'Internal Server Error',
-        message: err.message || 'An unexpected error occurred'
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Not Found' });
-});
-
-// Change password endpoint
+// Change password endpoint - Add this right before the wildcard route handler
 app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
@@ -1189,6 +1193,39 @@ app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
             message: error.message 
         });
     }
+});
+
+// Serve index.html for all other routes
+app.get('*', (req, res) => {
+    // Check if this is a login-related path that should not be protected
+    const publicPaths = ['/login', '/setup', '/logout'];
+    const isPublicPath = publicPaths.includes(req.path) || req.path.startsWith('/public/');
+    
+    // If not a public path and not authenticated, redirect to login
+    if (!isPublicPath && !req.isAuthenticated()) {
+        return res.redirect('/login');
+    }
+    
+    // If it's a public path, or user is authenticated, serve the requested file
+    if (req.path === '/login' || req.path === '/setup') {
+        res.sendFile(path.join(__dirname, 'public', req.path + '.html'));
+    } else {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ 
+        error: 'Internal Server Error',
+        message: err.message || 'An unexpected error occurred'
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Not Found' });
 });
 
 async function startServer() {
