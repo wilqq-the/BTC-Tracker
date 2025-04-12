@@ -4,7 +4,7 @@ A simple, powerful application to track your Bitcoin investments and monitor the
 
 ## GH Pages
 
-Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-tracker/) provides comprehensive information about BTC Tracker:
+Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-Tracker/index.html) provides comprehensive information about BTC Tracker:
 - **🚀 Getting Started**: Detailed installation and setup instructions
 - **📸 Screenshots**: See the application interface and features in action
 - **⭐ Features**: Complete overview of all BTC Tracker capabilities
