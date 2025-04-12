@@ -68,7 +68,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours by default
   }
 }));
 
@@ -1091,6 +1091,12 @@ app.post('/login', (req, res, next) => {
             if (err) {
                 console.error('Session error:', err);
                 return res.redirect('/login?error=' + encodeURIComponent('Failed to establish session'));
+            }
+            
+            // Check if "Remember Me" was checked
+            if (req.body.rememberMe) {
+                // Set session to expire in 30 days instead of 24 hours
+                req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
             }
             
             // Successful login
