@@ -26,10 +26,10 @@
         </header>
 
         <div class="card" style="max-width: 400px; margin: 50px auto;">
-            <h2 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-user-plus"></i> Initial Setup</h2>
-            <p style="text-align: center; margin-bottom: 20px; color: var(--text-secondary-color);">Create your administrator account to get started.</p>
+            <h2 style="text-align: center; margin-bottom: 16px;"><i class="fas fa-user-plus"></i> Initial Setup</h2>
+            <p style="text-align: center; margin-bottom: 14px; color: var(--text-secondary-color);">Create your administrator account to get started.</p>
             
-            <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center;"></div>
+            <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center; display: none;"></div>
             
             <form action="/setup" method="POST" id="setup-form">
                 <div class="form-group">
@@ -59,17 +59,21 @@
         // Check for error parameter in URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('error')) {
-            document.getElementById('error-message').textContent = urlParams.get('error');
+            const errorEl = document.getElementById('error-message');
+            errorEl.textContent = urlParams.get('error');
+            errorEl.style.display = 'block';
         }
 
         // Form validation
         document.getElementById('setup-form').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
+            const errorEl = document.getElementById('error-message');
             
             if (password !== confirmPassword) {
                 event.preventDefault();
-                document.getElementById('error-message').textContent = 'Passwords do not match';
+                errorEl.textContent = 'Passwords do not match';
+                errorEl.style.display = 'block';
             }
         });
         

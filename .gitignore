@@ -3,4 +3,5 @@
 .env.local
 node_modules
 node_modules/
-src/data/
+src/data/*
+!src/data/.gitkeep

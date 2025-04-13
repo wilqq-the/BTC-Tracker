@@ -52,7 +52,7 @@ read -p "Port: " user_port
 PORT=${user_port:-3000}
 
 # Update .env file with user's port
-echo -e "# Container Settings\nCONTAINER_NAME=btc-tracker\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./src/data\n\n# Environment Settings\nNODE_ENV=production" > .env
+echo -e "# Container Settings\nCONTAINER_NAME=btc-tracker\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./src/data\n\n# Environment Settings\nNODE_ENV=development" > .env
 
 echo
 echo -e "${GREEN}✓${NC} Created/updated .env file with port $PORT"
