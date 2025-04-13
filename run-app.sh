@@ -58,7 +58,7 @@ echo
 echo -e "${GREEN}✓${NC} Created/updated .env file with port $PORT"
 
 # Ensure data directory exists
-mkdir -p src/data
+mkdir -p data
 echo -e "${GREEN}✓${NC} Ensured data directory exists"
 
 # Pull the latest image
