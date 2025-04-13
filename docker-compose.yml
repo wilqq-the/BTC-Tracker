@@ -8,5 +8,5 @@ services:
       - ${DATA_PATH:-./src/data}:/app/src/data
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=development
       - PORT=3000 
