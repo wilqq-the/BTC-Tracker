@@ -34,12 +34,12 @@
                 
                 <div class="card">
                     <h3><i class="fab fa-docker"></i> Using Docker (Recommended)</h3>
-                    <p>The easiest way to run BTC Tracker is using Docker. Make sure you have Docker installed on your system.</p>
+                    <p>The easiest way to run BTC Tracker is using Docker. Make sure you have Docker installed on your system.</i></p>
                     
                     <h4>Quick Start with Docker Run</h4>
                     <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
 docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
-                    
+                    <p>This will start application on localhost:3000 and use ./data as the data directory.</p>
                     <h4>Using Docker Compose (Recommended)</h4>
                     <p>For more configuration options, create a <code>docker-compose.yml</code> file with the following content:</p>
                     <pre class="docker-compose"><code>services:
@@ -49,10 +49,10 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      - ${DATA_PATH:-./src/data}:/app/src/data
+      - ${DATA_PATH:-./data}:/app/src/data
     restart: unless-stopped
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
+      - NODE_ENV=${NODE_ENV:-development}
       - PORT=3000</code></pre>
                     
                     <p>Then run the application with:</p>
@@ -63,8 +63,8 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
                     <ul class="config-options">
                         <li><code class="env-var">CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
                         <li><code class="env-var">PORT</code>: Port to access the application (default: 3000)</li>
-                        <li><code class="env-var">DATA_PATH</code>: Local path to store application data (default: ./src/data)</li>
-                        <li><code class="env-var">NODE_ENV</code>: Environment setting (default: production)</li>
+                        <li><code class="env-var">DATA_PATH</code>: Local path to store application data (default: ./data)</li>
+                        <li><code class="env-var">NODE_ENV</code>: Environment setting (default: development)</li>
                     </ul>
                 </div>
                 

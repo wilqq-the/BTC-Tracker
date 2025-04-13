@@ -150,6 +150,7 @@ header p {
     transition: transform 0.3s ease;
     border: 1px solid var(--border-color);
     object-fit: cover;
+    object-position: top center;
 }
 
 .hero-image img:hover {
@@ -468,4 +469,48 @@ footer {
 .step-code {
     font-weight: 500;
     word-break: break-all;
+}
+
+/* Action Columns Layout */
+.get-started-section {
+    margin-top: 2rem;
+}
+
+.action-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+    margin: 40px 0;
+}
+
+.action-column {
+    background: var(--card-background);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 4px 10px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.action-column h2 {
+    font-size: 1.5rem;
+    margin-top: 0;
+}
+
+.action-column p {
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+
+.action-column .button {
+    align-self: flex-start;
+}
+
+/* Mobile Responsiveness for Action Columns */
+@media (max-width: 768px) {
+    .action-columns {
+        grid-template-columns: 1fr;
+    }
 } 
