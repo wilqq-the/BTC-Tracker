@@ -5,7 +5,7 @@ services:
     ports:
       - "${PORT:-3000}:3000"
     volumes:
-      - ${DATA_PATH:-./src/data}:/app/src/data
+      - ${DATA_PATH:-./data}:/app/src/data
     restart: unless-stopped
     environment:
       - NODE_ENV=development

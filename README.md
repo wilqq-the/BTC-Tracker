@@ -62,7 +62,7 @@ You can also run BTC Tracker directly from Docker Hub without cloning the reposi
 mkdir -p btc-tracker-data
 
 # Run the container
-docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
 
 # Access the application at http://localhost:3000
 ```
@@ -73,7 +73,7 @@ To update to the latest version:
 docker pull docker.io/thewilqq/btc-tracker:latest
 docker stop btc-tracker
 docker rm btc-tracker
-docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/btc-tracker-data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
+docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
 ```
 
 ## Alternative Installation Methods
