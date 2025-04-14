@@ -76,7 +76,7 @@ read -p "Port: " user_port
 PORT=${user_port:-3000}
 
 # Update .env file with user's port
-echo -e "# Container Settings\nCONTAINER_NAME=$CONTAINER_NAME\nIMAGE_TAG=$IMAGE_TAG\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./src/data\n\n# Environment Settings\nNODE_ENV=development" > .env
+echo -e "# Container Settings\nCONTAINER_NAME=$CONTAINER_NAME\nIMAGE_TAG=$IMAGE_TAG\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./data\n\n# Environment Settings\nNODE_ENV=development" > .env
 
 echo
 echo -e "${GREEN}✓${NC} Created/updated .env file with port $PORT"
