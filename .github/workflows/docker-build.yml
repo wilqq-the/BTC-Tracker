@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
     tags:
       - '*'
   workflow_dispatch:  # Allow manual trigger
@@ -27,7 +28,16 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=sha
-            latest
+            type=raw,value=latest,enable={{github.ref == 'refs/heads/main'}}
+          flavor: |
+            latest=false
+            prefix=
+            suffix=
+          labels: |
+            org.opencontainers.image.title=BTC Tracker
+            org.opencontainers.image.description=A Bitcoin portfolio tracker
+            org.opencontainers.image.source=https://github.com/wilqq-the/btc-tracker
+            org.opencontainers.image.licenses=MIT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
