@@ -82,14 +82,14 @@
         
         /* Column width adjustments */
         .date-col { width: 10%; }
-        .type-col { width: 7%; }
-        .amount-col { width: 13%; }
-        .price-col { width: 10%; }
-        .currency-col { width: 7%; }
-        .cost-col { width: 13%; }
-        .pnl-col { width: 13%; }
-        .pnl-percent-col { width: 10%; }
-        .pnl-secondary-col { width: 17%; }
+        .type-col { width: 8%; }
+        .amount-col { width: 14%; }
+        .price-col { width: 12%; }
+        .currency-col { width: 6%; }
+        .cost-col { width: 12%; }
+        .pnl-col { width: 12%; }
+        .pnl-percent-col { width: 8%; }
+        .pnl-secondary-col { width: 18%; }
         
         #transactionsTable tr:hover {
             background-color: rgba(247, 147, 26, 0.1);
@@ -148,6 +148,33 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        /* REMOVED Zebra striping for table rows */
+        /* #transactionsTable tbody tr:nth-child(even) { */
+        /*     background-color: rgba(255, 255, 255, 0.03); */
+        /* } */
+
+        /* REMOVED Style for zebra striping in light theme */
+        /* .light-theme #transactionsTable tbody tr:nth-child(even) { */
+        /*     background-color: rgba(0, 0, 0, 0.03); */
+        /* } */
+
+        /* Enhanced style for the actively sorted header */
+        #transactionsTable th.sorted-column {
+            background-color: #2a2a2a; /* Slightly darker background */
+            color: #ffffff; /* White text for contrast */
+        }
+
+        .light-theme #transactionsTable th.sorted-column {
+            background-color: #e0e0e0; /* Lighter background for light theme */
+            color: #000000;
+        }
+
+        /* Ensure sort icon is visible on sorted column */
+        #transactionsTable th.sorted-column .sort-icon {
+            opacity: 1;
+            color: #f7931a; /* Bitcoin orange */
+        }
     </style>
 </head>
 <body>
@@ -157,6 +184,7 @@
             <nav>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
                 <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
                 <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <button id="themeToggle" class="theme-toggle">
@@ -221,14 +249,24 @@
         </div>
     </div>
 
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+            <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+        </div>
+        <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+    </footer>
+
     <script>
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
         let transactions = []; // Store transactions globally
-        let currentSort = {
-            column: 'date',
-            direction: 'desc'
-        };
-        let primaryCurrency = 'EUR';
-        let secondaryCurrency = 'PLN';
+        let currentSortColumn = 'date'; // Keep track of the current sort column
+        let currentSortDirection = 'desc'; // Keep track of the current sort direction
+        let mainCurrency = 'EUR';
+        let secondaryCurrency = 'USD';
         let secondaryRate = 1;
 
         // Sorting functions for different data types
@@ -257,42 +295,88 @@
             date: { type: 'date', getValue: tx => tx.date },
             type: { type: 'string', getValue: tx => tx.type },
             amount: { type: 'number', getValue: tx => tx.amount },
-            price: { type: 'number', getValue: tx => tx.price },
-            currency: { type: 'string', getValue: tx => tx.currency || 'EUR' },
-            cost: { type: 'number', getValue: tx => tx.cost },
-            pnl: { type: 'number', getValue: tx => tx.pnl },
-            pnlPercentage: { type: 'number', getValue: tx => tx.pnlPercentage },
-            pnlSecondary: { type: 'number', getValue: tx => tx.secondaryPnl },
-            pnlPercentageSecondary: { type: 'number', getValue: tx => tx.secondaryPnlPercentage }
+            price: { 
+                type: 'number', 
+                getValue: tx => tx.original?.price ?? 0 
+            },
+            currency: { type: 'string', getValue: tx => tx.original?.currency || '' },
+            cost: { 
+                type: 'number', 
+                getValue: tx => tx.original?.cost ?? 0 
+            },
+            pnl: { 
+                type: 'number', 
+                getValue: tx => tx.pnl ?? 0 
+            },
+            pnlPercentage: { 
+                type: 'number', 
+                getValue: tx => tx.pnlPercentage ?? 0 
+            },
+            pnlSecondary: { 
+                type: 'number', 
+                getValue: tx => tx.pnlSecondary ?? 0 
+            }
         };
 
         // Function to sort transactions
         function sortTransactions(column) {
+            console.log(`Attempting to sort by: ${column}`); // Add log
             const config = sortConfig[column];
-            if (!config) return;
+            if (!config) {
+                console.error(`Invalid sort column: ${column}`);
+                return;
+            }
+
+            const headers = document.querySelectorAll('th.sortable');
+            headers.forEach(h => h.classList.remove('sorted-column')); // Remove class from all headers
 
             const currentHeader = document.querySelector(`th[data-sort="${column}"]`);
-            const headers = document.querySelectorAll('.sortable');
+            let direction;
+
+            // Determine sort direction
+            if (column === currentSortColumn) {
+                // If clicking the same column, toggle direction
+                direction = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // If clicking a new column, default to descending for date/numbers, ascending for strings
+                direction = (config.type === 'date' || config.type === 'number') ? 'desc' : 'asc';
+            }
             
-            // Reset all other headers
+            console.log(`Sorting direction: ${direction}`); // Add log
+
+            // Update state
+            currentSortColumn = column;
+            currentSortDirection = direction;
+
+            // Update header attributes and classes for visual feedback
             headers.forEach(header => {
-                if (header !== currentHeader) {
-                    header.removeAttribute('data-sort-direction');
+                header.removeAttribute('data-sort-direction');
+            });
+            if (currentHeader) {
+                 currentHeader.setAttribute('data-sort-direction', direction);
+                 currentHeader.classList.add('sorted-column'); // Add class to sorted header
+            } else {
+                 console.error(`Could not find header element for column: ${column}`);
+            }
+
+
+            // Sort the transactions array
+            transactions.sort((a, b) => {
+                // Handle potential null or undefined values gracefully
+                const valueA = config.getValue(a) ?? (config.type === 'string' ? '' : 0);
+                const valueB = config.getValue(b) ?? (config.type === 'string' ? '' : 0);
+                
+                try {
+                    return sortFunctions[config.type](valueA, valueB, direction);
+                } catch (e) {
+                    console.error(`Error sorting ${column}:`, e, `Values: A=${valueA}, B=${valueB}`);
+                    return 0; // Prevent breaking sort on error
                 }
             });
+            
+            console.log(`Sorting complete for ${column}. Updating table.`); // Add log
 
-            // Toggle sort direction
-            let direction = currentHeader.getAttribute('data-sort-direction') === 'asc' ? 'desc' : 'asc';
-            currentHeader.setAttribute('data-sort-direction', direction);
-
-            // Sort the transactions
-            transactions.sort((a, b) => {
-                const valueA = config.getValue(a);
-                const valueB = config.getValue(b);
-                return sortFunctions[config.type](valueA, valueB, direction);
-            });
-
-            // Update the table
+            // Update the table display
             updateTransactionsTable();
         }
 
@@ -314,7 +398,15 @@
             return '';
         }
 
-        // Modify the updateTransactionsTable function
+        // Format currency with proper symbol
+        function formatCurrency(amount, currency) {
+            const symbol = getCurrencySymbol(currency);
+            // Ensure amount is a number
+            const numAmount = Number(amount) || 0;
+            return `${numAmount >= 0 ? '+' : ''}${numAmount.toFixed(2)} ${symbol}`;
+        }
+
+        // Update the updateTransactionsTable function to handle the new data structure
         function updateTransactionsTable() {
             const tbody = document.querySelector('#transactionsTable tbody');
             tbody.innerHTML = '';
@@ -328,15 +420,15 @@
 
             // Find the maximum absolute P&L value for scaling
             const maxPnL = transactions.reduce((max, tx) => 
-                Math.max(max, Math.abs(tx.pnl)), 0);
+                Math.max(max, Math.abs(tx.pnl || 0)), 0);
 
             transactions.forEach(tx => {
                 const row = document.createElement('tr');
-                // Add the P&L scale attribute
-                row.setAttribute('data-pnl-scale', getPnLScale(tx.pnl, maxPnL));
+                row.setAttribute('data-pnl-scale', getPnLScale(tx.pnl || 0, maxPnL));
                 
                 // Get currency symbols
-                const txCurrencySymbol = getCurrencySymbol(tx.currency || 'EUR');
+                const origCurrencySymbol = getCurrencySymbol(tx.original?.currency || mainCurrency);
+                const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
                 const secondarySymbol = getCurrencySymbol(secondaryCurrency);
                 
                 // Format the date nicely
@@ -347,16 +439,52 @@
                     day: 'numeric'
                 });
                 
+                // Get original values
+                const origPrice = tx.original?.price || 0;
+                const origCost = tx.original?.cost || 0;
+                const origFee = tx.original?.fee || 0;
+                
+                // Get base currency values
+                const mainPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || 0;
+                const mainCost = tx.base?.[mainCurrency.toLowerCase()]?.cost || 0;
+                const mainFee = tx.base?.[mainCurrency.toLowerCase()]?.fee || 0;
+                
+                // Format P&L display
+                let pnlDisplay = '-';
+                let pnlPercentageDisplay = '-';
+                let secondaryPnlDisplay = '-';
+                
+                if (tx.type.toLowerCase() === 'buy') {
+                    pnlDisplay = formatCurrency(tx.pnl || 0, mainCurrency);
+                    pnlPercentageDisplay = `${tx.pnlPercentage >= 0 ? '+' : ''}${(tx.pnlPercentage || 0).toFixed(2)}%`;
+                    secondaryPnlDisplay = formatCurrency(tx.pnlSecondary || 0, secondaryCurrency);
+                }
+                
+                // Build price display with conversion if needed
+                let priceDisplay = `${origPrice.toFixed(2)} ${origCurrencySymbol}`;
+                if (tx.original?.currency !== mainCurrency) {
+                    priceDisplay += `<div class="conversion-note">(${mainPrice.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                }
+                
+                // Build cost display with conversion if needed
+                let costDisplay = `${origCost.toFixed(2)} ${origCurrencySymbol}`;
+                if (tx.original?.currency !== mainCurrency) {
+                    costDisplay += `<div class="conversion-note">(${mainCost.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                }
+                
                 row.innerHTML = `
                     <td class="date-col" title="${date.toLocaleString()}">${formattedDate}</td>
                     <td class="type-col">${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
                     <td class="amount-col" title="${tx.amount.toFixed(8)}">${tx.amount.toFixed(8)}</td>
-                    <td class="price-col" title="${tx.price.toFixed(2)}">${tx.price.toFixed(2)}</td>
-                    <td class="currency-col">${txCurrencySymbol}</td>
-                    <td class="cost-col" title="${tx.cost.toFixed(2)} ${txCurrencySymbol}">${tx.cost.toFixed(2)} ${txCurrencySymbol}</td>
-                    <td class="pnl-col ${tx.pnl >= 0 ? 'positive' : 'negative'}" title="${tx.pnl.toFixed(2)} €">${tx.pnl.toFixed(2)} €</td>
-                    <td class="pnl-percent-col ${tx.pnlPercentage >= 0 ? 'positive' : 'negative'}" title="${tx.pnlPercentage.toFixed(2)}%">${tx.pnlPercentage.toFixed(2)}%</td>
-                    <td class="pnl-secondary-col ${tx.secondaryPnl >= 0 ? 'positive' : 'negative'}" title="${tx.secondaryPnl.toFixed(2)} ${secondarySymbol}">${tx.secondaryPnl.toFixed(2)} ${secondarySymbol}</td>
+                    <td class="price-col" title="Original price: ${origPrice.toFixed(2)} ${origCurrencySymbol}">${priceDisplay}</td>
+                    <td class="currency-col">${origCurrencySymbol}</td>
+                    <td class="cost-col" title="Original cost: ${origCost.toFixed(2)} ${origCurrencySymbol}">${costDisplay}</td>
+                    <td class="pnl-col ${tx.pnl > 0 ? 'positive' : tx.pnl < 0 ? 'negative' : ''}" 
+                        title="P&L in ${mainCurrency}">${pnlDisplay}</td>
+                    <td class="pnl-percent-col ${tx.pnlPercentage > 0 ? 'positive' : tx.pnlPercentage < 0 ? 'negative' : ''}" 
+                        title="P&L percentage">${pnlPercentageDisplay}</td>
+                    <td class="pnl-secondary-col ${tx.pnlSecondary > 0 ? 'positive' : tx.pnlSecondary < 0 ? 'negative' : ''}" 
+                        title="P&L in ${secondaryCurrency}">${secondaryPnlDisplay}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -383,7 +511,7 @@
             document.getElementById('tableLoading').style.display = 'flex';
             
             try {
-                const response = await fetch('/api/summary');
+                const response = await fetch('/api/transactions');
                 
                 if (!response.ok) {
                     // If we get redirected to login, the browser may follow the redirect
@@ -397,17 +525,15 @@
                 }
                 
                 const data = await response.json();
-                transactions = data.transactions;
-                
-                // Get secondary currency info
-                secondaryCurrency = data.secondaryCurrency;
-                secondaryRate = data.secondaryRate;
-                
-                // Update the secondary currency column header
-                updateSecondaryHeader();
+                transactions = data || [];
                 
                 // Initial sort by date (newest first)
-                sortTransactions('date');
+                if (Array.isArray(transactions) && transactions.length > 0) {
+                    sortTransactions('date');
+                } else {
+                    // If no transactions or empty array, just update the table
+                    updateTransactionsTable();
+                }
             } catch (error) {
                 console.error('Error loading transactions:', error);
                 
@@ -426,6 +552,10 @@
                 errorMsg.className = 'error-message';
                 errorMsg.textContent = `Error: ${error.message}`;
                 document.querySelector('.transactions-section').prepend(errorMsg);
+                
+                // Initialize empty transactions array to prevent errors
+                transactions = [];
+                updateTransactionsTable();
             } finally {
                 document.getElementById('tableLoading').style.display = 'none';
             }
@@ -443,16 +573,73 @@
             `;
         }
 
-        // Add click event listeners to sortable headers
+        // Modify the DOMContentLoaded listener to set the initial sort state
         document.addEventListener('DOMContentLoaded', () => {
+            setupThemeToggle();
+            loadSettings().then(() => { // Ensure settings are loaded before transactions
+                 loadTransactions(); // Initial load uses default sort (date, desc)
+            });
+            
+            // Add click event listeners to sortable headers
             const headers = document.querySelectorAll('.sortable');
             headers.forEach(header => {
                 header.addEventListener('click', () => {
                     const column = header.getAttribute('data-sort');
-                    sortTransactions(column);
+                    if (column) {
+                        sortTransactions(column);
+                    } else {
+                        console.error('Header is missing data-sort attribute:', header);
+                    }
                 });
+                // Set initial sort indicator for the date column
+                if (header.getAttribute('data-sort') === 'date') {
+                     header.setAttribute('data-sort-direction', 'desc');
+                     header.classList.add('sorted-column');
+                }
             });
         });
+
+        // Theme toggle functionality
+        function setupThemeToggle() {
+            const themeToggle = document.getElementById('themeToggle');
+            
+            // Check if user has a saved preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-theme');
+            }
+            
+            // Add click event listener
+            themeToggle.addEventListener('click', () => {
+                // Toggle the theme
+                document.body.classList.toggle('light-theme');
+                
+                // Save the preference to localStorage
+                const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+                localStorage.setItem('theme', currentTheme);
+            });
+        }
+
+        // Add this function to fetch settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                mainCurrency = settings.mainCurrency || 'EUR';
+                secondaryCurrency = settings.secondaryCurrency || 'USD';
+                
+                // Update the secondary currency column header
+                const header = document.querySelector('th.pnl-secondary-col');
+                if (header) {
+                    header.innerHTML = `
+                        <i class="fas fa-money-bill-wave"></i> P&L (${secondaryCurrency})
+                        <i class="fas fa-sort sort-icon"></i>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
 
         // Add loading indicator
         function showLoading() {
@@ -500,36 +687,6 @@
         function hideLoading() {
             document.getElementById('tableLoading').style.display = 'none';
         }
-
-        // Initial load
-        loadTransactions();
-
-        // Theme toggle functionality
-        function setupThemeToggle() {
-            const themeToggle = document.getElementById('themeToggle');
-            
-            // Check if user has a saved preference
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'light') {
-                document.body.classList.add('light-theme');
-            }
-            
-            // Add click event listener
-            themeToggle.addEventListener('click', () => {
-                // Toggle the theme
-                document.body.classList.toggle('light-theme');
-                
-                // Save the preference to localStorage
-                const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
-                localStorage.setItem('theme', currentTheme);
-            });
-        }
-        
-        // Initialize theme toggle when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            setupThemeToggle();
-            // Other initialization code...
-        });
     </script>
 </body>
 </html> 
