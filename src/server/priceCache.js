@@ -33,9 +33,9 @@ class PriceCache {
             // Set up periodic updates
             setInterval(() => this.updatePrices(), this.updateInterval);
             
-            console.log('[PriceCache] Initialized with data:', this.cache);
+            console.log('[priceCache] Initialized with data:', this.cache);
         } catch (error) {
-            console.error('[PriceCache] Initialization error:', error);
+            console.error('[priceCache] Initialization error:', error);
             // If initialization fails, still try to set up updates
             setInterval(() => this.updatePrices(), this.updateInterval);
         }
@@ -46,7 +46,6 @@ class PriceCache {
             const data = await fs.readFile(this.cacheFilePath, 'utf8');
             const cachedData = JSON.parse(data);
             
-            // Migrate old cache format if necessary
             if (cachedData.price && !cachedData.priceEUR) {
                 cachedData.priceEUR = cachedData.price;
                 if (cachedData.eurUsd) {
@@ -54,7 +53,6 @@ class PriceCache {
                 }
             }
             
-            // Validate cached data
             if (cachedData && 
                 (cachedData.priceEUR || cachedData.priceUSD) && 
                 cachedData.timestamp) {
@@ -62,12 +60,12 @@ class PriceCache {
                     ...cachedData,
                     exchangeRates: cachedData.exchangeRates || {}
                 };
-                console.log('[PriceCache] Loaded from disk:', this.cache);
+                console.log('[priceCache] Loaded from disk');
                 return true;
             }
         } catch (error) {
             if (error.code !== 'ENOENT') {
-                console.error('[PriceCache] Error loading from disk:', error);
+                console.error('[priceCache] Error loading from disk:', error);
             }
         }
         return false;
@@ -80,9 +78,9 @@ class PriceCache {
                 JSON.stringify(this.cache, null, 2),
                 'utf8'
             );
-            console.log('[PriceCache] Saved to disk');
+            console.log('[priceCache] Saved to disk');
         } catch (error) {
-            console.error('[PriceCache] Error saving to disk:', error);
+            console.error('[priceCache] Error saving to disk:', error);
         }
     }
 
@@ -91,22 +89,18 @@ class PriceCache {
         
         this.isUpdating = true;
         try {
-            console.log('Updating BTC prices and exchange rates...');
+            console.log('[priceCache] Updating BTC prices and exchange rates');
             
-            // Get BTC price in both EUR and USD
             const btcResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur,usd');
             const btcPriceEUR = btcResponse.data.bitcoin.eur;
             const btcPriceUSD = btcResponse.data.bitcoin.usd;
             
-            // Get EUR exchange rates
             const eurRatesResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
             const eurRates = eurRatesResponse.data.rates;
             
-            // Get USD exchange rates
             const usdRatesResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
             const usdRates = usdRatesResponse.data.rates;
             
-            // Create exchange rates object
             const exchangeRates = {
                 EUR: {
                     USD: eurRates.USD || 1.1,
@@ -124,33 +118,29 @@ class PriceCache {
                 }
             };
             
-            // Update the cache
             this.cache = {
                 priceEUR: btcPriceEUR,
                 priceUSD: btcPriceUSD,
-                // Legacy fields for backward compatibility
                 price: btcPriceEUR,
                 eurUsd: eurRates.USD,
                 eurPln: eurRates.PLN,
                 eurGbp: eurRates.GBP,
                 eurJpy: eurRates.JPY,
                 eurChf: eurRates.CHF,
-                // New fields
                 exchangeRates,
                 timestamp: new Date().toISOString()
             };
             
             await this.saveToDisk();
-            console.log(`BTC prices: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
+            console.log(`[priceCache] BTC prices: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
         } catch (error) {
-            console.error('Error updating prices:', error);
+            console.error('[priceCache] Error updating prices:', error);
             
-            // If there's no cache yet, use default values
             if (!this.cache.priceEUR && !this.cache.priceUSD) {
                 this.cache = {
                     priceEUR: 0,
                     priceUSD: 0,
-                    price: 0, // Legacy
+                    price: 0,
                     eurUsd: 1.1,
                     eurPln: 4.5,
                     eurGbp: 0.85,
@@ -196,7 +186,7 @@ class PriceCache {
         this.cache.timestamp = new Date().toISOString();
         
         await this.saveToDisk();
-        console.log(`[PriceCache] Prices updated to ${priceEUR} EUR / ${priceUSD || 'N/A'} USD at ${this.cache.timestamp}`);
+        console.log(`[priceCache] Prices updated to ${priceEUR} EUR / ${priceUSD || 'N/A'} USD at ${this.cache.timestamp}`);
     }
 
     async updateExchangeRates(eurRates, usdRates = null) {
@@ -221,18 +211,18 @@ class PriceCache {
         
         this.cache.timestamp = new Date().toISOString();
         await this.saveToDisk();
-        console.log(`[PriceCache] Exchange rates updated at ${this.cache.timestamp}`);
+        console.log(`[priceCache] Exchange rates updated at ${this.cache.timestamp}`);
     }
     
     // Get rate between any two currencies
     getExchangeRate(fromCurrency, toCurrency) {
-        // Same currency, rate is 1
         if (fromCurrency === toCurrency) return 1;
         
         try {
             // Direct rate if available
             if (this.cache.exchangeRates?.[fromCurrency]?.[toCurrency]) {
-                return this.cache.exchangeRates[fromCurrency][toCurrency];
+                const rate = this.cache.exchangeRates[fromCurrency][toCurrency];
+                return rate;
             }
             
             // Handle legacy format
@@ -242,13 +232,15 @@ class PriceCache {
                 return this.cache.eurPln;
             } else if (fromCurrency === 'USD' && toCurrency === 'EUR' && this.cache.eurUsd) {
                 return 1 / this.cache.eurUsd;
+            } else if (fromCurrency === 'PLN' && toCurrency === 'EUR' && this.cache.eurPln) {
+                return 1 / this.cache.eurPln;
             }
             
             // Conversion through EUR as base
             if (fromCurrency === 'EUR' && this.cache.exchangeRates?.EUR?.[toCurrency]) {
                 return this.cache.exchangeRates.EUR[toCurrency];
-            } else if (toCurrency === 'EUR' && this.cache.exchangeRates?.[fromCurrency]?.EUR) {
-                return 1 / this.cache.exchangeRates[fromCurrency].EUR;
+            } else if (toCurrency === 'EUR' && this.cache.exchangeRates?.EUR?.[fromCurrency]) {
+                return 1 / this.cache.exchangeRates.EUR[fromCurrency];
             }
             
             // Conversion through USD as base
@@ -273,10 +265,10 @@ class PriceCache {
             }
             
             // Fallback
-            console.warn(`No exchange rate found for ${fromCurrency} to ${toCurrency}, using 1`);
+            console.warn(`[priceCache] No exchange rate found for ${fromCurrency} to ${toCurrency}, using 1`);
             return 1;
         } catch (error) {
-            console.error(`Error getting exchange rate from ${fromCurrency} to ${toCurrency}:`, error);
+            console.error(`[priceCache] Error getting exchange rate from ${fromCurrency} to ${toCurrency}:`, error);
             return 1;
         }
     }
@@ -292,6 +284,35 @@ class PriceCache {
             const eurPrice = this.cache.priceEUR || this.cache.price || 0;
             return eurPrice * this.getExchangeRate('EUR', currency);
         }
+    }
+    
+    // Get the timestamp of when prices were last updated
+    getPriceLastUpdated() {
+        if (!this.cache.timestamp) {
+            return null;
+        }
+        
+        // Return formatted timestamp and time since last update
+        const timestamp = new Date(this.cache.timestamp);
+        const now = new Date();
+        const secondsAgo = Math.floor((now - timestamp) / 1000);
+        
+        return {
+            timestamp: timestamp.toISOString(),
+            formatted: timestamp.toLocaleString(),
+            secondsAgo: secondsAgo,
+            minutesAgo: Math.floor(secondsAgo / 60)
+        };
+    }
+    
+    // Get the timestamp of when exchange rates were last updated
+    getRatesLastUpdated() {
+        if (!this.cache.timestamp) {
+            return null;
+        }
+        
+        // For now, rates and prices are updated at the same time
+        return this.getPriceLastUpdated();
     }
 }
 
