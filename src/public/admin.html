@@ -271,6 +271,154 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        .donation-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(247, 147, 26, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .donation-content {
+            max-width: 300px;
+            margin: 0 auto;
+        }
+
+        .donation-content h3 {
+            color: #f7931a;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .donation-address {
+            margin-bottom: 15px;
+        }
+
+        .address-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: var(--input-bg-color, #2a2a2a);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+
+        .address-container code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            color: var(--text-color, #eee);
+        }
+
+        .address-container button {
+            background: none;
+            border: none;
+            color: #f7931a;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+
+        .address-container button:hover {
+            color: #e67e00;
+        }
+
+        .qr-container {
+            margin-top: 15px;
+            padding: 10px;
+            background: var(--bg-color, #ffffff);
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        #qrcode {
+            width: 150px;
+            height: 150px;
+        }
+
+        #qrcode img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .donation-tooltip {
+            display: none;
+            position: fixed;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px;
+            background: var(--card-bg-color, #1a1a1a);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color, #333);
+            z-index: 1000;
+            min-width: 250px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+
+        .donation-tooltip.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .donation-tooltip::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px;
+            border-style: solid;
+            border-color: var(--card-bg-color, #1a1a1a) transparent transparent transparent;
+        }
+
+        .donation-link {
+            color: #f7931a;
+            text-decoration: none;
+            transition: color 0.2s;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .donation-link:hover {
+            color: #e67e00;
+        }
+
+        .donation-content p {
+            color: var(--text-color, #eee);
+            margin: 5px 0;
+        }
+
+        /* Light theme specific styles */
+        body.light-theme .donation-tooltip {
+            background: var(--card-bg-color, #ffffff);
+            border: 1px solid var(--border-color, #ddd);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-theme .donation-tooltip::after {
+            border-color: var(--card-bg-color, #ffffff) transparent transparent transparent;
+        }
+
+        body.light-theme .address-container {
+            background: var(--input-bg-color, #f5f5f5);
+        }
+
+        body.light-theme .address-container code {
+            color: var(--text-color, #333);
+        }
+
+        body.light-theme .donation-content p {
+            color: var(--text-color, #333);
+        }
     </style>
 </head>
 <body>
@@ -280,6 +428,7 @@
             <nav>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
                 <a href="/admin.html" class="active"><i class="fas fa-cog"></i> Admin Panel</a>
                 <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <button id="themeToggle" class="theme-toggle">
@@ -292,10 +441,10 @@
         <div class="admin-section">
             <div class="card">
                 <h2><i class="fas fa-file-import"></i> Import/Export Transactions</h2>
-                <form id="importForm" class="form">
+                <form id="importForm" class="form" enctype="multipart/form-data">
                     <div class="form-group">
                         <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
-                        <input type="file" id="csvFile" accept=".csv" required>
+                        <input type="file" id="csvFile" name="file" accept=".csv" required>
                     </div>
                     <div class="form-buttons">
                         <button type="submit" class="btn btn-primary">
@@ -324,12 +473,14 @@
                     <ul>
                         <li><strong>Date</strong>: Transaction date in YYYY-MM-DD format</li>
                         <li><strong>Type</strong>: "buy" or "sell"</li>
-                        <li><strong>Price</strong>: Price per BTC in the specified currency</li>
-                        <li><strong>Cost</strong>: Total cost in the specified currency</li>
-                        <li><strong>Fee</strong>: Transaction fee in the specified currency</li>
                         <li><strong>Amount (BTC)</strong>: BTC amount bought or sold</li>
-                        <li><strong>Currency</strong>: Currency code (EUR, USD, PLN, etc.)</li>
+                        <li><strong>Exchange</strong>: Exchange name or "manual" for manual entries</li>
+                        <li><strong>Original Currency</strong>: Currency code (EUR, USD, PLN, etc.)</li>
+                        <li><strong>Original Price</strong>: Price per BTC in the original currency</li>
+                        <li><strong>Original Cost</strong>: Total cost in the original currency</li>
+                        <li><strong>Original Fee</strong>: Transaction fee in the original currency</li>
                     </ul>
+                    <p><i class="fas fa-info-circle"></i> Tip: Download the CSV Template for a properly formatted example.</p>
                 </div>
             </div>
 
@@ -448,6 +599,35 @@
         </div>
     </div>
 
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+            <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+            <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+        </div>
+        <div class="donation-tooltip" id="donationTooltip">
+            <div class="donation-content">
+                <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                <div class="donation-address">
+                    <p>BTC Address:</p>
+                    <div class="address-container">
+                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                        <button onclick="copyAddress()" title="Copy address">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="qr-container">
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+        </div>
+        <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+
     <script>
         let config = {};
         let transactions = [];
@@ -494,33 +674,42 @@
             }
             
             console.log('Updating transactions table with', transactions.length, 'transactions');
+            // Sort transactions by date descending before displaying
+            transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
             transactions.forEach((tx, index) => {
                 console.log('Processing transaction:', tx);
                 const row = document.createElement('tr');
-                // Get the currency symbol
-                const currency = tx.currency || 'EUR';
+                
+                // Get original values safely
+                const original = tx.original || {}; // Default to empty object if original is missing
+                const amount = Number(tx.amount) || 0;
+                const price = Number(original.price) || 0;
+                const cost = Number(original.cost) || 0;
+                const fee = Number(original.fee) || 0;
+                const currency = original.currency || 'EUR'; // Default currency if missing
                 const currencySymbol = getCurrencySymbol(currency);
                 
                 row.innerHTML = `
                     <td>${new Date(tx.date).toLocaleDateString()}</td>
                     <td>${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
-                    <td>${tx.amount.toFixed(8)} ₿</td>
-                    <td>${tx.price.toFixed(2)} ${currencySymbol}</td>
-                    <td>${tx.cost.toFixed(2)} ${currencySymbol}</td>
+                    <td>${amount.toFixed(8)} ₿</td>
+                    <td>${price.toFixed(2)} ${currencySymbol}</td>
+                    <td>${cost.toFixed(2)} ${currencySymbol}</td>
                     <td>
                         <button class="edit-btn" onclick="editTransaction(${JSON.stringify({
-                            id: tx.id || index.toString(),
+                            id: tx.id || index.toString(), 
                             date: tx.date,
                             type: tx.type,
-                            amount: tx.amount,
-                            price: tx.price,
-                            cost: tx.cost,
-                            fee: tx.fee || 0,
-                            currency: tx.currency || 'EUR'
-                        }).replace(/"/g, '&quot;')})">
+                            amount: amount, // Use safe amount
+                            price: price,   // Use safe price
+                            cost: cost,     // Use safe cost
+                            fee: fee,     // Use safe fee
+                            currency: currency // Use safe currency
+                        }).replace(/"/g, '&quot;')})" title="Edit transaction">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="delete-btn" onclick="deleteTransaction('${tx.id || index}')">
+                        <button class="delete-btn" onclick="deleteTransaction('${tx.id || index}')" title="Delete transaction">
                             <i class="fas fa-trash"></i> Delete
                         </button>
                     </td>
@@ -671,13 +860,28 @@
         function editTransaction(tx) {
             const modal = document.createElement('div');
             modal.className = 'modal';
+            // Format date correctly for datetime-local input
+            // Handle potential invalid date string from tx.date
+            let initialDateValue = '';
+            try {
+                if (tx.date) {
+                    const dateObj = new Date(tx.date);
+                    // Check if dateObj is valid before proceeding
+                    if (!isNaN(dateObj.getTime())) {
+                         initialDateValue = new Date(dateObj.getTime() - dateObj.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                    }
+                }
+            } catch (e) {
+                console.error("Error parsing date for edit modal:", tx.date, e);
+            }
+            
             modal.innerHTML = `
                 <div class="modal-content">
                     <h2><i class="fas fa-edit"></i> Edit Transaction</h2>
                     <form id="editTransactionForm">
                         <div class="form-group">
                             <label for="editDate"><i class="fas fa-calendar"></i> Date</label>
-                            <input type="datetime-local" id="editDate" value="${new Date(tx.date).toISOString().slice(0, 16)}" required>
+                            <input type="datetime-local" id="editDate" value="${initialDateValue}" required>
                         </div>
                         <div class="form-group">
                             <label for="editType"><i class="fas fa-exchange-alt"></i> Type</label>
@@ -688,15 +892,15 @@
                         </div>
                         <div class="form-group">
                             <label for="editAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
-                            <input type="number" id="editAmount" step="0.00000001" value="${tx.amount}" required>
+                            <input type="number" id="editAmount" step="0.00000001" value="${tx.amount || 0}" required>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="editPrice"><i class="fas fa-money-bill"></i> Price</label>
-                                <input type="number" id="editPrice" step="0.01" value="${tx.price}" required>
+                                <label for="editPrice"><i class="fas fa-money-bill"></i> Original Price</label>
+                                <input type="number" id="editPrice" step="0.01" value="${tx.price || 0}" required>
                             </div>
                             <div class="form-group">
-                                <label for="editCurrency"><i class="fas fa-globe"></i> Currency</label>
+                                <label for="editCurrency"><i class="fas fa-globe"></i> Original Currency</label>
                                 <select id="editCurrency" required>
                                     <option value="EUR" ${(tx.currency || 'EUR') === 'EUR' ? 'selected' : ''}>EUR (€)</option>
                                     <option value="USD" ${tx.currency === 'USD' ? 'selected' : ''}>USD ($)</option>
@@ -708,12 +912,12 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label for="editFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
+                            <label for="editFee"><i class="fas fa-hand-holding-usd"></i> Original Fee</label>
                             <input type="number" id="editFee" step="0.01" value="${tx.fee || 0}">
                         </div>
                         <div class="form-buttons">
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Save
+                                <i class="fas fa-save"></i> Save Changes
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
                                 <i class="fas fa-times"></i> Cancel
@@ -729,33 +933,42 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
-                    const updatedTx = {
-                        ...tx,
+                    // --- Data Sent to Server ---
+                    // Send only the ID (in URL) and the editable fields.
+                    // Server will recalculate cost and base values.
+                    const dataToSend = {
+                        // id: tx.id, // ID is in the URL
                         date: new Date(document.getElementById('editDate').value).toISOString(),
                         type: document.getElementById('editType').value,
                         amount: parseFloat(document.getElementById('editAmount').value),
-                        price: parseFloat(document.getElementById('editPrice').value),
-                        currency: document.getElementById('editCurrency').value,
-                        fee: parseFloat(document.getElementById('editFee').value) || 0
+                        // Send original values for the server to process
+                        originalPrice: parseFloat(document.getElementById('editPrice').value),
+                        originalCurrency: document.getElementById('editCurrency').value,
+                        originalFee: parseFloat(document.getElementById('editFee').value) || 0
                     };
+                    // --- End Data Sent to Server ---
+                    
+                    console.log("Sending data to update:", dataToSend); // Debug log
 
-                    const response = await fetch(`/api/transactions/${tx.id}`, {
+                    const response = await fetch(`/api/admin/transactions/${tx.id}`, { // Use the correct admin route and tx.id
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify(updatedTx)
+                        body: JSON.stringify(dataToSend) // Send the simplified data
                     });
 
                     if (!response.ok) {
-                        throw new Error('Failed to update transaction');
+                        const errorData = await response.json().catch(() => ({})); // Try to get error message
+                        console.error("Update failed response:", response.status, errorData); // Debug log
+                        throw new Error(errorData.error || `Failed to update transaction (Status: ${response.status})`);
                     }
 
                     modal.remove();
                     loadTransactions(); // Refresh the data
                 } catch (error) {
                     console.error('Error updating transaction:', error);
-                    alert('Error updating transaction. Please try again.');
+                    alert('Error updating transaction: ' + error.message);
                 }
             });
         }
@@ -1275,6 +1488,88 @@
                 
                 alert('Error changing password: ' + error.message);
             }
+        });
+
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+
+        function generateQRCode() {
+            const address = document.getElementById('btcAddress').textContent;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear any existing QR code
+            qrcodeDiv.innerHTML = '';
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            // Get current theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Generate QR code
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('btcAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy address:', err);
+                alert('Failed to copy address. Please try again.');
+            });
+        }
+
+        // Handle donation tooltip
+        document.addEventListener('DOMContentLoaded', () => {
+            const donationLink = document.getElementById('donationLink');
+            const donationTooltip = document.getElementById('donationTooltip');
+
+            // Generate QR code once when page loads
+            generateQRCode();
+
+            let tooltipTimeout;
+
+            donationLink.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationLink.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+
+            // Prevent tooltip from closing when hovering over it
+            donationTooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationTooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
         });
     </script>
 </body>

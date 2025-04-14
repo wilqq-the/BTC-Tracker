@@ -42,8 +42,11 @@ body {
     color: var(--text-color);
     line-height: 1.6;
     min-height: 100vh;
-    padding: 1rem;
+    padding: 0;
+    margin: 0;
     transition: background-color 0.3s ease, color 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Theme toggle button */
@@ -88,7 +91,10 @@ body {
 .container {
     max-width: 1400px; /* Standardize max-width across all pages */
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 1rem;
+    flex: 1 0 auto; /* This makes the container take up all available space */
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Header styles */
@@ -1240,4 +1246,266 @@ header h1 i.fab.fa-bitcoin {
 /* Adjust theme toggle position when logout is present */
 .logout-btn + .theme-toggle {
     margin-left: 0.5rem;
+}
+
+/* Exchange integration styles */
+.exchange-list {
+    display: grid;
+    grid-template-columns: repeat(3, 30%);
+    gap: 3%;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+@media (max-width: 1200px) {
+    .exchange-list {
+        grid-template-columns: repeat(2, 45%);
+        gap: 5%;
+    }
+}
+
+@media (max-width: 768px) {
+    .exchange-list {
+        grid-template-columns: 90%;
+        gap: 20px;
+    }
+}
+
+.exchange-card {
+    background-color: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 5px var(--shadow-color);
+    transition: transform 0.2s ease;
+}
+
+/* Kraken card is wider but not spanning 2 columns */
+.exchange-card[data-exchange-id="kraken"] {
+    grid-column: auto;
+}
+
+.exchange-card:hover {
+    transform: translateY(-5px);
+}
+
+.exchange-card h3 {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.exchange-logo {
+    width: 24px;
+    height: 24px;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-connected {
+    background-color: var(--profit-color);
+}
+
+.status-disconnected {
+    background-color: var(--loss-color);
+}
+
+.credential-form {
+    margin-top: 15px;
+}
+
+.credential-form .form-group {
+    margin-bottom: 15px;
+}
+
+.sync-options {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+.sync-results {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 14px;
+}
+
+.exchange-balances {
+    margin-top: 15px;
+    display: none;
+}
+
+.exchange-balance-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.exchange-help {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: rgba(247, 147, 26, 0.1);
+    border-left: 3px solid #f7931a;
+    border-radius: 4px;
+}
+
+.exchange-help p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.exchange-help ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.exchange-help li {
+    margin-bottom: 5px;
+}
+
+.exchange-help a {
+    color: #f7931a;
+    text-decoration: none;
+}
+
+.exchange-help a:hover {
+    text-decoration: underline;
+}
+
+.field-help {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+/* Add credential form input styles */
+.credential-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.credential-form input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+/* Add new styles for API help link */
+.api-help-link {
+    margin: 10px 0 15px;
+    text-align: right;
+}
+
+.api-help-link a {
+    color: #f7931a;
+    font-size: 0.9rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: color 0.2s ease;
+}
+
+.api-help-link a i {
+    margin-right: 5px;
+    font-size: 1rem;
+}
+
+.api-help-link a:hover {
+    color: #e67e00;
+    text-decoration: underline;
+}
+
+.help-tip {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 4px;
+    font-style: italic;
+}
+
+/* Light theme adjustments */
+.light-theme .api-help-link a {
+    color: #d97908;
+}
+
+.light-theme .api-help-link a:hover {
+    color: #b05f00;
+}
+
+.credential-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+/* Footer styles */
+footer {
+    margin-top: 40px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0; /* Prevents the footer from shrinking */
+    width: 100%;
+}
+
+footer .footer-links {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+footer a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+footer a:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+}
+
+footer .license {
+    font-size: 0.8rem;
+    margin-top: 5px;
+}
+
+footer .github-link i {
+    font-size: 1.1rem;
 } 
