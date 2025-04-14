@@ -6,6 +6,25 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Default values
+IMAGE_TAG="latest"
+CONTAINER_NAME="btc-tracker"
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --dev)
+      IMAGE_TAG="dev"
+      CONTAINER_NAME="btc-tracker-dev"
+      shift
+      ;;
+    *)
+      echo -e "${RED}Unknown option: $1${NC}"
+      exit 1
+      ;;
+  esac
+done
+
 echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}   BTC Tracker - Easy Setup Script     ${NC}"
 echo -e "${GREEN}========================================${NC}"
@@ -30,9 +49,14 @@ else
 fi
 
 # Check for docker-compose or podman-compose
-if [ "$CONTAINER_ENGINE" = "docker" ] && command_exists docker-compose; then
-  COMPOSE_ENGINE="docker-compose"
-  echo -e "${GREEN}✓${NC} Docker Compose detected!"
+if [ "$CONTAINER_ENGINE" = "docker" ] && command_exists docker; then
+  if docker compose version >/dev/null 2>&1; then
+    COMPOSE_ENGINE="docker compose"
+    echo -e "${GREEN}✓${NC} Docker Compose detected!"
+  else
+    COMPOSE_ENGINE=""
+    echo -e "${YELLOW}!${NC} Docker Compose not found. Will use native Docker commands."
+  fi
 elif [ "$CONTAINER_ENGINE" = "podman" ] && command_exists podman-compose; then
   COMPOSE_ENGINE="podman-compose"
   echo -e "${GREEN}✓${NC} Podman Compose detected!"
@@ -52,7 +76,7 @@ read -p "Port: " user_port
 PORT=${user_port:-3000}
 
 # Update .env file with user's port
-echo -e "# Container Settings\nCONTAINER_NAME=btc-tracker\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./src/data\n\n# Environment Settings\nNODE_ENV=development" > .env
+echo -e "# Container Settings\nCONTAINER_NAME=$CONTAINER_NAME\nIMAGE_TAG=$IMAGE_TAG\n\n# Port Settings\nPORT=$PORT\n\n# Path Settings\nDATA_PATH=./src/data\n\n# Environment Settings\nNODE_ENV=development" > .env
 
 echo
 echo -e "${GREEN}✓${NC} Created/updated .env file with port $PORT"
@@ -63,9 +87,9 @@ echo -e "${GREEN}✓${NC} Ensured data directory exists"
 
 # Pull the latest image
 echo
-echo -e "${YELLOW}Pulling latest BTC Tracker image...${NC}"
-$CONTAINER_ENGINE pull docker.io/thewilqq/btc-tracker:latest
-echo -e "${GREEN}✓${NC} Successfully pulled the latest image"
+echo -e "${YELLOW}Pulling BTC Tracker image (tag: $IMAGE_TAG)...${NC}"
+$CONTAINER_ENGINE pull docker.io/thewilqq/btc-tracker:$IMAGE_TAG
+echo -e "${GREEN}✓${NC} Successfully pulled the image"
 
 # Run the application using the appropriate method
 echo
@@ -86,11 +110,11 @@ if [ "$COMPOSE_ENGINE" != "" ]; then
 else
   # Using native Docker/Podman commands
   # Stop and remove any existing container
-  $CONTAINER_ENGINE stop btc-tracker 2>/dev/null
-  $CONTAINER_ENGINE rm btc-tracker 2>/dev/null
+  $CONTAINER_ENGINE stop $CONTAINER_NAME 2>/dev/null
+  $CONTAINER_ENGINE rm $CONTAINER_NAME 2>/dev/null
   
   # Run the container
-  $CONTAINER_ENGINE run -d --name btc-tracker -p $PORT:3000 -v ./src/data:/app/src/data thewilqq/btc-tracker:latest
+  $CONTAINER_ENGINE run -d --name $CONTAINER_NAME -p $PORT:3000 -v ./src/data:/app/src/data thewilqq/btc-tracker:$IMAGE_TAG
   
   echo
   echo -e "${GREEN}✓${NC} BTC Tracker is now running!"
@@ -99,7 +123,7 @@ else
   echo -e "${YELLOW}TIP:${NC} You can set a CoinGecko API key in the Admin Panel for better rate limits"
   
   echo
-  echo -e "To stop the application, run: ${YELLOW}$CONTAINER_ENGINE stop btc-tracker${NC}"
+  echo -e "To stop the application, run: ${YELLOW}$CONTAINER_ENGINE stop $CONTAINER_NAME${NC}"
 fi
 
 echo
