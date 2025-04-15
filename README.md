@@ -67,7 +67,6 @@ chmod +x run-app.sh
 This will:
 - Pull the `dev` tagged image instead of `latest`
 - Run the container with name `btc-tracker-dev`
-- Create a separate data directory for development
 
 #### Using Docker Compose Directly
 
