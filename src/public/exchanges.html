@@ -8,6 +8,38 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <style>
+        /* Adjust exchange cards to fit 4 in a row */
+        .exchange-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(calc(25% - 20px), 1fr));
+            gap: 20px;
+        }
+        
+        .exchange-card {
+            min-width: auto;
+            width: 100%;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .exchange-list {
+                grid-template-columns: repeat(auto-fill, minmax(calc(33.33% - 20px), 1fr));
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .exchange-list {
+                grid-template-columns: repeat(auto-fill, minmax(calc(50% - 20px), 1fr));
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .exchange-list {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">

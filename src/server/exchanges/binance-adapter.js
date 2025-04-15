@@ -116,9 +116,6 @@ class BinanceAdapter extends ExchangeAdapter {
             
             console.log('Received sync options for binance:', options);
             
-            // Prepare parameters
-            const params = {};
-            
             // Parse dates
             let startDate = null;
             let endDate = null;
@@ -131,12 +128,13 @@ class BinanceAdapter extends ExchangeAdapter {
                         
                     if (startDate instanceof Date && !isNaN(startDate.getTime())) {
                         console.log('Parsed startDate to:', startDate.toISOString().split('T')[0]);
-                        params.startTime = startDate.getTime();
                     } else {
                         console.warn('Invalid startDate format, ignoring:', options.startDate);
+                        startDate = null;
                     }
                 } catch (err) {
                     console.error('Failed to parse startDate:', err);
+                    startDate = null;
                 }
             }
             
@@ -148,304 +146,82 @@ class BinanceAdapter extends ExchangeAdapter {
                         
                     if (endDate instanceof Date && !isNaN(endDate.getTime())) {
                         console.log('Parsed endDate to:', endDate.toISOString().split('T')[0]);
-                        params.endTime = endDate.getTime();
                     } else {
                         console.warn('Invalid endDate format, ignoring:', options.endDate);
+                        endDate = null;
                     }
                 } catch (err) {
                     console.error('Failed to parse endDate:', err);
+                    endDate = null;
                 }
             }
             
-            // Check if time range exceeds 90 days and adjust if needed
-            if (startDate && endDate) {
-                const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-                if (daysDiff > 90) {
-                    console.warn('Date range exceeds Binance 90-day limit. Adjusting to last 90 days');
-                    // Adjust startDate to be exactly 90 days before endDate
+            // If no end date, use current date
+            if (!endDate) {
+                endDate = new Date();
+            }
+            
+            // If no start date, use default date range (30 days before end date)
+            if (!startDate) {
                     startDate = new Date(endDate);
-                    startDate.setDate(startDate.getDate() - 90);
-                    params.startTime = startDate.getTime();
-                }
+                startDate.setDate(startDate.getDate() - 30);
             }
             
-            // Collect transactions from multiple endpoints
+            // Ensure endDate is after startDate
+            if (endDate < startDate) {
+                console.warn('End date is before start date. Swapping dates.');
+                const temp = startDate;
+                startDate = endDate;
+                endDate = temp;
+            }
+            
+            // Check if time range exceeds 30 days
+            const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+            console.log(`Date range spans ${daysDiff} days`);
+            
+            // Collect all transactions
             let allTransactions = [];
             
-            // Get a list of BTC trading pairs to query
-            const commonBtcPairs = ['BTCUSDT', 'BTCBUSD', 'BTCUSDC', 'BTCEUR', 'BTCGBP'];
-            
-            // 1. Get spot trades - BUY and SELL orders
-            for (const symbol of commonBtcPairs) {
-                try {
-                    const spotParams = {
-                        ...params,
-                        symbol,
-                        limit: 1000
-                    };
+            // 1. Get spot trades (24-hour chunks)
+            if (daysDiff > 0) {
+                console.log('Getting spot trades with 24-hour chunks');
+                // Create 24-hour chunks for spot trades
+                const spotTradeChunks = this._splitDateRange(startDate, endDate, 1); // 1 day chunks
+                console.log(`Split date range into ${spotTradeChunks.length} spot trade chunks`);
+                
+                // Process each chunk for spot trades
+                for (const chunk of spotTradeChunks) {
+                    const chunkStart = chunk.start;
+                    const chunkEnd = chunk.end;
+                    console.log(`Processing spot trades chunk: ${chunkStart.toISOString().split('T')[0]} to ${chunkEnd.toISOString().split('T')[0]}`);
                     
-                    const spotTrades = await this._privateRequest('/api/v3/myTrades', spotParams);
-                    
-                    if (Array.isArray(spotTrades)) {
-                        console.log(`Got ${spotTrades.length} trades from Binance spot account for ${symbol}`);
-                        
-                        // Transform to our format
-                        for (const trade of spotTrades) {
-                            const tx = this.transformSpotTransaction(trade);
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    if (error.message.includes('Invalid symbol')) {
-                        console.warn(`Trading pair ${symbol} not found or no trades available`);
-                    } else {
-                        console.error(`Error fetching Binance spot trades for ${symbol}:`, error.message);
-                    }
+                    // Collect spot trades for this chunk
+                    const spotTrades = await this._getSpotTrades(chunkStart, chunkEnd);
+                    allTransactions = allTransactions.concat(spotTrades);
                 }
             }
             
-            // 2. Get fiat purchase/sell orders - Buy BTC with fiat
-            try {
-                const fiatParams = {
-                    ...params,
-                    transactionType: 0,  // 0: buy, 1: sell
-                    asset: 'BTC',
-                    limit: 100
-                };
-                
-                // Make sure time range is valid
-                if (fiatParams.startTime && fiatParams.endTime) {
-                    const daysDiff = Math.floor((fiatParams.endTime - fiatParams.startTime) / (1000 * 60 * 60 * 24));
-                    if (daysDiff > 90) {
-                        fiatParams.startTime = fiatParams.endTime - (90 * 24 * 60 * 60 * 1000);
-                    }
-                }
-                
-                // Get BTC purchase with fiat
-                const fiatOrders = await this._privateRequest('/sapi/v1/fiat/orders', fiatParams);
-                
-                if (fiatOrders && fiatOrders.data && Array.isArray(fiatOrders.data)) {
-                    console.log(`Got ${fiatOrders.data.length} fiat BTC purchases from Binance`);
-                    
-                    // Transform to our format
-                    for (const order of fiatOrders.data) {
-                        if (order.status === 'Completed') {
-                            const tx = this.transformFiatTransaction(order, 'buy');
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                }
-                
-                // Get BTC sales for fiat
-                fiatParams.transactionType = 1; // 1 for sell
-                const fiatSellOrders = await this._privateRequest('/sapi/v1/fiat/orders', fiatParams);
-                
-                if (fiatSellOrders && fiatSellOrders.data && Array.isArray(fiatSellOrders.data)) {
-                    console.log(`Got ${fiatSellOrders.data.length} fiat BTC sales from Binance`);
-                    
-                    // Transform to our format
-                    for (const order of fiatSellOrders.data) {
-                        if (order.status === 'Completed') {
-                            const tx = this.transformFiatTransaction(order, 'sell');
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                }
-                
-                // Try alternative endpoint for fiat payments (P2P and direct purchases)
-                try {
-                    const paymentParams = {
-                        transactionType: 0, // 0-buy, 1-sell
-                        rows: 100,
-                        timestamp: Date.now()
-                    };
-                    
-                    // Convert startTime and endTime to beginTime and endTime format
-                    if (params.startTime) {
-                        paymentParams.beginTime = params.startTime;
-                    }
-                    
-                    if (params.endTime) {
-                        paymentParams.endTime = params.endTime;
-                    }
-                    
-                    // Ensure the date ranges are within 90 days
-                    if (paymentParams.beginTime && paymentParams.endTime) {
-                        const daysDiff = Math.floor((paymentParams.endTime - paymentParams.beginTime) / (1000 * 60 * 60 * 24));
-                        if (daysDiff > 90) {
-                            console.warn('Date range exceeds Binance 90-day limit for fiat payments. Adjusting to last 90 days');
-                            paymentParams.beginTime = paymentParams.endTime - (90 * 24 * 60 * 60 * 1000);
-                        }
-                    }
-                    
-                    console.log('Fetching fiat payments with params:', paymentParams);
-                    
-                    // Get all fiat payment records (includes bank transfers and card purchases)
-                    const fiatPayments = await this._privateRequest('/sapi/v1/fiat/payments', paymentParams);
-                    
-                    if (fiatPayments && fiatPayments.data && Array.isArray(fiatPayments.data)) {
-                        console.log(`Got ${fiatPayments.data.length} fiat payment records from Binance`);
-                        
-                        // Filter for BTC purchases only
-                        const btcPayments = fiatPayments.data.filter(payment => 
-                            payment.cryptoCurrency === 'BTC' && payment.status === 'Completed'
-                        );
-                        
-                        console.log(`Filtered to ${btcPayments.length} BTC fiat payment records`);
-                        
-                        // Transform to our format
-                        for (const payment of btcPayments) {
-                            const tx = this.transformFiatPayment(payment);
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                    
-                    // Also get sell transactions
-                    paymentParams.transactionType = 1; // 1-sell
-                    const fiatSellPayments = await this._privateRequest('/sapi/v1/fiat/payments', paymentParams);
-                    
-                    if (fiatSellPayments && fiatSellPayments.data && Array.isArray(fiatSellPayments.data)) {
-                        console.log(`Got ${fiatSellPayments.data.length} fiat sell payment records from Binance`);
-                        
-                        // Filter for BTC sales only
-                        const btcSellPayments = fiatSellPayments.data.filter(payment => 
-                            payment.cryptoCurrency === 'BTC' && payment.status === 'Completed'
-                        );
-                        
-                        console.log(`Filtered to ${btcSellPayments.length} BTC fiat sell payment records`);
-                        
-                        // Transform to our format with sell type
-                        for (const payment of btcSellPayments) {
-                            const tx = this.transformFiatPayment(payment, 'sell');
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching Binance fiat payment records:', error.message);
-                    console.error('Full error:', error);
-                }
-                
-                // Try the convert history endpoint (may capture One-Click Buy transactions)
-                try {
-                    const convertParams = {
-                        ...params,
-                        limit: 100
-                    };
-                    
-                    // Get convert trade history
-                    const converts = await this._privateRequest('/sapi/v1/convert/tradeFlow', convertParams);
-                    
-                    if (converts && converts.list && Array.isArray(converts.list)) {
-                        console.log(`Got ${converts.list.length} convert records from Binance`);
-                        
-                        // Filter for BTC conversions
-                        const btcConverts = converts.list.filter(convert => 
-                            (convert.fromAsset === 'BTC' || convert.toAsset === 'BTC') && 
-                            convert.status === 'SUCCESS'
-                        );
-                        
-                        console.log(`Filtered to ${btcConverts.length} BTC convert records`);
-                        
-                        // Transform to our format
-                        for (const convert of btcConverts) {
-                            const tx = this.transformConvertTransaction(convert);
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error('Error fetching Binance convert history:', error.message);
-                }
-            } catch (error) {
-                console.error('Error fetching Binance fiat orders:', error.message);
-            }
+            // 2. Get fiat orders and other transaction types (30-day chunks)
+            const otherChunks = this._splitDateRange(startDate, endDate, 30); // 30-day chunks
+            console.log(`Split date range into ${otherChunks.length} chunks for other transaction types`);
             
-            // 3. Get deposit history
-            try {
-                const depositParams = { 
-                    ...params,
-                    coin: 'BTC'
-                };
+            // Process each chunk for other transaction types
+            for (const chunk of otherChunks) {
+                const chunkStart = chunk.start;
+                const chunkEnd = chunk.end;
+                console.log(`Processing other transactions chunk: ${chunkStart.toISOString().split('T')[0]} to ${chunkEnd.toISOString().split('T')[0]}`);
                 
-                // Ensure we don't exceed 90 days
-                if (depositParams.startTime && depositParams.endTime) {
-                    const daysDiff = Math.floor((depositParams.endTime - depositParams.startTime) / (1000 * 60 * 60 * 24));
-                    if (daysDiff > 90) {
-                        depositParams.startTime = depositParams.endTime - (90 * 24 * 60 * 60 * 1000);
-                    }
-                }
+                // Get non-spot transactions
+                const fiatTransactions = await this._getFiatTransactions(chunkStart, chunkEnd);
+                const depositTransactions = await this._getDepositHistory(chunkStart, chunkEnd);
+                const buyCryptoTransactions = await this._getBuyCryptoHistory(chunkStart, chunkEnd);
                 
-                const deposits = await this._privateRequest('/sapi/v1/capital/deposit/hisrec', depositParams);
-                
-                if (Array.isArray(deposits)) {
-                    console.log(`Got ${deposits.length} BTC deposits from Binance`);
-                    
-                    // Transform to our format - only include completed deposits (which are buy transactions)
-                    for (const deposit of deposits) {
-                        if (deposit.status === 1) { // Completed deposits only
-                            const tx = this.transformDepositWithdrawal(deposit, 'deposit');
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching Binance deposit history:', error.message);
-            }
-            
-            // 4. Skip withdrawal history since we only want buy transactions
-            console.log('Skipping withdrawal history fetching as we only want buy transactions');
-            
-            // 5. Get Buy Crypto History - this captures card purchases like Google Pay
-            try {
-                const buyCryptoParams = {
-                    crypto: 'BTC',
-                    timestamp: Date.now(),
-                    limit: 100
-                };
-                
-                // Set time range if available
-                if (params.startTime) {
-                    buyCryptoParams.startTimestamp = params.startTime;
-                }
-                
-                if (params.endTime) {
-                    buyCryptoParams.endTimestamp = params.endTime;
-                }
-                
-                console.log('Fetching Buy Crypto history with params:', buyCryptoParams);
-                
-                // Get Buy Crypto history
-                const buyCryptoHistory = await this._privateRequest('/sapi/v1/fiat/history', buyCryptoParams);
-                
-                if (buyCryptoHistory && buyCryptoHistory.data && Array.isArray(buyCryptoHistory.data)) {
-                    console.log(`Got ${buyCryptoHistory.data.length} Buy Crypto records from Binance`);
-                    
-                    // Transform to our format
-                    for (const purchase of buyCryptoHistory.data) {
-                        if (purchase.status === 'Successful' || purchase.status === 'Completed') {
-                            const tx = this.transformBuyCryptoTransaction(purchase);
-                            if (tx) {
-                                allTransactions.push(tx);
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching Binance Buy Crypto history:', error.message);
-                console.error('Full error:', error);
+                // Add all transaction types to the result
+                allTransactions = allTransactions.concat(
+                    fiatTransactions,
+                    depositTransactions,
+                    buyCryptoTransactions
+                );
             }
             
             // Sort by date
@@ -584,6 +360,401 @@ class BinanceAdapter extends ExchangeAdapter {
             });
         } catch (error) {
             console.error('Error fetching Binance transactions:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Split a date range into chunks of a specified number of days
+     * @param {Date} startDate - Start date
+     * @param {Date} endDate - End date
+     * @param {number} chunkSizeDays - Size of each chunk in days
+     * @returns {Array<Object>} Array of {start, end} date pairs
+     */
+    _splitDateRange(startDate, endDate, chunkSizeDays = 30) {
+        const chunks = [];
+        let currentStartDate = new Date(startDate);
+        
+        while (currentStartDate < endDate) {
+            // Calculate the end date for this chunk
+            const chunkEndDate = new Date(currentStartDate);
+            chunkEndDate.setDate(chunkEndDate.getDate() + chunkSizeDays);
+            
+            // If chunk end date exceeds the overall end date, use the overall end date
+            const actualEndDate = (chunkEndDate > endDate) ? new Date(endDate) : chunkEndDate;
+            
+            // Add this chunk to the list
+            chunks.push({
+                start: new Date(currentStartDate),
+                end: new Date(actualEndDate)
+            });
+            
+            // Move to the next chunk
+            currentStartDate = new Date(actualEndDate);
+            
+            // Avoid infinite loop if dates are the same
+            if (currentStartDate.getTime() === actualEndDate.getTime()) {
+                currentStartDate.setDate(currentStartDate.getDate() + 1);
+            }
+        }
+        
+        return chunks;
+    }
+
+    /**
+     * Get spot trades for a specific date range
+     * @param {Date} startDate - Start date
+     * @param {Date} endDate - End date
+     * @returns {Promise<Array>} Array of spot trade transactions
+     */
+    async _getSpotTrades(startDate, endDate) {
+        try {
+            // Prepare parameters
+            const params = {};
+            
+            if (startDate) {
+                params.startTime = startDate.getTime();
+            }
+            
+            if (endDate) {
+                params.endTime = endDate.getTime();
+            }
+            
+            // Validate time range - Binance spot trades have 24-hour limit
+            const hoursDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60));
+            if (hoursDiff > 24) {
+                console.warn('Date range for spot trades exceeds 24 hours. This should not happen due to chunking.');
+                // Adjust to exactly 24 hours
+                params.endTime = params.startTime + (24 * 60 * 60 * 1000);
+            }
+            
+            let spotTransactions = [];
+            const commonBtcPairs = ['BTCUSDT', 'BTCBUSD', 'BTCUSDC', 'BTCEUR', 'BTCGBP'];
+            
+            // Get spot trades for each BTC pair
+            for (const symbol of commonBtcPairs) {
+                try {
+                    const spotParams = {
+                        ...params,
+                        symbol,
+                        limit: 1000
+                    };
+                    
+                    const spotTrades = await this._privateRequest('/api/v3/myTrades', spotParams);
+                    
+                    if (Array.isArray(spotTrades)) {
+                        console.log(`Got ${spotTrades.length} trades from Binance spot account for ${symbol}`);
+                        
+                        // Transform to our format
+                        for (const trade of spotTrades) {
+                            const tx = this.transformSpotTransaction(trade);
+                            if (tx) {
+                                spotTransactions.push(tx);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    if (error.message.includes('Invalid symbol')) {
+                        console.warn(`Trading pair ${symbol} not found or no trades available`);
+                    } else {
+                        console.error(`Error fetching Binance spot trades for ${symbol}:`, error.message);
+                    }
+                }
+            }
+            
+            return spotTransactions;
+        } catch (error) {
+            console.error('Error fetching spot trades:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get fiat transactions for a specific date range
+     * @param {Date} startDate - Start date
+     * @param {Date} endDate - End date
+     * @returns {Promise<Array>} Array of fiat transactions
+     */
+    async _getFiatTransactions(startDate, endDate) {
+        try {
+            // Prepare parameters
+            const params = {};
+            
+            if (startDate) {
+                params.startTime = startDate.getTime();
+            }
+            
+            if (endDate) {
+                params.endTime = endDate.getTime();
+            }
+            
+            // Check if time range exceeds 30 days
+            const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+            if (daysDiff > 30) {
+                console.warn('Date range for fiat transactions exceeds 30 days. Limiting to 30 days.');
+                params.endTime = params.startTime + (30 * 24 * 60 * 60 * 1000);
+            }
+            
+            let fiatTransactions = [];
+            
+            // 1. Get fiat purchase/sell orders
+            try {
+                const fiatParams = {
+                    ...params,
+                    transactionType: 0,  // 0: buy, 1: sell
+                    asset: 'BTC',
+                    limit: 100
+                };
+                
+                // Get BTC purchase with fiat
+                const fiatOrders = await this._privateRequest('/sapi/v1/fiat/orders', fiatParams);
+                
+                if (fiatOrders && fiatOrders.data && Array.isArray(fiatOrders.data)) {
+                    console.log(`Got ${fiatOrders.data.length} fiat BTC purchases from Binance`);
+                    
+                    // Transform to our format
+                    for (const order of fiatOrders.data) {
+                        if (order.status === 'Completed') {
+                            const tx = this.transformFiatTransaction(order, 'buy');
+                            if (tx) {
+                                fiatTransactions.push(tx);
+                            }
+                        }
+                    }
+                }
+                
+                // Get BTC sales for fiat
+                fiatParams.transactionType = 1; // 1 for sell
+                const fiatSellOrders = await this._privateRequest('/sapi/v1/fiat/orders', fiatParams);
+                
+                if (fiatSellOrders && fiatSellOrders.data && Array.isArray(fiatSellOrders.data)) {
+                    console.log(`Got ${fiatSellOrders.data.length} fiat BTC sales from Binance`);
+                    
+                    // Transform to our format
+                    for (const order of fiatSellOrders.data) {
+                        if (order.status === 'Completed') {
+                            const tx = this.transformFiatTransaction(order, 'sell');
+                            if (tx) {
+                                fiatTransactions.push(tx);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching Binance fiat orders:', error.message);
+                }
+                
+            // 2. Get fiat payments
+                try {
+                    const paymentParams = {
+                        transactionType: 0, // 0-buy, 1-sell
+                        rows: 100,
+                        timestamp: Date.now()
+                    };
+                    
+                    // Convert startTime and endTime to beginTime and endTime format
+                    if (params.startTime) {
+                        paymentParams.beginTime = params.startTime;
+                    }
+                    
+                    if (params.endTime) {
+                        paymentParams.endTime = params.endTime;
+                    }
+                    
+                    console.log('Fetching fiat payments with params:', paymentParams);
+                    
+                    // Get all fiat payment records (includes bank transfers and card purchases)
+                    const fiatPayments = await this._privateRequest('/sapi/v1/fiat/payments', paymentParams);
+                    
+                    if (fiatPayments && fiatPayments.data && Array.isArray(fiatPayments.data)) {
+                        console.log(`Got ${fiatPayments.data.length} fiat payment records from Binance`);
+                        
+                        // Filter for BTC purchases only
+                        const btcPayments = fiatPayments.data.filter(payment => 
+                            payment.cryptoCurrency === 'BTC' && payment.status === 'Completed'
+                        );
+                        
+                        console.log(`Filtered to ${btcPayments.length} BTC fiat payment records`);
+                        
+                        // Transform to our format
+                        for (const payment of btcPayments) {
+                            const tx = this.transformFiatPayment(payment);
+                            if (tx) {
+                            fiatTransactions.push(tx);
+                            }
+                        }
+                    }
+                    
+                    // Also get sell transactions
+                    paymentParams.transactionType = 1; // 1-sell
+                    const fiatSellPayments = await this._privateRequest('/sapi/v1/fiat/payments', paymentParams);
+                    
+                    if (fiatSellPayments && fiatSellPayments.data && Array.isArray(fiatSellPayments.data)) {
+                        console.log(`Got ${fiatSellPayments.data.length} fiat sell payment records from Binance`);
+                        
+                        // Filter for BTC sales only
+                        const btcSellPayments = fiatSellPayments.data.filter(payment => 
+                            payment.cryptoCurrency === 'BTC' && payment.status === 'Completed'
+                        );
+                        
+                        console.log(`Filtered to ${btcSellPayments.length} BTC fiat sell payment records`);
+                        
+                        // Transform to our format with sell type
+                        for (const payment of btcSellPayments) {
+                            const tx = this.transformFiatPayment(payment, 'sell');
+                            if (tx) {
+                            fiatTransactions.push(tx);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching Binance fiat payment records:', error.message);
+                }
+                
+            // 3. Try the convert history endpoint
+                try {
+                    const convertParams = {
+                        ...params,
+                        limit: 100
+                    };
+                    
+                    // Get convert trade history
+                    const converts = await this._privateRequest('/sapi/v1/convert/tradeFlow', convertParams);
+                    
+                    if (converts && converts.list && Array.isArray(converts.list)) {
+                        console.log(`Got ${converts.list.length} convert records from Binance`);
+                        
+                        // Filter for BTC conversions
+                        const btcConverts = converts.list.filter(convert => 
+                            (convert.fromAsset === 'BTC' || convert.toAsset === 'BTC') && 
+                            convert.status === 'SUCCESS'
+                        );
+                        
+                        console.log(`Filtered to ${btcConverts.length} BTC convert records`);
+                        
+                        // Transform to our format
+                        for (const convert of btcConverts) {
+                            const tx = this.transformConvertTransaction(convert);
+                            if (tx) {
+                            fiatTransactions.push(tx);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error fetching Binance convert history:', error.message);
+                }
+            
+            return fiatTransactions;
+            } catch (error) {
+            console.error('Error fetching fiat transactions:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get deposit history for a specific date range
+     * @param {Date} startDate - Start date
+     * @param {Date} endDate - End date
+     * @returns {Promise<Array>} Array of deposit transactions
+     */
+    async _getDepositHistory(startDate, endDate) {
+        try {
+            // Prepare parameters
+            const params = {};
+            
+            if (startDate) {
+                params.startTime = startDate.getTime();
+            }
+            
+            if (endDate) {
+                params.endTime = endDate.getTime();
+            }
+            
+            // Check if time range exceeds 90 days (Binance deposit history limit)
+            const daysDiff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+            if (daysDiff > 90) {
+                console.warn('Date range for deposit history exceeds 90 days. Limiting to 90 days.');
+                params.endTime = params.startTime + (90 * 24 * 60 * 60 * 1000);
+            }
+            
+            let depositTransactions = [];
+            
+                const depositParams = { 
+                    ...params,
+                    coin: 'BTC'
+                };
+                
+                const deposits = await this._privateRequest('/sapi/v1/capital/deposit/hisrec', depositParams);
+                
+                if (Array.isArray(deposits)) {
+                    console.log(`Got ${deposits.length} BTC deposits from Binance`);
+                    
+                    // Transform to our format - only include completed deposits (which are buy transactions)
+                    for (const deposit of deposits) {
+                        if (deposit.status === 1) { // Completed deposits only
+                            const tx = this.transformDepositWithdrawal(deposit, 'deposit');
+                            if (tx) {
+                            depositTransactions.push(tx);
+                            }
+                        }
+                    }
+                }
+            
+            return depositTransactions;
+            } catch (error) {
+            console.error('Error fetching deposit history:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Get Buy Crypto history for a specific date range
+     * @param {Date} startDate - Start date
+     * @param {Date} endDate - End date
+     * @returns {Promise<Array>} Array of Buy Crypto transactions
+     */
+    async _getBuyCryptoHistory(startDate, endDate) {
+        try {
+            // Prepare parameters
+                const buyCryptoParams = {
+                    crypto: 'BTC',
+                    timestamp: Date.now(),
+                    limit: 100
+                };
+                
+                // Set time range if available
+            if (startDate) {
+                buyCryptoParams.startTimestamp = startDate.getTime();
+                }
+                
+            if (endDate) {
+                buyCryptoParams.endTimestamp = endDate.getTime();
+                }
+                
+                console.log('Fetching Buy Crypto history with params:', buyCryptoParams);
+            
+            let buyCryptoTransactions = [];
+                
+                // Get Buy Crypto history
+                const buyCryptoHistory = await this._privateRequest('/sapi/v1/fiat/history', buyCryptoParams);
+                
+                if (buyCryptoHistory && buyCryptoHistory.data && Array.isArray(buyCryptoHistory.data)) {
+                    console.log(`Got ${buyCryptoHistory.data.length} Buy Crypto records from Binance`);
+                    
+                    // Transform to our format
+                    for (const purchase of buyCryptoHistory.data) {
+                        if (purchase.status === 'Successful' || purchase.status === 'Completed') {
+                            const tx = this.transformBuyCryptoTransaction(purchase);
+                            if (tx) {
+                            buyCryptoTransactions.push(tx);
+                        }
+                    }
+                }
+            }
+            
+            return buyCryptoTransactions;
+                    } catch (error) {
+            console.error('Error fetching Buy Crypto history:', error);
             return [];
         }
     }
