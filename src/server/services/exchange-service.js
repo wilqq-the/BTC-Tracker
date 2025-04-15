@@ -3,6 +3,7 @@ const path = require('path');
 const KrakenAdapter = require('../exchanges/kraken-adapter');
 const StrikeAdapter = require('../exchanges/strike-adapter');
 const BinanceAdapter = require('../exchanges/binance-adapter');
+const CoinbaseAdapter = require('../exchanges/coinbase-adapter');
 const credentialManager = require('./credential-manager');
 
 /**
@@ -10,12 +11,18 @@ const credentialManager = require('./credential-manager');
  */
 class ExchangeService {
   constructor() {
-    this.exchanges = {};
-    this.registeredAdapters = {
-      kraken: KrakenAdapter,
-      strike: StrikeAdapter,
-      binance: BinanceAdapter
-    };
+    this.exchanges = new Map();
+    this.adapterClasses = new Map([
+      ['kraken', KrakenAdapter],
+      ['strike', StrikeAdapter],
+      ['binance', BinanceAdapter],
+      ['coinbase', CoinbaseAdapter]
+    ]);
+    
+    // Initialize exchange adapters
+    this.adapterClasses.forEach((AdapterClass, id) => {
+      this.exchanges.set(id, new AdapterClass());
+    });
     
     // Initialize all exchanges with credentials
     this.initializeExchanges();
@@ -55,18 +62,15 @@ class ExchangeService {
   initializeExchange(exchangeId) {
     try {
       // Check if we have an adapter for this exchange
-      const AdapterClass = this.registeredAdapters[exchangeId.toLowerCase()];
+      const AdapterClass = this.adapterClasses.get(exchangeId.toLowerCase());
       
       if (!AdapterClass) {
         console.error(`No adapter found for exchange: ${exchangeId}`);
         return false;
       }
       
-      // Create adapter instance
-      const adapter = new AdapterClass();
-      
       // Store in exchanges map
-      this.exchanges[exchangeId] = adapter;
+      this.exchanges.set(exchangeId, new AdapterClass());
       
       return true;
     } catch (error) {
@@ -82,7 +86,7 @@ class ExchangeService {
   getAvailableExchanges() {
     const exchanges = {};
     
-    for (const [id, AdapterClass] of Object.entries(this.registeredAdapters)) {
+    for (const [id, AdapterClass] of this.adapterClasses) {
       // Create temporary instance to get info
       const tempAdapter = new AdapterClass();
       
@@ -90,7 +94,7 @@ class ExchangeService {
         id,
         name: tempAdapter.getName(),
         credentials: tempAdapter.getRequiredCredentials(),
-        connected: this.exchanges[id] ? this.exchanges[id].getStatus() : false
+        connected: this.exchanges.has(id) ? this.exchanges.get(id).getStatus() : false
       };
     }
     
@@ -103,7 +107,7 @@ class ExchangeService {
    * @returns {Object|null} Exchange adapter or null if not found
    */
   getExchange(exchangeId) {
-    return this.exchanges[exchangeId] || null;
+    return this.exchanges.get(exchangeId) || null;
   }
 
   /**
@@ -114,7 +118,7 @@ class ExchangeService {
   async connectExchange(exchangeId) {
     try {
       // Get adapter
-      let adapter = this.exchanges[exchangeId];
+      let adapter = this.exchanges.get(exchangeId);
       
       // If not initialized yet, initialize it
       if (!adapter) {
@@ -122,7 +126,7 @@ class ExchangeService {
         if (!success) {
           return false;
         }
-        adapter = this.exchanges[exchangeId];
+        adapter = this.exchanges.get(exchangeId);
       }
       
       // Connect to exchange
@@ -142,7 +146,7 @@ class ExchangeService {
   async saveExchangeCredentials(exchangeId, credentials) {
     try {
       // Get adapter class
-      const AdapterClass = this.registeredAdapters[exchangeId.toLowerCase()];
+      const AdapterClass = this.adapterClasses.get(exchangeId.toLowerCase());
       
       if (!AdapterClass) {
         throw new Error(`No adapter found for exchange: ${exchangeId}`);
@@ -166,9 +170,9 @@ class ExchangeService {
       }
       
       // Initialize or reinitialize the exchange
-      if (this.exchanges[exchangeId]) {
+      if (this.exchanges.has(exchangeId)) {
         // Disconnect existing adapter
-        delete this.exchanges[exchangeId];
+        this.exchanges.delete(exchangeId);
       }
       
       this.initializeExchange(exchangeId);
@@ -190,7 +194,7 @@ class ExchangeService {
   async getExchangeTransactions(exchangeId, options = {}) {
     try {
       // Get adapter
-      const adapter = this.exchanges[exchangeId];
+      const adapter = this.exchanges.get(exchangeId);
       
       if (!adapter) {
         throw new Error(`Exchange not initialized: ${exchangeId}`);
@@ -220,7 +224,7 @@ class ExchangeService {
   async getExchangeBalances(exchangeId) {
     try {
       // Get adapter
-      const adapter = this.exchanges[exchangeId];
+      const adapter = this.exchanges.get(exchangeId);
       
       if (!adapter) {
         throw new Error(`Exchange not initialized: ${exchangeId}`);
@@ -253,8 +257,8 @@ class ExchangeService {
       credentialManager.deleteCredentials(exchangeId);
       
       // Remove adapter
-      if (this.exchanges[exchangeId]) {
-        delete this.exchanges[exchangeId];
+      if (this.exchanges.has(exchangeId)) {
+        this.exchanges.delete(exchangeId);
       }
       
       return true;
@@ -271,7 +275,7 @@ class ExchangeService {
    */
   getAdapterClass(exchangeId) {
     const id = exchangeId.toLowerCase();
-    return this.registeredAdapters[id] || null;
+    return this.adapterClasses.get(id) || null;
   }
 }
 

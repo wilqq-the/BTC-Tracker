@@ -542,9 +542,20 @@ function importCSVData(csvFilePath) {
                     - Valid transactions: ${newTransactions.length}
                     - Skipped records: ${skippedCount}`);
 
-                transactions = newTransactions;
+                // Append new transactions instead of replacing all transactions
+                const existingTransactionIds = new Set(transactions.map(tx => tx.id));
+                const uniqueNewTransactions = newTransactions.filter(tx => !existingTransactionIds.has(tx.id));
+                
+                console.log(`[server.js] Found ${uniqueNewTransactions.length} unique new transactions to add`);
+                
+                // Combine existing and new transactions
+                transactions = [...transactions, ...uniqueNewTransactions];
+                
+                // Sort all transactions by date
+                transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
                 await saveData();
-                console.log(`[server.js] Imported ${transactions.length} transactions with proper currency conversions`);
+                console.log(`[server.js] Added ${uniqueNewTransactions.length} new transactions. Total transaction count: ${transactions.length}`);
             
                 resolve();
             });
