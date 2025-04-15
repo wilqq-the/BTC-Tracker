@@ -53,6 +53,42 @@ That's it! The script automatically:
 - Runs the application
 - Persists your data between runs
 
+### Running the Development Image
+
+If you want to run the development version with the latest features:
+
+#### Using the run-app.sh Script
+
+```bash
+chmod +x run-app.sh
+./run-app.sh --dev
+```
+
+This will:
+- Pull the `dev` tagged image instead of `latest`
+- Run the container with name `btc-tracker-dev`
+- Create a separate data directory for development
+
+#### Using Docker Compose Directly
+
+```bash
+# Set the environment variables
+export IMAGE_TAG=dev
+export CONTAINER_NAME=btc-tracker-dev
+
+# Run with docker-compose
+docker-compose up -d
+
+# Or with podman-compose
+podman-compose up -d
+```
+
+You can also modify these settings in a `.env` file:
+```
+IMAGE_TAG=dev
+CONTAINER_NAME=btc-tracker-dev
+```
+
 ## Using Docker Hub Image Directly
 
 You can also run BTC Tracker directly from Docker Hub without cloning the repository:
