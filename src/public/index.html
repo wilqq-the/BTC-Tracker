@@ -12,210 +12,8 @@
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
     <style>
-        .bitcoin-logo {
-            width: 24px;
-            height: 24px;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-        
-        /* Desktop navigation - shown by default */
-        nav {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        /* Mobile elements - hidden by default */
-        .mobile-nav-toggle,
-        .mobile-dropdown-nav,
-        .mobile-flex-row .theme-logout-container {
-            display: none;
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-            /* Header layout for mobile */
-            header {
-                display: flex;
-                flex-direction: column;
-                padding: 10px 15px;
-                position: relative;
-            }
-            
-            header h1 {
-                font-size: 1.2rem;
-                margin: 0;
-            }
-            
-            /* Show mobile-specific elements */
-            .mobile-nav-toggle {
-                display: block;
-                z-index: 11;
-                background: none;
-                border: none;
-                color: var(--text-color, #ffffff);
-                font-size: 1.5rem;
-                cursor: pointer;
-                padding: 5px;
-                margin-left: auto;
-            }
-            
-            .mobile-flex-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 15px;
-                width: 100%;
-                margin-bottom: 5px;
-            }
-            
-            .mobile-flex-row .theme-logout-container {
-                display: flex;
-                gap: 12px;
-            }
-            
-            /* Hide desktop nav */
-            nav {
-                display: none;
-            }
-            
-            /* Show mobile dropdown nav */
-            .mobile-dropdown-nav {
-                display: block;
-                position: relative;
-                margin-top: 10px;
-            }
-            
-            .current-page-text {
-                display: flex;
-                align-items: center;
-                flex: 1;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-text span {
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-btn {
-                width: 100%;
-                padding: 10px 15px;
-                background: var(--card-background);
-                color: var(--text-color);
-                border: 1px solid rgba(247, 147, 26, 0.2);
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                font-size: 0.95rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .current-page-btn:hover {
-                border-color: rgba(247, 147, 26, 0.5);
-            }
-            
-            .current-page-btn i.page-icon {
-                margin-right: 10px;
-                color: var(--accent-color, #f7931a);
-                min-width: 16px;
-            }
-            
-            .current-page-btn i.dropdown-icon {
-                transition: transform 0.3s ease;
-                color: var(--accent-color, #f7931a);
-                margin-left: 12px;
-                font-size: 0.9rem;
-            }
-            
-            .current-page-btn.active i.dropdown-icon {
-                transform: rotate(180deg);
-            }
-            
-            .nav-dropdown {
-                position: absolute;
-                top: calc(100% + 5px);
-                left: 0;
-                right: 0;
-                background: var(--card-background);
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                max-height: 0;
-                transition: max-height 0.3s ease;
-                z-index: 100;
-            }
-            
-            .nav-dropdown.active {
-                max-height: 300px;
-            }
-            
-            .nav-dropdown a {
-                display: flex;
-                align-items: center;
-                padding: 12px 15px;
-                text-decoration: none;
-                color: var(--text-color);
-                border-bottom: 1px solid var(--border-color);
-                transition: background 0.2s ease;
-            }
-            
-            .nav-dropdown a:last-child {
-                border-bottom: none;
-            }
-            
-            .nav-dropdown a.active {
-                background: var(--accent-color);
-                color: var(--background-color);
-            }
-            
-            .nav-dropdown a:hover:not(.active) {
-                background: var(--hover-color);
-            }
-            
-            .nav-dropdown a i {
-                margin-right: 10px;
-                width: 20px;
-                text-align: center;
-            }
-            
-            .mobile-logout-btn {
-                background-color: rgba(231, 76, 60, 0.15);
-                color: var(--text-color);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-width: 36px;
-                min-height: 36px;
-            }
-            
-            .mobile-theme-toggle {
-                background-color: rgba(247, 147, 26, 0.15);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                color: var(--text-color);
-                min-width: 36px;
-                min-height: 36px;
-            }
-        }
-
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
         .mobile-theme-toggle .fa-sun {
@@ -239,7 +37,64 @@
         .light-theme .mobile-theme-toggle .fa-moon {
             display: none;
         }
+
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav,
+            #mobileNav {
+                display: block !important;
+                position: relative;
+                margin-top: 10px;
+            }
+        }
     </style>
+    <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
 <body>
     <div class="container">
@@ -271,7 +126,7 @@
             </nav>
             
             <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav">
+            <div class="mobile-dropdown-nav" id="mobileNav">
                 <button class="current-page-btn" id="currentPageBtn">
                     <div class="current-page-text">
                         <i class="fas fa-chart-line page-icon"></i>
@@ -1585,6 +1440,19 @@
 
         // Add touch support for mobile
         document.addEventListener('touchstart', function() {}, true);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+              });
+          });
+        }
     </script>
 </body>
 </html> 

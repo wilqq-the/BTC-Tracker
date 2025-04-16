@@ -1487,8 +1487,8 @@ app.use((req, res) => {
 async function startServer() {
     await priceCache.initialize();
     
-    app.listen(PORT, () => {
-        console.log(`[server.js] Server running at http://localhost:${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`[server.js] Server running on port ${PORT}, accessible on your local network.`);
     });
 }
 

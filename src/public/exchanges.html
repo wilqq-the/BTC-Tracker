@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
     <style>
         /* Adjust exchange cards to fit 4 in a row */
         .exchange-list {
@@ -247,7 +248,7 @@
     <div class="container">
         <header>
             <div class="mobile-flex-row">
-                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> Exchange Integrations</h1>
                 <div class="theme-logout-container">
                     <button id="mobileThemeToggle" class="mobile-theme-toggle">
                         <i class="fas fa-moon"></i>
@@ -273,7 +274,7 @@
             </nav>
             
             <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav">
+            <div class="mobile-dropdown-nav" id="mobileNav">
                 <button class="current-page-btn" id="currentPageBtn">
                     <div class="current-page-text">
                         <i class="fas fa-plug page-icon"></i>
@@ -400,7 +401,7 @@
                 });
             }
             
-            // Mobile dropdown navigation functionality
+            // Dropdown navigation functionality
             const currentPageBtn = document.getElementById('currentPageBtn');
             const navDropdown = document.getElementById('navDropdown');
             
@@ -917,6 +918,22 @@
             
             // Start
             init();
+
+            // Add touch support for mobile
+            document.addEventListener('touchstart', function() {}, true);
+
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                  .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  })
+                  .catch(error => {
+                    console.log('ServiceWorker registration failed: ', error);
+                  });
+              });
+            }
         });
 
         function generateQRCode() {

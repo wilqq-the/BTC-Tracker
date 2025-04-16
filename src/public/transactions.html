@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
     <style>
         /* Bitcoin-themed scrollbar */
         .table-container::-webkit-scrollbar {
@@ -148,16 +149,6 @@
             vertical-align: middle;
             margin-right: 8px;
         }
-
-        /* REMOVED Zebra striping for table rows */
-        /* #transactionsTable tbody tr:nth-child(even) { */
-        /*     background-color: rgba(255, 255, 255, 0.03); */
-        /* } */
-
-        /* REMOVED Style for zebra striping in light theme */
-        /* .light-theme #transactionsTable tbody tr:nth-child(even) { */
-        /*     background-color: rgba(0, 0, 0, 0.03); */
-        /* } */
 
         /* Enhanced style for the actively sorted header */
         #transactionsTable th.sorted-column {
@@ -1549,6 +1540,22 @@
                 });
             }
         });
+
+        // Add touch support for mobile
+        document.addEventListener('touchstart', function() {}, true);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+              });
+          });
+        }
     </script>
 </body>
 </html> 
