@@ -725,6 +725,61 @@
         .light-theme .mobile-theme-toggle .fa-moon {
             display: none;
         }
+
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav {
+                display: block;
+                position: relative;
+                margin-top: 10px;
+            }
+        }
     </style>
 </head>
 <body>

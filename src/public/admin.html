@@ -481,11 +481,39 @@
             color: var(--text-color, #333);
         }
 
-        /* Mobile navigation enhancements */
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
         @media (max-width: 768px) {
             /* Hide original nav on mobile */
             nav {
                 display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
             }
             
             /* Show mobile dropdown nav */

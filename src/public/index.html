@@ -21,20 +21,23 @@
             margin-right: 8px;
         }
         
-        /* Mobile navigation enhancements */
-        .mobile-nav-toggle {
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-nav-toggle,
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
             display: none;
-            background: none;
-            border: none;
-            color: var(--text-color, #ffffff);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-            margin-left: auto;
         }
         
         /* Mobile responsive styles */
         @media (max-width: 768px) {
+            /* Header layout for mobile */
             header {
                 display: flex;
                 flex-direction: column;
@@ -47,126 +50,34 @@
                 margin: 0;
             }
             
+            /* Show mobile-specific elements */
             .mobile-nav-toggle {
                 display: block;
                 z-index: 11;
-            }
-            
-            nav {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 75%;
-                max-width: 280px;
-                height: 100vh;
-                background-color: var(--card-background, #2d2d2d);
-                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
-                z-index: 10;
-                transition: right 0.3s ease;
-                flex-direction: column;
-                padding: 55px 0 80px 0;
-                box-sizing: border-box;
-                gap: 0;
-                overflow-y: auto;
-            }
-            
-            nav.active {
-                right: 0;
-            }
-            
-            nav a {
-                margin: 0;
-                padding: 14px 20px;
-                justify-content: flex-start;
-                border-radius: 0;
-                border-left: 3px solid transparent;
-                font-size: 0.9rem;
-                transition: all 0.2s ease;
-            }
-            
-            nav a i {
-                min-width: 20px;
-                margin-right: 12px;
-                text-align: center;
-            }
-            
-            nav a.active {
-                background-color: rgba(247, 147, 26, 0.15);
-                border-left: 3px solid var(--accent-color, #f7931a);
-                color: var(--accent-color, #f7931a);
-            }
-            
-            nav a:hover:not(.active) {
-                background-color: rgba(255, 255, 255, 0.05);
-                border-left: 3px solid rgba(247, 147, 26, 0.3);
-            }
-            
-            .theme-toggle {
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                background-color: rgba(255, 255, 255, 0.05);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-            }
-            
-            .logout-btn {
-                margin-top: 10px !important;
-                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-                background-color: rgba(231, 76, 60, 0.08) !important;
-                padding-top: 16px !important;
-                padding-bottom: 16px !important;
-            }
-            
-            /* Close button styling */
-            .mobile-nav-close {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: rgba(0, 0, 0, 0.2);
+                background: none;
                 border: none;
                 color: var(--text-color, #ffffff);
-                font-size: 1rem;
-                padding: 8px;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
+                font-size: 1.5rem;
                 cursor: pointer;
-                z-index: 12;
-                transition: background 0.2s ease;
+                padding: 5px;
+                margin-left: auto;
             }
             
-            .mobile-nav-close:hover {
-                background: rgba(0, 0, 0, 0.4);
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
             }
             
-            /* Add overlay when menu is open */
-            .nav-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                z-index: 9;
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
             }
             
-            .nav-overlay.active {
-                display: block;
-            }
-            
-            /* Mobile dropdown navigation */
-            .mobile-dropdown-nav {
-                display: none;
-            }
-            
-            /* Hide original nav on mobile */
+            /* Hide desktop nav */
             nav {
                 display: none;
             }
@@ -276,21 +187,6 @@
                 text-align: center;
             }
             
-            /* Utils */
-            .mobile-flex-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 15px; /* Add gap between title and buttons */
-                width: 100%;
-                margin-bottom: 5px;
-            }
-            
-            .theme-logout-container {
-                display: flex;
-                gap: 12px;
-            }
-            
             .mobile-logout-btn {
                 background-color: rgba(231, 76, 60, 0.15);
                 color: var(--text-color);
@@ -314,7 +210,7 @@
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                color: var(--text-color); /* Ensure icon color matches text color */
+                color: var(--text-color);
                 min-width: 36px;
                 min-height: 36px;
             }
