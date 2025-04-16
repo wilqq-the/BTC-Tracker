@@ -20,14 +20,348 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+        
+        /* Mobile navigation enhancements */
+        .mobile-nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color, #ffffff);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: auto;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            .mobile-nav-toggle {
+                display: block;
+                z-index: 11;
+            }
+            
+            nav {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 75%;
+                max-width: 280px;
+                height: 100vh;
+                background-color: var(--card-background, #2d2d2d);
+                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+                z-index: 10;
+                transition: right 0.3s ease;
+                flex-direction: column;
+                padding: 55px 0 80px 0;
+                box-sizing: border-box;
+                gap: 0;
+                overflow-y: auto;
+            }
+            
+            nav.active {
+                right: 0;
+            }
+            
+            nav a {
+                margin: 0;
+                padding: 14px 20px;
+                justify-content: flex-start;
+                border-radius: 0;
+                border-left: 3px solid transparent;
+                font-size: 0.9rem;
+                transition: all 0.2s ease;
+            }
+            
+            nav a i {
+                min-width: 20px;
+                margin-right: 12px;
+                text-align: center;
+            }
+            
+            nav a.active {
+                background-color: rgba(247, 147, 26, 0.15);
+                border-left: 3px solid var(--accent-color, #f7931a);
+                color: var(--accent-color, #f7931a);
+            }
+            
+            nav a:hover:not(.active) {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-left: 3px solid rgba(247, 147, 26, 0.3);
+            }
+            
+            .theme-toggle {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .logout-btn {
+                margin-top: 10px !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+                background-color: rgba(231, 76, 60, 0.08) !important;
+                padding-top: 16px !important;
+                padding-bottom: 16px !important;
+            }
+            
+            /* Close button styling */
+            .mobile-nav-close {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.2);
+                border: none;
+                color: var(--text-color, #ffffff);
+                font-size: 1rem;
+                padding: 8px;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 12;
+                transition: background 0.2s ease;
+            }
+            
+            .mobile-nav-close:hover {
+                background: rgba(0, 0, 0, 0.4);
+            }
+            
+            /* Add overlay when menu is open */
+            .nav-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 9;
+            }
+            
+            .nav-overlay.active {
+                display: block;
+            }
+            
+            /* Mobile dropdown navigation */
+            .mobile-dropdown-nav {
+                display: none;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav {
+                display: block;
+                position: relative;
+                margin-top: 10px;
+            }
+            
+            .current-page-text {
+                display: flex;
+                align-items: center;
+                flex: 1;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-text span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-btn {
+                width: 100%;
+                padding: 10px 15px;
+                background: var(--card-background);
+                color: var(--text-color);
+                border: 1px solid rgba(247, 147, 26, 0.2);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.95rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .current-page-btn:hover {
+                border-color: rgba(247, 147, 26, 0.5);
+            }
+            
+            .current-page-btn i.page-icon {
+                margin-right: 10px;
+                color: var(--accent-color, #f7931a);
+                min-width: 16px;
+            }
+            
+            .current-page-btn i.dropdown-icon {
+                transition: transform 0.3s ease;
+                color: var(--accent-color, #f7931a);
+                margin-left: 12px;
+                font-size: 0.9rem;
+            }
+            
+            .current-page-btn.active i.dropdown-icon {
+                transform: rotate(180deg);
+            }
+            
+            .nav-dropdown {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                right: 0;
+                background: var(--card-background);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                max-height: 0;
+                transition: max-height 0.3s ease;
+                z-index: 100;
+            }
+            
+            .nav-dropdown.active {
+                max-height: 300px;
+            }
+            
+            .nav-dropdown a {
+                display: flex;
+                align-items: center;
+                padding: 12px 15px;
+                text-decoration: none;
+                color: var(--text-color);
+                border-bottom: 1px solid var(--border-color);
+                transition: background 0.2s ease;
+            }
+            
+            .nav-dropdown a:last-child {
+                border-bottom: none;
+            }
+            
+            .nav-dropdown a.active {
+                background: var(--accent-color);
+                color: var(--background-color);
+            }
+            
+            .nav-dropdown a:hover:not(.active) {
+                background: var(--hover-color);
+            }
+            
+            .nav-dropdown a i {
+                margin-right: 10px;
+                width: 20px;
+                text-align: center;
+            }
+            
+            /* Utils */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px; /* Add gap between title and buttons */
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .mobile-logout-btn {
+                background-color: rgba(231, 76, 60, 0.15);
+                color: var(--text-color);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 36px;
+                min-height: 36px;
+            }
+            
+            .mobile-theme-toggle {
+                background-color: rgba(247, 147, 26, 0.15);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: var(--text-color); /* Ensure icon color matches text color */
+                min-width: 36px;
+                min-height: 36px;
+            }
+        }
+
+        /* Theme toggle icon visibility */
+        .theme-toggle .fa-sun,
+        .mobile-theme-toggle .fa-sun {
+            display: none;
+            color: var(--text-color);
+        }
+
+        .theme-toggle .fa-moon,
+        .mobile-theme-toggle .fa-moon {
+            display: inline-block;
+            color: var(--text-color);
+        }
+
+        /* In light theme, show sun and hide moon */
+        .light-theme .theme-toggle .fa-sun,
+        .light-theme .mobile-theme-toggle .fa-sun {
+            display: inline-block;
+        }
+
+        .light-theme .theme-toggle .fa-moon,
+        .light-theme .mobile-theme-toggle .fa-moon {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="title">
+            <div class="mobile-flex-row">
                 <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+                <div class="theme-logout-container">
+                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/logout" class="mobile-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
             </div>
+            
+            <!-- Original Navigation (hidden on mobile) -->
             <nav>
                 <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
@@ -39,6 +373,23 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
+            
+            <!-- Mobile Dropdown Navigation -->
+            <div class="mobile-dropdown-nav">
+                <button class="current-page-btn" id="currentPageBtn">
+                    <div class="current-page-text">
+                        <i class="fas fa-chart-line page-icon"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
+                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                </div>
+            </div>
         </header>
 
         <div class="summary-cards">
@@ -147,8 +498,34 @@
         let secondaryCurrency = 'PLN'; // Default secondary currency
         let secondaryRate = null; // Store exchange rate globally
 
-        // Add chart controls functionality
+        // Dropdown navigation functionality
         document.addEventListener('DOMContentLoaded', () => {
+            const currentPageBtn = document.getElementById('currentPageBtn');
+            const navDropdown = document.getElementById('navDropdown');
+            
+            // Toggle dropdown
+            currentPageBtn.addEventListener('click', () => {
+                currentPageBtn.classList.toggle('active');
+                navDropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
+                    currentPageBtn.classList.remove('active');
+                    navDropdown.classList.remove('active');
+                }
+            });
+            
+            // Handle theme toggle for mobile
+            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+            const regularThemeToggle = document.getElementById('themeToggle');
+            
+            mobileThemeToggle.addEventListener('click', () => {
+                // Trigger the original theme toggle functionality
+                regularThemeToggle.click();
+            });
+            
             // Time range buttons
             document.querySelectorAll('.time-range-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -165,7 +542,7 @@
                     btn.classList.remove('active');
                 }
             });
-
+            
             // Density slider
             const densitySlider = document.getElementById('dataDensity');
             const densityValue = document.getElementById('densityValue');

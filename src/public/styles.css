@@ -175,6 +175,105 @@ nav a.active {
         min-width: unset;
         padding: 0.75rem 1rem;
     }
+    
+    header {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+    }
+    
+    .card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+    
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin: 0.5rem;
+    }
+    
+    .card p {
+        font-size: 1rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.8rem;
+    }
+    
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .chart-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .time-range-buttons {
+        justify-content: center;
+    }
+    
+    .density-control {
+        justify-content: center;
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .density-control input[type="range"] {
+        flex: 1;
+        max-width: 200px;
+    }
+    
+    .container {
+        padding: 0.5rem;
+    }
+    
+    .table-container {
+        margin: 0.5rem -0.5rem;
+        border-radius: 0;
+    }
+    
+    #transactionsTable {
+        font-size: 0.8rem;
+    }
+    
+    /* Hide less important columns */
+    .price-col,
+    .cost-col,
+    .pnl-pln-col,
+    .pnl-percent-col:last-child {
+        display: none;
+    }
+    
+    /* Adjust column widths */
+    .date-col { width: 80px; }
+    .type-col { width: 60px; }
+    .amount-col { width: 100px; }
+    .pnl-col { width: 90px; }
+    .pnl-percent-col { width: 70px; }
+    .actions-col { width: 70px; }
+    
+    #transactionsTable th,
+    #transactionsTable td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .edit-btn,
+    .delete-btn {
+        padding: 0.3rem;
+        margin: 0 0.1rem;
+    }
 }
 
 /* Card styles */
@@ -290,66 +389,6 @@ tr:hover {
     text-align: center;
     color: var(--secondary-color);
     font-size: 0.9rem;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    .container {
-        padding: 0 0.5rem;
-    }
-
-    header {
-        margin-bottom: 1rem;
-        padding: 1rem;
-    }
-
-    h1 {
-        font-size: 1.75rem;
-    }
-
-    h2 {
-        font-size: 1.25rem;
-    }
-
-    .card {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 0;
-    }
-
-    .summary-cards {
-        grid-template-columns: 1fr;
-    }
-
-    table {
-        display: block;
-        overflow-x: auto;
-    }
-
-    .card p {
-        font-size: 1.2rem;
-    }
-
-    .chart-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-    }
-
-    .time-range-buttons {
-        justify-content: center;
-    }
-
-    .density-control {
-        justify-content: center;
-        min-width: auto;
-        width: 100%;
-    }
-
-    .density-control input[type="range"] {
-        flex: 1;
-        max-width: 200px;
-    }
 }
 
 /* Loading Animation */
@@ -863,7 +902,7 @@ header h1 i.fab.fa-bitcoin {
 /* Summary cards grid */
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -1020,6 +1059,26 @@ header h1 i.fab.fa-bitcoin {
         padding: 0;
     }
 
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin: 0.5rem;
+    }
+    
+    .card {
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0;
+    }
+    
+    .card p {
+        font-size: 1rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.8rem;
+    }
+
     .table-container {
         margin: 0.5rem -1rem;
         border-radius: 0;
@@ -1054,17 +1113,6 @@ header h1 i.fab.fa-bitcoin {
     .delete-btn {
         padding: 0.3rem;
         margin: 0 0.1rem;
-    }
-
-    .summary-cards {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-        margin: 0.5rem;
-    }
-
-    .card {
-        margin: 0;
-        border-radius: 0;
     }
 }
 
@@ -1990,4 +2038,24 @@ body.light-theme .exchange-rates p {
     display: block;
     font-weight: normal;
     text-transform: none;
+}
+
+/* Ensure 2 columns even on very narrow screens */
+@media (max-width: 480px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .card h3 {
+        font-size: 0.9rem;
+    }
+    
+    .card p {
+        font-size: 0.9rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.7rem;
+    }
 } 
