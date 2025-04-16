@@ -401,7 +401,7 @@ nav a.active {
     .summary-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
-        margin: 0.5rem;
+        margin: 0 0 1rem 0;
     }
     
     .card p {
@@ -439,12 +439,12 @@ nav a.active {
     }
     
     .container {
-        padding: 0.5rem;
+        padding: 0 1rem;
     }
     
     .table-container {
-        margin: 0.5rem -0.5rem;
-        border-radius: 0;
+        margin: 0.5rem 0;
+        border-radius: 8px;
     }
     
     #transactionsTable {
@@ -558,7 +558,7 @@ nav a.active {
     background-color: var(--card-background);
     padding: 1.5rem;
     border-radius: 10px;
-    margin-bottom: 2rem;
+    margin: 0 0 2rem 0;
     box-shadow: 0 4px 6px var(--shadow-color);
     position: relative;
     min-height: 600px;
@@ -587,8 +587,15 @@ nav a.active {
 
 /* Section styles */
 .transactions-section,
-.admin-section {
+.admin-section,
+main > section {
     margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    main > section {
+        padding: 0 0.5rem;
+    }
 }
 
 table {
@@ -1284,13 +1291,13 @@ header h1 i.fab.fa-bitcoin {
 /* Responsive styles */
 @media (max-width: 768px) {
     .container {
-        padding: 0;
+        padding: 0 1rem;
     }
 
     .summary-cards {
         grid-template-columns: repeat(2, 1fr);
         gap: 0.5rem;
-        margin: 0.5rem;
+        margin: 0 0 1rem 0;
     }
     
     .card {
@@ -1307,9 +1314,14 @@ header h1 i.fab.fa-bitcoin {
         font-size: 0.8rem;
     }
 
+    .chart-container {
+        padding: 1rem;
+        margin: 0 0 1.5rem 0;
+    }
+
     .table-container {
-        margin: 0.5rem -1rem;
-        border-radius: 0;
+        margin: 0.5rem 0;
+        border-radius: 8px;
     }
 
     #transactionsTable {
@@ -1555,8 +1567,9 @@ header h1 i.fab.fa-bitcoin {
 
 @media (max-width: 768px) {
     .exchange-list {
-        grid-template-columns: 90%;
-        gap: 20px;
+        grid-template-columns: 100%;
+        gap: 15px;
+        padding: 0;
     }
 }
 
