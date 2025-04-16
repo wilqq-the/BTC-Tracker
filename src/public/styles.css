@@ -71,6 +71,30 @@ body {
     background-color: var(--hover-color);
 }
 
+/* Theme toggle icon visibility - for both desktop and mobile toggles */
+.theme-toggle .fa-sun,
+.mobile-theme-toggle .fa-sun {
+    display: none;
+    color: var(--text-color);
+}
+
+.theme-toggle .fa-moon,
+.mobile-theme-toggle .fa-moon {
+    display: inline-block;
+    color: var(--text-color);
+}
+
+/* In light theme, show sun and hide moon */
+.light-theme .theme-toggle .fa-sun,
+.light-theme .mobile-theme-toggle .fa-sun {
+    display: inline-block;
+}
+
+.light-theme .theme-toggle .fa-moon,
+.light-theme .mobile-theme-toggle .fa-moon {
+    display: none;
+}
+
 .light-theme .theme-toggle i.fa-moon {
     display: none;
 }
@@ -85,6 +109,21 @@ body {
 
 .theme-toggle i.fa-moon {
     display: inline-block;
+}
+
+/* Mobile theme toggle button */
+.mobile-theme-toggle {
+    background-color: rgba(247, 147, 26, 0.15);
+    border: none;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-color);
+    min-width: 36px;
+    min-height: 36px;
 }
 
 /* Common layout styles */
@@ -175,6 +214,294 @@ nav a.active {
         min-width: unset;
         padding: 0.75rem 1rem;
     }
+    
+    header {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 1.75rem;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+    }
+    
+    /* Mobile dropdown navigation - consolidated from HTML files */
+    /* Header layout for mobile */
+    header {
+        display: flex;
+        flex-direction: column;
+        padding: 10px 15px;
+        position: relative;
+    }
+    
+    header h1 {
+        font-size: 1.2rem;
+        margin: 0;
+    }
+    
+    /* Show mobile-specific elements */
+    .mobile-nav-toggle {
+        display: block;
+        z-index: 11;
+        background: none;
+        border: none;
+        color: var(--text-color);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 5px;
+        margin-left: auto;
+    }
+    
+    .mobile-flex-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    
+    .mobile-flex-row .theme-logout-container {
+        display: flex;
+        gap: 12px;
+    }
+    
+    /* Hide desktop nav */
+    nav {
+        display: none;
+    }
+    
+    /* Show mobile dropdown nav */
+    .mobile-dropdown-nav {
+        display: block;
+        position: relative;
+        margin-top: 10px;
+    }
+    
+    .current-page-text {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    
+    .current-page-text span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .current-page-btn {
+        width: 100%;
+        padding: 10px 15px;
+        background: var(--card-background);
+        color: var(--text-color);
+        border: 1px solid rgba(247, 147, 26, 0.2);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .current-page-btn:hover {
+        border-color: rgba(247, 147, 26, 0.5);
+    }
+    
+    .current-page-btn i.page-icon {
+        margin-right: 10px;
+        color: var(--accent-color);
+        min-width: 16px;
+    }
+    
+    .current-page-btn i.dropdown-icon {
+        transition: transform 0.3s ease;
+        color: var(--accent-color);
+        margin-left: 12px;
+        font-size: 0.9rem;
+    }
+    
+    .current-page-btn.active i.dropdown-icon {
+        transform: rotate(180deg);
+    }
+    
+    .nav-dropdown {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        right: 0;
+        background: var(--card-background);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        max-height: 0;
+        transition: max-height 0.3s ease;
+        z-index: 100;
+    }
+    
+    .nav-dropdown.active {
+        max-height: 300px;
+    }
+    
+    .nav-dropdown a {
+        display: flex;
+        align-items: center;
+        padding: 12px 15px;
+        text-decoration: none;
+        color: var(--text-color);
+        border-bottom: 1px solid var(--border-color);
+        transition: background 0.2s ease;
+    }
+    
+    .nav-dropdown a:last-child {
+        border-bottom: none;
+    }
+    
+    .nav-dropdown a.active {
+        background: var(--accent-color);
+        color: var(--background-color);
+    }
+    
+    .nav-dropdown a:hover:not(.active) {
+        background: var(--hover-color);
+    }
+    
+    .nav-dropdown a i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+    }
+    
+    .mobile-logout-btn {
+        background-color: rgba(231, 76, 60, 0.15);
+        color: var(--text-color);
+        border: none;
+        border-radius: 8px;
+        padding: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 36px;
+    }
+    
+    .card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+    }
+    
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin: 0 0 1rem 0;
+    }
+    
+    .card p {
+        font-size: 1rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.8rem;
+    }
+    
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+    
+    .chart-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+    
+    .time-range-buttons {
+        justify-content: center;
+    }
+    
+    .density-control {
+        justify-content: center;
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .density-control input[type="range"] {
+        flex: 1;
+        max-width: 200px;
+    }
+    
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .table-container {
+        margin: 0.5rem 0;
+        border-radius: 8px;
+    }
+    
+    #transactionsTable {
+        font-size: 0.8rem;
+    }
+    
+    /* Hide less important columns */
+    .price-col,
+    .cost-col,
+    .pnl-pln-col,
+    .pnl-percent-col:last-child {
+        display: none;
+    }
+    
+    /* Adjust column widths */
+    .date-col { width: 80px; }
+    .type-col { width: 60px; }
+    .amount-col { width: 100px; }
+    .pnl-col { width: 90px; }
+    .pnl-percent-col { width: 70px; }
+    .actions-col { width: 70px; }
+    
+    #transactionsTable th,
+    #transactionsTable td {
+        padding: 0.5rem 0.25rem;
+    }
+    
+    .edit-btn,
+    .delete-btn {
+        padding: 0.3rem;
+        margin: 0 0.1rem;
+    }
+}
+
+/* Hide mobile elements by default */
+.mobile-nav-toggle,
+.mobile-dropdown-nav,
+.mobile-flex-row .theme-logout-container {
+    display: none;
+}
+
+/* Ensure mobile display when below 768px */
+@media (max-width: 768px) {
+    /* Override to show mobile elements */
+    .mobile-dropdown-nav,
+    .mobile-flex-row .theme-logout-container {
+        display: block;
+    }
+}
+
+/* Standard Bitcoin logo style */
+.bitcoin-logo {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
 }
 
 /* Card styles */
@@ -231,7 +558,7 @@ nav a.active {
     background-color: var(--card-background);
     padding: 1.5rem;
     border-radius: 10px;
-    margin-bottom: 2rem;
+    margin: 0 0 2rem 0;
     box-shadow: 0 4px 6px var(--shadow-color);
     position: relative;
     min-height: 600px;
@@ -260,8 +587,15 @@ nav a.active {
 
 /* Section styles */
 .transactions-section,
-.admin-section {
+.admin-section,
+main > section {
     margin: 1rem 0;
+}
+
+@media (max-width: 768px) {
+    main > section {
+        padding: 0 0.5rem;
+    }
 }
 
 table {
@@ -290,66 +624,6 @@ tr:hover {
     text-align: center;
     color: var(--secondary-color);
     font-size: 0.9rem;
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-    .container {
-        padding: 0 0.5rem;
-    }
-
-    header {
-        margin-bottom: 1rem;
-        padding: 1rem;
-    }
-
-    h1 {
-        font-size: 1.75rem;
-    }
-
-    h2 {
-        font-size: 1.25rem;
-    }
-
-    .card {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 0;
-    }
-
-    .summary-cards {
-        grid-template-columns: 1fr;
-    }
-
-    table {
-        display: block;
-        overflow-x: auto;
-    }
-
-    .card p {
-        font-size: 1.2rem;
-    }
-
-    .chart-controls {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-    }
-
-    .time-range-buttons {
-        justify-content: center;
-    }
-
-    .density-control {
-        justify-content: center;
-        min-width: auto;
-        width: 100%;
-    }
-
-    .density-control input[type="range"] {
-        flex: 1;
-        max-width: 200px;
-    }
 }
 
 /* Loading Animation */
@@ -863,7 +1137,7 @@ header h1 i.fab.fa-bitcoin {
 /* Summary cards grid */
 .summary-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -1017,12 +1291,37 @@ header h1 i.fab.fa-bitcoin {
 /* Responsive styles */
 @media (max-width: 768px) {
     .container {
-        padding: 0;
+        padding: 0 1rem;
+    }
+
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin: 0 0 1rem 0;
+    }
+    
+    .card {
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0;
+    }
+    
+    .card p {
+        font-size: 1rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.8rem;
+    }
+
+    .chart-container {
+        padding: 1rem;
+        margin: 0 0 1.5rem 0;
     }
 
     .table-container {
-        margin: 0.5rem -1rem;
-        border-radius: 0;
+        margin: 0.5rem 0;
+        border-radius: 8px;
     }
 
     #transactionsTable {
@@ -1054,17 +1353,6 @@ header h1 i.fab.fa-bitcoin {
     .delete-btn {
         padding: 0.3rem;
         margin: 0 0.1rem;
-    }
-
-    .summary-cards {
-        grid-template-columns: 1fr;
-        gap: 0.5rem;
-        margin: 0.5rem;
-    }
-
-    .card {
-        margin: 0;
-        border-radius: 0;
     }
 }
 
@@ -1279,8 +1567,9 @@ header h1 i.fab.fa-bitcoin {
 
 @media (max-width: 768px) {
     .exchange-list {
-        grid-template-columns: 90%;
-        gap: 20px;
+        grid-template-columns: 100%;
+        gap: 15px;
+        padding: 0;
     }
 }
 
@@ -1990,4 +2279,24 @@ body.light-theme .exchange-rates p {
     display: block;
     font-weight: normal;
     text-transform: none;
+}
+
+/* Ensure 2 columns even on very narrow screens */
+@media (max-width: 480px) {
+    .summary-cards {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .card h3 {
+        font-size: 0.9rem;
+    }
+    
+    .card p {
+        font-size: 0.9rem;
+    }
+    
+    .card .secondary-value {
+        font-size: 0.7rem;
+    }
 } 

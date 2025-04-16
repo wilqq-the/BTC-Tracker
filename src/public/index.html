@@ -12,22 +12,107 @@
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
     <style>
-        .bitcoin-logo {
-            width: 24px;
-            height: 24px;
+        /* Theme toggle icon visibility */
+        .theme-toggle .fa-sun,
+        .mobile-theme-toggle .fa-sun {
+            display: none;
+            color: var(--text-color);
+        }
+
+        .theme-toggle .fa-moon,
+        .mobile-theme-toggle .fa-moon {
             display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
+            color: var(--text-color);
+        }
+
+        /* In light theme, show sun and hide moon */
+        .light-theme .theme-toggle .fa-sun,
+        .light-theme .mobile-theme-toggle .fa-sun {
+            display: inline-block;
+        }
+
+        .light-theme .theme-toggle .fa-moon,
+        .light-theme .mobile-theme-toggle .fa-moon {
+            display: none;
+        }
+
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav,
+            #mobileNav {
+                display: block !important;
+                position: relative;
+                margin-top: 10px;
+            }
         }
     </style>
+    <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="title">
+            <div class="mobile-flex-row">
                 <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+                <div class="theme-logout-container">
+                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/logout" class="mobile-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
             </div>
+            
+            <!-- Original Navigation (hidden on mobile) -->
             <nav>
                 <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
@@ -39,6 +124,23 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
+            
+            <!-- Mobile Dropdown Navigation -->
+            <div class="mobile-dropdown-nav" id="mobileNav">
+                <button class="current-page-btn" id="currentPageBtn">
+                    <div class="current-page-text">
+                        <i class="fas fa-chart-line page-icon"></i>
+                        <span>Dashboard</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
+                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                </div>
+            </div>
         </header>
 
         <div class="summary-cards">
@@ -147,8 +249,34 @@
         let secondaryCurrency = 'PLN'; // Default secondary currency
         let secondaryRate = null; // Store exchange rate globally
 
-        // Add chart controls functionality
+        // Dropdown navigation functionality
         document.addEventListener('DOMContentLoaded', () => {
+            const currentPageBtn = document.getElementById('currentPageBtn');
+            const navDropdown = document.getElementById('navDropdown');
+            
+            // Toggle dropdown
+            currentPageBtn.addEventListener('click', () => {
+                currentPageBtn.classList.toggle('active');
+                navDropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
+                    currentPageBtn.classList.remove('active');
+                    navDropdown.classList.remove('active');
+                }
+            });
+            
+            // Handle theme toggle for mobile
+            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+            const regularThemeToggle = document.getElementById('themeToggle');
+            
+            mobileThemeToggle.addEventListener('click', () => {
+                // Trigger the original theme toggle functionality
+                regularThemeToggle.click();
+            });
+            
             // Time range buttons
             document.querySelectorAll('.time-range-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -165,7 +293,7 @@
                     btn.classList.remove('active');
                 }
             });
-
+            
             // Density slider
             const densitySlider = document.getElementById('dataDensity');
             const densityValue = document.getElementById('densityValue');
@@ -1312,6 +1440,19 @@
 
         // Add touch support for mobile
         document.addEventListener('touchstart', function() {}, true);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+              });
+          });
+        }
     </script>
 </body>
 </html> 
