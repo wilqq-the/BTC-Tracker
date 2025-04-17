@@ -911,6 +911,26 @@
         <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
     </footer>
 
+    <!-- Daily Ticker Bar -->
+    <div class="ticker-container">
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="tickerContent">
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-wallet"></i> Current Value</span>
+                    <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-chart-line"></i> Daily Change</span>
+                    <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-percentage"></i> Daily Change %</span>
+                    <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
         // Dropdown navigation functionality
@@ -1556,6 +1576,96 @@
               });
           });
         }
+
+        // Function to update ticker with daily change data
+        async function updateTickerData() {
+            try {
+                console.log('Updating ticker data...');
+                
+                // Use the existing summary endpoint
+                const response = await fetch('/api/summary?priceOnly=true');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ticker data');
+                }
+                
+                const data = await response.json();
+                console.log('Ticker data received from summary endpoint');
+                
+                // Get currency symbols and data
+                const mainCurrency = data.mainCurrency || 'EUR';
+                const secondaryCurrency = data.secondaryCurrency || 'USD';
+                const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
+                
+                // Update current value
+                const currentValue = data.currentValue || 0;
+                document.getElementById('tickerCurrentValue').textContent = 
+                    `${currentValue.toFixed(2)} ${mainCurrencySymbol}`;
+                
+                // Calculate daily change based on yesterday's price if available
+                let dailyChange = 0;
+                let dailyPercentChange = 0;
+                
+                if (data.historicalBTCData && data.historicalBTCData.length > 1) {
+                    // Get the current price
+                    const currentPrice = data.priceEUR || data.price || 0;
+                    
+                    // Find the previous day's price from historical data
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    // Convert to date string for comparison (YYYY-MM-DD format)
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    
+                    // Find closest previous day price
+                    let previousPrice = null;
+                    for (let i = data.historicalBTCData.length - 1; i >= 0; i--) {
+                        const dataDate = new Date(data.historicalBTCData[i].timestamp);
+                        const dataDateStr = dataDate.toISOString().split('T')[0];
+                        
+                        if (dataDateStr <= yesterdayStr) {
+                            previousPrice = data.historicalBTCData[i].priceEUR || data.historicalBTCData[i].price;
+                            break;
+                        }
+                    }
+                    
+                    // If we found a previous price, calculate the change
+                    if (previousPrice) {
+                        dailyChange = currentPrice - previousPrice;
+                        dailyPercentChange = (dailyChange / previousPrice) * 100;
+                        
+                        console.log(`Calculated daily change: ${dailyChange.toFixed(2)} (${dailyPercentChange.toFixed(2)}%)`);
+                    }
+                }
+                
+                // Update daily change value
+                const dailyChangeElement = document.getElementById('tickerDailyChange');
+                dailyChangeElement.textContent = `${dailyChange.toFixed(2)} ${mainCurrencySymbol}`;
+                dailyChangeElement.className = `ticker-value ${dailyChange >= 0 ? 'positive' : 'negative'}`;
+                
+                // Update daily percent change
+                const dailyPercentElement = document.getElementById('tickerDailyPercent');
+                dailyPercentElement.textContent = `${dailyPercentChange.toFixed(2)}%`;
+                dailyPercentElement.className = `ticker-value ${dailyPercentChange >= 0 ? 'positive' : 'negative'}`;
+                
+                console.log('Ticker data updated successfully');
+            } catch (error) {
+                console.error('Error updating ticker:', error);
+                // Display error in ticker but make it less intrusive
+                document.getElementById('tickerDailyChange').textContent = '-';
+                document.getElementById('tickerDailyPercent').textContent = '-';
+                document.getElementById('tickerCurrentValue').textContent = '-';
+            }
+        }
+
+        // Call the ticker update function when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add this line to call the ticker update along with other initialization
+            setTimeout(updateTickerData, 1000); // Slight delay to ensure other elements load first
+            
+            // Update ticker every 5 minutes
+            setInterval(updateTickerData, 5 * 60 * 1000);
+        });
     </script>
 </body>
 </html> 

@@ -27,6 +27,90 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        /* PIN Keypad Styles */
+        .login-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .login-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            font-weight: 500;
+        }
+        
+        .login-tab.active {
+            border: 1px solid var(--border-color);
+            border-bottom: 2px solid var(--accent-color);
+            font-weight: 700;
+        }
+        
+        .pin-login-container {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .pin-display {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .pin-digit {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .pin-digit.filled {
+            background-color: var(--accent-color);
+        }
+        
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            width: 240px;
+        }
+        
+        .keypad-button {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background-color: var(--background-color);
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .keypad-button:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .keypad-button.clear {
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        .keypad-button.clear:hover {
+            background-color: rgba(231, 76, 60, 0.8);
+        }
     </style>
 </head>
 <body>
@@ -39,7 +123,12 @@
             <h2 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-sign-in-alt"></i> Login</h2>
             <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center; padding: 10px; border-radius: 4px; background-color: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); display: none;"></div>
             
-            <form action="/login" method="POST">
+            <div class="login-tabs">
+                <div class="login-tab" data-tab="pin-login">PIN Login</div>
+                <div class="login-tab active" data-tab="password-login">Password Login</div>
+            </div>
+            
+            <form action="/login" method="POST" id="password-login-form">
                 <div class="form-group">
                     <label for="username"><i class="fas fa-user"></i> Username</label>
                     <input type="text" id="username" name="username" required 
@@ -61,6 +150,32 @@
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
             </form>
+            
+            <div id="pin-login-container" class="pin-login-container">
+                <p id="pin-username-display" style="font-size: 18px; font-weight: 600; margin-bottom: 10px;"></p>
+                
+                <div class="pin-display">
+                    <div class="pin-digit" id="pin-digit-1"></div>
+                    <div class="pin-digit" id="pin-digit-2"></div>
+                    <div class="pin-digit" id="pin-digit-3"></div>
+                    <div class="pin-digit" id="pin-digit-4"></div>
+                </div>
+                
+                <div class="keypad">
+                    <button class="keypad-button" data-value="1">1</button>
+                    <button class="keypad-button" data-value="2">2</button>
+                    <button class="keypad-button" data-value="3">3</button>
+                    <button class="keypad-button" data-value="4">4</button>
+                    <button class="keypad-button" data-value="5">5</button>
+                    <button class="keypad-button" data-value="6">6</button>
+                    <button class="keypad-button" data-value="7">7</button>
+                    <button class="keypad-button" data-value="8">8</button>
+                    <button class="keypad-button" data-value="9">9</button>
+                    <button class="keypad-button clear" data-value="clear"><i class="fas fa-backspace"></i></button>
+                    <button class="keypad-button" data-value="0">0</button>
+                    <button class="keypad-button" data-value="submit"><i class="fas fa-check"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -108,6 +223,234 @@
             setTimeout(() => {
                 errorElement.classList.remove('shake');
             }, 500);
+        }
+        
+        // Tab switching between password and PIN login
+        document.addEventListener('DOMContentLoaded', () => {
+            const tabs = document.querySelectorAll('.login-tab');
+            const passwordForm = document.getElementById('password-login-form');
+            const pinContainer = document.getElementById('pin-login-container');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const tabId = tab.getAttribute('data-tab');
+                    
+                    if (tabId === 'password-login') {
+                        passwordForm.style.display = 'block';
+                        pinContainer.style.display = 'none';
+                    } else {
+                        passwordForm.style.display = 'none';
+                        pinContainer.style.display = 'flex';
+                    }
+                });
+            });
+            
+            // Auto-fill username and check if PIN is available
+            fetchDefaultUsername();
+            
+            // Set up keypad functionality
+            setupPinKeypad();
+            
+            // Auto-focus PIN input in Electron environment
+            setTimeout(() => {
+                const isElectron = window.navigator.userAgent.toLowerCase().indexOf('electron') > -1;
+                if (isElectron) {
+                    document.querySelector('.keypad-button[data-value="1"]').focus();
+                }
+            }, 500);
+        });
+        
+        // PIN login functionality
+        let currentPin = '';
+        
+        function setupPinKeypad() {
+            const keypadButtons = document.querySelectorAll('.keypad-button');
+            const pinDigits = document.querySelectorAll('.pin-digit');
+            
+            keypadButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const value = button.getAttribute('data-value');
+                    
+                    if (value === 'clear') {
+                        // Clear last digit
+                        if (currentPin.length > 0) {
+                            currentPin = currentPin.slice(0, -1);
+                            updatePinDisplay();
+                        }
+                    } else if (value === 'submit') {
+                        // Submit PIN if complete
+                        if (currentPin.length === 4) {
+                            submitPin();
+                        }
+                    } else {
+                        // Add digit if not full
+                        if (currentPin.length < 4) {
+                            currentPin += value;
+                            updatePinDisplay();
+                            
+                            // Auto-submit when 4 digits entered
+                            if (currentPin.length === 4) {
+                                setTimeout(submitPin, 300);
+                            }
+                        }
+                    }
+                });
+            });
+            
+            // Allow keyboard input for PIN
+            document.addEventListener('keydown', (e) => {
+                // Only process if PIN login is visible
+                if (document.getElementById('pin-login-container').style.display !== 'flex') {
+                    return;
+                }
+                
+                if (e.key >= '0' && e.key <= '9') {
+                    // Digit pressed
+                    if (currentPin.length < 4) {
+                        currentPin += e.key;
+                        updatePinDisplay();
+                        
+                        // Auto-submit when 4 digits entered
+                        if (currentPin.length === 4) {
+                            setTimeout(submitPin, 300);
+                        }
+                    }
+                } else if (e.key === 'Backspace') {
+                    // Backspace pressed
+                    if (currentPin.length > 0) {
+                        currentPin = currentPin.slice(0, -1);
+                        updatePinDisplay();
+                    }
+                } else if (e.key === 'Enter') {
+                    // Enter pressed
+                    if (currentPin.length === 4) {
+                        submitPin();
+                    }
+                }
+            });
+        }
+        
+        function updatePinDisplay() {
+            const pinDigits = document.querySelectorAll('.pin-digit');
+            
+            pinDigits.forEach((digit, index) => {
+                if (index < currentPin.length) {
+                    digit.textContent = '•';
+                    digit.classList.add('filled');
+                } else {
+                    digit.textContent = '';
+                    digit.classList.remove('filled');
+                }
+            });
+        }
+        
+        async function submitPin() {
+            const username = document.getElementById('pin-username-display').textContent;
+            console.log('Submitting PIN for user:', username);
+            
+            try {
+                console.log('Sending PIN login request to /pin-login');
+                const response = await fetch('/pin-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        pin: currentPin
+                    })
+                });
+                
+                console.log('PIN login response status:', response.status);
+                
+                // Log the raw response text for debugging
+                const responseText = await response.text();
+                console.log('Raw PIN login response:', responseText);
+                
+                // Parse as JSON after logging the raw text
+                const data = responseText ? JSON.parse(responseText) : {};
+                
+                if (data.success) {
+                    window.location.href = data.redirectUrl || '/';
+                } else {
+                    // Show error and clear PIN
+                    const errorElement = document.getElementById('error-message');
+                    errorElement.textContent = data.message || 'Invalid PIN';
+                    errorElement.style.display = 'block';
+                    
+                    // Shake the error message
+                    errorElement.classList.add('shake');
+                    setTimeout(() => {
+                        errorElement.classList.remove('shake');
+                    }, 500);
+                    
+                    // Clear PIN
+                    currentPin = '';
+                    updatePinDisplay();
+                }
+            } catch (error) {
+                console.error('Error during PIN login:', error);
+                
+                // Show error
+                const errorElement = document.getElementById('error-message');
+                errorElement.textContent = 'Error during login: ' + error.message;
+                errorElement.style.display = 'block';
+                
+                // Clear PIN
+                currentPin = '';
+                updatePinDisplay();
+            }
+        }
+        
+        // Fetch default username for auto-fill
+        async function fetchDefaultUsername() {
+            try {
+                console.log('Attempting to fetch default username from /api/default-username');
+                
+                // Use full URL path to avoid 404 errors
+                const response = await fetch('/api/default-username');
+                console.log('Response status:', response.status);
+                
+                // Log the raw response text for debugging
+                const responseText = await response.text();
+                console.log('Raw response:', responseText);
+                
+                // Parse as JSON after logging the raw text
+                const data = JSON.parse(responseText);
+                
+                if (data.username) {
+                    // Auto-fill username field
+                    document.getElementById('username').value = data.username;
+                    document.getElementById('pin-username-display').textContent = data.username;
+                    
+                    // Show/hide PIN login tab based on whether PIN is enabled
+                    const pinTab = document.querySelector('.login-tab[data-tab="pin-login"]');
+                    const passwordTab = document.querySelector('.login-tab[data-tab="password-login"]');
+                    
+                    if (data.hasPinEnabled) {
+                        pinTab.style.display = 'block';
+                        
+                        // Always select PIN login when it's available
+                        pinTab.classList.add('active');
+                        passwordTab.classList.remove('active');
+                        
+                        // Switch to PIN login tab
+                        document.getElementById('password-login-form').style.display = 'none';
+                        document.getElementById('pin-login-container').style.display = 'flex';
+                    } else {
+                        pinTab.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching default username:', error);
+                // Show a message in the UI for debugging
+                const errorElement = document.getElementById('error-message');
+                errorElement.textContent = 'Error loading user data: ' + error.message;
+                errorElement.style.display = 'block';
+            }
         }
         
         // Check if user has a saved theme preference

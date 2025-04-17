@@ -60,8 +60,12 @@ let historicalBTCData = [];
 let secondaryCurrency = 'PLN';
 let secondaryRate = null;
 
-const DATA_DIR = path.join(__dirname, 'data');
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
+// Determine the data directory (from Electron or use default)
+const BASE_DATA_DIR = process.env.BTC_TRACKER_DATA_DIR || path.join(__dirname, 'data');
+console.log(`[server.js] Using data directory: ${BASE_DATA_DIR}`);
+
+const DATA_DIR = BASE_DATA_DIR;
+const UPLOADS_DIR = path.join(BASE_DATA_DIR, 'uploads');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 const HISTORICAL_BTC_FILE = path.join(DATA_DIR, 'historical_btc.json');
 const SETTINGS_FILE = path.join(DATA_DIR, 'app-settings.json');
@@ -79,6 +83,9 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve static files - moved earlier in the middleware chain
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(session({
   secret: 'btc-tracker-secret-key',
   resave: false,
@@ -92,12 +99,6 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
-
-app.get('/exchanges.html', isAuthenticated, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'exchanges.html'));
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
 
 passport.use(new LocalStrategy(
     async (username, password, done) => {
@@ -1315,6 +1316,86 @@ app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) =
     }
 });
 
+// Get default username - MOVED BEFORE WILDCARD
+app.get('/api/default-username', (req, res) => {
+    console.log('[server.js] GET /api/default-username endpoint called');
+    try {
+        const users = userModel.getUsers();
+        console.log(`[server.js] Found ${users.length} users, first username: ${users.length > 0 ? users[0].username : 'none'}`);
+        if (users.length > 0) {
+            return res.json({ 
+                username: users[0].username,
+                hasPinEnabled: !!users[0].pin
+            });
+        }
+        res.json({ username: '', hasPinEnabled: false });
+    } catch (error) {
+        console.error('[server.js] Error getting default username:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// PIN login endpoint - MOVED BEFORE WILDCARD
+app.post('/pin-login', async (req, res, next) => {
+    console.log('[server.js] POST /pin-login endpoint called');
+    console.log('[server.js] PIN login body:', { username: req.body?.username, pinReceived: !!req.body?.pin });
+    
+    try {
+        const { username, pin } = req.body;
+        
+        if (!username || !pin) {
+            console.log('[server.js] Missing username or PIN');
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Username and PIN are required' 
+            });
+        }
+        
+        const isPinValid = await userModel.verifyPin(username, pin);
+        
+        if (!isPinValid) {
+            console.log('[server.js] PIN login failed for user:', username);
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid PIN' 
+            });
+        }
+        
+        const user = userModel.findUserByUsername(username);
+        
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+        
+        // Login the user
+        req.login(user, (err) => {
+            if (err) {
+                console.error('[server.js] PIN login error:', err);
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Error during login' 
+                });
+            }
+            
+            console.log('[server.js] PIN login successful for user:', username);
+            return res.json({ 
+                success: true, 
+                message: 'Login successful',
+                redirectUrl: '/'
+            });
+        });
+    } catch (error) {
+        console.error('[server.js] PIN login error:', error);
+        return res.status(500).json({ 
+            success: false, 
+            message: 'Internal server error' 
+        });
+    }
+});
+
 // Login page
 app.get('/login', isSetupNeeded, (req, res) => {
     let errorParam = '';
@@ -1378,7 +1459,7 @@ app.post('/setup', async (req, res) => {
             return res.redirect('/login');
         }
         
-        const { username, password, confirmPassword } = req.body;
+        const { username, password, confirmPassword, pin } = req.body;
         
         if (!username || !password) {
             console.error('[server.js] Setup error: Username and password are required');
@@ -1390,8 +1471,14 @@ app.post('/setup', async (req, res) => {
             return res.redirect('/setup?error=' + encodeURIComponent('Passwords do not match'));
         }
         
+        // Validate PIN if provided
+        if (pin && (pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+            console.error('[server.js] Setup error: PIN must be 4 digits');
+            return res.redirect('/setup?error=' + encodeURIComponent('PIN must be exactly 4 digits'));
+        }
+        
         console.log('[server.js] Creating new user:', username);
-        await userModel.createUser(username, password);
+        await userModel.createUser(username, password, pin || null);
         console.log('[server.js] User created successfully');
         
         res.redirect('/login');
@@ -1447,8 +1534,75 @@ app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
     }
 });
 
+// Change PIN endpoint
+app.post('/api/user/change-pin', isAuthenticated, async (req, res) => {
+    try {
+        const { currentPassword, newPin } = req.body;
+        
+        if (!currentPassword) {
+            return res.status(400).json({ error: 'Current password is required' });
+        }
+        
+        // Validate PIN if provided - it can be null to disable PIN
+        if (newPin !== null && newPin !== undefined) {
+            if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+                return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
+            }
+        }
+        
+        const userId = req.user.id;
+        const user = userModel.findUserById(userId);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+        
+        // Hash PIN if provided, otherwise set to null to disable PIN
+        let hashedPin = null;
+        if (newPin) {
+            const saltRounds = 10;
+            hashedPin = await bcrypt.hash(newPin, saltRounds);
+        }
+        
+        await userModel.updateUser(userId, { pin: hashedPin });
+        
+        res.json({ 
+            success: true, 
+            message: newPin ? 'PIN updated successfully' : 'PIN disabled successfully',
+            hasPinEnabled: !!newPin
+        });
+    } catch (error) {
+        console.error('[server.js] Error changing PIN:', error);
+        res.status(500).json({ 
+            error: 'Failed to change PIN', 
+            message: error.message 
+        });
+    }
+});
+
 // Use exchange routes
 app.use('/api', exchangeRoutes);
+
+// Add explicit route for exchanges.html
+app.get('/exchanges.html', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.sendFile(path.join(__dirname, 'public', 'exchanges.html'));
+    } else {
+        res.redirect('/login');
+    }
+});
+
+// Special route for Electron auto-login
+app.get('/electron-login', (req, res) => {
+    // This route is no longer used - redirect to normal login
+    res.redirect('/login');
+});
 
 // Serve index.html for all other routes that aren't static files
 app.get('*', (req, res, next) => {
@@ -1456,7 +1610,7 @@ app.get('*', (req, res, next) => {
         return next();
     }
     
-    const publicPaths = ['/login', '/setup', '/logout'];
+    const publicPaths = ['/login', '/setup', '/logout', '/api/default-username', '/pin-login'];
     const isPublicPath = publicPaths.includes(req.path) || req.path.startsWith('/public/');
     
     if (!isPublicPath && !req.isAuthenticated()) {
@@ -1466,6 +1620,10 @@ app.get('*', (req, res, next) => {
     if (req.path === '/login' || req.path === '/setup') {
         res.sendFile(path.join(__dirname, 'public', req.path + '.html'));
     } else {
+        // Only serve index.html if user is authenticated for non-public paths
+        if (!isPublicPath && !req.isAuthenticated()) {
+            return res.redirect('/login');
+        }
         res.sendFile(path.join(__dirname, 'public', 'index.html'));
     }
 });
@@ -1484,9 +1642,132 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Not Found' });
 });
 
+// New function to calculate daily price change data
+async function getDailyPriceChangeData() {
+    try {
+        const currentPrice = await fetchCurrentBTCPrice();
+        
+        // Get historical data to determine yesterday's price
+        const historicalData = loadHistoricalDataFromFile();
+        
+        if (!historicalData || !Array.isArray(historicalData) || historicalData.length === 0) {
+            console.warn('Historical data not available for daily price change calculation');
+            // Return current data without daily change
+            return {
+                ...currentPrice,
+                dailyChange: 0,
+                dailyPercentChange: 0
+            };
+        }
+        
+        // Sort historical data by timestamp (newest first)
+        const sortedHistoricalData = [...historicalData].sort((a, b) => 
+            new Date(b.timestamp) - new Date(a.timestamp)
+        );
+        
+        // Get yesterday's price
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        // Format date strings for comparison
+        const todayDateString = today.toISOString().split('T')[0];
+        const yesterdayDateString = yesterday.toISOString().split('T')[0];
+        
+        // Find the most recent price point from yesterday or earlier
+        let yesterdayPrice = null;
+        for (const pricePoint of sortedHistoricalData) {
+            const pointDate = new Date(pricePoint.timestamp);
+            const pointDateString = pointDate.toISOString().split('T')[0];
+            
+            // Skip today's points
+            if (pointDateString === todayDateString) continue;
+            
+            // Use the first point from yesterday or earlier
+            yesterdayPrice = {
+                priceEUR: pricePoint.priceEUR || pricePoint.price,
+                priceUSD: pricePoint.priceUSD || (pricePoint.priceEUR * currentPrice.eurUsd)
+            };
+            break;
+        }
+        
+        // If no historical price found, use current price (no change)
+        if (!yesterdayPrice) {
+            console.warn('No historical price found for yesterday');
+            return {
+                ...currentPrice,
+                dailyChange: 0,
+                dailyPercentChange: 0
+            };
+        }
+        
+        // Calculate daily change
+        const priceEUR = currentPrice.priceEUR || currentPrice.price;
+        const yesterdayPriceEUR = yesterdayPrice.priceEUR;
+        
+        const dailyChange = priceEUR - yesterdayPriceEUR;
+        const dailyPercentChange = (dailyChange / yesterdayPriceEUR) * 100;
+        
+        // Add current transaction data
+        let data = await loadData();
+        
+        return {
+            timestamp: new Date().toISOString(),
+            priceEUR: priceEUR,
+            priceUSD: currentPrice.priceUSD,
+            currentPrice: priceEUR,
+            mainCurrency: data.settings?.mainCurrency || 'EUR',
+            secondaryCurrency: data.settings?.secondaryCurrency || 'USD',
+            dailyChange: dailyChange,
+            dailyPercentChange: dailyPercentChange,
+            // Add portfolio information
+            totalBTC: data.totalBTC || 0,
+            pnl: data.pnl || 0,
+            currentValue: data.currentValue || 0
+        };
+    } catch (error) {
+        console.error('Error calculating daily price change:', error);
+        return {
+            timestamp: new Date().toISOString(),
+            priceEUR: 0,
+            priceUSD: 0,
+            currentPrice: 0,
+            mainCurrency: 'EUR',
+            secondaryCurrency: 'USD',
+            dailyChange: 0,
+            dailyPercentChange: 0,
+            totalBTC: 0,
+            pnl: 0,
+            currentValue: 0
+        };
+    }
+}
+
+// Add new daily price endpoint
+app.get('/api/daily-price', isAuthenticated, async (req, res) => {
+    try {
+        const dailyPriceData = await getDailyPriceChangeData();
+        res.json(dailyPriceData);
+    } catch (error) {
+        console.error('Error fetching daily price data:', error);
+        res.status(500).json({ error: 'Failed to fetch daily price data' });
+    }
+});
+
 async function startServer() {
     await priceCache.initialize();
     
+    // Add new daily price endpoint
+    app.get('/api/daily-price', isAuthenticated, async (req, res) => {
+        try {
+            const dailyPriceData = await getDailyPriceChangeData();
+            res.json(dailyPriceData);
+        } catch (error) {
+            console.error('Error fetching daily price data:', error);
+            res.status(500).json({ error: 'Failed to fetch daily price data' });
+        }
+    });
+
     app.listen(PORT, '0.0.0.0', () => {
         console.log(`[server.js] Server running on port ${PORT}, accessible on your local network.`);
     });

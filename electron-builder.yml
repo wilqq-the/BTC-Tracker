@@ -1,0 +1,47 @@
+appId: com.btctracker.app
+productName: BTC Tracker
+copyright: Copyright © 2023
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - src/**/*
+  - node_modules/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: src/public/img/logo.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BTC Tracker
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.finance
+  icon: src/public/img/logo.icns
+  
+linux:
+  target:
+    - target: AppImage
+    - target: deb
+  category: Finance
+  icon: src/public/img/logo.png
+
+publish:
+  provider: github
+  releaseType: draft 

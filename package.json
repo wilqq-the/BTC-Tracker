@@ -2,10 +2,15 @@
   "name": "btc-tracker",
   "version": "1.0.0",
   "description": "Bitcoin transaction tracker",
-  "main": "src/server.js",
+  "main": "src/electron.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "electron": "electron .",
+    "electron-dev": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "build": "electron-builder --win --linux --x64",
+    "build-win": "electron-builder --win --x64",
+    "build-linux": "electron-builder --linux --x64"
   },
   "dependencies": {
     "axios": "^1.6.7",
@@ -24,6 +29,38 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "concurrently": "^8.2.2",
+    "electron": "^30.0.0",
+    "electron-builder": "^24.9.1",
+    "nodemon": "^2.0.22",
+    "wait-on": "^7.2.0"
+  },
+  "build": {
+    "appId": "com.btctracker.app",
+    "productName": "BTC Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        "snap",
+        "AppImage"
+      ],
+      "category": "Finance",
+      "icon": "src/public/images/bitcoin-icon.png"
+    }
   }
 }

@@ -686,6 +686,32 @@
                                 </button>
                             </div>
                         </form>
+
+                        <hr style="margin: 30px 0; border: 0; border-top: 1px solid var(--border-color);">
+                        
+                        <h3><i class="fas fa-fingerprint"></i> Quick Access PIN</h3>
+                        <form id="changePinForm" class="form">
+                            <div class="form-group">
+                                <label for="pinCurrentPassword"><i class="fas fa-lock"></i> Current Password</label>
+                                <input type="password" id="pinCurrentPassword" name="pinCurrentPassword" required>
+                                <p class="help-text">Enter your current password to confirm changes</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="newPin"><i class="fas fa-key"></i> New PIN</label>
+                                <input type="text" id="newPin" name="newPin" pattern="[0-9]{4}" maxlength="4" inputmode="numeric" required>
+                                <p class="help-text">4-digit PIN for quick login (especially on the desktop app)</p>
+                            </div>
+                            
+                            <div class="form-buttons">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Change PIN
+                                </button>
+                                <button type="button" id="disablePinBtn" class="btn btn-danger">
+                                    <i class="fas fa-times-circle"></i> Disable PIN
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -1580,6 +1606,114 @@
                 if (handleAuthError && handleAuthError(error)) return;
                 
                 alert('Error changing password: ' + error.message);
+            }
+        });
+
+        // PIN change form handler
+        document.getElementById('changePinForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const currentPassword = document.getElementById('pinCurrentPassword').value;
+            const newPin = document.getElementById('newPin').value;
+            
+            // Validate PIN
+            if (newPin.length !== 4 || !/^\d{4}$/.test(newPin)) {
+                alert('PIN must be exactly 4 digits');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/change-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPin
+                    })
+                });
+                
+                // Check for authentication redirects
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    alert('PIN changed successfully!');
+                    
+                    // Reset form
+                    document.getElementById('changePinForm').reset();
+                } else {
+                    // Error
+                    alert(result.error || 'Failed to change PIN');
+                }
+            } catch (error) {
+                console.error('Error changing PIN:', error);
+                
+                // Check for authentication issues
+                if (handleAuthError && handleAuthError(error)) return;
+                
+                alert('Error changing PIN: ' + error.message);
+            }
+        });
+        
+        // Disable PIN button handler
+        document.getElementById('disablePinBtn').addEventListener('click', async function() {
+            const currentPassword = document.getElementById('pinCurrentPassword').value;
+            
+            if (!currentPassword) {
+                alert('Please enter your current password to disable PIN');
+                return;
+            }
+            
+            if (!confirm('Are you sure you want to disable PIN login?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user/change-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPin: null // Null PIN means disable
+                    })
+                });
+                
+                // Check for authentication redirects
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('text/html')) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    alert('PIN login disabled successfully!');
+                    
+                    // Reset form
+                    document.getElementById('changePinForm').reset();
+                } else {
+                    // Error
+                    alert(result.error || 'Failed to disable PIN');
+                }
+            } catch (error) {
+                console.error('Error disabling PIN:', error);
+                
+                // Check for authentication issues
+                if (handleAuthError && handleAuthError(error)) return;
+                
+                alert('Error disabling PIN: ' + error.message);
             }
         });
 

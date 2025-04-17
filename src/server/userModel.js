@@ -29,6 +29,11 @@ const userModel = {
         }
     },
 
+    // Get all users (alias for getUsers for clarity)
+    getAllUsers: () => {
+        return userModel.getUsers();
+    },
+
     // Save users to file
     saveUsers: (users) => {
         try {
@@ -59,7 +64,7 @@ const userModel = {
     },
 
     // Create a new user
-    createUser: async (username, password) => {
+    createUser: async (username, password, pin = null) => {
         // Validate inputs
         if (!username || !password) {
             throw new Error('Username and password are required');
@@ -67,6 +72,13 @@ const userModel = {
 
         if (password.length < 6) {
             throw new Error('Password must be at least 6 characters long');
+        }
+
+        // Validate PIN if provided
+        if (pin !== null) {
+            if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                throw new Error('PIN must be exactly 4 digits');
+            }
         }
 
         // Check if username already exists
@@ -78,12 +90,19 @@ const userModel = {
         // Hash password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
+        
+        // Hash PIN if provided
+        let hashedPin = null;
+        if (pin) {
+            hashedPin = await bcrypt.hash(pin, saltRounds);
+        }
 
         // Create new user
         const newUser = {
             id: Date.now().toString(),
             username,
             password: hashedPassword,
+            pin: hashedPin,
             created: new Date().toISOString()
         };
 
@@ -94,9 +113,28 @@ const userModel = {
         // Save to file
         userModel.saveUsers(users);
 
-        // Return user without password
-        const { password: _, ...userWithoutPassword } = newUser;
-        return userWithoutPassword;
+        // Return user without password and pin
+        const { password: _, pin: __, ...userWithoutSensitiveData } = newUser;
+        return userWithoutSensitiveData;
+    },
+
+    // Verify PIN for a user
+    verifyPin: async (username, pin) => {
+        if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+            return false;
+        }
+
+        const user = userModel.findUserByUsername(username);
+        if (!user || !user.pin) {
+            return false;
+        }
+
+        try {
+            return await bcrypt.compare(pin, user.pin);
+        } catch (error) {
+            console.error('Error verifying PIN:', error);
+            return false;
+        }
     },
 
     // Update user

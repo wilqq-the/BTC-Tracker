@@ -235,6 +235,26 @@
         <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
     </footer>
 
+    <!-- Daily Ticker Bar -->
+    <div class="ticker-container">
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="tickerContent">
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-wallet"></i> Current Value</span>
+                    <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-chart-line"></i> Daily Change</span>
+                    <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-percentage"></i> Daily Change %</span>
+                    <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
         // Set current year in footer
@@ -1017,63 +1037,52 @@
         }
 
         // Modified loadData function
-        async function loadData(isFullRefresh = true) {
+        async function loadData(isFullRefresh = false) {
+            console.log(`Loading data (full refresh: ${isFullRefresh})`);
+            
+            if (isFullRefresh) {
+                document.getElementById('chartLoading').style.display = 'flex';
+            }
+            
             try {
                 if (isFullRefresh) {
-                    document.getElementById('chartLoading').style.display = 'flex';
-                    
-                    // Fetch all data including cached prices from summary endpoint
                     const response = await fetch('/api/summary');
                     if (!response.ok) {
-                        // If we get redirected to login (status 302), the browser may follow the redirect
-                        // Check the content type to see if we received HTML instead of JSON
-                        const contentType = response.headers.get('content-type');
-                        if (contentType && contentType.includes('text/html')) {
-                            // We're being redirected to the login page, so redirect
-                            window.location.href = '/login';
-                            return;
-                        }
                         throw new Error('Failed to load data');
                     }
-                    
                     const data = await response.json();
-
-                    // Get secondary currency settings
-                    secondaryCurrency = data.secondaryCurrency || 'PLN';
-                    secondaryRate = data.secondaryRate || 1;
                     
-                    // Check if main currency has changed
-                    const mainCurrency = data.mainCurrency || 'EUR';
-                    const mainCurrencyChanged = window.currentMainCurrency && window.currentMainCurrency !== mainCurrency;
-                    window.currentMainCurrency = mainCurrency;
-                    
-                    // Store current transaction count to check for changes
-                    const oldTransactionCount = transactionsWithCumulative.length;
-                    
-                    // Store transactions globally with safe access
-                    let cumulativeBtc = 0;
-                    let cumulativeCost = 0;
-                    transactionsWithCumulative = (data.transactions || []).map(tx => {
-                        cumulativeBtc += tx.type === 'buy' ? tx.amount : -tx.amount;
-                        cumulativeCost += tx.type === 'buy' ? tx.cost : -tx.cost;
-                        return {
-                            ...tx,
-                            cumulativeBtc,
-                            cumulativeCost
-                        };
-                    });
-                    
-                    // Check if transaction count has changed
-                    const transactionCountChanged = oldTransactionCount !== transactionsWithCumulative.length;
-                    
-                    // If main currency changed or transactions changed, force re-creation of chart
-                    if ((mainCurrencyChanged || transactionCountChanged) && combinedChart) {
-                        console.log('Recreating chart due to currency change or transaction change');
-                        combinedChart.destroy();
-                        combinedChart = null;
+                    // Update secondary currency and rate for global use
+                    if (data.secondaryCurrency && data.secondaryCurrency !== secondaryCurrency) {
+                        secondaryCurrency = data.secondaryCurrency;
+                        secondaryRate = data.secondaryRate || 1.0;
                     }
-
-                    // Get main currency price
+                    
+                    // Set main currency globally for this session
+                    window.currentMainCurrency = data.mainCurrency || 'EUR';
+                    
+                    // Process transactions for chart
+                    if (data.transactions && data.transactions.length > 0) {
+                        let cumulativeBtc = 0;
+                        let cumulativeCost = 0;
+                        
+                        transactionsWithCumulative = data.transactions.map(tx => {
+                            // Only add to cumulative for buy transactions
+                            cumulativeBtc += tx.type === 'buy' ? tx.amount : -tx.amount;
+                            cumulativeCost += tx.type === 'buy' ? tx.cost : -tx.cost;
+                            
+                            return {
+                                ...tx,
+                                cumulativeBtc,
+                                cumulativeCost
+                            };
+                        });
+                    } else {
+                        transactionsWithCumulative = [];
+                    }
+                    
+                    // Determine which currency to use based on data
+                    const mainCurrency = data.mainCurrency || 'EUR';
                     const price = mainCurrency === 'EUR' ? 
                         data.priceEUR || data.price || 0 : 
                         data.priceUSD || 0;
@@ -1191,6 +1200,9 @@
                         document.getElementById('priceUpdate').classList.remove('pulsing');
                     }, 1000);
                 }
+                
+                // Always update ticker data when main data is loaded
+                updateTickerData();
             } catch (error) {
                 console.error('Error loading data:', error);
                 
@@ -1234,6 +1246,88 @@
             }
         }
 
+        // Function to update ticker with daily change data
+        async function updateTickerData() {
+            try {
+                console.log('Updating ticker data...');
+                
+                // Instead of using a separate endpoint that doesn't exist,
+                // use the existing summary endpoint that already works
+                const response = await fetch('/api/summary?priceOnly=true');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ticker data');
+                }
+                
+                const data = await response.json();
+                console.log('Ticker data received from summary endpoint');
+                
+                // Get currency symbols and data
+                const mainCurrency = data.mainCurrency || 'EUR';
+                const secondaryCurrency = data.secondaryCurrency || 'USD';
+                const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
+                
+                // Update current value
+                const currentValue = data.currentValue || 0;
+                document.getElementById('tickerCurrentValue').textContent = 
+                    `${currentValue.toFixed(2)} ${mainCurrencySymbol}`;
+                
+                // Calculate daily change based on yesterday's price if available
+                let dailyChange = 0;
+                let dailyPercentChange = 0;
+                
+                if (data.historicalBTCData && data.historicalBTCData.length > 1) {
+                    // Get the current price
+                    const currentPrice = data.priceEUR || data.price || 0;
+                    
+                    // Find the previous day's price from historical data
+                    const today = new Date();
+                    const yesterday = new Date(today);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    
+                    // Convert to date string for comparison (YYYY-MM-DD format)
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    
+                    // Find closest previous day price
+                    let previousPrice = null;
+                    for (let i = data.historicalBTCData.length - 1; i >= 0; i--) {
+                        const dataDate = new Date(data.historicalBTCData[i].timestamp);
+                        const dataDateStr = dataDate.toISOString().split('T')[0];
+                        
+                        if (dataDateStr <= yesterdayStr) {
+                            previousPrice = data.historicalBTCData[i].priceEUR || data.historicalBTCData[i].price;
+                            break;
+                        }
+                    }
+                    
+                    // If we found a previous price, calculate the change
+                    if (previousPrice) {
+                        dailyChange = currentPrice - previousPrice;
+                        dailyPercentChange = (dailyChange / previousPrice) * 100;
+                        
+                        console.log(`Calculated daily change: ${dailyChange.toFixed(2)} (${dailyPercentChange.toFixed(2)}%)`);
+                    }
+                }
+                
+                // Update daily change value
+                const dailyChangeElement = document.getElementById('tickerDailyChange');
+                dailyChangeElement.textContent = `${dailyChange.toFixed(2)} ${mainCurrencySymbol}`;
+                dailyChangeElement.className = `ticker-value ${dailyChange >= 0 ? 'positive' : 'negative'}`;
+                
+                // Update daily percent change
+                const dailyPercentElement = document.getElementById('tickerDailyPercent');
+                dailyPercentElement.textContent = `${dailyPercentChange.toFixed(2)}%`;
+                dailyPercentElement.className = `ticker-value ${dailyPercentChange >= 0 ? 'positive' : 'negative'}`;
+                
+                console.log('Ticker data updated successfully');
+            } catch (error) {
+                console.error('Error updating ticker:', error);
+                // Display error in ticker but make it less intrusive
+                document.getElementById('tickerDailyChange').textContent = '-';
+                document.getElementById('tickerDailyPercent').textContent = '-';
+                document.getElementById('tickerCurrentValue').textContent = '-';
+            }
+        }
+
         // Initial load and setup intervals
         document.addEventListener('DOMContentLoaded', () => {
             loadData(true);  // Initial full load
@@ -1242,10 +1336,17 @@
             setInterval(() => loadData(true), 24 * 60 * 60 * 1000); // Full refresh once per day
             setInterval(() => loadData(false), 60 * 1000); // Price update every minute
             
+            // Add ticker update interval
+            updateTickerData(); // Initial ticker update
+            setInterval(updateTickerData, 5 * 60 * 1000); // Update ticker every 5 minutes
+            
             // Setup refresh button
             document.getElementById('refreshBtn').addEventListener('click', async () => {
                 console.log('Manual refresh triggered');
                 try {
+                    document.getElementById('refreshBtn').disabled = true;
+                    document.getElementById('refreshBtn').innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> Refreshing...';
+                    
                     // Directly fetch fresh price
                     const response = await fetch('/api/current-price?fresh=true');
                     if (response.ok) {
@@ -1265,27 +1366,24 @@
                                 isCached: false
                             };
                             
-                            // Update displays and chart with fresh price
-                            updatePriceDisplays(priceData);
+                            console.log('Updating chart with fresh price:', priceData);
                             updateChartWithLatestPrice(combinedChart, priceData);
-                            
-                            // Update last update time
-                            lastUpdateTime = new Date(freshPriceData.timestamp);
-                            document.getElementById('lastUpdate').textContent = 
-                                `${lastUpdateTime.toLocaleTimeString()} (fresh)`;
-                            document.getElementById('priceUpdate').classList.add('pulsing');
-                            setTimeout(() => {
-                                document.getElementById('priceUpdate').classList.remove('pulsing');
-                            }, 1000);
                         }
+                        
+                        // Now do a full refresh
+                        await loadData(true);
+                        
+                        // Also update the ticker
+                        await updateTickerData();
                     } else {
-                        // If direct price fetch fails, fallback to regular refresh
-                        loadData(false);
+                        throw new Error('Failed to fetch fresh price');
                     }
                 } catch (error) {
-                    console.error('Error fetching fresh price:', error);
-                    // Fallback to regular refresh
-                    loadData(false);
+                    console.error('Error during manual refresh:', error);
+                    alert('Failed to refresh: ' + error.message);
+                } finally {
+                    document.getElementById('refreshBtn').disabled = false;
+                    document.getElementById('refreshBtn').innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
                 }
             });
             
@@ -1294,6 +1392,7 @@
                 if (document.visibilityState === 'visible') {
                     console.log('Page visible again - refreshing data to check for new transactions');
                     loadData(true); // Do a full refresh when coming back to the page
+                    updateTickerData(); // Also update the ticker
                 }
             });
 
