@@ -39,14 +39,16 @@ class KrakenAdapter extends ExchangeAdapter {
    */
   async connect() {
     try {
-      // Get credentials
-      this.credentials = credentialManager.getCredentials('kraken');
+      // Get credentials - FIXED: Added await here since getCredentials is async
+      this.credentials = await credentialManager.getCredentials('kraken');
       
       if (!this.credentials) {
         console.error('No Kraken credentials found');
         this.isConnected = false;
         return false;
       }
+      
+      console.log('Loaded Kraken credentials, API Key starts with:', this.credentials.apiKey.substring(0, 5));
       
       // Test credentials by fetching account balance
       const result = await this.testConnection(this.credentials);

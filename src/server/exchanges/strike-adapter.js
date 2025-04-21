@@ -81,14 +81,16 @@ class StrikeAdapter extends ExchangeAdapter {
         try {
             console.info('Connecting to Strike API...');
             
-            // Get credentials
-            this.credentials = credentialManager.getCredentials('strike');
+            // Get credentials - FIXED: Added await here since getCredentials is async
+            this.credentials = await credentialManager.getCredentials('strike');
             
             if (!this.credentials) {
                 console.error('No Strike credentials found');
                 this.isConnected = false;
                 return false;
             }
+            
+            console.log('Loaded Strike credentials, API Key starts with:', this.credentials.apiKey.substring(0, 5));
             
             // Test credentials by fetching account profile
             const result = await this.testConnection(this.credentials);
