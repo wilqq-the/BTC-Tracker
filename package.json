@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest",
+    "test:e2e": "jest tests/setup.test.js --forceExit",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
