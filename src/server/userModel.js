@@ -1,14 +1,13 @@
 const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
+const pathManager = require('./utils/path-manager');
 
 // File paths
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const USERS_FILE = pathManager.getUsersPath();
 
 // Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(pathManager.getDataDirectory())) {
+    fs.mkdirSync(pathManager.getDataDirectory(), { recursive: true });
 }
 
 // Initialize users if not exists

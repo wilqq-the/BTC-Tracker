@@ -25,32 +25,46 @@ class ExchangeService {
     });
     
     // Initialize all exchanges with credentials
-    this.initializeExchanges();
+    this.initialize();
+  }
+
+  /**
+   * Initialize the service
+   */
+  async initialize() {
+    try {
+      await this.initializeExchanges();
+    } catch (error) {
+      console.error('Error initializing exchange service:', error);
+    }
   }
 
   /**
    * Initialize all exchanges with saved credentials
    */
-  initializeExchanges() {
-    // Get list of exchanges with saved credentials
-    const exchangeIds = credentialManager.listExchanges();
-    
-    // Initialize adapters for each exchange
-    for (const exchangeId of exchangeIds) {
-      this.initializeExchange(exchangeId);
+  async initializeExchanges() {
+    try {
+      // Get list of exchanges with saved credentials
+      const exchangeIds = await credentialManager.listExchanges();
       
-      // Also connect to the exchange
-      this.connectExchange(exchangeId)
-        .then(connected => {
+      // Initialize adapters for each exchange
+      for (const exchangeId of exchangeIds) {
+        this.initializeExchange(exchangeId);
+        
+        // Also connect to the exchange
+        try {
+          const connected = await this.connectExchange(exchangeId);
           if (connected) {
             console.log(`Successfully connected to exchange: ${exchangeId}`);
           } else {
             console.error(`Failed to connect to exchange: ${exchangeId}`);
           }
-        })
-        .catch(error => {
+        } catch (error) {
           console.error(`Error connecting to exchange ${exchangeId}:`, error);
-        });
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing exchanges:', error);
     }
   }
 
