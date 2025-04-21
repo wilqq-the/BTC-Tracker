@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 // File paths
 const DATA_DIR = path.join(__dirname, '..', 'data');

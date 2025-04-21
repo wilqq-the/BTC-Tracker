@@ -235,7 +235,28 @@
         <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
     </footer>
 
+    <!-- Daily Ticker Bar -->
+    <div class="ticker-container">
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="tickerContent">
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-wallet"></i> Current Value</span>
+                    <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-chart-line"></i> Daily Change</span>
+                    <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-percentage"></i> Daily Change %</span>
+                    <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="/js/ticker.js"></script>
     <script>
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();

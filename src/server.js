@@ -10,7 +10,7 @@ const priceCache = require('./server/priceCache');
 const session = require('express-session');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const flash = require('connect-flash');
 const userModel = require('./server/userModel');
 const exchangeRoutes = require('./routes/exchange-routes');
@@ -820,11 +820,60 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
         console.log('[server.js] Processing /api/current-price request');
         
         const cachedPrices = priceCache.getCachedPrices();
+        const settings = loadSettings();
+        
+        // Get historical price data for weekly calculations
+        loadHistoricalDataFromFile();
+        
+        // Find price from 7 days ago
+        const today = new Date();
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(today.getDate() - 7);
+        const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]; // YYYY-MM-DD format
+        
+        console.log(`[server.js] Looking for price data from ${sevenDaysAgoStr}`);
+        
+        // Find the closest date to 7 days ago in our historical data
+        let weeklyPrice = null;
+        let closestDate = null;
+        let smallestDiff = Infinity;
+        
+        if (Array.isArray(historicalBTCData) && historicalBTCData.length > 0) {
+            // Sort by date (newest first) to find the closest date efficiently
+            const sortedData = [...historicalBTCData].sort((a, b) => 
+                new Date(b.date) - new Date(a.date)
+            );
+            
+            // Target timestamp for 7 days ago
+            const targetTimestamp = sevenDaysAgo.getTime();
+            
+            // Find closest date
+            for (const dataPoint of sortedData) {
+                if (!dataPoint.date) continue;
+                
+                const dataDate = new Date(dataPoint.date);
+                const diff = Math.abs(dataDate.getTime() - targetTimestamp);
+                
+                if (diff < smallestDiff) {
+                    smallestDiff = diff;
+                    closestDate = dataPoint.date;
+                    weeklyPrice = dataPoint.priceEUR || dataPoint.price || 0;
+                    
+                    // If we find an exact match or very close, break early
+                    if (diff < 24 * 60 * 60 * 1000) { // Within 1 day
+                        break;
+                    }
+                }
+            }
+            
+            console.log(`[server.js] Found historical price from ${closestDate}: ${weeklyPrice} EUR`);
+        } else {
+            console.log('[server.js] No historical data available for weekly price calculation');
+            weeklyPrice = cachedPrices.previousWeekPrice || cachedPrices.previousDayPrice || cachedPrices.priceEUR;
+        }
         
         const forceFresh = req.query.fresh === 'true';
         if (forceFresh || !cachedPrices.priceEUR || !cachedPrices.timestamp) {
-            const settings = loadSettings();
-            
             const baseUrl = 'https://api.coingecko.com/api/v3';
                 
             let btcApiUrl = `${baseUrl}/simple/price?ids=bitcoin&vs_currencies=eur,usd`;
@@ -844,7 +893,11 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
                 priceUSD: btcData.bitcoin.usd,
                 timestamp: new Date(),
                 eurUsd: exchangeData.rates.USD,
-                eurPln: exchangeData.rates.PLN
+                eurPln: exchangeData.rates.PLN,
+                previousDayPrice: cachedPrices.previousDayPrice,
+                previousWeekPrice: weeklyPrice,
+                mainCurrency: settings.mainCurrency || 'EUR',
+                weeklyPriceDate: closestDate
             };
 
             console.log('[server.js] Current price data fetched fresh');
@@ -861,7 +914,11 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
                 timestamp: cachedPrices.timestamp,
                 eurUsd: cachedPrices.eurUsd,
                 eurPln: cachedPrices.eurPln,
-                age: cachedPrices.age
+                age: cachedPrices.age,
+                previousDayPrice: cachedPrices.previousDayPrice,
+                previousWeekPrice: weeklyPrice,
+                mainCurrency: settings.mainCurrency || 'EUR',
+                weeklyPriceDate: closestDate
             });
         }
     } catch (error) {

@@ -7,12 +7,16 @@ class PriceCache {
         this.cache = {
             priceEUR: null,   // BTC price in EUR
             priceUSD: null,   // BTC price in USD
+            previousDayPrice: null, // Previous day's price in EUR
+            previousWeekPrice: null, // Previous week's price in EUR
             exchangeRates: {}, // All exchange rates
             timestamp: null
         };
         this.updateInterval = 5 * 60 * 1000; // 5 minutes
         this.isUpdating = false;
         this.cacheFilePath = path.join(__dirname, '..', 'data', 'price-cache.json');
+        this.lastDayUpdate = null;
+        this.lastWeekUpdate = null;
     }
 
     async initialize() {
@@ -28,6 +32,14 @@ class PriceCache {
             if (!this.cache.timestamp || 
                 Date.now() - new Date(this.cache.timestamp).getTime() > this.updateInterval) {
                 await this.updatePrices();
+            }
+            
+            // Initialize previousWeekPrice if not present
+            if (!this.cache.previousWeekPrice && this.cache.priceEUR) {
+                this.cache.previousWeekPrice = this.cache.priceEUR;
+                this.lastWeekUpdate = new Date();
+                console.log(`[priceCache] Initialized previousWeekPrice to ${this.cache.previousWeekPrice}`);
+                await this.saveToDisk();
             }
             
             // Set up periodic updates
@@ -95,6 +107,36 @@ class PriceCache {
             const btcPriceEUR = btcResponse.data.bitcoin.eur;
             const btcPriceUSD = btcResponse.data.bitcoin.usd;
             
+            const now = new Date();
+            const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+            
+            // Check if we need to update the previous day price
+            if (!this.lastDayUpdate || now.getDate() !== this.lastDayUpdate.getDate()) {
+                const oldPrice = this.cache.previousDayPrice;
+                this.cache.previousDayPrice = this.cache.priceEUR || btcPriceEUR;
+                this.lastDayUpdate = now;
+                console.log(`[priceCache] Updated previous day price: ${oldPrice} -> ${this.cache.previousDayPrice}`);
+            } else {
+                console.log(`[priceCache] Keeping previous day price: ${this.cache.previousDayPrice}`);
+            }
+            
+            // Check if we need to update the previous week price
+            // Update on Mondays (day 1) or if we haven't updated in over 7 days
+            const daysSinceLastUpdate = this.lastWeekUpdate ? 
+                Math.floor((now - this.lastWeekUpdate) / (24 * 60 * 60 * 1000)) : 
+                8; // Force update if never updated
+                
+            if (!this.lastWeekUpdate || 
+                (now.getDay() === 1 && this.lastWeekUpdate.getDay() !== 1) ||
+                daysSinceLastUpdate >= 7) {
+                const oldWeeklyPrice = this.cache.previousWeekPrice;
+                this.cache.previousWeekPrice = this.cache.priceEUR || btcPriceEUR;
+                this.lastWeekUpdate = now;
+                console.log(`[priceCache] Updated previous week price: ${oldWeeklyPrice} -> ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
+            } else {
+                console.log(`[priceCache] Keeping previous week price: ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
+            }
+            
             const eurRatesResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
             const eurRates = eurRatesResponse.data.rates;
             
@@ -119,6 +161,7 @@ class PriceCache {
             };
             
             this.cache = {
+                ...this.cache,
                 priceEUR: btcPriceEUR,
                 priceUSD: btcPriceUSD,
                 price: btcPriceEUR,
@@ -138,6 +181,7 @@ class PriceCache {
             
             if (!this.cache.priceEUR && !this.cache.priceUSD) {
                 this.cache = {
+                    ...this.cache,
                     priceEUR: 0,
                     priceUSD: 0,
                     price: 0,
@@ -164,6 +208,8 @@ class PriceCache {
             // For backward compatibility
             price: this.cache.priceEUR || this.cache.price || 0,
             priceUSD: this.cache.priceUSD || (this.cache.price ? this.cache.price * (this.cache.eurUsd || 1.1) : 0),
+            previousDayPrice: this.cache.previousDayPrice || this.cache.priceEUR || 0,
+            previousWeekPrice: this.cache.previousWeekPrice || this.cache.previousDayPrice || this.cache.priceEUR || 0,
             isCached: true,
             age: this.cache.timestamp ? 
                 Math.round((Date.now() - new Date(this.cache.timestamp).getTime()) / 1000) : 
