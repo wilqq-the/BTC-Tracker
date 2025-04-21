@@ -1436,7 +1436,7 @@ app.post('/setup', async (req, res) => {
             return res.redirect('/login');
         }
         
-        const { username, password, confirmPassword } = req.body;
+        const { username, password, confirmPassword, enablePin, pin } = req.body;
         
         if (!username || !password) {
             console.error('[server.js] Setup error: Username and password are required');
@@ -1448,9 +1448,22 @@ app.post('/setup', async (req, res) => {
             return res.redirect('/setup?error=' + encodeURIComponent('Passwords do not match'));
         }
         
-        console.log('[server.js] Creating new user:', username);
-        await userModel.createUser(username, password);
+        // Handle PIN if enabled
+        let userPin = null;
+        if (enablePin && pin) {
+            if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                console.error('[server.js] Setup error: PIN must be exactly 4 digits');
+                return res.redirect('/setup?error=' + encodeURIComponent('PIN must be exactly 4 digits'));
+            }
+            userPin = pin;
+        }
+        
+        await userModel.createUser(username, password, userPin);
+        
         console.log('[server.js] User created successfully');
+        
+        // Set flash message for success
+        req.flash('success', 'Account created successfully. Please log in.');
         
         res.redirect('/login');
     } catch (error) {
@@ -1508,7 +1521,140 @@ app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
 // Use exchange routes
 app.use('/api', exchangeRoutes);
 
-// Serve index.html for all other routes that aren't static files
+// Make sure all API routes are defined BEFORE the catch-all routes
+// API endpoint to get PIN-enabled users
+app.get('/api/users/pin-enabled', (req, res) => {
+    try {
+        const users = userModel.getUsers();
+        
+        // Filter for PIN-enabled users and return only safe user data
+        const pinEnabledUsers = users
+            .filter(user => user.pinEnabled)
+            .map(user => {
+                return {
+                    id: user.id,
+                    username: user.username
+                };
+            });
+        
+        res.json(pinEnabledUsers);
+    } catch (error) {
+        console.error('[server.js] Error fetching PIN-enabled users:', error);
+        res.status(500).json({ error: 'Failed to fetch PIN-enabled users' });
+    }
+});
+
+// User profile endpoint
+app.get('/api/user/profile', isAuthenticated, (req, res) => {
+    try {
+        // Get current user from session and ensure PIN fields exist
+        const userWithPin = userModel.ensurePinFields(req.user);
+        const { id, username, created, pinEnabled } = userWithPin;
+        
+        res.json({
+            id,
+            username,
+            created,
+            pinEnabled
+        });
+    } catch (error) {
+        console.error('[server.js] Error fetching user profile:', error);
+        res.status(500).json({ error: 'Failed to fetch user profile' });
+    }
+});
+
+// Update PIN settings endpoint
+app.post('/api/user/update-pin', isAuthenticated, async (req, res) => {
+    try {
+        const { enablePin, pin } = req.body;
+        console.log('[server.js] Updating PIN settings:', { enablePin, hasPin: !!pin });
+        
+        // Validate PIN if enabling
+        if (enablePin && (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin))) {
+            return res.status(400).json({ error: 'PIN must be exactly 4 digits' });
+        }
+        
+        // Update PIN settings using userModel
+        const updatedUser = await userModel.updatePinSettings(req.user.id, pin, enablePin);
+        
+        res.json({
+            success: true,
+            message: enablePin ? 'PIN enabled successfully' : 'PIN disabled successfully',
+            user: {
+                id: updatedUser.id,
+                username: updatedUser.username,
+                pinEnabled: updatedUser.pinEnabled
+            }
+        });
+    } catch (error) {
+        console.error('[server.js] Error updating PIN settings:', error);
+        res.status(500).json({ error: error.message || 'Failed to update PIN settings' });
+    }
+});
+
+// PIN login authentication
+app.post('/pin-login', async (req, res) => {
+    try {
+        const { userId, pin } = req.body;
+        console.log('[server.js] PIN login attempt for user ID:', userId);
+        
+        if (!userId || !pin) {
+            return res.redirect('/login?error=' + encodeURIComponent('User ID and PIN are required'));
+        }
+        
+        // Find the user
+        const user = userModel.findUserById(userId);
+        
+        if (!user) {
+            return res.redirect('/login?error=' + encodeURIComponent('User not found'));
+        }
+        
+        try {
+            // Verify PIN
+            const isPinValid = await userModel.verifyPin(userId, pin);
+            
+            if (!isPinValid) {
+                return res.redirect('/login?error=' + encodeURIComponent('Invalid PIN'));
+            }
+            
+            // Log user in
+            req.login(user, (err) => {
+                if (err) {
+                    console.error('[server.js] Error logging in with PIN:', err);
+                    return res.redirect('/login?error=' + encodeURIComponent('Login failed'));
+                }
+                
+                // Set session cookie expiration if remembered
+                if (req.body.rememberMe) {
+                    req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
+                }
+                
+                return res.redirect('/');
+            });
+        } catch (error) {
+            console.error('[server.js] PIN verification error:', error);
+            return res.redirect('/login?error=' + encodeURIComponent(error.message));
+        }
+    } catch (error) {
+        console.error('[server.js] PIN login error:', error);
+        res.redirect('/login?error=' + encodeURIComponent(error.message));
+    }
+});
+
+// MOVE ALL OTHER API ROUTES HERE...
+
+// *** Catch-all routes should be AFTER all API routes ***
+// Serve the main application
+app.get(['/', '/admin', '/transactions', '/exchanges'], isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Profile page
+app.get('/profile', isAuthenticated, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'profile.html'));
+});
+
+// Serve HTML pages based on path
 app.get('*', (req, res, next) => {
     if (req.path.includes('.') && req.path !== '/') {
         return next();

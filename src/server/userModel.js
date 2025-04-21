@@ -57,8 +57,18 @@ const userModel = {
         return users.find(user => user.id === id);
     },
 
+    // Ensure PIN fields exist for backward compatibility
+    ensurePinFields: (user) => {
+        // Return a user object with default pin fields if they don't exist
+        return {
+            ...user,
+            pinEnabled: user.pinEnabled !== undefined ? user.pinEnabled : false,
+            pin: user.pin !== undefined ? user.pin : null
+        };
+    },
+
     // Create a new user
-    createUser: async (username, password) => {
+    createUser: async (username, password, pin = null) => {
         // Validate inputs
         if (!username || !password) {
             throw new Error('Username and password are required');
@@ -66,6 +76,13 @@ const userModel = {
 
         if (password.length < 6) {
             throw new Error('Password must be at least 6 characters long');
+        }
+
+        // Validate PIN if provided
+        if (pin !== null) {
+            if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+                throw new Error('PIN must be a 4-digit number');
+            }
         }
 
         // Check if username already exists
@@ -78,11 +95,19 @@ const userModel = {
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+        // Hash PIN if provided
+        let hashedPin = null;
+        if (pin) {
+            hashedPin = await bcrypt.hash(pin, saltRounds);
+        }
+
         // Create new user
         const newUser = {
             id: Date.now().toString(),
             username,
             password: hashedPassword,
+            pin: hashedPin,
+            pinEnabled: !!pin,
             created: new Date().toISOString()
         };
 
@@ -93,9 +118,9 @@ const userModel = {
         // Save to file
         userModel.saveUsers(users);
 
-        // Return user without password
-        const { password: _, ...userWithoutPassword } = newUser;
-        return userWithoutPassword;
+        // Return user without sensitive fields
+        const { password: _, pin: __, ...userWithoutSensitiveData } = newUser;
+        return userWithoutSensitiveData;
     },
 
     // Update user
@@ -113,6 +138,18 @@ const userModel = {
             updates.password = await bcrypt.hash(updates.password, saltRounds);
         }
 
+        // If updating PIN, hash it
+        if (updates.pin) {
+            const saltRounds = 10;
+            updates.pin = await bcrypt.hash(updates.pin, saltRounds);
+            updates.pinEnabled = true;
+        }
+
+        // If disabling PIN
+        if (updates.pinEnabled === false) {
+            updates.pin = null;
+        }
+
         // Update user
         users[index] = {
             ...users[index],
@@ -123,9 +160,9 @@ const userModel = {
         // Save to file
         userModel.saveUsers(users);
 
-        // Return user without password
-        const { password: _, ...userWithoutPassword } = users[index];
-        return userWithoutPassword;
+        // Return user without sensitive fields
+        const { password: _, pin: __, ...userWithoutSensitiveData } = users[index];
+        return userWithoutSensitiveData;
     },
 
     // Delete user
@@ -139,6 +176,64 @@ const userModel = {
 
         // Save to file
         return userModel.saveUsers(filteredUsers);
+    },
+
+    // Verify PIN for a user
+    verifyPin: async (userId, pin) => {
+        const user = userModel.findUserById(userId);
+        
+        if (!user) {
+            throw new Error('User not found');
+        }
+        
+        // Ensure user has PIN fields
+        const userWithPin = userModel.ensurePinFields(user);
+
+        if (!userWithPin.pinEnabled || !userWithPin.pin) {
+            throw new Error('PIN authentication not enabled for this user');
+        }
+
+        return await bcrypt.compare(pin, userWithPin.pin);
+    },
+
+    // Enable/disable PIN for a user
+    updatePinSettings: async (userId, pin, enabled) => {
+        const users = userModel.getUsers();
+        const index = users.findIndex(user => user.id === userId);
+
+        if (index === -1) {
+            throw new Error('User not found');
+        }
+        
+        // Ensure user has PIN fields (backward compatibility)
+        const userWithPin = userModel.ensurePinFields(users[index]);
+
+        if (enabled && !pin) {
+            throw new Error('PIN is required when enabling PIN authentication');
+        }
+
+        let updates = { pinEnabled: enabled };
+        
+        if (enabled) {
+            const saltRounds = 10;
+            updates.pin = await bcrypt.hash(pin, saltRounds);
+        } else {
+            updates.pin = null;
+        }
+
+        // Update user
+        users[index] = {
+            ...userWithPin,
+            ...updates,
+            updated: new Date().toISOString()
+        };
+
+        // Save to file
+        userModel.saveUsers(users);
+
+        // Return user without sensitive fields
+        const { password: _, pin: __, ...userWithoutSensitiveData } = users[index];
+        return userWithoutSensitiveData;
     }
 };
 

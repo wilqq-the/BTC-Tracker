@@ -178,7 +178,7 @@ class PriceCache {
             await this.saveToDisk();
             console.log(`[priceCache] BTC prices: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
         } catch (error) {
-            console.error('[priceCache] Error updating prices:', error);
+            console.error('[priceCache] Error updating prices');
             
             if (!this.cache.priceEUR && !this.cache.priceUSD) {
                 this.cache = {
