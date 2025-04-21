@@ -27,11 +27,12 @@
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22",
-    "jest": "^29.7.0",
-    "supertest": "^6.3.4",
     "@types/jest": "^29.5.12",
-    "jest-environment-jsdom": "^29.7.0"
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
+    "nodemon": "^2.0.22",
+    "puppeteer": "^24.6.1",
+    "supertest": "^6.3.4"
   },
   "jest": {
     "testEnvironment": "node",
