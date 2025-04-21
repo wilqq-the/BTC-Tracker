@@ -1,10 +1,10 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('fs').promises;
+const pathManager = require('../utils/path-manager');
 const crypto = require('crypto');
 
 // Constants
-const DATA_DIR = path.join(__dirname, '../../data');
-const CREDS_FILE = path.join(DATA_DIR, 'exchange-credentials.json');
+const DATA_DIR = pathManager.getDataDirectory();
+const CREDS_FILE = pathManager.getExchangeCredentialsPath();
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'btc-tracker-default-key'; // In production, use environment variable
 
 /**
@@ -12,14 +12,29 @@ const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'btc-tracker-default-key'; 
  */
 class CredentialManager {
   constructor() {
-    // Ensure data directory exists
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    
-    // Initialize credentials file if it doesn't exist
-    if (!fs.existsSync(CREDS_FILE)) {
-      fs.writeFileSync(CREDS_FILE, JSON.stringify({}, null, 2));
+    this.initializeStorage();
+  }
+
+  /**
+   * Initialize storage directories and files
+   */
+  async initializeStorage() {
+    try {
+      // Ensure data directory exists
+      try {
+        await fs.access(DATA_DIR);
+      } catch {
+        await fs.mkdir(DATA_DIR, { recursive: true });
+      }
+      
+      // Initialize credentials file if it doesn't exist
+      try {
+        await fs.access(CREDS_FILE);
+      } catch {
+        await fs.writeFile(CREDS_FILE, JSON.stringify({}, null, 2));
+      }
+    } catch (error) {
+      console.error('Error initializing storage:', error);
     }
   }
 
@@ -74,10 +89,10 @@ class CredentialManager {
    * @param {Object} credentials - API credentials to store
    * @returns {boolean} Success status
    */
-  saveCredentials(exchangeId, credentials) {
+  async saveCredentials(exchangeId, credentials) {
     try {
       // Read existing credentials
-      const data = fs.readFileSync(CREDS_FILE, 'utf8');
+      const data = await fs.readFile(CREDS_FILE, 'utf8');
       const allCredentials = JSON.parse(data);
       
       // Encrypt each credential value
@@ -91,7 +106,7 @@ class CredentialManager {
       
       // Save updated credentials
       allCredentials[exchangeId] = encryptedCreds;
-      fs.writeFileSync(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
+      await fs.writeFile(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
       
       return true;
     } catch (error) {
@@ -105,9 +120,9 @@ class CredentialManager {
    * @param {string} exchangeId - Unique identifier for the exchange
    * @returns {Object|null} Decrypted credentials or null if not found
    */
-  getCredentials(exchangeId) {
+  async getCredentials(exchangeId) {
     try {
-      const data = fs.readFileSync(CREDS_FILE, 'utf8');
+      const data = await fs.readFile(CREDS_FILE, 'utf8');
       const allCredentials = JSON.parse(data);
       
       if (!allCredentials[exchangeId]) {
@@ -136,14 +151,14 @@ class CredentialManager {
    * @param {string} exchangeId - Unique identifier for the exchange
    * @returns {boolean} Success status
    */
-  deleteCredentials(exchangeId) {
+  async deleteCredentials(exchangeId) {
     try {
-      const data = fs.readFileSync(CREDS_FILE, 'utf8');
+      const data = await fs.readFile(CREDS_FILE, 'utf8');
       const allCredentials = JSON.parse(data);
       
       if (allCredentials[exchangeId]) {
         delete allCredentials[exchangeId];
-        fs.writeFileSync(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
+        await fs.writeFile(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
       }
       
       return true;
@@ -157,9 +172,9 @@ class CredentialManager {
    * List all exchanges with saved credentials
    * @returns {Array} Array of exchange IDs with saved credentials
    */
-  listExchanges() {
+  async listExchanges() {
     try {
-      const data = fs.readFileSync(CREDS_FILE, 'utf8');
+      const data = await fs.readFile(CREDS_FILE, 'utf8');
       const allCredentials = JSON.parse(data);
       
       return Object.keys(allCredentials);
@@ -170,4 +185,6 @@ class CredentialManager {
   }
 }
 
-module.exports = new CredentialManager(); 
+// Initialize and export singleton instance
+const credentialManager = new CredentialManager();
+module.exports = credentialManager; 

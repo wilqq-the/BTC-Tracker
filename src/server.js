@@ -18,6 +18,7 @@ const Transaction = require('./server/models/Transaction');
 const currencyConverter = require('./server/services/currency-converter');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
+const pathManager = require('./server/utils/path-manager');
 
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'development';
@@ -60,12 +61,12 @@ let historicalBTCData = [];
 let secondaryCurrency = 'PLN';
 let secondaryRate = null;
 
-const DATA_DIR = path.join(__dirname, 'data');
+const DATA_DIR = pathManager.getDataDirectory();
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
-const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
-const HISTORICAL_BTC_FILE = path.join(DATA_DIR, 'historical_btc.json');
-const SETTINGS_FILE = path.join(DATA_DIR, 'app-settings.json');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const TRANSACTIONS_FILE = pathManager.getTransactionsPath();
+const HISTORICAL_BTC_FILE = pathManager.getHistoricalBtcPath();
+const SETTINGS_FILE = pathManager.getAppSettingsPath();
+const USERS_FILE = pathManager.getUsersPath();
 
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });

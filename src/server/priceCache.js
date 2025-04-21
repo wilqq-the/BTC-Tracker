@@ -1,6 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
+const pathManager = require('./utils/path-manager');
 
 class PriceCache {
     constructor() {
@@ -14,7 +15,7 @@ class PriceCache {
         };
         this.updateInterval = 5 * 60 * 1000; // 5 minutes
         this.isUpdating = false;
-        this.cacheFilePath = path.join(__dirname, '..', 'data', 'price-cache.json');
+        this.cacheFilePath = pathManager.getPriceCachePath();
         this.lastDayUpdate = null;
         this.lastWeekUpdate = null;
     }
