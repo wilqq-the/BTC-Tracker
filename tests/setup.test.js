@@ -14,6 +14,9 @@ if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
+// Set a global timeout for all tests
+jest.setTimeout(60000); // 60 seconds timeout for all tests and hooks
+
 describe('BTC Tracker End-to-End Tests', () => {
     let browser;
     let page;
@@ -25,9 +28,6 @@ describe('BTC Tracker End-to-End Tests', () => {
     };
     
     beforeAll(async () => {
-        // Increase timeout to 30 seconds for this hook
-        jest.setTimeout(30000);
-        
         // Ensure test data directory exists and is empty
         const testDir = process.env.BTC_TRACKER_DATA_DIR;
         if (fs.existsSync(testDir)) {
@@ -49,7 +49,7 @@ describe('BTC Tracker End-to-End Tests', () => {
         });
         
         // Give the server time to start (longer wait in CI)
-        await new Promise(resolve => setTimeout(resolve, 5000));
+        await new Promise(resolve => setTimeout(resolve, 10000));
         
         // Initialize browser
         browser = await puppeteer.launch({
@@ -61,9 +61,6 @@ describe('BTC Tracker End-to-End Tests', () => {
     });
     
     afterAll(async () => {
-        // Increase timeout for cleanup
-        jest.setTimeout(10000);
-        
         // Cleanup
         if (browser) {
             await browser.close();
@@ -75,7 +72,7 @@ describe('BTC Tracker End-to-End Tests', () => {
             serverProcess.kill();
             
             // Give time for the server to shut down cleanly
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 3000));
         }
     });
     
