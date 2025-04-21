@@ -66,21 +66,33 @@ class CredentialManager {
   decrypt(text) {
     if (!text) return '';
     
+    // Check if the text is already encrypted (contains a colon)
+    if (!text.includes(':')) {
+      // Not encrypted, return as is
+      return text;
+    }
+    
     const parts = text.split(':');
     if (parts.length !== 2) return '';
     
     const iv = Buffer.from(parts[0], 'hex');
     const encrypted = parts[1];
     
-    const decipher = crypto.createDecipheriv(
-      'aes-256-cbc',
-      Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32)),
-      iv
-    );
-    
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
+    try {
+      const decipher = crypto.createDecipheriv(
+        'aes-256-cbc',
+        Buffer.from(ENCRYPTION_KEY.padEnd(32).slice(0, 32)),
+        iv
+      );
+      
+      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch (error) {
+      console.error('Error decrypting credential:', error.message);
+      // Return the original text if decryption fails
+      return text;
+    }
   }
 
   /**
@@ -92,8 +104,13 @@ class CredentialManager {
   async saveCredentials(exchangeId, credentials) {
     try {
       // Read existing credentials
-      const data = await fs.readFile(CREDS_FILE, 'utf8');
-      const allCredentials = JSON.parse(data);
+      let allCredentials = {};
+      try {
+        const data = await fs.readFile(CREDS_FILE, 'utf8');
+        allCredentials = JSON.parse(data);
+      } catch (error) {
+        console.log('No existing credentials file or invalid JSON, creating new one');
+      }
       
       // Encrypt each credential value
       const encryptedCreds = {};
@@ -122,10 +139,28 @@ class CredentialManager {
    */
   async getCredentials(exchangeId) {
     try {
-      const data = await fs.readFile(CREDS_FILE, 'utf8');
-      const allCredentials = JSON.parse(data);
+      let allCredentials = {};
+      
+      try {
+        const data = await fs.readFile(CREDS_FILE, 'utf8');
+        allCredentials = JSON.parse(data);
+      } catch (error) {
+        console.error('Error reading credentials file:', error.message);
+        
+        // Fall back to using require() for backward compatibility
+        try {
+          const path = require('path');
+          const oldCredentialsPath = path.join(__dirname, '..', '..', 'data', 'exchange-credentials.json');
+          allCredentials = require(oldCredentialsPath);
+          console.log('Successfully loaded credentials from legacy path');
+        } catch (fallbackError) {
+          console.error('Could not load credentials from legacy path either:', fallbackError.message);
+          return null;
+        }
+      }
       
       if (!allCredentials[exchangeId]) {
+        console.error(`No credentials found for exchange: ${exchangeId}`);
         return null;
       }
       
@@ -153,8 +188,15 @@ class CredentialManager {
    */
   async deleteCredentials(exchangeId) {
     try {
-      const data = await fs.readFile(CREDS_FILE, 'utf8');
-      const allCredentials = JSON.parse(data);
+      let allCredentials = {};
+      
+      try {
+        const data = await fs.readFile(CREDS_FILE, 'utf8');
+        allCredentials = JSON.parse(data);
+      } catch (error) {
+        console.error('Error reading credentials file:', error);
+        return false;
+      }
       
       if (allCredentials[exchangeId]) {
         delete allCredentials[exchangeId];
@@ -174,8 +216,25 @@ class CredentialManager {
    */
   async listExchanges() {
     try {
-      const data = await fs.readFile(CREDS_FILE, 'utf8');
-      const allCredentials = JSON.parse(data);
+      let allCredentials = {};
+      
+      try {
+        const data = await fs.readFile(CREDS_FILE, 'utf8');
+        allCredentials = JSON.parse(data);
+      } catch (error) {
+        console.error('Error reading credentials file:', error);
+        
+        // Fall back to using require() for backward compatibility
+        try {
+          const path = require('path');
+          const oldCredentialsPath = path.join(__dirname, '..', '..', 'data', 'exchange-credentials.json');
+          allCredentials = require(oldCredentialsPath);
+          console.log('Successfully loaded credentials from legacy path for listing exchanges');
+        } catch (fallbackError) {
+          console.error('Could not load credentials from legacy path either:', fallbackError.message);
+          return [];
+        }
+      }
       
       return Object.keys(allCredentials);
     } catch (error) {

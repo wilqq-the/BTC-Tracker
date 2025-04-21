@@ -39,14 +39,16 @@ class BinanceAdapter extends ExchangeAdapter {
      */
     async connect() {
         try {
-            // Get credentials
-            this.credentials = credentialManager.getCredentials('binance');
+            // Get credentials - FIXED: Added await here since getCredentials is async
+            this.credentials = await credentialManager.getCredentials('binance');
             
             if (!this.credentials) {
                 console.error('No Binance credentials found');
                 this.isConnected = false;
                 return false;
             }
+            
+            console.log('Loaded Binance credentials, API Key starts with:', this.credentials.apiKey.substring(0, 5));
             
             // Test credentials by fetching account info
             const result = await this.testConnection(this.credentials);

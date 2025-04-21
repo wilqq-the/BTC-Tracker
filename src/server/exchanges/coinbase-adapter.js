@@ -353,12 +353,15 @@ class CoinbaseAdapter {
             // If no credentials provided, attempt to load from credential manager
             if (!credsToUse) {
                 console.log('No credentials provided, trying to load saved credentials');
-                credsToUse = credentialManager.getCredentials('coinbase');
+                credsToUse = await credentialManager.getCredentials('coinbase');
                 
                 if (!credsToUse) {
                     console.error('No saved credentials found for Coinbase');
                     return false;
                 }
+                
+                console.log('Loaded Coinbase credentials, API Key starts with:', 
+                           credsToUse.apiKey.substring(0, 20) + '...');
             }
             
             // Validate credentials
