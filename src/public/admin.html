@@ -686,6 +686,40 @@
                                 </button>
                             </div>
                         </form>
+                        
+                        <div class="form-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                            <h3><i class="fas fa-shield-alt"></i> PIN Authentication</h3>
+                            
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="enablePin" name="enablePin">
+                                <label for="enablePin">Enable PIN Authentication</label>
+                            </div>
+                            
+                            <p class="help-text">
+                                PIN authentication allows for quick login without entering your password each time.
+                                The PIN must be a 4-digit number.
+                            </p>
+                            
+                            <div id="pinFields" class="pin-fields" style="display: none; padding: 15px; border: 1px solid var(--border-color); border-radius: 6px; margin-top: 10px; background-color: rgba(247, 147, 26, 0.05);">
+                                <div class="form-group">
+                                    <label for="pin"><i class="fas fa-key"></i> 4-digit PIN</label>
+                                    <input type="password" id="pin" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4">
+                                    <p class="help-text">PIN must be exactly 4 digits</p>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmPin"><i class="fas fa-check-circle"></i> Confirm PIN</label>
+                                    <input type="password" id="confirmPin" name="confirmPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4">
+                                </div>
+                            </div>
+                            
+                            <div id="pinStatusMessage" style="margin-top: 10px; display: none;"></div>
+                            
+                            <div class="form-buttons">
+                                <button type="button" id="savePinSettings" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save PIN Settings
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1729,6 +1763,140 @@
               });
           });
         }
+
+        // Handle PIN Authentication settings
+        document.addEventListener('DOMContentLoaded', () => {
+            const enablePinCheckbox = document.getElementById('enablePin');
+            const pinFields = document.getElementById('pinFields');
+            const savePinSettings = document.getElementById('savePinSettings');
+            const pinStatusMessage = document.getElementById('pinStatusMessage');
+            
+            // Toggle PIN fields visibility based on checkbox
+            enablePinCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    pinFields.style.display = 'block';
+                } else {
+                    pinFields.style.display = 'none';
+                }
+            });
+            
+            // Load PIN settings
+            async function loadPinSettings() {
+                try {
+                    const response = await fetch('/api/user/profile');
+                    if (!response.ok) {
+                        throw new Error('Failed to load user profile');
+                    }
+                    
+                    const userData = await response.json();
+                    
+                    // Set PIN enabled status
+                    enablePinCheckbox.checked = userData.pinEnabled || false;
+                    if (userData.pinEnabled) {
+                        pinFields.style.display = 'block';
+                    } else {
+                        pinFields.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Error loading PIN settings:', error);
+                    showPinStatusMessage('error', 'Failed to load PIN settings');
+                }
+            }
+            
+            // Save PIN settings
+            savePinSettings.addEventListener('click', async () => {
+                try {
+                    const enablePin = enablePinCheckbox.checked;
+                    let pin = null;
+                    
+                    if (enablePin) {
+                        pin = document.getElementById('pin').value.trim();
+                        const confirmPin = document.getElementById('confirmPin').value.trim();
+                        
+                        // Validate PIN
+                        if (!/^\d{4}$/.test(pin)) {
+                            showPinStatusMessage('error', 'PIN must be exactly 4 digits');
+                            return;
+                        }
+                        
+                        // Check if PINs match
+                        if (pin !== confirmPin) {
+                            showPinStatusMessage('error', 'PINs do not match');
+                            return;
+                        }
+                    }
+                    
+                    // Show saving message
+                    showPinStatusMessage('info', 'Saving PIN settings...');
+                    
+                    // Send update request
+                    console.log("Sending PIN update request:", { enablePin, hasPin: !!pin });
+                    
+                    const response = await fetch('/api/user/update-pin', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            enablePin,
+                            pin
+                        })
+                    });
+                    
+                    // If not JSON response, throw error
+                    if (!response.headers.get('content-type')?.includes('application/json')) {
+                        throw new Error(`Server returned non-JSON response: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (!response.ok) {
+                        throw new Error(result.error || 'Failed to update PIN settings');
+                    }
+                    
+                    // Clear PIN fields
+                    document.getElementById('pin').value = '';
+                    document.getElementById('confirmPin').value = '';
+                    
+                    // Show success message
+                    showPinStatusMessage('success', 
+                        enablePin ? 'PIN authentication enabled successfully' : 'PIN authentication disabled successfully'
+                    );
+                    
+                } catch (error) {
+                    console.error('Error saving PIN settings:', error);
+                    showPinStatusMessage('error', error.message || 'Failed to save PIN settings');
+                }
+            });
+            
+            // Show status message
+            function showPinStatusMessage(type, message) {
+                pinStatusMessage.innerHTML = message;
+                pinStatusMessage.style.display = 'block';
+                
+                if (type === 'success') {
+                    pinStatusMessage.style.color = 'var(--gain-color)';
+                    pinStatusMessage.style.backgroundColor = 'rgba(46, 204, 113, 0.1)';
+                    pinStatusMessage.style.border = '1px solid rgba(46, 204, 113, 0.3)';
+                } else if (type === 'info') {
+                    pinStatusMessage.style.color = 'var(--text-color)';
+                    pinStatusMessage.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
+                    pinStatusMessage.style.border = '1px solid rgba(52, 152, 219, 0.3)';
+                } else {
+                    pinStatusMessage.style.color = 'var(--loss-color)';
+                    pinStatusMessage.style.backgroundColor = 'rgba(231, 76, 60, 0.1)';
+                    pinStatusMessage.style.border = '1px solid rgba(231, 76, 60, 0.3)';
+                }
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    pinStatusMessage.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Load PIN settings when page loads
+            loadPinSettings();
+        });
     </script>
 </body>
 </html> 

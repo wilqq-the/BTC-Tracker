@@ -4,12 +4,12 @@ const puppeteer = require('puppeteer');
 const { execSync } = require('child_process');
 
 // Set test data directory before requiring the app
-process.env.BTC_TRACKER_DATA_DIR = path.join(__dirname, 'test-data');
+process.env.BTC_TRACKER_DATA_DIR = path.join(__dirname, 'test-data-setup');
 process.env.NODE_ENV = 'test';
 process.env.PORT = '3030'; // Use a different port for testing
 
 // Create screenshots directory if it doesn't exist
-const screenshotsDir = path.join(__dirname, 'screenshots');
+const screenshotsDir = path.join(__dirname, 'screenshots-setup');
 if (!fs.existsSync(screenshotsDir)) {
     fs.mkdirSync(screenshotsDir, { recursive: true });
 }
@@ -24,7 +24,8 @@ describe('BTC Tracker End-to-End Tests', () => {
     const baseUrl = `http://localhost:${process.env.PORT}`;
     const testUser = {
         username: 'testadmin',
-        password: 'testpass123'
+        password: 'testpass123',
+        pin: '5678'  // Add PIN for testing
     };
     
     beforeAll(async () => {
@@ -51,13 +52,73 @@ describe('BTC Tracker End-to-End Tests', () => {
         // Give the server time to start (longer wait in CI)
         await new Promise(resolve => setTimeout(resolve, 10000));
         
-        // Initialize browser
-        browser = await puppeteer.launch({
-            headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
-        });
-        page = await browser.newPage();
-        await page.setViewport({ width: 1280, height: 800 });
+        // Initialize browser with more flexible configuration
+        try {
+            const puppeteerConfig = {
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox'],
+                ignoreDefaultArgs: ['--disable-extensions'],
+            };
+            
+            // Try to use system Chrome installation if available
+            if (process.platform === 'linux') {
+                // Common Linux Chrome paths
+                const possiblePaths = [
+                    '/usr/bin/google-chrome',
+                    '/usr/bin/google-chrome-stable',
+                    '/usr/bin/chromium',
+                    '/usr/bin/chromium-browser'
+                ];
+                
+                for (const chromePath of possiblePaths) {
+                    if (fs.existsSync(chromePath)) {
+                        console.log(`Using Chrome at: ${chromePath}`);
+                        puppeteerConfig.executablePath = chromePath;
+                        break;
+                    }
+                }
+            } else if (process.platform === 'win32') {
+                // Windows Chrome paths
+                const possiblePaths = [
+                    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+                    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+                    process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe'
+                ];
+                
+                for (const chromePath of possiblePaths) {
+                    if (fs.existsSync(chromePath)) {
+                        console.log(`Using Chrome at: ${chromePath}`);
+                        puppeteerConfig.executablePath = chromePath;
+                        break;
+                    }
+                }
+            } else if (process.platform === 'darwin') {
+                // MacOS Chrome path
+                const chromePath = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+                if (fs.existsSync(chromePath)) {
+                    console.log(`Using Chrome at: ${chromePath}`);
+                    puppeteerConfig.executablePath = chromePath;
+                }
+            }
+            
+            console.log('Launching browser with config:', JSON.stringify(puppeteerConfig, null, 2));
+            browser = await puppeteer.launch(puppeteerConfig);
+            
+            page = await browser.newPage();
+            await page.setViewport({ width: 1280, height: 800 });
+        } catch (error) {
+            console.error('Failed to launch browser:', error);
+            
+            // Try again with just the basic configuration
+            console.log('Trying again with basic configuration...');
+            browser = await puppeteer.launch({
+                headless: 'new',
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            
+            page = await browser.newPage();
+            await page.setViewport({ width: 1280, height: 800 });
+        }
     });
     
     afterAll(async () => {
@@ -98,10 +159,15 @@ describe('BTC Tracker End-to-End Tests', () => {
             testPassed = false;
             // Only take screenshot if the test fails
             await page.screenshot({
-                path: path.join(screenshotsDir, 'app-launch-FAILED-setup-page.png')
+                path: path.join(screenshotsDir, '1.ERROR-app-launch-FAILED-setup-page.png')
             });
             throw error;
         }
+        
+        // Take screenshot of successful setup page
+        await page.screenshot({
+            path: path.join(screenshotsDir, '1.1-setup-page.png')
+        });
         
         console.log('Application launched successfully');
     });
@@ -114,6 +180,23 @@ describe('BTC Tracker End-to-End Tests', () => {
             await page.type('input[name="username"]', testUser.username);
             await page.type('input[name="password"]', testUser.password);
             await page.type('input[name="confirmPassword"]', testUser.password);
+            
+            // Make sure PIN is NOT enabled initially
+            const hasPinCheckbox = await page.evaluate(() => {
+                return !!document.querySelector('#enablePin');
+            });
+            
+            if (hasPinCheckbox) {
+                console.log('Ensuring PIN is disabled for initial creation');
+                const isPinEnabled = await page.evaluate(() => {
+                    return document.querySelector('#enablePin').checked;
+                });
+                
+                if (isPinEnabled) {
+                    // Uncheck the PIN checkbox to disable PIN initially
+                    await page.click('#enablePin');
+                }
+            }
             
             // Submit form and wait for redirect
             await Promise.all([
@@ -133,6 +216,8 @@ describe('BTC Tracker End-to-End Tests', () => {
             const users = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
             expect(users.length).toBe(1);
             expect(users[0].username).toBe(testUser.username);
+            // Verify PIN is disabled initially
+            expect(users[0].pinEnabled).toBeFalsy();
         } catch (error) {
             testPassed = false;
             // Take screenshot only on failure
@@ -151,7 +236,97 @@ describe('BTC Tracker End-to-End Tests', () => {
         try {
             // Already on login page from previous test
             
+            // Switch to Standard Login tab if PIN Login is showing by default
+            console.log('Checking login page UI and switching to Standard Login if needed');
+            
+            // Wait a bit for the login page to fully load
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Take a screenshot to see the current state
+            await page.screenshot({
+                path: path.join(screenshotsDir, 'login-page-initial.png')
+            });
+            
+            // Check if we need to switch to standard login
+            const needToSwitchToStandard = await page.evaluate(() => {
+                // Check for tab-based UI
+                const standardLoginTab = document.querySelector('#standard-login-tab');
+                const standardLoginSection = document.querySelector('#standard-login-section');
+                
+                // Check for link-based UI
+                const toStandardLoginLink = document.querySelector('#to-standard-login');
+                
+                // Check if standard login form is hidden
+                const standardLoginForm = document.querySelector('form[action="/login"]');
+                const standardLoginVisible = standardLoginForm && 
+                    window.getComputedStyle(standardLoginForm.parentElement).display !== 'none';
+                
+                // We need to switch if:
+                // 1. Standard login tab exists but is not active, or
+                // 2. There's a link to switch to standard login, or
+                // 3. The standard login form is not visible
+                return (standardLoginTab && !standardLoginTab.classList.contains('active')) ||
+                       !!toStandardLoginLink ||
+                       (standardLoginSection && window.getComputedStyle(standardLoginSection).display === 'none') ||
+                       !standardLoginVisible;
+            });
+            
+            if (needToSwitchToStandard) {
+                console.log('Need to switch to Standard Login tab');
+                
+                // Try clicking the tab first if it exists
+                const hasTab = await page.evaluate(() => {
+                    const tab = document.querySelector('#standard-login-tab');
+                    if (tab) {
+                        tab.click();
+                        return true;
+                    }
+                    return false;
+                });
+                
+                if (hasTab) {
+                    console.log('Clicked the Standard Login tab');
+                } else {
+                    // Try the link instead
+                    const hasLink = await page.evaluate(() => {
+                        const link = document.querySelector('#to-standard-login');
+                        if (link) {
+                            link.click();
+                            return true;
+                        }
+                        return false;
+                    });
+                    
+                    if (hasLink) {
+                        console.log('Clicked the link to Standard Login');
+                    } else {
+                        console.log('Could not find a way to switch to Standard Login');
+                    }
+                }
+                
+                // Wait for UI to update
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                // Take a screenshot after switching
+                await page.screenshot({
+                    path: path.join(screenshotsDir, 'login-page-after-switch.png')
+                });
+            } else {
+                console.log('Standard login already active, no need to switch');
+            }
+            
             // Fill in login credentials
+            console.log('Looking for username and password fields');
+            
+            // Take another screenshot to verify form is visible
+            await page.screenshot({
+                path: path.join(screenshotsDir, 'login-before-filling.png')
+            });
+            
+            // Wait for the username field to be visible
+            await page.waitForSelector('input[name="username"]', { visible: true, timeout: 5000 });
+            
+            console.log('Filling username and password');
             await page.type('input[name="username"]', testUser.username);
             await page.type('input[name="password"]', testUser.password);
             

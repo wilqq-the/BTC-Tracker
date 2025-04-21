@@ -17,6 +17,36 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+        .form-section {
+            border-top: 1px solid var(--border-color);
+            margin-top: 20px;
+            padding-top: 15px;
+        }
+        .form-section-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--text-secondary-color);
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        .pin-field {
+            display: none;
+            margin-top: 10px;
+        }
+        .pin-field.visible {
+            display: block;
+        }
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary-color);
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -47,6 +77,34 @@
                     <input type="password" id="confirmPassword" name="confirmPassword" required
                            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
                 </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title"><i class="fas fa-shield-alt"></i> Quick Login Options</div>
+                    
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="enablePin" name="enablePin">
+                        <label for="enablePin">Enable PIN Authentication</label>
+                    </div>
+                    
+                    <div class="help-text">
+                        A PIN gives you a faster way to log in after your first authentication.
+                    </div>
+                    
+                    <div id="pinFields" class="pin-field">
+                        <div class="form-group">
+                            <label for="pin"><i class="fas fa-key"></i> 4-digit PIN</label>
+                            <input type="password" id="pin" name="pin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4"
+                                   style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                            <div class="help-text">PIN must be exactly 4 digits</div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPin"><i class="fas fa-check-circle"></i> Confirm PIN</label>
+                            <input type="password" id="confirmPin" name="confirmPin" inputmode="numeric" pattern="[0-9]{4}" maxlength="4"
+                                   style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                        </div>
+                    </div>
+                </div>
+                
                 <button type="submit" class="btn-primary"
                         style="width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px;">
                     <i class="fas fa-check"></i> Create Account
@@ -95,6 +153,20 @@
             errorEl.style.display = 'block';
         }
 
+        // Toggle PIN fields visibility based on checkbox
+        document.getElementById('enablePin').addEventListener('change', function() {
+            const pinFields = document.getElementById('pinFields');
+            if (this.checked) {
+                pinFields.classList.add('visible');
+                document.getElementById('pin').setAttribute('required', 'required');
+                document.getElementById('confirmPin').setAttribute('required', 'required');
+            } else {
+                pinFields.classList.remove('visible');
+                document.getElementById('pin').removeAttribute('required');
+                document.getElementById('confirmPin').removeAttribute('required');
+            }
+        });
+
         // Form validation
         document.getElementById('setup-form').addEventListener('submit', function(event) {
             const password = document.getElementById('password').value;
@@ -105,6 +177,27 @@
                 event.preventDefault();
                 errorEl.textContent = 'Passwords do not match';
                 errorEl.style.display = 'block';
+                return;
+            }
+            
+            const enablePin = document.getElementById('enablePin').checked;
+            if (enablePin) {
+                const pin = document.getElementById('pin').value;
+                const confirmPin = document.getElementById('confirmPin').value;
+                
+                if (!/^\d{4}$/.test(pin)) {
+                    event.preventDefault();
+                    errorEl.textContent = 'PIN must be exactly 4 digits';
+                    errorEl.style.display = 'block';
+                    return;
+                }
+                
+                if (pin !== confirmPin) {
+                    event.preventDefault();
+                    errorEl.textContent = 'PINs do not match';
+                    errorEl.style.display = 'block';
+                    return;
+                }
             }
         });
         
