@@ -25,6 +25,9 @@ describe('BTC Tracker End-to-End Tests', () => {
     };
     
     beforeAll(async () => {
+        // Increase timeout to 30 seconds for this hook
+        jest.setTimeout(30000);
+        
         // Ensure test data directory exists and is empty
         const testDir = process.env.BTC_TRACKER_DATA_DIR;
         if (fs.existsSync(testDir)) {
@@ -45,8 +48,8 @@ describe('BTC Tracker End-to-End Tests', () => {
             stdio: 'inherit'
         });
         
-        // Give the server time to start
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Give the server time to start (longer wait in CI)
+        await new Promise(resolve => setTimeout(resolve, 5000));
         
         // Initialize browser
         browser = await puppeteer.launch({
@@ -58,6 +61,9 @@ describe('BTC Tracker End-to-End Tests', () => {
     });
     
     afterAll(async () => {
+        // Increase timeout for cleanup
+        jest.setTimeout(10000);
+        
         // Cleanup
         if (browser) {
             await browser.close();
@@ -67,6 +73,9 @@ describe('BTC Tracker End-to-End Tests', () => {
         if (serverProcess) {
             console.log('Stopping application server...');
             serverProcess.kill();
+            
+            // Give time for the server to shut down cleanly
+            await new Promise(resolve => setTimeout(resolve, 1000));
         }
     });
     
