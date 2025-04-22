@@ -8,12 +8,17 @@ on:
   pull_request:
     branches: [ main, dev ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
-
+    
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -26,7 +31,7 @@ jobs:
       
     - name: Build Electron app
       env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       shell: pwsh
       run: |
         if ("${{ startsWith(github.ref, 'refs/tags/') }}" -eq "true") {
@@ -47,6 +52,8 @@ jobs:
     needs: build
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: windows-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Download artifacts
@@ -56,9 +63,7 @@ jobs:
         path: dist
         
     - name: Create Release
-      uses: softprops/action-gh-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           dist/*.exe
