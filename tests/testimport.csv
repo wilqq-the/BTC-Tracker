@@ -1,0 +1,4 @@
+Date,Type,Amount (BTC),Exchange,Original Currency,Original Price,Original Cost,Original Fee
+2023-01-01,buy,0.1,manual,EUR,25000,2500,5
+2023-01-02,buy,0.05,manual,USD,27000,1350,3
+2023-01-03,buy,0.025,manual,PLN,130000,3250,15

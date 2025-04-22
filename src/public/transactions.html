@@ -9,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
     <style>
         /* Bitcoin-themed scrollbar */
         .table-container::-webkit-scrollbar {
@@ -82,14 +83,14 @@
         
         /* Column width adjustments */
         .date-col { width: 10%; }
-        .type-col { width: 7%; }
-        .amount-col { width: 13%; }
-        .price-col { width: 10%; }
-        .currency-col { width: 7%; }
-        .cost-col { width: 13%; }
-        .pnl-col { width: 13%; }
-        .pnl-percent-col { width: 10%; }
-        .pnl-secondary-col { width: 17%; }
+        .type-col { width: 8%; }
+        .amount-col { width: 14%; }
+        .price-col { width: 12%; }
+        .currency-col { width: 6%; }
+        .cost-col { width: 12%; }
+        .pnl-col { width: 12%; }
+        .pnl-percent-col { width: 8%; }
+        .pnl-secondary-col { width: 18%; }
         
         #transactionsTable tr:hover {
             background-color: rgba(247, 147, 26, 0.1);
@@ -148,15 +149,651 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+
+        /* Enhanced style for the actively sorted header */
+        #transactionsTable th.sorted-column {
+            background-color: #2a2a2a; /* Slightly darker background */
+            color: #ffffff; /* White text for contrast */
+        }
+
+        .light-theme #transactionsTable th.sorted-column {
+            background-color: #e0e0e0; /* Lighter background for light theme */
+            color: #000000;
+        }
+
+        /* Ensure sort icon is visible on sorted column */
+        #transactionsTable th.sorted-column .sort-icon {
+            opacity: 1;
+            color: #f7931a; /* Bitcoin orange */
+        }
+
+        /* Mobile card view for transactions */
+        .mobile-transaction-cards {
+            display: none; /* Hidden by default, shown on mobile */
+        }
+        
+        .transaction-card {
+            background-color: var(--card-background, #2d2d2d);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+        
+        /* Row background colors for cards */
+        .transaction-card[data-pnl-scale="high-profit"] {
+            background-color: rgba(0, 255, 0, 0.15);
+            border-left: 3px solid var(--profit-color, #00b894);
+        }
+        
+        .transaction-card[data-pnl-scale="medium-profit"] {
+            background-color: rgba(0, 255, 0, 0.1);
+            border-left: 2px solid var(--profit-color, #00b894);
+        }
+        
+        .transaction-card[data-pnl-scale="low-profit"] {
+            background-color: rgba(0, 255, 0, 0.05);
+            border-left: 1px solid var(--profit-color, #00b894);
+        }
+        
+        .transaction-card[data-pnl-scale="high-loss"] {
+            background-color: rgba(255, 0, 0, 0.15);
+            border-left: 3px solid var(--loss-color, #ff7675);
+        }
+        
+        .transaction-card[data-pnl-scale="medium-loss"] {
+            background-color: rgba(255, 0, 0, 0.1);
+            border-left: 2px solid var(--loss-color, #ff7675);
+        }
+        
+        .transaction-card[data-pnl-scale="low-loss"] {
+            background-color: rgba(255, 0, 0, 0.05);
+            border-left: 1px solid var(--loss-color, #ff7675);
+        }
+        
+        .transaction-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+            margin-bottom: 4px;
+        }
+        
+        .transaction-card-date {
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .transaction-card-type {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+        
+        .transaction-card-type.buy {
+            background-color: rgba(0, 184, 148, 0.2);
+            color: #00b894;
+        }
+        
+        .transaction-card-type.sell {
+            background-color: rgba(255, 118, 117, 0.2);
+            color: #ff7675;
+        }
+        
+        .transaction-card-body {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px 8px;
+        }
+        
+        .transaction-card-detail {
+            flex: 1 0 40%;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            margin-bottom: 2px;
+        }
+        
+        .transaction-card-label {
+            color: var(--text-secondary-color, #cccccc);
+            font-size: 0.7rem;
+        }
+        
+        .transaction-card-value {
+            font-weight: 500;
+            text-align: right;
+        }
+        
+        .transaction-card-pnl {
+            padding-top: 4px;
+            margin-top: 4px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        
+        .transaction-card-pnl .transaction-card-detail {
+            margin-bottom: 0;
+            flex: 1;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .table-container {
+                display: none; /* Hide table on mobile */
+            }
+            
+            .mobile-transaction-cards {
+                display: block; /* Show cards on mobile */
+                max-height: 75vh;
+                overflow-y: auto;
+                padding: 0 8px; /* Add horizontal padding */
+            }
+            
+            .card {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .mobile-refresh-button {
+                position: sticky;
+                bottom: 10px;
+                margin: 10px auto 5px;
+                z-index: 5;
+            }
+            
+            .refresh-btn {
+                padding: 8px 16px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            }
+            
+            /* Adjust card styling to account for container padding */
+            .transaction-card {
+                margin-left: 2px;
+                margin-right: 2px;
+            }
+        }
+        
+        /* Refreshing animation for mobile cards */
+        .mobile-transaction-cards.refreshing {
+            position: relative;
+        }
+
+        .mobile-transaction-cards.refreshing::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(to bottom, 
+                rgba(247, 147, 26, 0.2), 
+                transparent);
+            z-index: 2;
+        }
+        
+        .mobile-refresh-button {
+            display: none;
+            margin-top: 15px;
+            text-align: center;
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-refresh-button {
+                display: block;
+            }
+        }
+        
+        .refresh-btn {
+            background-color: var(--primary-color, #f7931a);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .refresh-btn:hover {
+            background-color: var(--secondary-color, #ffb347);
+        }
+        
+        .refresh-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .refresh-btn i {
+            transition: transform 0.5s ease;
+        }
+        
+        .refresh-btn.refreshing i {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Mobile navigation enhancements */
+        .mobile-nav-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color, #ffffff);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            margin-left: auto;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            .mobile-nav-toggle {
+                display: block;
+                z-index: 11;
+            }
+            
+            nav {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 75%;
+                max-width: 280px;
+                height: 100vh;
+                background-color: var(--card-background, #2d2d2d);
+                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
+                z-index: 10;
+                transition: right 0.3s ease;
+                flex-direction: column;
+                padding: 55px 0 80px 0;
+                box-sizing: border-box;
+                gap: 0;
+                overflow-y: auto;
+            }
+            
+            nav.active {
+                right: 0;
+            }
+            
+            nav a {
+                margin: 0;
+                padding: 14px 20px;
+                justify-content: flex-start;
+                border-radius: 0;
+                border-left: 3px solid transparent;
+                font-size: 0.9rem;
+                transition: all 0.2s ease;
+            }
+            
+            nav a i {
+                min-width: 20px;
+                margin-right: 12px;
+                text-align: center;
+            }
+            
+            nav a.active {
+                background-color: rgba(247, 147, 26, 0.15);
+                border-left: 3px solid var(--accent-color, #f7931a);
+                color: var(--accent-color, #f7931a);
+            }
+            
+            nav a:hover:not(.active) {
+                background-color: rgba(255, 255, 255, 0.05);
+                border-left: 3px solid rgba(247, 147, 26, 0.3);
+            }
+            
+            .theme-toggle {
+                position: absolute;
+                bottom: 20px;
+                right: 20px;
+                background-color: rgba(255, 255, 255, 0.05);
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+            }
+            
+            .logout-btn {
+                margin-top: 10px !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+                background-color: rgba(231, 76, 60, 0.08) !important;
+                padding-top: 16px !important;
+                padding-bottom: 16px !important;
+            }
+            
+            /* Close button styling */
+            .mobile-nav-close {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.2);
+                border: none;
+                color: var(--text-color, #ffffff);
+                font-size: 1rem;
+                padding: 8px;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 12;
+                transition: background 0.2s ease;
+            }
+            
+            .mobile-nav-close:hover {
+                background: rgba(0, 0, 0, 0.4);
+            }
+            
+            /* Add overlay when menu is open */
+            .nav-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0, 0, 0, 0.5);
+                z-index: 9;
+            }
+            
+            .nav-overlay.active {
+                display: block;
+            }
+        }
+
+        /* Mobile dropdown navigation */
+        .mobile-dropdown-nav {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                padding: 10px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav {
+                display: block;
+                position: relative;
+                margin-top: 10px;
+            }
+            
+            .current-page-text {
+                display: flex;
+                align-items: center;
+                flex: 1;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-text span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-btn {
+                width: 100%;
+                padding: 10px 15px;
+                background: var(--card-background);
+                color: var(--text-color);
+                border: 1px solid rgba(247, 147, 26, 0.2);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.95rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .current-page-btn:hover {
+                border-color: rgba(247, 147, 26, 0.5);
+            }
+            
+            .current-page-btn i.page-icon {
+                margin-right: 10px;
+                color: var(--accent-color, #f7931a);
+                min-width: 16px;
+            }
+            
+            .current-page-btn i.dropdown-icon {
+                transition: transform 0.3s ease;
+                color: var(--accent-color, #f7931a);
+                margin-left: 12px;
+                font-size: 0.9rem;
+            }
+            
+            .current-page-btn.active i.dropdown-icon {
+                transform: rotate(180deg);
+            }
+            
+            .nav-dropdown {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                right: 0;
+                background: var(--card-background);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                max-height: 0;
+                transition: max-height 0.3s ease;
+                z-index: 100;
+            }
+            
+            .nav-dropdown.active {
+                max-height: 300px;
+            }
+            
+            .nav-dropdown a {
+                display: flex;
+                align-items: center;
+                padding: 12px 15px;
+                text-decoration: none;
+                color: var(--text-color);
+                border-bottom: 1px solid var(--border-color);
+                transition: background 0.2s ease;
+            }
+            
+            .nav-dropdown a:last-child {
+                border-bottom: none;
+            }
+            
+            .nav-dropdown a.active {
+                background: var(--accent-color);
+                color: var(--background-color);
+            }
+            
+            .nav-dropdown a:hover:not(.active) {
+                background: var(--hover-color);
+            }
+            
+            .nav-dropdown a i {
+                margin-right: 10px;
+                width: 20px;
+                text-align: center;
+            }
+            
+            /* Utils */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px; /* Add gap between title and buttons */
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            .mobile-logout-btn {
+                background-color: rgba(231, 76, 60, 0.15);
+                color: var(--text-color);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 36px;
+                min-height: 36px;
+            }
+            
+            .mobile-theme-toggle {
+                background-color: rgba(247, 147, 26, 0.15);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: var(--text-color); /* Ensure icon color matches text color */
+                min-width: 36px;
+                min-height: 36px;
+            }
+        }
+
+        /* Theme toggle icon visibility */
+        .theme-toggle .fa-sun,
+        .mobile-theme-toggle .fa-sun {
+            display: none;
+            color: var(--text-color);
+        }
+
+        .theme-toggle .fa-moon,
+        .mobile-theme-toggle .fa-moon {
+            display: inline-block;
+            color: var(--text-color);
+        }
+
+        /* In light theme, show sun and hide moon */
+        .light-theme .theme-toggle .fa-sun,
+        .light-theme .mobile-theme-toggle .fa-sun {
+            display: inline-block;
+        }
+
+        .light-theme .theme-toggle .fa-moon,
+        .light-theme .mobile-theme-toggle .fa-moon {
+            display: none;
+        }
+
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            header {
+                display: flex;
+                flex-direction: column;
+                padding: 10px 15px;
+                position: relative;
+            }
+            
+            header h1 {
+                font-size: 1.2rem;
+                margin: 0;
+            }
+            
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav {
+                display: block;
+                position: relative;
+                margin-top: 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+            <div class="mobile-flex-row">
+                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+                <div class="theme-logout-container">
+                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/logout" class="mobile-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Original Navigation (hidden on mobile) -->
             <nav>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
                 <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
                 <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 <button id="themeToggle" class="theme-toggle">
@@ -164,6 +801,23 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
+            
+            <!-- Mobile Dropdown Navigation -->
+            <div class="mobile-dropdown-nav">
+                <button class="current-page-btn" id="currentPageBtn">
+                    <div class="current-page-text">
+                        <i class="fas fa-list-ul page-icon"></i>
+                        <span>Transactions</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
+                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
+                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                </div>
+            </div>
         </header>
 
         <div class="transactions-section">
@@ -217,18 +871,193 @@
                         <tbody></tbody>
                     </table>
                 </div>
+                <!-- Add the mobile cards container with refresh button -->
+                <div class="mobile-transaction-cards" id="mobileTransactionCards">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+                <div class="mobile-refresh-button">
+                    <button id="mobileRefreshBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+            <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+            <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+        </div>
+        <div class="donation-tooltip" id="donationTooltip">
+            <div class="donation-content">
+                <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                <div class="donation-address">
+                    <p>BTC Address:</p>
+                    <div class="address-container">
+                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                        <button onclick="copyAddress()" title="Copy address">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="qr-container">
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+        </div>
+        <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+    </footer>
+
+    <!-- Daily Ticker Bar -->
+    <div class="ticker-container">
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="tickerContent">
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-wallet"></i> Current Value</span>
+                    <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-chart-line"></i> Daily Change</span>
+                    <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-percentage"></i> Daily Change %</span>
+                    <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="/js/ticker.js"></script>
+    <script src="js/electron-integration.js"></script>
     <script>
+        // Dropdown navigation functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentPageBtn = document.getElementById('currentPageBtn');
+            const navDropdown = document.getElementById('navDropdown');
+            
+            // Toggle dropdown
+            currentPageBtn.addEventListener('click', () => {
+                currentPageBtn.classList.toggle('active');
+                navDropdown.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
+                    currentPageBtn.classList.remove('active');
+                    navDropdown.classList.remove('active');
+                }
+            });
+            
+            // Handle theme toggle for mobile
+            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+            const regularThemeToggle = document.getElementById('themeToggle');
+            
+            mobileThemeToggle.addEventListener('click', () => {
+                // Trigger the original theme toggle functionality
+                regularThemeToggle.click();
+            });
+            
+            setupThemeToggle();
+            loadSettings().then(() => {
+                loadTransactions();
+            });
+            
+            // Add event listeners to sortable headers
+            const headers = document.querySelectorAll('.sortable');
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const column = header.getAttribute('data-sort');
+                    if (column) {
+                        sortTransactions(column);
+                    } else {
+                        console.error('Header is missing data-sort attribute:', header);
+                    }
+                });
+                // Set initial sort indicator for the date column
+                if (header.getAttribute('data-sort') === 'date') {
+                    header.setAttribute('data-sort-direction', 'desc');
+                    header.classList.add('sorted-column');
+                }
+            });
+            
+            // Add pull-to-refresh for both mobile and desktop views
+            setupPullToRefresh();
+        });
+        
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Setup pull-to-refresh functionality
+        function setupPullToRefresh() {
+            const tableContainer = document.querySelector('.table-container');
+            const mobileCardsContainer = document.getElementById('mobileTransactionCards');
+            let touchStartY = 0;
+            let touchEndY = 0;
+            
+            // Add pull-to-refresh for mobile cards
+            if (mobileCardsContainer) {
+                mobileCardsContainer.addEventListener('touchstart', e => {
+                    touchStartY = e.touches[0].clientY;
+                });
+                
+                mobileCardsContainer.addEventListener('touchmove', e => {
+                    touchEndY = e.touches[0].clientY;
+                    const scrollTop = mobileCardsContainer.scrollTop;
+                    
+                    // Only allow pull-to-refresh when at the top of the container
+                    if (scrollTop <= 0 && touchEndY > touchStartY) {
+                        e.preventDefault();
+                        mobileCardsContainer.classList.add('refreshing');
+                    }
+                });
+                
+                mobileCardsContainer.addEventListener('touchend', e => {
+                    if (touchEndY - touchStartY > 100 && mobileCardsContainer.scrollTop <= 0) {
+                        // Perform refresh
+                        loadTransactions();
+                    }
+                    mobileCardsContainer.classList.remove('refreshing');
+                });
+            }
+            
+            // Add pull-to-refresh for desktop table
+            if (tableContainer) {
+                tableContainer.addEventListener('touchstart', e => {
+                    touchStartY = e.touches[0].clientY;
+                });
+                
+                tableContainer.addEventListener('touchmove', e => {
+                    touchEndY = e.touches[0].clientY;
+                    const scrollTop = tableContainer.scrollTop;
+                    
+                    // Only allow pull-to-refresh when at the top of the container
+                    if (scrollTop <= 0 && touchEndY > touchStartY) {
+                        e.preventDefault();
+                        tableContainer.classList.add('refreshing');
+                    }
+                });
+                
+                tableContainer.addEventListener('touchend', e => {
+                    if (touchEndY - touchStartY > 100 && tableContainer.scrollTop <= 0) {
+                        // Perform refresh
+                        loadTransactions();
+                    }
+                    tableContainer.classList.remove('refreshing');
+                });
+            }
+        }
+        
         let transactions = []; // Store transactions globally
-        let currentSort = {
-            column: 'date',
-            direction: 'desc'
-        };
-        let primaryCurrency = 'EUR';
-        let secondaryCurrency = 'PLN';
+        let currentSortColumn = 'date'; // Keep track of the current sort column
+        let currentSortDirection = 'desc'; // Keep track of the current sort direction
+        let mainCurrency = 'EUR';
+        let secondaryCurrency = 'USD';
         let secondaryRate = 1;
 
         // Sorting functions for different data types
@@ -257,42 +1086,88 @@
             date: { type: 'date', getValue: tx => tx.date },
             type: { type: 'string', getValue: tx => tx.type },
             amount: { type: 'number', getValue: tx => tx.amount },
-            price: { type: 'number', getValue: tx => tx.price },
-            currency: { type: 'string', getValue: tx => tx.currency || 'EUR' },
-            cost: { type: 'number', getValue: tx => tx.cost },
-            pnl: { type: 'number', getValue: tx => tx.pnl },
-            pnlPercentage: { type: 'number', getValue: tx => tx.pnlPercentage },
-            pnlSecondary: { type: 'number', getValue: tx => tx.secondaryPnl },
-            pnlPercentageSecondary: { type: 'number', getValue: tx => tx.secondaryPnlPercentage }
+            price: { 
+                type: 'number', 
+                getValue: tx => tx.original?.price ?? 0 
+            },
+            currency: { type: 'string', getValue: tx => tx.original?.currency || '' },
+            cost: { 
+                type: 'number', 
+                getValue: tx => tx.original?.cost ?? 0 
+            },
+            pnl: { 
+                type: 'number', 
+                getValue: tx => tx.pnl ?? 0 
+            },
+            pnlPercentage: { 
+                type: 'number', 
+                getValue: tx => tx.pnlPercentage ?? 0 
+            },
+            pnlSecondary: { 
+                type: 'number', 
+                getValue: tx => tx.pnlSecondary ?? 0 
+            }
         };
 
         // Function to sort transactions
         function sortTransactions(column) {
+            console.log(`Attempting to sort by: ${column}`); // Add log
             const config = sortConfig[column];
-            if (!config) return;
+            if (!config) {
+                console.error(`Invalid sort column: ${column}`);
+                return;
+            }
+
+            const headers = document.querySelectorAll('th.sortable');
+            headers.forEach(h => h.classList.remove('sorted-column')); // Remove class from all headers
 
             const currentHeader = document.querySelector(`th[data-sort="${column}"]`);
-            const headers = document.querySelectorAll('.sortable');
+            let direction;
+
+            // Determine sort direction
+            if (column === currentSortColumn) {
+                // If clicking the same column, toggle direction
+                direction = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                // If clicking a new column, default to descending for date/numbers, ascending for strings
+                direction = (config.type === 'date' || config.type === 'number') ? 'desc' : 'asc';
+            }
             
-            // Reset all other headers
+            console.log(`Sorting direction: ${direction}`); // Add log
+
+            // Update state
+            currentSortColumn = column;
+            currentSortDirection = direction;
+
+            // Update header attributes and classes for visual feedback
             headers.forEach(header => {
-                if (header !== currentHeader) {
-                    header.removeAttribute('data-sort-direction');
+                header.removeAttribute('data-sort-direction');
+            });
+            if (currentHeader) {
+                 currentHeader.setAttribute('data-sort-direction', direction);
+                 currentHeader.classList.add('sorted-column'); // Add class to sorted header
+            } else {
+                 console.error(`Could not find header element for column: ${column}`);
+            }
+
+
+            // Sort the transactions array
+            transactions.sort((a, b) => {
+                // Handle potential null or undefined values gracefully
+                const valueA = config.getValue(a) ?? (config.type === 'string' ? '' : 0);
+                const valueB = config.getValue(b) ?? (config.type === 'string' ? '' : 0);
+                
+                try {
+                    return sortFunctions[config.type](valueA, valueB, direction);
+                } catch (e) {
+                    console.error(`Error sorting ${column}:`, e, `Values: A=${valueA}, B=${valueB}`);
+                    return 0; // Prevent breaking sort on error
                 }
             });
+            
+            console.log(`Sorting complete for ${column}. Updating table.`); // Add log
 
-            // Toggle sort direction
-            let direction = currentHeader.getAttribute('data-sort-direction') === 'asc' ? 'desc' : 'asc';
-            currentHeader.setAttribute('data-sort-direction', direction);
-
-            // Sort the transactions
-            transactions.sort((a, b) => {
-                const valueA = config.getValue(a);
-                const valueB = config.getValue(b);
-                return sortFunctions[config.type](valueA, valueB, direction);
-            });
-
-            // Update the table
+            // Update the table display
             updateTransactionsTable();
         }
 
@@ -314,29 +1189,44 @@
             return '';
         }
 
-        // Modify the updateTransactionsTable function
+        // Format currency with proper symbol
+        function formatCurrency(amount, currency) {
+            const symbol = getCurrencySymbol(currency);
+            // Ensure amount is a number
+            const numAmount = Number(amount) || 0;
+            return `${numAmount >= 0 ? '+' : ''}${numAmount.toFixed(2)} ${symbol}`;
+        }
+
+        // Update the updateTransactionsTable function to also update mobile cards
         function updateTransactionsTable() {
             const tbody = document.querySelector('#transactionsTable tbody');
+            const mobileCardsContainer = document.getElementById('mobileTransactionCards');
+            
             tbody.innerHTML = '';
+            mobileCardsContainer.innerHTML = '';
 
             if (!transactions || transactions.length === 0) {
                 const row = document.createElement('tr');
                 row.innerHTML = '<td colspan="9" class="no-data" style="text-align: center; padding: 20px;">No transactions found</td>';
                 tbody.appendChild(row);
+                
+                // Also show no transactions message on mobile
+                mobileCardsContainer.innerHTML = '<div class="transaction-card" style="text-align: center;">No transactions found</div>';
                 return;
             }
 
             // Find the maximum absolute P&L value for scaling
             const maxPnL = transactions.reduce((max, tx) => 
-                Math.max(max, Math.abs(tx.pnl)), 0);
+                Math.max(max, Math.abs(tx.pnl || 0)), 0);
 
             transactions.forEach(tx => {
+                // Create the table row (existing code)
                 const row = document.createElement('tr');
-                // Add the P&L scale attribute
-                row.setAttribute('data-pnl-scale', getPnLScale(tx.pnl, maxPnL));
+                row.setAttribute('data-pnl-scale', getPnLScale(tx.pnl || 0, maxPnL));
                 
                 // Get currency symbols
-                const txCurrencySymbol = getCurrencySymbol(tx.currency || 'EUR');
+                const origCurrencySymbol = getCurrencySymbol(tx.original?.currency || mainCurrency);
+                const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
                 const secondarySymbol = getCurrencySymbol(secondaryCurrency);
                 
                 // Format the date nicely
@@ -347,18 +1237,99 @@
                     day: 'numeric'
                 });
                 
+                // Get original values
+                const origPrice = tx.original?.price || 0;
+                const origCost = tx.original?.cost || 0;
+                const origFee = tx.original?.fee || 0;
+                
+                // Get base currency values
+                const mainPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || 0;
+                const mainCost = tx.base?.[mainCurrency.toLowerCase()]?.cost || 0;
+                const mainFee = tx.base?.[mainCurrency.toLowerCase()]?.fee || 0;
+                
+                // Format P&L display
+                let pnlDisplay = '-';
+                let pnlPercentageDisplay = '-';
+                let secondaryPnlDisplay = '-';
+                
+                if (tx.type.toLowerCase() === 'buy') {
+                    pnlDisplay = formatCurrency(tx.pnl || 0, mainCurrency);
+                    pnlPercentageDisplay = `${tx.pnlPercentage >= 0 ? '+' : ''}${(tx.pnlPercentage || 0).toFixed(2)}%`;
+                    secondaryPnlDisplay = formatCurrency(tx.pnlSecondary || 0, secondaryCurrency);
+                }
+                
+                // Build price display with conversion if needed
+                let priceDisplay = `${origPrice.toFixed(2)} ${origCurrencySymbol}`;
+                if (tx.original?.currency !== mainCurrency) {
+                    priceDisplay += `<div class="conversion-note">(${mainPrice.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                }
+                
+                // Build cost display with conversion if needed
+                let costDisplay = `${origCost.toFixed(2)} ${origCurrencySymbol}`;
+                if (tx.original?.currency !== mainCurrency) {
+                    costDisplay += `<div class="conversion-note">(${mainCost.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                }
+                
+                // Existing table row HTML
                 row.innerHTML = `
                     <td class="date-col" title="${date.toLocaleString()}">${formattedDate}</td>
                     <td class="type-col">${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
                     <td class="amount-col" title="${tx.amount.toFixed(8)}">${tx.amount.toFixed(8)}</td>
-                    <td class="price-col" title="${tx.price.toFixed(2)}">${tx.price.toFixed(2)}</td>
-                    <td class="currency-col">${txCurrencySymbol}</td>
-                    <td class="cost-col" title="${tx.cost.toFixed(2)} ${txCurrencySymbol}">${tx.cost.toFixed(2)} ${txCurrencySymbol}</td>
-                    <td class="pnl-col ${tx.pnl >= 0 ? 'positive' : 'negative'}" title="${tx.pnl.toFixed(2)} €">${tx.pnl.toFixed(2)} €</td>
-                    <td class="pnl-percent-col ${tx.pnlPercentage >= 0 ? 'positive' : 'negative'}" title="${tx.pnlPercentage.toFixed(2)}%">${tx.pnlPercentage.toFixed(2)}%</td>
-                    <td class="pnl-secondary-col ${tx.secondaryPnl >= 0 ? 'positive' : 'negative'}" title="${tx.secondaryPnl.toFixed(2)} ${secondarySymbol}">${tx.secondaryPnl.toFixed(2)} ${secondarySymbol}</td>
+                    <td class="price-col" title="Original price: ${origPrice.toFixed(2)} ${origCurrencySymbol}">${priceDisplay}</td>
+                    <td class="currency-col">${origCurrencySymbol}</td>
+                    <td class="cost-col" title="Original cost: ${origCost.toFixed(2)} ${origCurrencySymbol}">${costDisplay}</td>
+                    <td class="pnl-col ${tx.pnl > 0 ? 'positive' : tx.pnl < 0 ? 'negative' : ''}" 
+                        title="P&L in ${mainCurrency}">${pnlDisplay}</td>
+                    <td class="pnl-percent-col ${tx.pnlPercentage > 0 ? 'positive' : tx.pnlPercentage < 0 ? 'negative' : ''}" 
+                        title="P&L percentage">${pnlPercentageDisplay}</td>
+                    <td class="pnl-secondary-col ${tx.pnlSecondary > 0 ? 'positive' : tx.pnlSecondary < 0 ? 'negative' : ''}" 
+                        title="P&L in ${secondaryCurrency}">${secondaryPnlDisplay}</td>
                 `;
                 tbody.appendChild(row);
+                
+                // Now create the mobile card for the same transaction
+                const card = document.createElement('div');
+                card.className = 'transaction-card';
+                card.setAttribute('data-pnl-scale', getPnLScale(tx.pnl || 0, maxPnL));
+                
+                // Determine CSS class for buy/sell type
+                const typeClass = tx.type.toLowerCase() === 'buy' ? 'buy' : 'sell';
+                const typeLabel = tx.type.toLowerCase() === 'buy' ? 'Buy' : 'Sell';
+                
+                // Build the mobile card HTML
+                card.innerHTML = `
+                    <div class="transaction-card-header">
+                        <div class="transaction-card-date">${formattedDate}</div>
+                        <div class="transaction-card-type ${typeClass}">${tx.type === 'buy' ? 'Buy' : 'Sell'}</div>
+                    </div>
+                    <div class="transaction-card-body">
+                        <div class="transaction-card-detail">
+                            <div class="transaction-card-label">Amount:</div>
+                            <div class="transaction-card-value">${tx.amount.toFixed(8)}</div>
+                        </div>
+                        <div class="transaction-card-detail">
+                            <div class="transaction-card-label">Price:</div>
+                            <div class="transaction-card-value">${origPrice.toFixed(2)} ${origCurrencySymbol}</div>
+                        </div>
+                        <div class="transaction-card-detail">
+                            <div class="transaction-card-label">Cost:</div>
+                            <div class="transaction-card-value">${origCost.toFixed(2)} ${origCurrencySymbol}</div>
+                        </div>
+                    </div>
+                    ${tx.type.toLowerCase() === 'buy' ? `
+                    <div class="transaction-card-pnl">
+                        <div class="transaction-card-detail">
+                            <div class="transaction-card-label">P&L:</div>
+                            <div class="transaction-card-value ${tx.pnl > 0 ? 'positive' : tx.pnl < 0 ? 'negative' : ''}">${pnlDisplay}</div>
+                        </div>
+                        <div class="transaction-card-detail">
+                            <div class="transaction-card-label">P&L %:</div>
+                            <div class="transaction-card-value ${tx.pnlPercentage > 0 ? 'positive' : tx.pnlPercentage < 0 ? 'negative' : ''}">${pnlPercentageDisplay}</div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                mobileCardsContainer.appendChild(card);
             });
         }
 
@@ -380,10 +1351,10 @@
 
         // Modified loadTransactions function
         async function loadTransactions() {
-            document.getElementById('tableLoading').style.display = 'flex';
+            showLoading();
             
             try {
-                const response = await fetch('/api/summary');
+                const response = await fetch('/api/transactions');
                 
                 if (!response.ok) {
                     // If we get redirected to login, the browser may follow the redirect
@@ -397,17 +1368,15 @@
                 }
                 
                 const data = await response.json();
-                transactions = data.transactions;
-                
-                // Get secondary currency info
-                secondaryCurrency = data.secondaryCurrency;
-                secondaryRate = data.secondaryRate;
-                
-                // Update the secondary currency column header
-                updateSecondaryHeader();
+                transactions = data || [];
                 
                 // Initial sort by date (newest first)
-                sortTransactions('date');
+                if (Array.isArray(transactions) && transactions.length > 0) {
+                    sortTransactions('date');
+                } else {
+                    // If no transactions or empty array, just update the table
+                    updateTransactionsTable();
+                }
             } catch (error) {
                 console.error('Error loading transactions:', error);
                 
@@ -426,8 +1395,12 @@
                 errorMsg.className = 'error-message';
                 errorMsg.textContent = `Error: ${error.message}`;
                 document.querySelector('.transactions-section').prepend(errorMsg);
+                
+                // Initialize empty transactions array to prevent errors
+                transactions = [];
+                updateTransactionsTable();
             } finally {
-                document.getElementById('tableLoading').style.display = 'none';
+                hideLoading();
             }
         }
 
@@ -442,67 +1415,6 @@
                 <i class="fas fa-sort sort-icon"></i>
             `;
         }
-
-        // Add click event listeners to sortable headers
-        document.addEventListener('DOMContentLoaded', () => {
-            const headers = document.querySelectorAll('.sortable');
-            headers.forEach(header => {
-                header.addEventListener('click', () => {
-                    const column = header.getAttribute('data-sort');
-                    sortTransactions(column);
-                });
-            });
-        });
-
-        // Add loading indicator
-        function showLoading() {
-            document.getElementById('tableLoading').style.display = 'flex';
-        }
-
-        function hideLoading() {
-            document.getElementById('tableLoading').style.display = 'none';
-        }
-
-        // Add pull-to-refresh functionality
-        let touchStartY = 0;
-        let touchEndY = 0;
-        const tableContainer = document.querySelector('.table-container');
-
-        tableContainer.addEventListener('touchstart', e => {
-            touchStartY = e.touches[0].clientY;
-        });
-
-        tableContainer.addEventListener('touchmove', e => {
-            touchEndY = e.touches[0].clientY;
-            const scrollTop = tableContainer.scrollTop;
-            
-            // Only allow pull-to-refresh when at the top of the container
-            if (scrollTop <= 0 && touchEndY > touchStartY) {
-                e.preventDefault();
-                tableContainer.classList.add('refreshing');
-            }
-        });
-
-        tableContainer.addEventListener('touchend', e => {
-            if (touchEndY - touchStartY > 100 && tableContainer.scrollTop <= 0) {
-                // Perform refresh
-                loadTransactions();
-            }
-            tableContainer.classList.remove('refreshing');
-        });
-
-        // Update the loading indicator to work with the pull-to-refresh
-        function showLoading() {
-            document.getElementById('tableLoading').style.display = 'flex';
-            tableContainer.classList.remove('refreshing');
-        }
-
-        function hideLoading() {
-            document.getElementById('tableLoading').style.display = 'none';
-        }
-
-        // Initial load
-        loadTransactions();
 
         // Theme toggle functionality
         function setupThemeToggle() {
@@ -524,12 +1436,148 @@
                 localStorage.setItem('theme', currentTheme);
             });
         }
-        
-        // Initialize theme toggle when DOM is loaded
+
+        // Add this function to fetch settings
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                mainCurrency = settings.mainCurrency || 'EUR';
+                secondaryCurrency = settings.secondaryCurrency || 'USD';
+                
+                // Update the secondary currency column header
+                const header = document.querySelector('th.pnl-secondary-col');
+                if (header) {
+                    header.innerHTML = `
+                        <i class="fas fa-money-bill-wave"></i> P&L (${secondaryCurrency})
+                        <i class="fas fa-sort sort-icon"></i>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        function generateQRCode() {
+            const address = document.getElementById('btcAddress').textContent;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear any existing QR code
+            qrcodeDiv.innerHTML = '';
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            // Get current theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Generate QR code
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('btcAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy address:', err);
+                alert('Failed to copy address. Please try again.');
+            });
+        }
+
+        // Handle donation tooltip
         document.addEventListener('DOMContentLoaded', () => {
-            setupThemeToggle();
-            // Other initialization code...
+            const donationLink = document.getElementById('donationLink');
+            const donationTooltip = document.getElementById('donationTooltip');
+
+            // Generate QR code once when page loads
+            generateQRCode();
+
+            let tooltipTimeout;
+
+            donationLink.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationLink.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+
+            // Prevent tooltip from closing when hovering over it
+            donationTooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationTooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
         });
+
+        // Update the loading indicators to work with both views
+        function showLoading() {
+            document.getElementById('tableLoading').style.display = 'flex';
+            document.querySelector('.table-container')?.classList.remove('refreshing');
+            document.getElementById('mobileTransactionCards')?.classList.remove('refreshing');
+        }
+
+        function hideLoading() {
+            document.getElementById('tableLoading').style.display = 'none';
+        }
+
+        // Setup mobile refresh button
+        document.addEventListener('DOMContentLoaded', () => {
+            const mobileRefreshBtn = document.getElementById('mobileRefreshBtn');
+            if (mobileRefreshBtn) {
+                mobileRefreshBtn.addEventListener('click', () => {
+                    mobileRefreshBtn.classList.add('refreshing');
+                    loadTransactions().finally(() => {
+                        setTimeout(() => {
+                            mobileRefreshBtn.classList.remove('refreshing');
+                        }, 500);
+                    });
+                });
+            }
+        });
+
+        // Add touch support for mobile
+        document.addEventListener('touchstart', function() {}, true);
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/service-worker.js')
+              .then(registration => {
+                console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              })
+              .catch(error => {
+                console.log('ServiceWorker registration failed: ', error);
+              });
+          });
+        }
     </script>
 </body>
 </html> 

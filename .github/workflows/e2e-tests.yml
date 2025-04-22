@@ -1,0 +1,70 @@
+name: End-to-End Tests
+
+on:
+  # Run on all pushes to any branch
+  push:
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+  # Run on all pull requests
+  pull_request:
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+        env:
+          PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: 'true'
+      
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget gnupg
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+      
+      - name: Create test directories
+        run: |
+          mkdir -p tests/test-data
+          mkdir -p tests/screenshots
+      
+      - name: Create test CSV file
+        run: |
+          echo "Date,Type,Amount (BTC),Exchange,Original Currency,Original Price,Original Cost,Original Fee" > tests/testimport.csv
+          echo "2023-01-01,buy,0.1,manual,EUR,25000,2500,5" >> tests/testimport.csv
+          echo "2023-01-02,buy,0.05,manual,USD,27000,1350,3" >> tests/testimport.csv
+          echo "2023-01-03,buy,0.025,manual,PLN,130000,3250,15" >> tests/testimport.csv
+      
+      - name: Run E2E tests
+        run: npm run test:e2e -- --testTimeout=60000
+        env:
+          NODE_ENV: test
+          PORT: 3030
+          BTC_TRACKER_DATA_DIR: ./tests/test-data
+          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome
+      
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-screenshots
+          path: tests/screenshots
+          retention-days: 7 

@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exchange Integrations - BTC Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json">
+    <style>
+        /* Adjust exchange cards to fit 4 in a row */
+        .exchange-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(calc(25% - 20px), 1fr));
+            gap: 20px;
+        }
+        
+        .exchange-card {
+            min-width: auto;
+            width: 100%;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .exchange-list {
+                grid-template-columns: repeat(auto-fill, minmax(calc(33.33% - 20px), 1fr));
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .exchange-list {
+                grid-template-columns: repeat(auto-fill, minmax(calc(50% - 20px), 1fr));
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .exchange-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .bitcoin-logo {
+            width: 24px;
+            height: 24px;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        
+        /* Desktop navigation - shown by default */
+        nav {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Mobile elements - hidden by default */
+        .mobile-dropdown-nav,
+        .mobile-flex-row .theme-logout-container {
+            display: none;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            /* Hide original nav on mobile */
+            nav {
+                display: none;
+            }
+            
+            /* Show mobile elements */
+            .mobile-flex-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 15px;
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            
+            .mobile-flex-row .theme-logout-container {
+                display: flex;
+                gap: 12px;
+            }
+            
+            /* Show mobile dropdown nav */
+            .mobile-dropdown-nav {
+                display: block;
+                position: relative;
+                margin-top: 10px;
+            }
+            
+            .current-page-text {
+                display: flex;
+                align-items: center;
+                flex: 1;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-text span {
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .current-page-btn {
+                width: 100%;
+                padding: 10px 15px;
+                background: var(--card-background);
+                color: var(--text-color);
+                border: 1px solid rgba(247, 147, 26, 0.2);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 0.95rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+            
+            .current-page-btn:hover {
+                border-color: rgba(247, 147, 26, 0.5);
+            }
+            
+            .current-page-btn i.page-icon {
+                margin-right: 10px;
+                color: var(--accent-color, #f7931a);
+                min-width: 16px;
+            }
+            
+            .current-page-btn i.dropdown-icon {
+                transition: transform 0.3s ease;
+                color: var(--accent-color, #f7931a);
+                margin-left: 12px;
+                font-size: 0.9rem;
+            }
+            
+            .current-page-btn.active i.dropdown-icon {
+                transform: rotate(180deg);
+            }
+            
+            .nav-dropdown {
+                position: absolute;
+                top: calc(100% + 5px);
+                left: 0;
+                right: 0;
+                background: var(--card-background);
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                max-height: 0;
+                transition: max-height 0.3s ease;
+                z-index: 100;
+            }
+            
+            .nav-dropdown.active {
+                max-height: 300px;
+            }
+            
+            .nav-dropdown a {
+                display: flex;
+                align-items: center;
+                padding: 12px 15px;
+                text-decoration: none;
+                color: var(--text-color);
+                border-bottom: 1px solid var(--border-color);
+                transition: background 0.2s ease;
+            }
+            
+            .nav-dropdown a:last-child {
+                border-bottom: none;
+            }
+            
+            .nav-dropdown a.active {
+                background: var(--accent-color);
+                color: var(--background-color);
+            }
+            
+            .nav-dropdown a:hover:not(.active) {
+                background: var(--hover-color);
+            }
+            
+            .nav-dropdown a i {
+                margin-right: 10px;
+                width: 20px;
+                text-align: center;
+            }
+            
+            .mobile-logout-btn {
+                background-color: rgba(231, 76, 60, 0.15);
+                color: var(--text-color);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 36px;
+                min-height: 36px;
+            }
+            
+            .mobile-theme-toggle {
+                background-color: rgba(247, 147, 26, 0.15);
+                border: none;
+                border-radius: 8px;
+                padding: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                color: var(--text-color); /* Ensure icon color matches text color */
+                min-width: 36px;
+                min-height: 36px;
+            }
+        }
+
+        /* Theme toggle icon visibility */
+        .theme-toggle .fa-sun,
+        .mobile-theme-toggle .fa-sun {
+            display: none;
+            color: var(--text-color);
+        }
+
+        .theme-toggle .fa-moon,
+        .mobile-theme-toggle .fa-moon {
+            display: inline-block;
+            color: var(--text-color);
+        }
+
+        /* In light theme, show sun and hide moon */
+        .light-theme .theme-toggle .fa-sun,
+        .light-theme .mobile-theme-toggle .fa-sun {
+            display: inline-block;
+        }
+
+        .light-theme .theme-toggle .fa-moon,
+        .light-theme .mobile-theme-toggle .fa-moon {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="mobile-flex-row">
+                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> Exchange Integrations</h1>
+                <div class="theme-logout-container">
+                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/logout" class="mobile-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Original Navigation (hidden on mobile) -->
+            <nav>
+                <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/exchanges.html" class="active"><i class="fas fa-plug"></i> Exchanges</a>
+                <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="themeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <i class="fas fa-sun"></i>
+                </button>
+            </nav>
+            
+            <!-- Mobile Dropdown Navigation -->
+            <div class="mobile-dropdown-nav" id="mobileNav">
+                <button class="current-page-btn" id="currentPageBtn">
+                    <div class="current-page-text">
+                        <i class="fas fa-plug page-icon"></i>
+                        <span>Exchanges</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                    <a href="/exchanges.html" class="active"><i class="fas fa-plug"></i> Exchanges</a>
+                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <section>
+                <h2><i class="fas fa-plug"></i> Exchange Integrations</h2>
+                <p>Connect to cryptocurrency exchanges to automatically import your transactions and track your balances.</p>
+                
+                <div class="error-message" id="error-message" style="display: none;"></div>
+                <div class="success-message" id="success-message" style="display: none;"></div>
+                
+                <div class="exchange-list" id="exchange-list">
+                    <!-- Exchange cards will be added here dynamically -->
+                    <div class="loading">Loading exchanges...</div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <div class="footer-links">
+                <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+                <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+                <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+            </div>
+            <div class="donation-tooltip" id="donationTooltip">
+                <div class="donation-content">
+                    <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                    <div class="donation-address">
+                        <p>BTC Address:</p>
+                        <div class="address-container">
+                            <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                            <button onclick="copyAddress()" title="Copy address">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="qr-container">
+                        <div id="qrcode"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+        </footer>
+    </div>
+
+    <!-- Daily Ticker Bar -->
+    <div class="ticker-container">
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="tickerContent">
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-wallet"></i> Current Value</span>
+                    <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-chart-line"></i> Daily Change</span>
+                    <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                </div>
+                <div class="ticker-item">
+                    <span class="ticker-label"><i class="fas fa-percentage"></i> Daily Change %</span>
+                    <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template for exchange card -->
+    <template id="exchange-card-template">
+        <div class="exchange-card" data-exchange-id="">
+            <h3>
+                <span class="status-indicator"></span>
+                <span class="exchange-name"></span>
+            </h3>
+            
+            <div class="exchange-status"></div>
+            
+            <div class="credential-form">
+                <div class="form-fields">
+                    <!-- Credential fields will be added here dynamically -->
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-save">Save Credentials</button>
+                    <button class="btn btn-secondary btn-test">Test Connection</button>
+                    <button class="btn btn-danger btn-delete" style="display: none;">Remove</button>
+                </div>
+            </div>
+            
+            <div class="sync-options" style="display: none;">
+                <h4>Sync Transactions</h4>
+                <div class="form-group">
+                    <label for="start-date">Start Date</label>
+                    <input type="date" id="start-date" class="start-date">
+                </div>
+                <div class="form-group">
+                    <label for="end-date">End Date</label>
+                    <input type="date" id="end-date" class="end-date">
+                </div>
+                <button class="btn btn-primary btn-sync">Sync Transactions</button>
+                
+                <div class="sync-results">
+                    <div class="sync-status"></div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="/js/ticker.js"></script>
+    <script src="js/electron-integration.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set current year in footer
+            document.getElementById('current-year').textContent = new Date().getFullYear();
+            
+            const exchangeList = document.getElementById('exchange-list');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            const template = document.getElementById('exchange-card-template');
+            
+            // Theme toggle functionality
+            const themeToggle = document.getElementById('themeToggle');
+            if (themeToggle) {
+                const savedTheme = localStorage.getItem('theme');
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-theme');
+                }
+
+                themeToggle.addEventListener('click', function() {
+                    document.body.classList.toggle('light-theme');
+                    const isLight = document.body.classList.contains('light-theme');
+                    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+                });
+            }
+            
+            // Dropdown navigation functionality
+            const currentPageBtn = document.getElementById('currentPageBtn');
+            const navDropdown = document.getElementById('navDropdown');
+            
+            if (currentPageBtn && navDropdown) {
+                // Toggle dropdown
+                currentPageBtn.addEventListener('click', () => {
+                    currentPageBtn.classList.toggle('active');
+                    navDropdown.classList.toggle('active');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
+                        currentPageBtn.classList.remove('active');
+                        navDropdown.classList.remove('active');
+                    }
+                });
+                
+                // Handle theme toggle for mobile
+                const mobileThemeToggle = document.getElementById('mobileThemeToggle');
+                if (mobileThemeToggle && themeToggle) {
+                    mobileThemeToggle.addEventListener('click', () => {
+                        // Trigger the original theme toggle functionality
+                        themeToggle.click();
+                    });
+                }
+            }
+            
+            // Initialize donation tooltip
+            const donationLink = document.getElementById('donationLink');
+            const donationTooltip = document.getElementById('donationTooltip');
+
+            // Generate QR code once when page loads
+            generateQRCode();
+
+            let tooltipTimeout;
+
+            donationLink.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationLink.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+
+            // Prevent tooltip from closing when hovering over it
+            donationTooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationTooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+            
+            // Show error message
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorMessage.style.display = 'block';
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    errorMessage.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Show success message
+            function showSuccess(message) {
+                successMessage.textContent = message;
+                successMessage.style.display = 'block';
+                
+                // Hide after 5 seconds
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 5000);
+            }
+            
+            // Fetch available exchanges
+            async function fetchExchanges() {
+                try {
+                    const response = await fetch('/api/exchanges');
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch exchanges');
+                    }
+                    
+                    const exchanges = await response.json();
+                    return exchanges;
+                } catch (error) {
+                    console.error('Error fetching exchanges:', error);
+                    showError('Failed to load exchanges. Please try again.');
+                    return {};
+                }
+            }
+            
+            // Test exchange connection
+            async function testConnection(exchangeId, credentials) {
+                try {
+                    const response = await fetch(`/api/exchanges/${exchangeId}/test`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(credentials)
+                    });
+                    
+                    // Get the response data
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        const errorMessage = data.error || 'Unknown error';
+                        const details = data.message || '';
+                        
+                        throw new Error(`${errorMessage}${details ? ': ' + details : ''}`);
+                    }
+                    
+                    return data.success;
+                } catch (error) {
+                    console.error('Error testing connection:', error);
+                    showError(`Connection test failed: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            // Save exchange credentials
+            async function saveCredentials(exchangeId, credentials) {
+                try {
+                    const response = await fetch(`/api/exchanges/${exchangeId}/credentials`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(credentials)
+                    });
+                    
+                    // Get the response data
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        const errorMessage = data.error || 'Unknown error';
+                        const details = data.message || data.missingFields 
+                            ? (data.message || `Missing fields: ${data.missingFields.join(', ')}`)
+                            : '';
+                        
+                        throw new Error(`${errorMessage}${details ? ': ' + details : ''}`);
+                    }
+                    
+                    return data.success;
+                } catch (error) {
+                    console.error('Error saving credentials:', error);
+                    showError(`Failed to save credentials: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            // Delete exchange credentials
+            async function deleteExchange(exchangeId) {
+                try {
+                    const response = await fetch(`/api/exchanges/${exchangeId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to delete exchange');
+                    }
+                    
+                    const result = await response.json();
+                    return result.success;
+                } catch (error) {
+                    console.error('Error deleting exchange:', error);
+                    showError('Failed to delete exchange. Please try again.');
+                    return false;
+                }
+            }
+            
+            // Sync transactions from exchange
+            async function syncTransactions(exchangeId, options) {
+                try {
+                    const response = await fetch(`/api/exchanges/${exchangeId}/sync`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(options)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to sync transactions');
+                    }
+                    
+                    const result = await response.json();
+                    return result;
+                } catch (error) {
+                    console.error('Error syncing transactions:', error);
+                    showError('Failed to sync transactions. Please try again.');
+                    return { success: false, added: 0, transactions: [] };
+                }
+            }
+            
+            // Create exchange card
+            function createExchangeCard(exchange) {
+                const card = template.content.cloneNode(true);
+                
+                // Set exchange ID and name
+                const cardElement = card.querySelector('.exchange-card');
+                cardElement.dataset.exchangeId = exchange.id;
+                
+                const nameElement = card.querySelector('.exchange-name');
+                
+                // Remove Kraken logo code - as requested
+                nameElement.textContent = exchange.name;
+                
+                // Set status
+                const statusIndicator = card.querySelector('.status-indicator');
+                const statusText = card.querySelector('.exchange-status');
+                
+                if (exchange.connected) {
+                    statusIndicator.classList.add('status-connected');
+                    statusText.textContent = 'Connected';
+                    
+                    // Show sync options and balances for connected exchanges
+                    card.querySelector('.sync-options').style.display = 'block';
+                    card.querySelector('.btn-delete').style.display = 'inline-block';
+                } else {
+                    statusIndicator.classList.add('status-disconnected');
+                    statusText.textContent = 'Not connected';
+                }
+                
+                // Add credential fields
+                const formFields = card.querySelector('.form-fields');
+                
+                // Fix button layout - Add appropriate styling to buttons container
+                const actionButtons = card.querySelector('.action-buttons');
+                actionButtons.style.display = 'flex';
+                actionButtons.style.flexWrap = 'wrap';
+                actionButtons.style.gap = '10px';
+                actionButtons.style.marginTop = '15px';
+                
+                // Add help text for Kraken if needed
+                if (exchange.id === 'kraken') {
+                    const helpLink = document.createElement('div');
+                    helpLink.className = 'api-help-link';
+                    helpLink.innerHTML = `
+                        <a href="https://support.kraken.com/hc/en-us/articles/how-to-create-an-api-key-on-kraken-pro" target="_blank" title="Learn how to create an API key on Kraken">
+                            <i class="fas fa-life-ring"></i>
+                        </a>
+                    `;
+                    helpLink.style.position = 'relative';
+                    helpLink.style.float = 'right';
+                    helpLink.style.margin = '10px';
+                    formFields.appendChild(helpLink);
+                }
+                
+                // For connected exchanges, hide credential fields but provide a button to reveal them
+                if (exchange.connected) {
+                    const hiddenMessage = document.createElement('div');
+                    hiddenMessage.className = 'credentials-hidden-message';
+                    hiddenMessage.innerHTML = `
+                        <button class="btn btn-small btn-secondary btn-show-credentials">Show/Edit Credentials</button>
+                    `;
+                    formFields.appendChild(hiddenMessage);
+                    
+                    // Create a container for the credentials that will be initially hidden
+                    const credentialsContainer = document.createElement('div');
+                    credentialsContainer.className = 'hidden-credentials';
+                    credentialsContainer.style.display = 'none';
+                    formFields.appendChild(credentialsContainer);
+                    
+                    // Add credential fields to the hidden container
+                    exchange.credentials.forEach(credential => {
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.className = 'form-group';
+                        
+                        const label = document.createElement('label');
+                        label.textContent = credential.label;
+                        label.setAttribute('for', `${exchange.id}-${credential.key}`);
+                        
+                        const input = document.createElement('input');
+                        input.type = credential.type;
+                        input.id = `${exchange.id}-${credential.key}`;
+                        input.name = credential.key;
+                        input.dataset.key = credential.key;
+                        input.placeholder = '••••••••••••••••'; // Placeholder to indicate saved value
+                        
+                        fieldDiv.appendChild(label);
+                        fieldDiv.appendChild(input);
+                        
+                        // Add help text if available
+                        if (credential.help) {
+                            const helpText = document.createElement('div');
+                            helpText.className = 'field-help';
+                            helpText.textContent = credential.help;
+                            fieldDiv.appendChild(helpText);
+                        }
+                        
+                        credentialsContainer.appendChild(fieldDiv);
+                    });
+                    
+                    // Add event listener to show/hide credentials
+                    const showCredentialsButton = hiddenMessage.querySelector('.btn-show-credentials');
+                    showCredentialsButton.addEventListener('click', () => {
+                        credentialsContainer.style.display = credentialsContainer.style.display === 'none' ? 'block' : 'none';
+                        
+                        // Show or hide action buttons based on credentials visibility
+                        actionButtons.style.display = credentialsContainer.style.display === 'none' ? 'none' : 'flex';
+                    });
+                    
+                    // Hide action buttons by default
+                    actionButtons.style.display = 'none';
+                } else {
+                    // For not connected exchanges, show credential fields normally
+                    exchange.credentials.forEach(credential => {
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.className = 'form-group';
+                        
+                        const label = document.createElement('label');
+                        label.textContent = credential.label;
+                        label.setAttribute('for', `${exchange.id}-${credential.key}`);
+                        
+                        const input = document.createElement('input');
+                        input.type = credential.type;
+                        input.id = `${exchange.id}-${credential.key}`;
+                        input.name = credential.key;
+                        input.dataset.key = credential.key;
+                        
+                        fieldDiv.appendChild(label);
+                        fieldDiv.appendChild(input);
+                        
+                        // Add help text if available
+                        if (credential.help) {
+                            const helpText = document.createElement('div');
+                            helpText.className = 'field-help';
+                            helpText.textContent = credential.help;
+                            fieldDiv.appendChild(helpText);
+                        }
+                        
+                        formFields.appendChild(fieldDiv);
+                    });
+                }
+                
+                // Add event listeners
+                const saveButton = card.querySelector('.btn-save');
+                const testButton = card.querySelector('.btn-test');
+                const deleteButton = card.querySelector('.btn-delete');
+                const syncButton = card.querySelector('.btn-sync');
+                
+                // Test connection
+                testButton.addEventListener('click', async () => {
+                    const credentials = getCredentialsFromForm(cardElement);
+                    
+                    // Validate credentials
+                    if (!validateCredentials(credentials)) {
+                        showError('Please fill in all credential fields');
+                        return;
+                    }
+                    
+                    testButton.disabled = true;
+                    testButton.textContent = 'Testing...';
+                    
+                    const success = await testConnection(exchange.id, credentials);
+                    
+                    testButton.disabled = false;
+                    testButton.textContent = 'Test Connection';
+                    
+                    if (success) {
+                        showSuccess('Connection successful!');
+                    } else {
+                        showError('Connection failed. Please check your credentials.');
+                    }
+                });
+                
+                // Save credentials
+                saveButton.addEventListener('click', async () => {
+                    const credentials = getCredentialsFromForm(cardElement);
+                    
+                    // Validate credentials
+                    if (!validateCredentials(credentials)) {
+                        showError('Please fill in all credential fields');
+                        return;
+                    }
+                    
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                    
+                    const success = await saveCredentials(exchange.id, credentials);
+                    
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save Credentials';
+                    
+                    if (success) {
+                        showSuccess('Credentials saved successfully!');
+                        // Reload the page to reflect the new state
+                        window.location.reload();
+                    } else {
+                        showError('Failed to save credentials. Please try again.');
+                    }
+                });
+                
+                // Delete exchange
+                deleteButton.addEventListener('click', async () => {
+                    if (!confirm(`Are you sure you want to remove ${exchange.name} integration?`)) {
+                        return;
+                    }
+                    
+                    deleteButton.disabled = true;
+                    
+                    const success = await deleteExchange(exchange.id);
+                    
+                    deleteButton.disabled = false;
+                    
+                    if (success) {
+                        showSuccess('Exchange removed successfully!');
+                        // Reload the page to reflect the new state
+                        window.location.reload();
+                    } else {
+                        showError('Failed to remove exchange. Please try again.');
+                    }
+                });
+                
+                // Sync transactions
+                syncButton.addEventListener('click', async () => {
+                    const startDateInput = cardElement.querySelector('.start-date');
+                    const endDateInput = cardElement.querySelector('.end-date');
+                    
+                    const options = {};
+                    
+                    if (startDateInput.value) {
+                        options.startDate = startDateInput.value; // Send as string, let server parse it
+                    }
+                    
+                    if (endDateInput.value) {
+                        options.endDate = endDateInput.value; // Send as string, let server parse it
+                    }
+                    
+                    syncButton.disabled = true;
+                    syncButton.textContent = 'Syncing...';
+                    
+                    const syncResults = cardElement.querySelector('.sync-results');
+                    const syncStatus = cardElement.querySelector('.sync-status');
+                    
+                    syncResults.style.display = 'block';
+                    syncStatus.textContent = 'Syncing transactions...';
+                    
+                    console.log('Syncing with options:', options); // Added logging
+                    
+                    const result = await syncTransactions(exchange.id, options);
+                    
+                    syncButton.disabled = false;
+                    syncButton.textContent = 'Sync Transactions';
+                    
+                    if (result.success) {
+                        syncStatus.textContent = `Successfully synced ${result.added} new transactions.`;
+                        
+                        if (result.added > 0) {
+                            showSuccess(`Successfully imported ${result.added} transactions from ${exchange.name}.`);
+                        } else {
+                            showSuccess(`No new transactions found on ${exchange.name}.`);
+                        }
+                    } else {
+                        syncStatus.textContent = 'Failed to sync transactions.';
+                        showError('Failed to sync transactions. Please try again.');
+                    }
+                });
+                
+                return card;
+            }
+            
+            // Get credentials from form
+            function getCredentialsFromForm(cardElement) {
+                const inputs = cardElement.querySelectorAll('input[data-key]');
+                const credentials = {};
+                
+                inputs.forEach(input => {
+                    credentials[input.dataset.key] = input.value;
+                });
+                
+                return credentials;
+            }
+            
+            // Validate credentials
+            function validateCredentials(credentials) {
+                for (const key in credentials) {
+                    if (!credentials[key]) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            // Initialize the page
+            async function init() {
+                const exchanges = await fetchExchanges();
+                
+                // Clear loading indicator
+                exchangeList.innerHTML = '';
+                
+                // Create exchange cards
+                for (const [id, exchange] of Object.entries(exchanges)) {
+                    const card = createExchangeCard(exchange);
+                    exchangeList.appendChild(card);
+                }
+                
+                // If no exchanges, show message
+                if (Object.keys(exchanges).length === 0) {
+                    exchangeList.innerHTML = '<div class="no-data">No exchanges available</div>';
+                }
+            }
+            
+            // Start
+            init();
+
+            // Add touch support for mobile
+            document.addEventListener('touchstart', function() {}, true);
+
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                  .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                  })
+                  .catch(error => {
+                    console.log('ServiceWorker registration failed: ', error);
+                  });
+              });
+            }
+        });
+
+        function generateQRCode() {
+            const address = document.getElementById('btcAddress').textContent;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear any existing QR code
+            qrcodeDiv.innerHTML = '';
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            // Get current theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Generate QR code
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('btcAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy address:', err);
+                alert('Failed to copy address. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html> 

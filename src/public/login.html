@@ -27,6 +27,214 @@
             vertical-align: middle;
             margin-right: 8px;
         }
+        
+        .pin-users-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .pin-login-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: var(--text-secondary-color);
+        }
+        
+        .pin-users-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .pin-user-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 100px;
+            text-decoration: none;
+        }
+        
+        .pin-user-button:hover {
+            border-color: var(--accent-color);
+            background-color: var(--accent-color-transparent);
+        }
+        
+        .pin-user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .pin-user-name {
+            font-size: 0.9rem;
+            text-align: center;
+            word-break: break-word;
+        }
+        
+        .success-message {
+            color: var(--gain-color);
+            margin-bottom: 15px;
+            text-align: center;
+            padding: 10px; 
+            border-radius: 4px; 
+            background-color: rgba(46, 204, 113, 0.1); 
+            border: 1px solid rgba(46, 204, 113, 0.3);
+            display: none;
+        }
+        
+        /* Additional styles for PIN login */
+        .pin-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: var(--border-color);
+            transition: background-color 0.2s;
+        }
+        
+        .pin-dot.filled {
+            background-color: var(--accent-color);
+        }
+        
+        .pin-button {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .pin-button:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        /* Tab styles for login options */
+        .login-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .login-tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary-color);
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+        
+        .login-tab.active {
+            border-bottom-color: var(--accent-color);
+            color: var(--accent-color);
+            font-weight: 500;
+        }
+        
+        .login-tab:hover:not(.active) {
+            color: var(--text-color);
+            background-color: rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Style improvements for pin pad */
+        .pin-container {
+            max-width: 320px;
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: var(--card-bg-color);
+        }
+        
+        .pin-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            font-size: 1.4rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            margin: 5px;
+        }
+        
+        .pin-dots-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0 30px;
+        }
+        
+        .pin-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            margin: 0 8px;
+            transition: all 0.2s;
+        }
+        
+        .pin-dot.filled {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: scale(1.1);
+        }
+        
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 240px;
+            margin: 0 auto;
+        }
+        
+        .switch-login-link {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-secondary-color);
+        }
+        
+        .switch-login-link a {
+            color: var(--accent-color);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .switch-login-link a:hover {
+            text-decoration: underline;
+        }
+        
+        .standard-login-section, .pin-login-section {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -35,36 +243,148 @@
             <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
         </header>
 
-        <div class="card" style="max-width: 400px; margin: 50px auto;">
+        <div class="card" style="max-width: 600px; margin: 50px auto; width: 90%;">
             <h2 style="text-align: center; margin-bottom: 20px;"><i class="fas fa-sign-in-alt"></i> Login</h2>
             <div id="error-message" class="error-message" style="color: var(--loss-color); margin-bottom: 15px; text-align: center; padding: 10px; border-radius: 4px; background-color: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); display: none;"></div>
+            <div id="success-message" class="success-message"></div>
             
-            <form action="/login" method="POST">
-                <div class="form-group">
-                    <label for="username"><i class="fas fa-user"></i> Username</label>
-                    <input type="text" id="username" name="username" required 
-                           style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+            <!-- Login tabs -->
+            <div class="login-tabs">
+                <div id="pin-login-tab" class="login-tab active">
+                    <i class="fas fa-shield-alt"></i> PIN Login
                 </div>
-                <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Password</label>
-                    <input type="password" id="password" name="password" required
-                           style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                <div id="standard-login-tab" class="login-tab">
+                    <i class="fas fa-user-lock"></i> Standard Login
                 </div>
-                <div class="form-group" style="display: flex; align-items: center; margin: 15px 0;">
-                    <div style="display: flex; align-items: center;">
-                        <input type="checkbox" id="rememberMe" name="rememberMe" style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;" title="Stay logged in for 30 days">
-                        <label for="rememberMe" style="color: var(--text-secondary-color); cursor: pointer; margin: 0;">Remember me</label>
+            </div>
+            
+            <!-- PIN Login section (default) -->
+            <div id="pin-login-section" class="pin-login-section" style="display: block;">
+                <div id="pin-users-list" class="pin-users-list">
+                    <!-- PIN-enabled users will be populated here via JavaScript -->
+                    <div class="loading-message" style="text-align: center; padding: 20px;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading users...
                     </div>
                 </div>
-                <button type="submit" class="btn-primary" 
-                        style="width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px;">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-            </form>
+                
+                <!-- PIN Login Form -->
+                <div id="pin-login-form" style="display: none;">
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <button id="back-to-users" class="btn-secondary" style="padding: 5px 10px; font-size: 0.9rem;">
+                            <i class="fas fa-arrow-left"></i> Back to Users
+                        </button>
+                    </div>
+                    
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div style="font-size: 1.2rem; font-weight: 500; margin-bottom: 5px;">
+                            <i class="fas fa-user-circle"></i> <span id="pin-username-display">Username</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary-color);">
+                            Enter your 4-digit PIN
+                        </div>
+                    </div>
+                    
+                    <form id="pin-form" method="POST" style="margin-top: 20px;">
+                        <input type="hidden" id="pin-user-id" name="userId">
+                        <input type="hidden" id="loginType" name="loginType" value="pin">
+                        
+                        <div class="pin-dots-container">
+                            <div class="pin-dot"></div>
+                            <div class="pin-dot"></div>
+                            <div class="pin-dot"></div>
+                            <div class="pin-dot"></div>
+                        </div>
+                        
+                        <input type="password" id="pin-input" name="pin" 
+                               inputmode="numeric" pattern="[0-9]{4}" maxlength="4" 
+                               style="position: absolute; opacity: 0; pointer-events: none;" required>
+                        
+                        <div class="pin-keypad">
+                            <button type="button" class="pin-button" data-value="1">1</button>
+                            <button type="button" class="pin-button" data-value="2">2</button>
+                            <button type="button" class="pin-button" data-value="3">3</button>
+                            <button type="button" class="pin-button" data-value="4">4</button>
+                            <button type="button" class="pin-button" data-value="5">5</button>
+                            <button type="button" class="pin-button" data-value="6">6</button>
+                            <button type="button" class="pin-button" data-value="7">7</button>
+                            <button type="button" class="pin-button" data-value="8">8</button>
+                            <button type="button" class="pin-button" data-value="9">9</button>
+                            <button type="button" class="pin-button" data-value="clear">⌫</button>
+                            <button type="button" class="pin-button" data-value="0">0</button>
+                            <button type="button" class="pin-button" data-value="submit">✓</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="switch-login-link">
+                    <a id="to-standard-login">Switch to username/password login</a>
+                </div>
+            </div>
+            
+            <!-- Standard Username/Password Login -->
+            <div id="standard-login-section" class="standard-login-section">
+                <form action="/login" method="POST">
+                    <div class="form-group">
+                        <label for="username"><i class="fas fa-user"></i> Username</label>
+                        <input type="text" id="username" name="username" required 
+                               style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                    </div>
+                    <div class="form-group">
+                        <label for="password"><i class="fas fa-lock"></i> Password</label>
+                        <input type="password" id="password" name="password" required
+                               style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--background-color); color: var(--text-color);">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; margin: 15px 0;">
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" id="rememberMe" name="rememberMe" style="margin-right: 8px; width: 16px; height: 16px; cursor: pointer;" title="Stay logged in for 30 days">
+                            <label for="rememberMe" style="color: var(--text-secondary-color); cursor: pointer; margin: 0;">Remember me</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" 
+                            style="width: 100%; padding: 12px; background-color: var(--accent-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 20px;">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </form>
+                
+                <div class="switch-login-link">
+                    <a id="to-pin-login">Switch to PIN login</a>
+                </div>
+            </div>
         </div>
     </div>
 
+    <footer>
+        <div class="footer-links">
+            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+            <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+            <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+            <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+        </div>
+        <div class="donation-tooltip" id="donationTooltip">
+            <div class="donation-content">
+                <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                <div class="donation-address">
+                    <p>BTC Address:</p>
+                    <div class="address-container">
+                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                        <button onclick="copyAddress()" title="Copy address">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="qr-container">
+                    <div id="qrcode"></div>
+                </div>
+            </div>
+        </div>
+        <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
+        // Set current year in footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
         // Check for error parameter in URL
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.has('error')) {
@@ -79,12 +399,280 @@
             }, 500);
         }
         
-        // Check if user has a saved theme preference
-        document.addEventListener('DOMContentLoaded', () => {
+        // Check for success message
+        if (urlParams.has('success')) {
+            const successElement = document.getElementById('success-message');
+            successElement.textContent = decodeURIComponent(urlParams.get('success'));
+            successElement.style.display = 'block';
+        }
+        
+        // Tab switching functionality
+        document.getElementById('pin-login-tab').addEventListener('click', () => {
+            document.getElementById('pin-login-tab').classList.add('active');
+            document.getElementById('standard-login-tab').classList.remove('active');
+            document.getElementById('pin-login-section').style.display = 'block';
+            document.getElementById('standard-login-section').style.display = 'none';
+        });
+        
+        document.getElementById('standard-login-tab').addEventListener('click', () => {
+            document.getElementById('standard-login-tab').classList.add('active');
+            document.getElementById('pin-login-tab').classList.remove('active');
+            document.getElementById('standard-login-section').style.display = 'block';
+            document.getElementById('pin-login-section').style.display = 'none';
+        });
+        
+        // Links to switch between login methods
+        document.getElementById('to-standard-login').addEventListener('click', () => {
+            document.getElementById('standard-login-tab').click();
+        });
+        
+        document.getElementById('to-pin-login').addEventListener('click', () => {
+            document.getElementById('pin-login-tab').click();
+        });
+        
+        // Fetch PIN-enabled users on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // Fetch PIN-enabled users from the server
+                const response = await fetch('/api/users/pin-enabled');
+                const users = await response.json();
+                
+                const pinUsersList = document.getElementById('pin-users-list');
+                
+                // Clear loading message
+                pinUsersList.innerHTML = '';
+                
+                // Check if there are PIN-enabled users
+                if (users && users.length > 0) {
+                    // Add each PIN-enabled user
+                    users.forEach(user => {
+                        const userEl = document.createElement('button');
+                        userEl.className = 'pin-user-button';
+                        userEl.setAttribute('data-user-id', user.id);
+                        userEl.setAttribute('data-username', user.username);
+                        
+                        // Create user avatar (first letter of username)
+                        const avatar = document.createElement('div');
+                        avatar.className = 'pin-user-avatar';
+                        avatar.textContent = user.username.charAt(0).toUpperCase();
+                        
+                        // Create username display
+                        const name = document.createElement('div');
+                        name.className = 'pin-user-name';
+                        name.textContent = user.username;
+                        
+                        // Add elements to button
+                        userEl.appendChild(avatar);
+                        userEl.appendChild(name);
+                        
+                        // Add button to list
+                        pinUsersList.appendChild(userEl);
+                        
+                        // Add click handler for PIN login
+                        userEl.addEventListener('click', () => {
+                            showPinLoginForm(user.id, user.username);
+                        });
+                    });
+                } else {
+                    // No PIN-enabled users, show message and switch to standard login
+                    pinUsersList.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-secondary-color);">No PIN-enabled users found. Please use standard login.</div>';
+                    // Auto switch to standard login after a short delay
+                    setTimeout(() => {
+                        document.getElementById('standard-login-tab').click();
+                    }, 1500);
+                }
+            } catch (error) {
+                console.error('Error fetching PIN-enabled users:', error);
+                // Show error message and switch to standard login
+                document.getElementById('pin-users-list').innerHTML = '<div style="text-align: center; padding: 20px; color: var(--loss-color);">Failed to load users. Please use standard login.</div>';
+                setTimeout(() => {
+                    document.getElementById('standard-login-tab').click();
+                }, 1500);
+            }
+            
+            // Check if user has a saved theme preference
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme === 'light') {
                 document.body.classList.add('light-theme');
             }
+        });
+        
+        // Show PIN login form for a specific user
+        function showPinLoginForm(userId, username) {
+            // Hide users list and show PIN form
+            document.getElementById('pin-users-list').style.display = 'none';
+            document.getElementById('pin-login-form').style.display = 'block';
+            
+            // Set user details
+            document.getElementById('pin-username-display').textContent = username;
+            document.getElementById('pin-user-id').value = userId;
+            
+            // Clear any previous PIN input
+            document.getElementById('pin-input').value = '';
+            updatePinDots();
+            
+            // Focus PIN input
+            document.getElementById('pin-input').focus();
+        }
+        
+        // Back to users list button handler
+        document.getElementById('back-to-users').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('pin-login-form').style.display = 'none';
+            document.getElementById('pin-users-list').style.display = 'block';
+        });
+        
+        // PIN input handling
+        const pinInput = document.getElementById('pin-input');
+        const pinForm = document.getElementById('pin-form');
+        const pinDots = document.querySelectorAll('.pin-dot');
+        
+        // Handle PIN pad button clicks
+        document.querySelectorAll('.pin-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const value = button.getAttribute('data-value');
+                
+                if (value === 'clear') {
+                    // Clear the last digit
+                    pinInput.value = pinInput.value.slice(0, -1);
+                } else if (value === 'submit') {
+                    // Submit the form if PIN is complete
+                    if (pinInput.value.length === 4) {
+                        pinForm.action = '/pin-login'; // Set the form action
+                        pinForm.submit();
+                    }
+                } else if (pinInput.value.length < 4) {
+                    // Add digit if not at max length
+                    pinInput.value += value;
+                    
+                    // Add visual feedback
+                    button.style.backgroundColor = 'var(--accent-color)';
+                    button.style.color = 'white';
+                    setTimeout(() => {
+                        button.style.backgroundColor = '';
+                        button.style.color = '';
+                    }, 100);
+                    
+                    // Auto-submit when 4 digits entered
+                    if (pinInput.value.length === 4) {
+                        setTimeout(() => {
+                            pinForm.action = '/pin-login'; // Set the form action
+                            pinForm.submit();
+                        }, 300);
+                    }
+                }
+                
+                // Update PIN dots
+                updatePinDots();
+            });
+        });
+        
+        // Handle keyboard input for PIN
+        pinInput.addEventListener('input', () => {
+            // Ensure only digits
+            pinInput.value = pinInput.value.replace(/[^0-9]/g, '').slice(0, 4);
+            updatePinDots();
+            
+            // Auto-submit when 4 digits entered
+            if (pinInput.value.length === 4) {
+                setTimeout(() => {
+                    pinForm.action = '/pin-login'; // Set the form action
+                    pinForm.submit();
+                }, 300);
+            }
+        });
+        
+        // Update PIN dots based on input value
+        function updatePinDots() {
+            const pinLength = pinInput.value.length;
+            
+            // Update each dot
+            pinDots.forEach((dot, index) => {
+                if (index < pinLength) {
+                    dot.classList.add('filled');
+                } else {
+                    dot.classList.remove('filled');
+                }
+            });
+        }
+
+        function generateQRCode() {
+            const address = document.getElementById('btcAddress').textContent;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // Clear any existing QR code
+            qrcodeDiv.innerHTML = '';
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            // Get current theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Generate QR code
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function copyAddress() {
+            const address = document.getElementById('btcAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy address:', err);
+                alert('Failed to copy address. Please try again.');
+            });
+        }
+
+        // Handle donation tooltip
+        document.addEventListener('DOMContentLoaded', () => {
+            const donationLink = document.getElementById('donationLink');
+            const donationTooltip = document.getElementById('donationTooltip');
+
+            // Generate QR code once when page loads
+            generateQRCode();
+
+            let tooltipTimeout;
+
+            donationLink.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationLink.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+
+            // Prevent tooltip from closing when hovering over it
+            donationTooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationTooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
         });
     </script>
 </body>

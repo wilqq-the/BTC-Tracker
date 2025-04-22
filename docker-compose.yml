@@ -1,6 +1,6 @@
 services:
   btc-tracker:
-    image: docker.io/thewilqq/btc-tracker:latest
+    image: docker.io/thewilqq/btc-tracker:${IMAGE_TAG:-latest}
     container_name: ${CONTAINER_NAME:-btc-tracker}
     ports:
       - "${PORT:-3000}:3000"

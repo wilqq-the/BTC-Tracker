@@ -18,5 +18,8 @@ RUN mkdir -p src/data && chmod 777 src/data
 # Expose the port the app runs on
 EXPOSE 3000
 
+# Set environment variable for path-manager.js
+ENV DOCKER=true
+
 # Command to run the application
 CMD ["node", "src/server.js"] 
