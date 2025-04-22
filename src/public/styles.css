@@ -2460,4 +2460,25 @@ footer {
     .ticker-item {
         width: auto;
     }
+}
+
+/* Electron-specific Styles */
+.app-version {
+    font-size: 0.8rem;
+    opacity: 0.7;
+    margin-left: 10px;
+}
+
+#minimize-to-tray {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
+#minimize-to-tray:hover {
+    background-color: var(--hover-color);
 } 

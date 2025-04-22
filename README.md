@@ -29,8 +29,9 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 - **Secure Authentication**: User authentication with password protection and session management
 - **CoinGecko API Integration**: Optional API key support for higher rate limits
 - **Containerized**: Runs in Docker or Podman with minimal setup
+- **Exchange Integration**: Automatic sync of BTC buy transactions with major exchanges (Binance, Coinbase, Kraken, Strike) using READ-ONLY API keys
+- **Windows Desktop App**: Native Windows application with system tray support and automatic updates
 
-  
 ## Quick Start (Easiest Method) 🚀
 
 1. Clone the repository:
@@ -87,6 +88,16 @@ You can also modify these settings in a `.env` file:
 IMAGE_TAG=dev
 CONTAINER_NAME=btc-tracker-dev
 ```
+
+## Windows Installation (Electron App)
+
+### Installing from Executable
+
+1. Download the latest `BTC-Tracker-Setup.exe` from the [Releases](https://github.com/wilqq-the/BTC-tracker/releases) page
+2. Run the installer and follow the installation wizard
+3. Launch BTC Tracker from your Start Menu or Desktop shortcut
+
+Your data persists between application updates and can be backed up by copying the above directories.
 
 ## Using Docker Hub Image Directly
 
@@ -148,14 +159,16 @@ When you first run the application, you'll be prompted to create an administrato
 - **Login**: Access the application using your username and password
 - **Remember Me**: Option to stay logged in for 30 days
 - **Password Change**: Change your password through the Admin Panel
+- **PIN Change**: Change your PIN Code through the Admin Panel
 - **Session Management**: Sessions automatically expire after 24 hours (or 30 days with Remember Me)
-- **Security**: Passwords are securely hashed and stored using bcrypt
+- **Security**: Passwords are securely hashed and stored using bcryptjs
 
 ### Adding Transactions
 
 1. Navigate to the Admin Panel
 2. Upload a CSV file with your transaction data or use the template
 3. Your transactions will appear in the Transactions page
+4. You can also sync transactions directly from exchante (for non Kraken Pro, Coinbase Pro, Binance and Strike are supported)
 
 ### Viewing Portfolio Performance
 
@@ -176,7 +189,15 @@ The Dashboard provides an overview of:
 
 ## Data Storage
 
-All data is stored locally in JSON files within the `/src/data` directory and persists between application restarts.
+All data is stored locally in JSON files within the `/src/data` directory and persists between application restarts. Depending on method of running this directory can be mapped in several ways.
+
+The Windows application stores data in:
+```
+%APPDATA%\btc-tracker-data     # Application data
+%APPDATA%\btc-tracker\extracted     # Extracted server files
+%APPDATA%\btc-tracker\btc-tracker.log     # Log file
+```
+
 
 ## Technologies Used
 
@@ -189,6 +210,7 @@ All data is stored locally in JSON files within the `/src/data` directory and pe
 - External APIs:
   - CoinGecko API for BTC prices
   - ExchangeRate API for currency conversion
+- Electron for running desktop version
 
 ## Development
 
@@ -251,3 +273,4 @@ The application uses CoinGecko's API to fetch Bitcoin price data. By default, it
 - This increases your rate limit from approximately 10-30 calls/minute to 10,000 calls/month
 - The app will automatically handle correctly formatting API requests with your key
 - If no API key is provided, the application uses the standard free tier endpoint 
+- For exchanges use **READONLY** API keys for security reasons

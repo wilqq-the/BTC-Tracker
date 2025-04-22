@@ -18,7 +18,10 @@ class PathManager {
             transactions: path.join(this.dataDir, 'transactions.json'),
             
             // Exchange related files
-            exchangeCredentials: path.join(this.dataDir, 'exchange-credentials.json')
+            exchangeCredentials: path.join(this.dataDir, 'exchange-credentials.json'),
+            
+            // Summary cache file
+            summaryCache: path.join(this.dataDir, 'summary-cache.json')
         };
         
         // Ensure all directories exist
@@ -27,6 +30,36 @@ class PathManager {
 
     initializeDataDirectory() {
         let baseDir;
+        
+        // Check if running in Electron
+        const isElectron = process.versions && process.versions.electron;
+        
+        // If running in Electron, get the correct path
+        if (isElectron) {
+            try {
+                // Dynamic import to avoid errors when not in Electron
+                const electron = require('electron');
+                const app = electron.app || (electron.remote && electron.remote.app);
+                
+                if (app) {
+                    // Use userData for packaged app
+                    if (app.isPackaged) {
+                        baseDir = path.join(app.getPath('userData'), 'data');
+                        console.log(`[PathManager] Using Electron userData path (packaged): ${baseDir}`);
+                        return this.ensureDirectoryExists(baseDir);
+                    } 
+                    // For development use resources path
+                    else if (process.env.ELECTRON_RESOURCES_PATH) {
+                        baseDir = path.join(this.normalizePath(process.env.ELECTRON_RESOURCES_PATH), 'data');
+                        console.log(`[PathManager] Using ELECTRON_RESOURCES_PATH (development): ${baseDir}`);
+                        return this.ensureDirectoryExists(baseDir);
+                    }
+                }
+            } catch (error) {
+                console.error('[PathManager] Error determining Electron paths:', error);
+                // Fall through to other methods if Electron method fails
+            }
+        }
         
         // Priority 1: Environment variable
         if (process.env.BTC_TRACKER_DATA_DIR) {
@@ -47,21 +80,16 @@ class PathManager {
             return this.ensureDirectoryExists(baseDir);
         }
         
-        // Priority 3: Electron resources path
-        if (process.env.ELECTRON_RESOURCES_PATH) {
-            baseDir = path.join(this.normalizePath(process.env.ELECTRON_RESOURCES_PATH), 'data');
-            console.log(`[PathManager] Using ELECTRON_RESOURCES_PATH: ${baseDir}`);
-        } 
-        // Priority 4: Docker path
-        else if (process.env.DOCKER === 'true' && fs.existsSync('/app/src/data')) {
+        // Priority 3: Docker path
+        if (process.env.DOCKER === 'true' && fs.existsSync('/app/src/data')) {
             baseDir = '/app/src/data';
             console.log(`[PathManager] Using Docker path: ${baseDir}`);
-        } 
-        // Priority 5: Default development path
-        else {
-            baseDir = path.join(__dirname, '..', '..', 'data');
-            console.log(`[PathManager] Using default path: ${baseDir}`);
+            return this.ensureDirectoryExists(baseDir);
         }
+        
+        // Priority 4: Default development path
+        baseDir = path.join(__dirname, '..', '..', 'data');
+        console.log(`[PathManager] Using default path: ${baseDir}`);
         
         return this.ensureDirectoryExists(baseDir);
     }
@@ -71,10 +99,35 @@ class PathManager {
     }
 
     ensureDirectoryExists(dirPath) {
-        if (!fs.existsSync(dirPath)) {
-            fs.mkdirSync(dirPath, { recursive: true });
+        try {
+            // Check if path exists first
+            if (fs.existsSync(dirPath)) {
+                // Check if it's a directory
+                const stats = fs.statSync(dirPath);
+                if (!stats.isDirectory()) {
+                    // It exists but is not a directory, rename it and create directory
+                    console.error(`[PathManager] Path exists but is not a directory: ${dirPath}`);
+                    const backupPath = `${dirPath}.backup.${Date.now()}`;
+                    console.log(`[PathManager] Renaming existing file to: ${backupPath}`);
+                    fs.renameSync(dirPath, backupPath);
+                    fs.mkdirSync(dirPath, { recursive: true });
+                }
+            } else {
+                // Path doesn't exist, create it
+                fs.mkdirSync(dirPath, { recursive: true });
+            }
+            return dirPath;
+        } catch (error) {
+            console.error(`[PathManager] Error creating directory ${dirPath}:`, error);
+            // Try an alternative path as a fallback
+            const fallbackDir = path.join(os.homedir(), 'btctracker-data');
+            console.log(`[PathManager] Attempting to use fallback directory: ${fallbackDir}`);
+            
+            if (!fs.existsSync(fallbackDir)) {
+                fs.mkdirSync(fallbackDir, { recursive: true });
+            }
+            return fallbackDir;
         }
-        return dirPath;
     }
 
     ensureDirectoryStructure() {
@@ -83,9 +136,22 @@ class PathManager {
         
         // Initialize empty JSON files if they don't exist
         Object.values(this.paths).forEach(filePath => {
-            if (!fs.existsSync(filePath)) {
-                fs.writeFileSync(filePath, JSON.stringify([], null, 2));
-                console.log(`[PathManager] Initialized empty file: ${filePath}`);
+            try {
+                if (!fs.existsSync(filePath)) {
+                    // Check if parent directory exists
+                    const parentDir = path.dirname(filePath);
+                    if (!fs.existsSync(parentDir)) {
+                        fs.mkdirSync(parentDir, { recursive: true });
+                    }
+                    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
+                    console.log(`[PathManager] Initialized empty file: ${filePath}`);
+                } else {
+                    // File exists, check if it's readable and writable
+                    fs.accessSync(filePath, fs.constants.R_OK | fs.constants.W_OK);
+                }
+            } catch (error) {
+                console.error(`[PathManager] Error initializing file ${filePath}:`, error);
+                // Don't throw, continue with other files
             }
         });
     }
@@ -97,6 +163,7 @@ class PathManager {
     getAppSettingsPath() { return this.paths.appSettings; }
     getTransactionsPath() { return this.paths.transactions; }
     getExchangeCredentialsPath() { return this.paths.exchangeCredentials; }
+    getSummaryCachePath() { return this.paths.summaryCache; }
     
     // Get the base data directory
     getDataDirectory() { return this.dataDir; }

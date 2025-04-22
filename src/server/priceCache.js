@@ -361,6 +361,18 @@ class PriceCache {
         // For now, rates and prices are updated at the same time
         return this.getPriceLastUpdated();
     }
+
+    // Check if price has changed since last check
+    hasPriceChanged() {
+        const lastUpdate = this.getPriceLastUpdated();
+        if (!lastUpdate) return true;
+
+        // Consider price changed if:
+        // 1. Last update was more than 5 minutes ago
+        // 2. Previous day or week price was updated
+        const fiveMinutesAgo = 5 * 60; // in seconds
+        return lastUpdate.secondsAgo > fiveMinutesAgo;
+    }
 }
 
 // Create a singleton instance

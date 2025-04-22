@@ -16,9 +16,27 @@ const userModel = require('./server/userModel');
 const exchangeRoutes = require('./routes/exchange-routes');
 const Transaction = require('./server/models/Transaction');
 const currencyConverter = require('./server/services/currency-converter');
+const summaryCache = require('./server/summaryCache');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const pathManager = require('./server/utils/path-manager');
+
+// Handle Electron environment
+if (process.env.IS_ELECTRON === 'true') {
+    console.log('[server.js] Running in Electron environment');
+    
+    // Set Electron-specific environment variables for PathManager
+    if (process.env.ELECTRON_USER_DATA_PATH) {
+        console.log(`[server.js] Using Electron user data path: ${process.env.ELECTRON_USER_DATA_PATH}`);
+        process.env.BTC_TRACKER_DATA_DIR = path.join(process.env.ELECTRON_USER_DATA_PATH, 'data');
+    }
+    
+    if (process.env.ELECTRON_IS_PACKAGED === 'true') {
+        console.log('[server.js] Running in packaged Electron app');
+    } else {
+        console.log('[server.js] Running in development Electron mode');
+    }
+}
 
 if (!process.env.NODE_ENV) {
   process.env.NODE_ENV = 'development';
@@ -62,19 +80,10 @@ let secondaryCurrency = 'PLN';
 let secondaryRate = null;
 
 const DATA_DIR = pathManager.getDataDirectory();
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const TRANSACTIONS_FILE = pathManager.getTransactionsPath();
 const HISTORICAL_BTC_FILE = pathManager.getHistoricalBtcPath();
 const SETTINGS_FILE = pathManager.getAppSettingsPath();
 const USERS_FILE = pathManager.getUsersPath();
-
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -200,7 +209,7 @@ function loadHistoricalDataFromFile() {
     }
 }
 
-// Initialize data and ensure rates are current
+// Initialize data
 async function initializeData() {
     try {
         loadHistoricalDataFromFile();
@@ -217,6 +226,131 @@ async function initializeData() {
             fetchHistoricalBTCData().catch(err => console.error("[server.js] Initial historical data fetch failed:", err));
         }
 
+        // Initialize the summary cache with the calculation function
+        const calculateInitialSummary = async () => {
+            const settings = loadSettings();
+            const mainCurrency = settings.mainCurrency || 'EUR';
+            const secondaryCurrency = settings.secondaryCurrency || 'USD';
+            
+            console.log(`[server.js] Calculating initial summary: Main=${mainCurrency}, Secondary=${secondaryCurrency}`);
+
+            const totalBTC = transactions.reduce((total, tx) => {
+                if (tx.type === 'buy') {
+                    return total + (Number(tx.amount) || 0);
+                } else if (tx.type === 'sell') {
+                    return total - (Number(tx.amount) || 0);
+                }
+                return total;
+            }, 0);
+
+            const cachedPrices = priceCache.getCachedPrices();
+            const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
+            
+            let secondaryRate = 1.0;
+            if (mainCurrency !== secondaryCurrency) {
+                secondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
+            }
+            secondaryRate = Number(secondaryRate) || 1.0; 
+
+            const currentBTCPriceMain = priceCache.getBTCPrice(mainCurrency) || 0;
+            const currentValueMain = totalBTC * currentBTCPriceMain;
+            const currentValueSecondary = currentValueMain * secondaryRate;
+
+            const buyTotals = transactions.reduce((totals, tx) => {
+                if (tx.type === 'buy') {
+                    const amount = Number(tx.amount) || 0;
+                    const costMain = Number(tx.base?.[mainCurrency.toLowerCase()]?.cost || 0);
+                    const costEUR = Number(tx.base?.eur?.cost || tx.cost || 0);
+                    const finalCostMain = costMain || (costEUR * priceCache.getExchangeRate('EUR', mainCurrency));
+                    const costSecondary = finalCostMain * secondaryRate;
+                    
+                    return {
+                        totalSpentMain: totals.totalSpentMain + finalCostMain,
+                        totalSpentSecondary: totals.totalSpentSecondary + costSecondary,
+                        totalAmountBought: totals.totalAmountBought + amount 
+                    };
+                }
+                return totals;
+            }, { totalSpentMain: 0, totalSpentSecondary: 0, totalAmountBought: 0 });
+
+            const averagePriceMain = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentMain / buyTotals.totalAmountBought : 0;
+            const averagePriceSecondary = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentSecondary / buyTotals.totalAmountBought : 0;
+            const totalPnLMain = currentValueMain - buyTotals.totalSpentMain;
+            const totalPnLSecondary = currentValueSecondary - buyTotals.totalSpentSecondary;
+            const pnlPercentageMain = buyTotals.totalSpentMain > 0 ? (totalPnLMain / buyTotals.totalSpentMain) * 100 : 0;
+            const pnlPercentageSecondary = buyTotals.totalSpentSecondary > 0 ? (totalPnLSecondary / buyTotals.totalSpentSecondary) * 100 : 0;
+            
+            return {
+                // Only include essential data, no transactions or historical data
+                hasTransactions: transactions.length > 0,
+                totalBTC,
+                
+                mainCurrency: mainCurrency,
+                secondaryCurrency: secondaryCurrency,
+                secondaryRate: secondaryRate,
+                eurUsd: cachedPrices.eurUsd || 1.13,
+
+                currentPrice: {
+                    [mainCurrency.toLowerCase()]: currentBTCPriceMain || 0,
+                    [secondaryCurrency.toLowerCase()]: (currentBTCPriceMain * secondaryRate) || 0 
+                },
+                totalCost: {
+                    [mainCurrency.toLowerCase()]: buyTotals.totalSpentMain || 0,
+                    [secondaryCurrency.toLowerCase()]: buyTotals.totalSpentSecondary || 0
+                },
+                currentValue: {
+                    [mainCurrency.toLowerCase()]: currentValueMain || 0,
+                    [secondaryCurrency.toLowerCase()]: currentValueSecondary || 0
+                },
+                pnl: {
+                    [mainCurrency.toLowerCase()]: totalPnLMain || 0,
+                    [secondaryCurrency.toLowerCase()]: totalPnLSecondary || 0
+                },
+                averagePrice: {
+                    [mainCurrency.toLowerCase()]: averagePriceMain || 0,
+                    [secondaryCurrency.toLowerCase()]: averagePriceSecondary || 0
+                },
+                pnlPercentage: pnlPercentageMain || 0,
+                
+                btcPrice: currentBTCPriceMain,
+                price: currentBTCPriceMain,
+                priceEUR: currentBTCPriceEUR || 0,
+                priceUSD: cachedPrices.priceUSD || 0,
+                timestamp: cachedPrices.timestamp,
+                cacheInfo: {
+                    priceLastUpdated: priceCache.getPriceLastUpdated(),
+                    ratesLastUpdated: priceCache.getRatesLastUpdated(),
+                    summaryCacheDate: new Date().toISOString()
+                },
+                
+                totalCost: buyTotals.totalSpentMain || 0, 
+                currentValue: currentValueMain || 0,
+                pnl: totalPnLMain || 0,
+                averagePrice: averagePriceMain || 0, 
+                
+                secondaryValue: {
+                    totalCost: buyTotals.totalSpentSecondary || 0,
+                    currentValue: currentValueSecondary || 0,
+                    pnl: totalPnLSecondary || 0,
+                    pnlPercentage: pnlPercentageSecondary || 0, 
+                    averagePrice: averagePriceSecondary || 0 
+                }
+            };
+        };
+        
+        // Function to get current transaction info for cache validation
+        const getTransactionInfo = () => {
+            return {
+                count: transactions.length,
+                timestamp: transactions.length > 0 
+                    ? transactions[transactions.length - 1].date 
+                    : new Date().toISOString()
+            };
+        };
+        
+        // Schedule periodic summary cache updates with transaction tracking
+        summaryCache.scheduleUpdates(calculateInitialSummary, getTransactionInfo);
+
     } catch (error) {
         console.error('[server.js] Error initializing data:', error);
     }
@@ -230,6 +364,9 @@ function saveData() {
     try {
         fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify(transactions, null, 2));
         console.log(`[server.js] Saved ${transactions.length} transactions successfully`);
+        
+        // Invalidate summary cache when transactions are saved
+        summaryCache.invalidateCache();
     } catch (error) {
         console.error('[server.js] Error saving transactions:', error);
     }
@@ -660,115 +797,147 @@ app.get('/api/transactions/historical', isAuthenticated, (req, res) => {
 
 app.get('/api/summary', isAuthenticated, async (req, res) => {
     try {
-        const settings = loadSettings();
-        const mainCurrency = settings.mainCurrency || 'EUR';
-        const secondaryCurrency = settings.secondaryCurrency || 'USD';
+        const forceFresh = req.query.fresh === 'true';
+        const priceOnly = req.query.priceOnly === 'true';
         
-        console.log(`[server.js] Using currencies: Main=${mainCurrency}, Secondary=${secondaryCurrency}`);
-
-        const totalBTC = transactions.reduce((total, tx) => {
-            if (tx.type === 'buy') {
-                return total + (Number(tx.amount) || 0);
-            } else if (tx.type === 'sell') {
-                return total - (Number(tx.amount) || 0);
-            }
-            return total;
-        }, 0);
-
-        const cachedPrices = priceCache.getCachedPrices();
-        const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
-        
-        let secondaryRate = 1.0;
-        if (mainCurrency !== secondaryCurrency) {
-             secondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
-        }
-        secondaryRate = Number(secondaryRate) || 1.0; 
-
-        const currentBTCPriceMain = priceCache.getBTCPrice(mainCurrency) || 0;
-        const currentValueMain = totalBTC * currentBTCPriceMain;
-        const currentValueSecondary = currentValueMain * secondaryRate;
-
-        const buyTotals = transactions.reduce((totals, tx) => {
-            if (tx.type === 'buy') {
-                const amount = Number(tx.amount) || 0;
-                const costMain = Number(tx.base?.[mainCurrency.toLowerCase()]?.cost || 0);
-                const costEUR = Number(tx.base?.eur?.cost || tx.cost || 0);
-                const finalCostMain = costMain || (costEUR * priceCache.getExchangeRate('EUR', mainCurrency));
-                const costSecondary = finalCostMain * secondaryRate;
-                
-                return {
-                    totalSpentMain: totals.totalSpentMain + finalCostMain,
-                    totalSpentSecondary: totals.totalSpentSecondary + costSecondary,
-                    totalAmountBought: totals.totalAmountBought + amount 
-                };
-            }
-            return totals;
-        }, { totalSpentMain: 0, totalSpentSecondary: 0, totalAmountBought: 0 });
-
-        const averagePriceMain = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentMain / buyTotals.totalAmountBought : 0;
-        const averagePriceSecondary = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentSecondary / buyTotals.totalAmountBought : 0;
-        const totalPnLMain = currentValueMain - buyTotals.totalSpentMain;
-        const totalPnLSecondary = currentValueSecondary - buyTotals.totalSpentSecondary;
-        const pnlPercentageMain = buyTotals.totalSpentMain > 0 ? (totalPnLMain / buyTotals.totalSpentMain) * 100 : 0;
-        const pnlPercentageSecondary = buyTotals.totalSpentSecondary > 0 ? (totalPnLSecondary / buyTotals.totalSpentSecondary) * 100 : 0;
-        
-        const summary = {
-            transactions: transactions,
-            hasTransactions: transactions.length > 0,
-            totalBTC,
-            
-            mainCurrency: mainCurrency,
-            secondaryCurrency: secondaryCurrency,
-            secondaryRate: secondaryRate,
-            eurUsd: cachedPrices.eurUsd || 1.13,
-
-            currentPrice: {
-                [mainCurrency.toLowerCase()]: currentBTCPriceMain || 0,
-                [secondaryCurrency.toLowerCase()]: (currentBTCPriceMain * secondaryRate) || 0 
-            },
-            totalCost: {
-                [mainCurrency.toLowerCase()]: buyTotals.totalSpentMain || 0,
-                [secondaryCurrency.toLowerCase()]: buyTotals.totalSpentSecondary || 0
-            },
-            currentValue: {
-                [mainCurrency.toLowerCase()]: currentValueMain || 0,
-                [secondaryCurrency.toLowerCase()]: currentValueSecondary || 0
-            },
-            pnl: {
-                [mainCurrency.toLowerCase()]: totalPnLMain || 0,
-                [secondaryCurrency.toLowerCase()]: totalPnLSecondary || 0
-            },
-            averagePrice: {
-                [mainCurrency.toLowerCase()]: averagePriceMain || 0,
-                [secondaryCurrency.toLowerCase()]: averagePriceSecondary || 0
-            },
-            pnlPercentage: pnlPercentageMain || 0,
-            
-            btcPrice: currentBTCPriceMain,
-            price: currentBTCPriceMain,
-            priceEUR: currentBTCPriceEUR || 0,
-            priceUSD: cachedPrices.priceUSD || 0,
-            timestamp: cachedPrices.timestamp,
-            exchangeRates: cachedPrices.exchangeRates || {},
-            cacheInfo: {
-                priceLastUpdated: priceCache.getPriceLastUpdated(),
-                ratesLastUpdated: priceCache.getRatesLastUpdated()
-            },
-            
-            totalCost: buyTotals.totalSpentMain || 0, 
-            currentValue: currentValueMain || 0,
-            pnl: totalPnLMain || 0,
-            averagePrice: averagePriceMain || 0, 
-            
-            secondaryValue: {
-                totalCost: buyTotals.totalSpentSecondary || 0,
-                currentValue: currentValueSecondary || 0,
-                pnl: totalPnLSecondary || 0,
-                pnlPercentage: pnlPercentageSecondary || 0, 
-                averagePrice: averagePriceSecondary || 0 
-            },
-            historicalBTCData: historicalBTCData,
+        // Get current transaction stats for cache validation
+        const transactionStats = {
+            count: transactions.length,
+            // Use the last transaction's date as a timestamp, or current time if no transactions
+            timestamp: transactions.length > 0 
+                ? transactions[transactions.length - 1].date 
+                : new Date().toISOString()
         };
+        
+        // Function to calculate summary data
+        const calculateSummary = async () => {
+            const settings = loadSettings();
+            const mainCurrency = settings.mainCurrency || 'EUR';
+            const secondaryCurrency = settings.secondaryCurrency || 'USD';
+            
+            console.log(`[server.js] Using currencies: Main=${mainCurrency}, Secondary=${secondaryCurrency}`);
+    
+            const totalBTC = transactions.reduce((total, tx) => {
+                if (tx.type === 'buy') {
+                    return total + (Number(tx.amount) || 0);
+                } else if (tx.type === 'sell') {
+                    return total - (Number(tx.amount) || 0);
+                }
+                return total;
+            }, 0);
+    
+            const cachedPrices = priceCache.getCachedPrices();
+            const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
+            
+            let secondaryRate = 1.0;
+            if (mainCurrency !== secondaryCurrency) {
+                 secondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
+            }
+            secondaryRate = Number(secondaryRate) || 1.0; 
+    
+            const currentBTCPriceMain = priceCache.getBTCPrice(mainCurrency) || 0;
+            const currentValueMain = totalBTC * currentBTCPriceMain;
+            const currentValueSecondary = currentValueMain * secondaryRate;
+    
+            const buyTotals = transactions.reduce((totals, tx) => {
+                if (tx.type === 'buy') {
+                    const amount = Number(tx.amount) || 0;
+                    const costMain = Number(tx.base?.[mainCurrency.toLowerCase()]?.cost || 0);
+                    const costEUR = Number(tx.base?.eur?.cost || tx.cost || 0);
+                    const finalCostMain = costMain || (costEUR * priceCache.getExchangeRate('EUR', mainCurrency));
+                    const costSecondary = finalCostMain * secondaryRate;
+                    
+                    return {
+                        totalSpentMain: totals.totalSpentMain + finalCostMain,
+                        totalSpentSecondary: totals.totalSpentSecondary + costSecondary,
+                        totalAmountBought: totals.totalAmountBought + amount 
+                    };
+                }
+                return totals;
+            }, { totalSpentMain: 0, totalSpentSecondary: 0, totalAmountBought: 0 });
+    
+            const averagePriceMain = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentMain / buyTotals.totalAmountBought : 0;
+            const averagePriceSecondary = buyTotals.totalAmountBought > 0 ? buyTotals.totalSpentSecondary / buyTotals.totalAmountBought : 0;
+            const totalPnLMain = currentValueMain - buyTotals.totalSpentMain;
+            const totalPnLSecondary = currentValueSecondary - buyTotals.totalSpentSecondary;
+            const pnlPercentageMain = buyTotals.totalSpentMain > 0 ? (totalPnLMain / buyTotals.totalSpentMain) * 100 : 0;
+            const pnlPercentageSecondary = buyTotals.totalSpentSecondary > 0 ? (totalPnLSecondary / buyTotals.totalSpentSecondary) * 100 : 0;
+            
+            const summary = {
+                // Never include transactions in cached data
+                hasTransactions: transactions.length > 0,
+                totalBTC,
+                
+                mainCurrency: mainCurrency,
+                secondaryCurrency: secondaryCurrency,
+                secondaryRate: secondaryRate,
+                eurUsd: cachedPrices.eurUsd || 1.13,
+    
+                currentPrice: {
+                    [mainCurrency.toLowerCase()]: currentBTCPriceMain || 0,
+                    [secondaryCurrency.toLowerCase()]: (currentBTCPriceMain * secondaryRate) || 0 
+                },
+                totalCost: {
+                    [mainCurrency.toLowerCase()]: buyTotals.totalSpentMain || 0,
+                    [secondaryCurrency.toLowerCase()]: buyTotals.totalSpentSecondary || 0
+                },
+                currentValue: {
+                    [mainCurrency.toLowerCase()]: currentValueMain || 0,
+                    [secondaryCurrency.toLowerCase()]: currentValueSecondary || 0
+                },
+                pnl: {
+                    [mainCurrency.toLowerCase()]: totalPnLMain || 0,
+                    [secondaryCurrency.toLowerCase()]: totalPnLSecondary || 0
+                },
+                averagePrice: {
+                    [mainCurrency.toLowerCase()]: averagePriceMain || 0,
+                    [secondaryCurrency.toLowerCase()]: averagePriceSecondary || 0
+                },
+                pnlPercentage: pnlPercentageMain || 0,
+                
+                btcPrice: currentBTCPriceMain,
+                price: currentBTCPriceMain,
+                priceEUR: currentBTCPriceEUR || 0,
+                priceUSD: cachedPrices.priceUSD || 0,
+                timestamp: cachedPrices.timestamp,
+                exchangeRates: cachedPrices.exchangeRates || {},
+                cacheInfo: {
+                    priceLastUpdated: priceCache.getPriceLastUpdated(),
+                    ratesLastUpdated: priceCache.getRatesLastUpdated(),
+                    summaryCacheDate: new Date().toISOString()
+                },
+                
+                totalCost: buyTotals.totalSpentMain || 0, 
+                currentValue: currentValueMain || 0,
+                pnl: totalPnLMain || 0,
+                averagePrice: averagePriceMain || 0, 
+                
+                secondaryValue: {
+                    totalCost: buyTotals.totalSpentSecondary || 0,
+                    currentValue: currentValueSecondary || 0,
+                    pnl: totalPnLSecondary || 0,
+                    pnlPercentage: pnlPercentageSecondary || 0, 
+                    averagePrice: averagePriceSecondary || 0 
+                },
+                // Don't include historical data in cache
+            };
+    
+            return summary;
+        };
+
+        // Use summaryCache to get data (from cache or fresh calculation)
+        const summary = await summaryCache.getSummary(
+            calculateSummary, 
+            forceFresh,
+            transactionStats.count,
+            transactionStats.timestamp
+        );
+
+        // Add transactions and historical data only when sending to client (not in cache)
+        if (!priceOnly) {
+            summary.transactions = transactions;
+            summary.historicalBTCData = historicalBTCData;
+        }
 
         console.log('[server.js] Sending summary to client');
         res.json(summary);
@@ -931,7 +1100,7 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, UPLOADS_DIR);
+        cb(null, DATA_DIR);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname);
@@ -1641,7 +1810,86 @@ app.post('/pin-login', async (req, res) => {
     }
 });
 
-// MOVE ALL OTHER API ROUTES HERE...
+// Add additional admin routes
+
+// Endpoint to clear the summary cache
+app.post('/api/admin/clear-cache', isAuthenticated, (req, res) => {
+    try {
+        // Verify the user is an admin
+        if (!req.user || !req.user.isAdmin) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Only administrators can clear the cache' 
+            });
+        }
+        
+        // Clear the summary cache
+        summaryCache.clearCache();
+        
+        // Return success
+        res.json({ 
+            success: true, 
+            message: 'Summary cache cleared successfully',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('[server.js] Error clearing cache:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to clear cache',
+            error: error.message 
+        });
+    }
+});
+
+// Add endpoint for historical price data 
+app.get('/api/history', isAuthenticated, (req, res) => {
+    try {
+        // Get limit parameter (default to 7 days)
+        const limit = parseInt(req.query.limit) || 7;
+        
+        // Ensure historical data is loaded
+        if (!historicalBTCData || historicalBTCData.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Historical data not available'
+            });
+        }
+        
+        // Sort the data by date (newest first)
+        const sortedData = [...historicalBTCData].sort((a, b) => 
+            new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)
+        );
+        
+        // Get the most recent prices up to the limit
+        const recentPrices = sortedData.slice(0, limit);
+        
+        // Add today's price at the beginning
+        const cachedPrices = priceCache.getCachedPrices();
+        const todayPrice = {
+            date: new Date().toISOString().split('T')[0],
+            timestamp: cachedPrices.timestamp || new Date().toISOString(),
+            priceEUR: cachedPrices.priceEUR,
+            priceUSD: cachedPrices.priceUSD,
+            price: cachedPrices.price
+        };
+        
+        // Return the data
+        res.json({
+            success: true,
+            prices: [todayPrice, ...recentPrices],
+            limit: limit,
+            total: historicalBTCData.length
+        });
+    } catch (error) {
+        console.error('[server.js] Error fetching historical data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch historical data',
+            error: error.message
+        });
+    }
+});
 
 // *** Catch-all routes should be AFTER all API routes ***
 // Serve the main application
