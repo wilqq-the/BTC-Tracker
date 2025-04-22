@@ -2,7 +2,7 @@
   "name": "btc-tracker",
   "version": "1.0.0",
   "description": "Bitcoin transaction tracker",
-  "main": "src/server.js",
+  "main": "src/electron-main.js",
   "electronMain": "src/electron-main.js",
   "scripts": {
     "start": "node src/server.js",
@@ -13,7 +13,8 @@
     "test:coverage": "jest --coverage",
     "electron": "npx electron src/electron-main.js",
     "electron:headless": "npx electron src/electron-main.js --headless",
-    "electron:build": "npx electron-builder",
+    "electron:build": "electron-builder build --win --publish never",
+    "electron:publish": "electron-builder build --win --publish always",
     "electron:dev": "npx electron-builder && npx electron dist/electron-main.js"
   },
   "dependencies": {
@@ -56,5 +57,38 @@
     "setupFilesAfterEnv": [
       "<rootDir>/tests/setup.js"
     ]
+  },
+  "build": {
+    "appId": "com.wilqq.btctracker",
+    "productName": "BTC Tracker",
+    "files": [
+      "src/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "src/public/images",
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "src/public/images/icon-512x512.png",
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
+    },
+    "publish": {
+      "provider": "github",
+      "releaseType": "release"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/btc-tracker.git"
   }
 }

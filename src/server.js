@@ -80,19 +80,10 @@ let secondaryCurrency = 'PLN';
 let secondaryRate = null;
 
 const DATA_DIR = pathManager.getDataDirectory();
-const UPLOADS_DIR = path.join(__dirname, 'uploads');
 const TRANSACTIONS_FILE = pathManager.getTransactionsPath();
 const HISTORICAL_BTC_FILE = pathManager.getHistoricalBtcPath();
 const SETTINGS_FILE = pathManager.getAppSettingsPath();
 const USERS_FILE = pathManager.getUsersPath();
-
-if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(UPLOADS_DIR)) {
-    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-}
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -1109,7 +1100,7 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, UPLOADS_DIR);
+        cb(null, DATA_DIR);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + '-' + file.originalname);

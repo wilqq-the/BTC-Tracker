@@ -1,197 +1,251 @@
-const fs = require('fs').promises;
-const path = require('path');
+/**
+ * Summary Cache Service
+ * 
+ * This service maintains a cached version of the summary data
+ * to improve API response times.
+ */
+
+const fs = require('fs');
 const pathManager = require('./utils/path-manager');
+const priceCache = require('./priceCache');
 
-class SummaryCache {
-    constructor() {
-        this.cache = {
-            data: null,
-            timestamp: null
-        };
-        this.cacheFilePath = pathManager.getSummaryCachePath();
-        this.updateInterval = 15 * 60 * 1000; // 15 minutes
-        this.isUpdating = false;
-        this.updateTimer = null;
-        this.transactionCount = 0;
-        this.transactionTimestamp = null;
-    }
+// Cache storage
+let summaryCache = {
+    data: null,
+    lastUpdated: null,
+    isUpdating: false,
+    transactionCount: 0, // Track how many transactions were used to calculate this summary
+    transactionTimestamp: null // Track when transactions were last modified
+};
 
-    async initialize() {
+/**
+ * Initialize the summary cache
+ */
+function initializeCache() {
+    const cachePath = pathManager.getSummaryCachePath();
+    
+    if (fs.existsSync(cachePath)) {
         try {
-            // Create data directory if it doesn't exist
-            const dataDir = path.dirname(this.cacheFilePath);
-            await fs.mkdir(dataDir, { recursive: true });
-
-            // Try to load cached data from disk
-            await this.loadFromDisk();
-            
-            console.log('[summaryCache] Initialized');
+            const data = fs.readFileSync(cachePath, 'utf8');
+            summaryCache = JSON.parse(data);
+            console.log(`[summaryCache] Loaded summary cache from ${cachePath}`);
         } catch (error) {
-            console.error('[summaryCache] Initialization error:', error);
+            console.error('[summaryCache] Error loading summary cache:', error);
+            summaryCache = { 
+                data: null, 
+                lastUpdated: null, 
+                isUpdating: false,
+                transactionCount: 0,
+                transactionTimestamp: null
+            };
         }
-    }
-
-    async loadFromDisk() {
-        try {
-            const data = await fs.readFile(this.cacheFilePath, 'utf8');
-            const cachedData = JSON.parse(data);
-            
-            if (cachedData && cachedData.data && cachedData.timestamp) {
-                this.cache = cachedData;
-                console.log('[summaryCache] Loaded from disk, timestamp:', cachedData.timestamp);
-                return true;
-            }
-        } catch (error) {
-            if (error.code !== 'ENOENT') {
-                console.error('[summaryCache] Error loading from disk:', error);
-            } else {
-                console.log('[summaryCache] No cache file found, will create one');
-            }
-        }
-        return false;
-    }
-
-    async saveToDisk() {
-        try {
-            await fs.writeFile(
-                this.cacheFilePath,
-                JSON.stringify(this.cache, null, 2),
-                'utf8'
-            );
-            console.log('[summaryCache] Saved to disk');
-        } catch (error) {
-            console.error('[summaryCache] Error saving to disk:', error);
-        }
-    }
-
-    isCacheFresh(transactionCount, transactionTimestamp) {
-        if (!this.cache.data || !this.cache.timestamp) {
-            console.log('[summaryCache] Cache is empty');
-            return false;
-        }
-
-        const cacheAge = Date.now() - new Date(this.cache.timestamp).getTime();
-        
-        // If cache is older than the update interval, it's not fresh
-        if (cacheAge > this.updateInterval) {
-            console.log(`[summaryCache] Cache is too old: ${cacheAge}ms`);
-            return false;
-        }
-        
-        // If transaction count has changed, cache is not fresh
-        if (this.transactionCount !== transactionCount) {
-            console.log(`[summaryCache] Transaction count changed: ${this.transactionCount} -> ${transactionCount}`);
-            return false;
-        }
-        
-        // If latest transaction timestamp is newer than our cache, it's not fresh
-        if (this.transactionTimestamp && transactionTimestamp && 
-            new Date(transactionTimestamp) > new Date(this.transactionTimestamp)) {
-            console.log(`[summaryCache] Transaction timestamp is newer: ${this.transactionTimestamp} -> ${transactionTimestamp}`);
-            return false;
-        }
-        
-        console.log('[summaryCache] Cache is fresh');
-        return true;
-    }
-
-    invalidateCache() {
-        console.log('[summaryCache] Invalidating cache');
-        this.cache.data = null;
-        this.cache.timestamp = null;
-        this.transactionCount = 0;
-        this.transactionTimestamp = null;
-    }
-
-    clearCache() {
-        console.log('[summaryCache] Clearing cache');
-        this.invalidateCache();
-        this.saveToDisk().catch(err => console.error('[summaryCache] Error saving cleared cache:', err));
-    }
-
-    async getSummary(calculateFunction, forceFresh = false, transactionCount = 0, transactionTimestamp = null) {
-        // If force fresh or cache isn't valid, calculate a new summary
-        if (forceFresh || !this.isCacheFresh(transactionCount, transactionTimestamp)) {
-            console.log('[summaryCache] Generating fresh summary data');
-            try {
-                const freshData = await calculateFunction();
-                
-                // Update the cache
-                this.cache = {
-                    data: freshData,
-                    timestamp: new Date().toISOString()
-                };
-                
-                // Update transaction tracking
-                this.transactionCount = transactionCount;
-                this.transactionTimestamp = transactionTimestamp;
-                
-                // Save to disk
-                await this.saveToDisk();
-                
-                return freshData;
-            } catch (error) {
-                console.error('[summaryCache] Error calculating fresh summary:', error);
-                
-                // If we have cached data, return it as a fallback
-                if (this.cache.data) {
-                    console.log('[summaryCache] Returning stale cache as fallback');
-                    return this.cache.data;
-                }
-                
-                throw error;
-            }
-        } else {
-            console.log('[summaryCache] Returning cached summary data');
-            return this.cache.data;
-        }
-    }
-
-    scheduleUpdates(calculateFunction, getTransactionInfoFunction) {
-        // Clear any existing timer
-        if (this.updateTimer) {
-            clearInterval(this.updateTimer);
-        }
-        
-        // Schedule periodic updates
-        this.updateTimer = setInterval(async () => {
-            if (this.isUpdating) return;
-            
-            this.isUpdating = true;
-            try {
-                // Get current transaction info
-                const transactionInfo = getTransactionInfoFunction();
-                
-                // Check if we need to update
-                if (!this.isCacheFresh(transactionInfo.count, transactionInfo.timestamp)) {
-                    console.log('[summaryCache] Running scheduled update');
-                    const freshData = await calculateFunction();
-                    
-                    // Update the cache
-                    this.cache = {
-                        data: freshData,
-                        timestamp: new Date().toISOString()
-                    };
-                    
-                    // Update transaction tracking
-                    this.transactionCount = transactionInfo.count;
-                    this.transactionTimestamp = transactionInfo.timestamp;
-                    
-                    // Save to disk
-                    await this.saveToDisk();
-                }
-            } catch (error) {
-                console.error('[summaryCache] Error in scheduled update:', error);
-            } finally {
-                this.isUpdating = false;
-            }
-        }, this.updateInterval);
-        
-        console.log(`[summaryCache] Scheduled updates every ${this.updateInterval / 1000} seconds`);
+    } else {
+        console.log('[summaryCache] No existing summary cache found');
+        saveCache({ 
+            data: null, 
+            lastUpdated: null,
+            transactionCount: 0,
+            transactionTimestamp: null 
+        });
     }
 }
 
-// Export a singleton instance
-const summaryCache = new SummaryCache();
-summaryCache.initialize().catch(err => console.error('[summaryCache] Error during initialization:', err));
-module.exports = summaryCache; 
+/**
+ * Save cache to disk
+ */
+function saveCache(cache) {
+    const cachePath = pathManager.getSummaryCachePath();
+    
+    try {
+        fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2));
+        console.log(`[summaryCache] Saved summary cache to ${cachePath}`);
+    } catch (error) {
+        console.error('[summaryCache] Error saving summary cache:', error);
+    }
+}
+
+/**
+ * Get cached summary data
+ * @returns {Object} The cached summary data or null if not available
+ */
+function getCachedSummary() {
+    return summaryCache.data;
+}
+
+/**
+ * Check if cache is still valid based on age and transaction status
+ * @param {number} transactionCount Current number of transactions
+ * @param {string} transactionTimestamp Latest transaction modification timestamp
+ * @returns {boolean} True if cache is valid, false if it needs updating
+ */
+function isCacheValid(transactionCount = null, transactionTimestamp = null) {
+    if (!summaryCache.lastUpdated) return false;
+    
+    // Check cache age
+    const cacheAge = Date.now() - new Date(summaryCache.lastUpdated).getTime();
+    const maxAge = 5 * 60 * 1000; // 5 minutes
+    
+    // If cache is too old, invalidate it
+    if (cacheAge >= maxAge) {
+        return false;
+    }
+    
+    // If transaction count provided, check if it matches
+    if (transactionCount !== null && 
+        summaryCache.transactionCount !== transactionCount) {
+        console.log(`[summaryCache] Transaction count changed from ${summaryCache.transactionCount} to ${transactionCount}, invalidating cache`);
+        return false;
+    }
+    
+    // If transaction timestamp provided, check if it's newer than cache
+    if (transactionTimestamp && summaryCache.transactionTimestamp) {
+        const cachedTimestamp = new Date(summaryCache.transactionTimestamp).getTime();
+        const newTimestamp = new Date(transactionTimestamp).getTime();
+        
+        if (newTimestamp > cachedTimestamp) {
+            console.log(`[summaryCache] Transactions were modified after cache was created, invalidating cache`);
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+/**
+ * Update the summary cache with new data
+ * @param {Object} summaryData The new summary data
+ * @param {number} transactionCount Current number of transactions
+ * @param {string} transactionTimestamp Latest transaction modification timestamp
+ */
+function updateCache(summaryData, transactionCount = null, transactionTimestamp = null) {
+    summaryCache = {
+        data: summaryData,
+        lastUpdated: new Date().toISOString(),
+        isUpdating: false,
+        transactionCount: transactionCount || summaryCache.transactionCount,
+        transactionTimestamp: transactionTimestamp || summaryCache.transactionTimestamp
+    };
+    
+    saveCache(summaryCache);
+}
+
+/**
+ * Invalidate the cache when transactions are modified
+ * This should be called whenever transactions are added, deleted, or modified
+ */
+function invalidateCache() {
+    console.log('[summaryCache] Invalidating cache due to transaction changes');
+    summaryCache.lastUpdated = null;
+    saveCache(summaryCache);
+}
+
+/**
+ * Generate summary data using the provided calculation function
+ * @param {Function} calculateSummary Function that calculates the summary
+ * @param {number} transactionCount Current number of transactions
+ * @param {string} transactionTimestamp Latest transaction modification timestamp 
+ * @returns {Promise<Object>} The updated summary data
+ */
+async function generateSummary(calculateSummary, transactionCount = null, transactionTimestamp = null) {
+    // Prevent multiple simultaneous updates
+    if (summaryCache.isUpdating) {
+        console.log('[summaryCache] Summary generation already in progress');
+        return summaryCache.data;
+    }
+    
+    summaryCache.isUpdating = true;
+    
+    try {
+        console.log('[summaryCache] Generating fresh summary data');
+        const freshSummary = await calculateSummary();
+        updateCache(freshSummary, transactionCount, transactionTimestamp);
+        return freshSummary;
+    } catch (error) {
+        console.error('[summaryCache] Error generating summary:', error);
+        summaryCache.isUpdating = false;
+        return summaryCache.data;
+    }
+}
+
+/**
+ * Get summary data (from cache if valid, otherwise generates new data)
+ * @param {Function} calculateSummary Function that calculates the summary
+ * @param {boolean} forceFresh Whether to force a fresh calculation
+ * @param {number} transactionCount Current number of transactions
+ * @param {string} transactionTimestamp Latest transaction modification timestamp
+ * @returns {Promise<Object>} The summary data
+ */
+async function getSummary(calculateSummary, forceFresh = false, transactionCount = null, transactionTimestamp = null) {
+    if (!forceFresh && isCacheValid(transactionCount, transactionTimestamp)) {
+        console.log('[summaryCache] Using valid cached summary data');
+        return summaryCache.data;
+    }
+    
+    return generateSummary(calculateSummary, transactionCount, transactionTimestamp);
+}
+
+/**
+ * Schedule periodic updates of the summary cache
+ * @param {Function} calculateSummary Function that calculates the summary
+ * @param {Function} getTransactionInfo Function that returns transaction count and timestamp
+ * @param {number} intervalMs Update interval in milliseconds (default: 5 minutes)
+ */
+function scheduleUpdates(calculateSummary, getTransactionInfo = null, intervalMs = 5 * 60 * 1000) {
+    console.log(`[summaryCache] Scheduling summary cache updates every ${intervalMs/1000} seconds`);
+    
+    setInterval(async () => {
+        try {
+            // Only update if not already updating and if prices or transactions have changed
+            let transactionCount = null;
+            let transactionTimestamp = null;
+            
+            // Get current transaction info if function provided
+            if (getTransactionInfo) {
+                const info = getTransactionInfo();
+                transactionCount = info.count;
+                transactionTimestamp = info.timestamp;
+            }
+            
+            const priceChanged = priceCache.hasPriceChanged();
+            const cacheValid = isCacheValid(transactionCount, transactionTimestamp);
+            
+            if (!summaryCache.isUpdating && (!cacheValid || priceChanged)) {
+                console.log('[summaryCache] Running scheduled summary update - ' + 
+                            (priceChanged ? 'Price changed' : 'Cache invalid'));
+                await generateSummary(calculateSummary, transactionCount, transactionTimestamp);
+            }
+        } catch (error) {
+            console.error('[summaryCache] Error in scheduled update:', error);
+        }
+    }, intervalMs);
+}
+
+/**
+ * Clear the existing cache file and reset to an empty state
+ * This can be called manually when needed (e.g. after server updates)
+ */
+function clearCache() {
+    console.log('[summaryCache] Clearing summary cache');
+    summaryCache = { 
+        data: null, 
+        lastUpdated: null, 
+        isUpdating: false,
+        transactionCount: 0,
+        transactionTimestamp: null
+    };
+    saveCache(summaryCache);
+}
+
+// Initialize the cache on module load
+initializeCache();
+
+module.exports = {
+    getCachedSummary,
+    isCacheValid,
+    updateCache,
+    generateSummary,
+    getSummary,
+    scheduleUpdates,
+    invalidateCache,
+    clearCache
+}; 
