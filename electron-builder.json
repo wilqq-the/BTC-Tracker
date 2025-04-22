@@ -1,0 +1,47 @@
+{
+  "appId": "com.btctracker.app",
+  "productName": "BTC Tracker",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "src/**/*",
+    "node_modules/**/*",
+    "package.json"
+  ],
+  "win": {
+    "target": "nsis",
+    "icon": "src/public/images/favicon.ico"
+  },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Finance",
+    "icon": "src/public/images/icon-512x512.png"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  },
+  "extraResources": [
+    {
+      "from": "src/data",
+      "to": "data",
+      "filter": [
+        "**/*"
+      ]
+    }
+  ],
+  "extraMetadata": {
+    "config": {
+      "autoStartOnBoot": true
+    }
+  },
+  "appx": {
+    "backgroundColor": "#1a1a1a",
+    "identityName": "BTCTracker",
+    "publisherDisplayName": "BTC Tracker Team",
+    "showNameOnTiles": true
+  }
+} 
