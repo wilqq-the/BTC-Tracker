@@ -13,6 +13,7 @@
     "test:coverage": "jest --coverage",
     "electron": "npx electron src/electron-main.js",
     "electron:headless": "npx electron src/electron-main.js --headless",
+    "setup-node-binaries": "node setup-node-binaries.js",
     "electron:build": "electron-builder build --win --publish never",
     "electron:publish": "electron-builder build --win --publish always",
     "electron:dev": "npx electron-builder && npx electron dist/electron-main.js"
@@ -31,6 +32,7 @@
     "multer": "^1.4.5-lts.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
+    "unzipper": "^0.10.14",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
@@ -64,7 +66,8 @@
     "files": [
       "src/**/*",
       "node_modules/**/*",
-      "package.json"
+      "package.json",
+      "node_binaries/node-v22.14.0-win-x64.zip"
     ],
     "directories": {
       "buildResources": "src/public/images",
@@ -80,7 +83,8 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "include": "installer.nsh"
     },
     "publish": {
       "provider": "github",
