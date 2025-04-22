@@ -7,4 +7,5 @@ src/data/*
 data*/*
 tests/test-data*/*
 tests/screenshots*/*
+dist/
 

@@ -108,34 +108,58 @@ function createTray() {
 }
 
 function startExpressServer() {
-  // Start the Express server as a child process
-  const serverPath = path.join(__dirname, 'server.js');
-  
-  // Set USE_WINDOWS_PATH for the child process too
-  const env = Object.assign({}, process.env, { USE_WINDOWS_PATH: 'true' });
-  
-  expressServer = spawn('node', [serverPath], { 
-    env,
-    stdio: 'inherit' 
-  });
-  
-  expressServer.on('error', (err) => {
-    console.error('Failed to start Express server:', err);
-  });
-  
-  expressServer.on('exit', (code) => {
-    console.log(`Express server exited with code ${code}`);
-    if (code !== 0 && !app.isQuitting) {
-      console.log('Attempting to restart Express server...');
-      startExpressServer();
+  try {
+    // Start the Express server as a child process
+    const serverPath = path.join(__dirname, 'server.js');
+    
+    // Get the app's user data path
+    const userDataPath = app.getPath('userData');
+    console.log(`Electron userDataPath: ${userDataPath}`);
+    
+    // Set up environment variables for the child process
+    const env = Object.assign({}, process.env, { 
+      USE_WINDOWS_PATH: 'true',
+      ELECTRON_APP_PATH: app.getAppPath(),
+      ELECTRON_USER_DATA_PATH: userDataPath,
+      IS_ELECTRON: 'true',
+      ELECTRON_IS_PACKAGED: app.isPackaged ? 'true' : 'false'
+    });
+    
+    // Log electron environment for debugging
+    console.log(`Starting Express server with environment:
+      - App path: ${app.getAppPath()}
+      - User data path: ${userDataPath}
+      - Is packaged: ${app.isPackaged}
+      - Platform: ${process.platform}
+    `);
+    
+    expressServer = spawn('node', [serverPath], { 
+      env,
+      stdio: 'inherit' 
+    });
+    
+    expressServer.on('error', (err) => {
+      console.error('Failed to start Express server:', err);
+    });
+    
+    expressServer.on('exit', (code) => {
+      console.log(`Express server exited with code ${code}`);
+      if (code !== 0 && !app.isQuitting) {
+        console.log('Attempting to restart Express server...');
+        setTimeout(() => {
+          startExpressServer();
+        }, 2000); // Wait a bit before restarting
+      }
+    });
+    
+    // Log server status
+    console.log(`BTC Tracker server running on http://localhost:${PORT}`);
+    if (isHeadless) {
+      console.log('Running in headless mode - no UI window will be shown');
+      console.log('Access the application via web browser or use the tray icon');
     }
-  });
-  
-  // Log server status
-  console.log(`BTC Tracker server running on http://localhost:${PORT}`);
-  if (isHeadless) {
-    console.log('Running in headless mode - no UI window will be shown');
-    console.log('Access the application via web browser or use the tray icon');
+  } catch (error) {
+    console.error('Error starting Express server:', error);
   }
 }
 

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTC Tracker - Analytics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Daily Ticker Bar -->
+        <div class="ticker-container">
+            <div class="ticker-wrapper">
+                <div class="ticker-content" id="tickerContent">
+                    <div class="ticker-item">
+                        <span class="ticker-label"><i class="fas fa-wallet"></i> Portfolio Value</span>
+                        <span class="ticker-value" id="tickerCurrentValue">Loading...</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-label"><i class="fas fa-chart-line"></i> Value Change</span>
+                        <span class="ticker-value" id="tickerDailyChange">Loading...</span>
+                    </div>
+                    <div class="ticker-item">
+                        <span class="ticker-label"><i class="fas fa-percentage"></i> Value Change %</span>
+                        <span class="ticker-value" id="tickerDailyPercent">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <header>
+            <div class="mobile-flex-row">
+                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
+                <div class="theme-logout-container">
+                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
+                        <i class="fas fa-moon"></i>
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <a href="/logout" class="mobile-logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Original Navigation (hidden on mobile) -->
+            <nav>
+                <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                <a href="/analytics.html" class="active"><i class="fas fa-chart-area"></i> Analytics</a>
+                <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
+                <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                <a href="/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <button id="themeToggle" class="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <i class="fas fa-sun"></i>
+                </button>
+            </nav>
+            
+            <!-- Mobile Dropdown Navigation -->
+            <div class="mobile-dropdown-nav" id="mobileNav">
+                <button class="current-page-btn" id="currentPageBtn">
+                    <div class="current-page-text">
+                        <i class="fas fa-chart-area page-icon"></i>
+                        <span>Analytics</span>
+                    </div>
+                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                </button>
+                <div class="nav-dropdown" id="navDropdown">
+                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
+                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
+                    <a href="/analytics.html" class="active"><i class="fas fa-chart-area"></i> Analytics</a>
+                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
+                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
+                </div>
+            </div>
+        </header>
+
+        <main class="analytics-container">
+            <h2><i class="fas fa-chart-area"></i> Portfolio Analytics</h2>
+            
+            <div class="time-selector chart-controls">
+                <div class="time-range-buttons">
+                    <button class="time-range-btn active" data-period="all">All Time</button>
+                    <button class="time-range-btn" data-period="year">1 Year</button>
+                    <button class="time-range-btn" data-period="month">30 Days</button>
+                    <button class="time-range-btn" data-period="week">7 Days</button>
+                    <button class="time-range-btn" data-period="day">24 Hours</button>
+                    <button class="time-range-btn" data-period="ytd">YTD</button>
+                    <button id="refreshAnalyticsBtn" class="refresh-btn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div class="summary-cards">
+                <div class="card">
+                    <h3><i class="fas fa-wallet"></i> Total Value</h3>
+                    <div class="loading-indicator">Loading...</div>
+                    <p id="totalValueCard">$0.00</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-money-bill-wave"></i> Total Invested</h3>
+                    <div class="loading-indicator">Loading...</div>
+                    <p id="totalInvestedCard">$0.00</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-chart-bar"></i> Profit/Loss</h3>
+                    <div class="loading-indicator">Loading...</div>
+                    <p id="profitLossCard" class="pnl">$0.00</p>
+                </div>
+                <div class="card">
+                    <h3><i class="fas fa-percentage"></i> P/L %</h3>
+                    <div class="loading-indicator">Loading...</div>
+                    <p id="profitLossPercentCard" class="pnl">0.00%</p>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3><i class="fas fa-history"></i> Portfolio Value History</h3>
+                <div class="loading-indicator">Loading...</div>
+                <div class="chart-wrapper">
+                    <canvas id="valueHistoryChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3><i class="fas fa-bolt"></i> Performance by Period</h3>
+                <div class="loading-indicator">Loading...</div>
+                <div class="chart-wrapper">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="footer-links">
+                <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <a href="https://github.com/wilqq-the" target="_blank"><i class="fas fa-user"></i> wilqq-the</a>
+                <a href="https://github.com/wilqq-the/btc-tracker/issues" target="_blank"><i class="fas fa-bug"></i> Issues</a>
+                <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+            </div>
+            <div id="messageBar" class="message-bar"></div>
+            <div id="footerText">
+                <p>© <span id="current-year">2023</span> BTC Tracker</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/ticker.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/analytics.js"></script>
+</body>
+</html> 
