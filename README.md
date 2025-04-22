@@ -97,6 +97,13 @@ CONTAINER_NAME=btc-tracker-dev
 2. Run the installer and follow the installation wizard
 3. Launch BTC Tracker from your Start Menu or Desktop shortcut
 
+**Note:** On first launch, the application will unpack Node.js binaries using Command Prompt or PowerShell. This is a one-time process and may take a few moments. A command window will briefly appear and close automatically once complete.
+
+The application data is stored in:
+- `%APPDATA%\BTC-Tracker` (User settings and data)
+- `%LOCALAPPDATA%\BTC-Tracker` (Application files)
+
+
 Your data persists between application updates and can be backed up by copying the above directories.
 
 ## Using Docker Hub Image Directly

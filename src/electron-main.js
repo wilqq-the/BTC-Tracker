@@ -641,11 +641,206 @@ module.exports = ${adapter.charAt(0).toUpperCase() + adapter.slice(1)}Adapter;`
   }
 }
 
+// Add this utility function for recursive directory copying
+function copyFolderRecursiveSync(source, target) {
+  // Check if source exists
+  if (!fs.existsSync(source)) {
+    console.error(`Source folder does not exist: ${source}`);
+    return false;
+  }
+
+  // Create target folder if it doesn't exist
+  if (!fs.existsSync(target)) {
+    fs.mkdirSync(target, { recursive: true });
+    console.log(`Created target folder: ${target}`);
+  }
+
+  // Get all files and folders in source
+  try {
+    const files = fs.readdirSync(source);
+    console.log(`Files in ${source}: ${files.length} items`);
+
+    // Process each file/folder
+    for (const file of files) {
+      const currentSource = path.join(source, file);
+      const currentTarget = path.join(target, file);
+      
+      // Get file stats
+      const stat = fs.statSync(currentSource);
+      
+      if (stat.isDirectory()) {
+        // Recursively copy subdirectory
+        console.log(`Copying directory: ${currentSource} -> ${currentTarget}`);
+        copyFolderRecursiveSync(currentSource, currentTarget);
+      } else {
+        // Copy file
+        try {
+          fs.copyFileSync(currentSource, currentTarget);
+        } catch (err) {
+          console.error(`Error copying file ${currentSource}: ${err.message}`);
+        }
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error(`Error reading directory ${source}: ${err.message}`);
+    return false;
+  }
+}
+
 async function startExpressServer() {
   try {
     const { userDataPath, extractDir } = await setupServerEnvironment();
+    let serverDir = app.isPackaged ? extractDir : __dirname;
     
     if (app.isPackaged) {
+      // Define Node.js paths
+      const nodeBinariesPath = path.join(process.resourcesPath, 'node_binaries');
+      let nodePath = path.join(nodeBinariesPath, 'node.exe');
+      const npmPath = path.join(nodeBinariesPath, 'npm.cmd');
+      
+      // Log paths for debugging
+      console.log('Node.js paths:');
+      console.log(`Node binary path: ${nodePath}`);
+      console.log(`npm path: ${npmPath}`);
+      console.log(`Node binaries directory: ${nodeBinariesPath}`);
+      console.log(`Resources path: ${process.resourcesPath}`);
+      console.log(`App path: ${app.getAppPath()}`);
+
+      // Check if the Node.js binaries exist
+      let nodeSetupCompleted = fs.existsSync(nodePath);
+      
+      if (!nodeSetupCompleted) {
+        console.log('Node.js binaries not found. Setting up now...');
+        
+        // Create node_binaries directory if it doesn't exist
+        if (!fs.existsSync(nodeBinariesPath)) {
+          fs.mkdirSync(nodeBinariesPath, { recursive: true });
+          console.log('Created node_binaries directory');
+        }
+        
+        // Try several possible locations for the zip file
+        const possibleZipLocations = [
+          // Check in resources
+          path.join(process.resourcesPath, 'node-binaries.zip'),
+          // Check in app directory
+          path.join(app.getAppPath(), 'node_binaries', 'node-v22.14.0-win-x64.zip'),
+          // Check in app root
+          path.join(app.getAppPath(), 'node-v22.14.0-win-x64.zip')
+        ];
+        
+        console.log('Checking for Node.js zip in these locations:');
+        possibleZipLocations.forEach(p => console.log(` - ${p}`));
+        
+        // Find the first zip that exists
+        let zipPath = null;
+        for (const p of possibleZipLocations) {
+          if (fs.existsSync(p)) {
+            zipPath = p;
+            console.log(`Found Node.js zip at: ${zipPath}`);
+            break;
+          }
+        }
+        
+        if (!zipPath) {
+          console.error('Node.js zip not found in any location');
+          throw new Error('Node.js components not found. Please reinstall the application.');
+        }
+        
+        try {
+          // Create temp directory
+          const tempDir = path.join(app.getPath('temp'), 'btc-tracker-node');
+          if (fs.existsSync(tempDir)) {
+            fs.rmSync(tempDir, { recursive: true, force: true });
+          }
+          fs.mkdirSync(tempDir, { recursive: true });
+          console.log(`Created temp directory: ${tempDir}`);
+          
+          // Copy zip to temp
+          const tempZipPath = path.join(tempDir, 'node.zip');
+          fs.copyFileSync(zipPath, tempZipPath);
+          console.log(`Copied zip to: ${tempZipPath}`);
+          
+          // Update the extraction part
+          console.log('Extracting Node.js binaries...');
+          try {
+            // Try first with pure PowerShell (most reliable on Windows)
+            console.log('Using PowerShell for extraction');
+            const { execSync } = require('child_process');
+            execSync(`powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${tempDir}' -Force"`, {
+              stdio: 'inherit'
+            });
+          } catch (extractErr) {
+            console.error('PowerShell extraction failed:', extractErr);
+            
+            // Try another PowerShell approach
+            try {
+              console.log('Trying alternative PowerShell extraction method...');
+              const { execSync } = require('child_process');
+              execSync(`powershell -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${tempZipPath}', '${tempDir}')"`, {
+                stdio: 'inherit'
+              });
+            } catch (err) {
+              console.error('Alternative PowerShell extraction failed:', err);
+              
+              // Try with Node.js
+              try {
+                console.log('Falling back to unzipper package');
+                // Try to require unzipper - it might not be available
+                try {
+                  const unzipper = require('unzipper');
+                  const fs = require('fs');
+                  const extractPromise = new Promise((resolve, reject) => {
+                    fs.createReadStream(tempZipPath)
+                      .pipe(unzipper.Extract({ path: tempDir }))
+                      .on('close', resolve)
+                      .on('error', reject);
+                  });
+                  await extractPromise;
+                } catch (unzipperErr) {
+                  console.error('Unzipper package not available:', unzipperErr);
+                  throw new Error('All extraction methods failed');
+                }
+              } catch (nodeErr) {
+                console.error('Node.js extraction failed:', nodeErr);
+                throw new Error('All extraction methods failed');
+              }
+            }
+          }
+          
+          // Find the extracted directory
+          const items = fs.readdirSync(tempDir);
+          console.log(`Items in temp directory: ${items.join(', ')}`);
+          
+          const extractedDir = path.join(tempDir, 'node-v22.14.0-win-x64');
+          if (!fs.existsSync(extractedDir)) {
+            console.error('Extracted directory not found');
+            throw new Error('Failed to extract Node.js binaries');
+          }
+          
+          // Use our recursive copy function
+          console.log(`Copying files from ${extractedDir} to ${nodeBinariesPath}`);
+          const success = copyFolderRecursiveSync(extractedDir, nodeBinariesPath);
+          
+          if (!success) {
+            throw new Error('Failed to copy Node.js files');
+          }
+          
+          console.log('Node.js binaries setup completed successfully');
+          
+          // Clean up
+          fs.rmSync(tempDir, { recursive: true, force: true });
+          console.log('Temp directory cleaned up');
+          
+          // After successful extraction, update nodeSetupCompleted flag
+          nodeSetupCompleted = true;
+          
+        } catch (error) {
+          console.error('Error setting up Node.js:', error);
+          throw new Error(`Failed to set up Node.js: ${error.message}`);
+        }
+      }
+
       await extractServerFiles(__dirname, extractDir);
       console.log('Server files extracted successfully');
 
@@ -659,7 +854,6 @@ async function startExpressServer() {
         console.log('node_modules not found, will install dependencies');
         shouldInstall = true;
       } else if (fs.existsSync(packageJsonPath)) {
-        // Check if package.json has been modified since last install
         const packageJsonStat = fs.statSync(packageJsonPath);
         const nodeModulesStat = fs.statSync(nodeModulesPath);
         if (packageJsonStat.mtime > nodeModulesStat.mtime) {
@@ -671,48 +865,121 @@ async function startExpressServer() {
       if (shouldInstall) {
         console.log('Installing npm dependencies...');
         try {
-          // Run npm install
+          // Ensure we have a valid node and npm path
+          if (!fs.existsSync(nodePath)) {
+            console.error('Node binary not found at:', nodePath);
+            // Try to find node in the system
+            try {
+              const { execSync } = require('child_process');
+              const systemNodePath = execSync('where node', { encoding: 'utf8' }).trim().split('\n')[0];
+              console.log(`Found system Node at: ${systemNodePath}`);
+              nodePath = systemNodePath;
+            } catch (whereErr) {
+              console.error('Cannot find node in the system:', whereErr);
+              throw new Error('Node.js not found in the system.');
+            }
+          }
+          
           const { execSync } = require('child_process');
-          execSync('npm install --no-fund --no-audit --loglevel=error', {
-            cwd: extractDir,
-            stdio: ['ignore', 'pipe', 'pipe']
-          });
+          
+          // Use npm from the extracted Node.js binaries
+          if (fs.existsSync(npmPath)) {
+            console.log(`Using npm at: ${npmPath}`);
+            execSync(`"${npmPath}" install --no-fund --no-audit --loglevel=error`, {
+              cwd: extractDir,
+              stdio: ['ignore', 'pipe', 'pipe'],
+              env: {
+                ...process.env,
+                PATH: `${nodeBinariesPath};${process.env.PATH}`
+              }
+            });
+          } else {
+            // Try using system npm
+            console.log('Using system npm');
+            execSync('npm install --no-fund --no-audit --loglevel=error', {
+              cwd: extractDir,
+              stdio: ['ignore', 'pipe', 'pipe']
+            });
+          }
+          
           console.log('npm install completed successfully');
         } catch (npmError) {
           console.error('Error during npm install:', npmError.message);
           throw npmError;
         }
       }
+
+      const serverPath = path.join(serverDir, 'server.js');
+
+      if (!fs.existsSync(serverPath)) {
+        throw new Error(`Server file not found: ${serverPath}`);
+      }
+
+      // Ensure we have a node path
+      if (!fs.existsSync(nodePath)) {
+        console.error('Node binary still not found. Looking for system node...');
+        try {
+          const { execSync } = require('child_process');
+          nodePath = execSync('where node', { encoding: 'utf8' }).trim().split('\n')[0];
+          console.log(`Using system node at: ${nodePath}`);
+        } catch (whereError) {
+          console.error('Cannot find node in the system:', whereError);
+          throw new Error('Node.js not found. Cannot start server.');
+        }
+      }
+      
+      // Other environment variables to set
+      const env = {
+        ...process.env,
+        USE_WINDOWS_PATH: 'true',
+        ELECTRON_APP_PATH: app.getAppPath(),
+        ELECTRON_USER_DATA_PATH: userDataPath,
+        IS_ELECTRON: 'true',
+        ELECTRON_IS_PACKAGED: String(app.isPackaged),
+        HOME: serverDir,
+        USERPROFILE: serverDir,
+        NODE_PATH: '',
+        PWD: serverDir,
+        DEBUG: 'btc-tracker:*',
+        PATH: `${nodeBinariesPath};${process.env.PATH}`
+      };
+
+      process.chdir(serverDir);
+      console.log(`Starting server with node: ${nodePath}`);
+      expressServer = spawn(nodePath, ['--trace-warnings', serverPath], {
+        env,
+        cwd: serverDir,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
+    } else {
+      // Development mode - use local node
+      const serverPath = path.join(serverDir, 'server.js');
+      
+      if (!fs.existsSync(serverPath)) {
+        throw new Error(`Server file not found: ${serverPath}`);
+      }
+      
+      const env = {
+        ...process.env,
+        USE_WINDOWS_PATH: 'true',
+        ELECTRON_APP_PATH: app.getAppPath(),
+        ELECTRON_USER_DATA_PATH: userDataPath,
+        IS_ELECTRON: 'true',
+        ELECTRON_IS_PACKAGED: 'false',
+        HOME: serverDir,
+        USERPROFILE: serverDir,
+        NODE_PATH: '',
+        PWD: serverDir,
+        DEBUG: 'btc-tracker:*'
+      };
+
+      process.chdir(serverDir);
+      expressServer = spawn('node', ['--trace-warnings', serverPath], {
+        env,
+        cwd: serverDir,
+        stdio: ['ignore', 'pipe', 'pipe']
+      });
     }
-
-    const serverDir = app.isPackaged ? extractDir : __dirname;
-    const serverPath = path.join(serverDir, 'server.js');
-
-    if (!fs.existsSync(serverPath)) {
-      throw new Error(`Server file not found: ${serverPath}`);
-    }
-
-    const env = {
-      ...process.env,
-      USE_WINDOWS_PATH: 'true',
-      ELECTRON_APP_PATH: app.getAppPath(),
-      ELECTRON_USER_DATA_PATH: userDataPath,
-      IS_ELECTRON: 'true',
-      ELECTRON_IS_PACKAGED: String(app.isPackaged),
-      HOME: serverDir,
-      USERPROFILE: serverDir,
-      NODE_PATH: '',
-      PWD: serverDir,
-      DEBUG: 'btc-tracker:*'
-    };
-
-    process.chdir(serverDir);
-
-    expressServer = spawn('node', ['--trace-warnings', serverPath], {
-      env,
-      cwd: serverDir,
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
 
     expressServer.stdout.on('data', (data) => {
       console.log(`[Server] ${data.toString().trim()}`);
