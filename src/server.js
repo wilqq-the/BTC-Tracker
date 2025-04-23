@@ -564,47 +564,126 @@ async function fetchHistoricalBTCData() {
 
 // Helper function to fetch data from Yahoo Finance API
 async function fetchYahooFinanceData(symbol, startDate, endDate) {
+    console.log('=== Yahoo Finance API Request ===');
+    console.log(`Symbol: ${symbol}`);
+    console.log(`Start Date: ${new Date(startDate * 1000).toISOString()}`);
+    console.log(`End Date: ${new Date(endDate * 1000).toISOString()}`);
+    
     try {
-        // Yahoo Finance API v8 endpoint 
-        const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`;
-        const response = await axios.get(url, {
-            params: {
-                period1: startDate,
-                period2: endDate,
-                interval: '1d',
-                events: 'history',
-                includeAdjustedClose: true
+        // Yahoo Finance API v8 endpoint with region and lang parameters
+        const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+        console.log(`Request URL: ${url}`);
+        
+        const params = {
+            period1: startDate,
+            period2: endDate,
+            interval: '1d',
+            events: 'history',
+            includeAdjustedClose: true,
+            region: 'US',
+            lang: 'en-US',
+            corsDomain: 'finance.yahoo.com'
+        };
+        console.log('Request params:', params);
+        
+        // Add necessary headers to avoid being blocked
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Origin': 'https://finance.yahoo.com',
+            'Referer': 'https://finance.yahoo.com',
+            'Sec-Fetch-Site': 'same-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty'
+        };
+        console.log('Request headers:', headers);
+        
+        console.log('Making request to Yahoo Finance...');
+        const response = await axios.get(url, { 
+            params,
+            headers,
+            timeout: 10000
+        });
+        
+        console.log(`Response status: ${response.status}`);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.data) {
+            console.error('No data received in response');
+            throw new Error('No data received from Yahoo Finance');
+        }
+        
+        if (response.data.error) {
+            console.error('Yahoo Finance API error:', response.data.error);
+            throw new Error(`Yahoo Finance API error: ${response.data.error.description || 'Unknown error'}`);
+        }
+        
+        if (!response.data.chart || !response.data.chart.result || !response.data.chart.result[0]) {
+            console.error('Invalid data format received:', response.data);
+            throw new Error('Invalid data format received from Yahoo Finance');
+        }
+        
+        const result = response.data.chart.result[0];
+        if (!result.timestamp || !result.indicators || !result.indicators.quote || !result.indicators.quote[0]) {
+            console.error('Missing required fields in response:', result);
+            throw new Error('Missing required data fields in Yahoo Finance response');
+        }
+        
+        const timestamps = result.timestamp;
+        const quotes = result.indicators.quote[0];
+        
+        console.log(`Received ${timestamps.length} data points`);
+        
+        // Process data and create a map with date as key
+        const data = {};
+        timestamps.forEach((timestamp, i) => {
+            if (quotes.close && quotes.close[i] !== null) {
+                const date = new Date(timestamp * 1000).toISOString().split('T')[0];
+                data[date] = {
+                    date,
+                    timestamp: timestamp * 1000,
+                    close: quotes.close[i]
+                };
             }
         });
         
-        if (response.data && response.data.chart && 
-            response.data.chart.result && 
-            response.data.chart.result[0]) {
-            
-            const result = response.data.chart.result[0];
-            const timestamps = result.timestamp;
-            const quotes = result.indicators.quote[0];
-            
-            // Process data and create a map with date as key
-            const data = {};
-            timestamps.forEach((timestamp, i) => {
-                if (quotes.close[i] !== null) {
-                    const date = new Date(timestamp * 1000).toISOString().split('T')[0];
-                    data[date] = {
-                        date,
-                        timestamp: timestamp * 1000,
-                        close: quotes.close[i]
-                    };
-                }
-            });
-            
-            return data;
+        const dataPoints = Object.keys(data).length;
+        console.log(`Processed ${dataPoints} valid data points`);
+        
+        if (dataPoints === 0) {
+            console.error('No valid data points found in processed data');
+            throw new Error('No valid data points found in Yahoo Finance response');
         }
         
-        throw new Error(`Invalid data format received for ${symbol}`);
+        console.log('=== Yahoo Finance API Request Complete ===');
+        return data;
+        
     } catch (error) {
-        console.error(`[server.js] Error fetching Yahoo Finance data for ${symbol}:`, error.message);
-        return {};
+        console.error('=== Yahoo Finance API Error ===');
+        console.error(`Error fetching data for symbol ${symbol}:`, error.message);
+        
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+            console.error('Response data:', error.response.data);
+            
+            const status = error.response.status;
+            if (status === 404) {
+                throw new Error(`Symbol ${symbol} not found on Yahoo Finance`);
+            } else if (status === 429) {
+                throw new Error('Rate limit exceeded for Yahoo Finance API');
+            } else if (status >= 500) {
+                throw new Error('Yahoo Finance service is currently unavailable');
+            }
+        } else if (error.request) {
+            console.error('No response received. Request:', error.request);
+            throw new Error('No response received from Yahoo Finance');
+        }
+        
+        console.error('Stack trace:', error.stack);
+        console.error('=== End Error Log ===');
+        throw error;
     }
 }
 
@@ -1852,6 +1931,80 @@ app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
 // Use exchange routes
 app.use('/api', exchangeRoutes);
 
+// Endpoint to fetch comparison ticker data
+app.get('/api/comparison-data', isAuthenticated, async (req, res) => {
+    try {
+        const { symbol, timeRange } = req.query;
+        console.log(`[comparison-data] Request received for symbol=${symbol}, timeRange=${timeRange}`);
+        
+        if (!symbol) {
+            console.error('[comparison-data] Symbol parameter is missing');
+            return res.status(400).json({ error: 'Symbol parameter is required' });
+        }
+        
+        // Calculate date range based on the requested time range
+        const endDate = Math.floor(Date.now() / 1000); // Current time in seconds
+        let startDate;
+        
+        // Parse time range parameter (in days)
+        const days = parseInt(timeRange || '365', 10);
+        if (isNaN(days)) {
+            startDate = Math.floor(endDate - (365 * 24 * 60 * 60)); // Default to 1 year
+            console.log(`[comparison-data] Invalid timeRange parameter, defaulting to 365 days`);
+        } else {
+            startDate = Math.floor(endDate - (days * 24 * 60 * 60));
+            console.log(`[comparison-data] Using timeRange of ${days} days`);
+        }
+        
+        console.log(`[comparison-data] Fetching data for ${symbol} from ${new Date(startDate * 1000).toISOString()} to ${new Date(endDate * 1000).toISOString()}`);
+        
+        // Fetch data from Yahoo Finance
+        const yahooData = await fetchYahooFinanceData(symbol, startDate, endDate);
+        
+        // Check if we got data
+        if (!yahooData || Object.keys(yahooData).length === 0) {
+            console.error(`[comparison-data] No data returned from Yahoo Finance for ${symbol}`);
+            return res.status(404).json({ 
+                error: 'No data available for the specified symbol and time range',
+                symbol: symbol,
+                timeRange: days
+            });
+        }
+        
+        console.log(`[comparison-data] Received ${Object.keys(yahooData).length} data points for ${symbol}`);
+        
+        // Convert to array format for chart.js
+        const chartData = Object.values(yahooData).map(item => ({
+            x: new Date(item.timestamp).toISOString(),
+            y: item.close
+        }));
+        
+        // Sort by date
+        chartData.sort((a, b) => new Date(a.x) - new Date(b.x));
+        
+        // Get symbol metadata
+        const symbolDetails = {
+            symbol: symbol,
+            name: getSymbolName(symbol),
+            color: getSymbolColor(symbol)
+        };
+        
+        console.log(`[comparison-data] Sending response with ${chartData.length} data points for ${symbol}`);
+        
+        res.json({
+            symbol: symbolDetails,
+            data: chartData
+        });
+    } catch (error) {
+        console.error('[comparison-data] Error fetching comparison data:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch comparison data', 
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
+
 // Make sure all API routes are defined BEFORE the catch-all routes
 // API endpoint to get PIN-enabled users
 app.get('/api/users/pin-enabled', (req, res) => {
@@ -2136,3 +2289,54 @@ async function startServer() {
 }
 
 startServer();
+
+// Helper function to get symbol friendly name
+function getSymbolName(symbol) {
+    const symbolMap = {
+        'BTC-USD': 'Bitcoin',
+        'ETH-USD': 'Ethereum',
+        'SPY': 'S&P 500 ETF',
+        'QQQ': 'Nasdaq ETF',
+        'GLD': 'Gold ETF',
+        'SLV': 'Silver ETF',
+        'VNQ': 'Real Estate ETF',
+        'AAPL': 'Apple',
+        'MSFT': 'Microsoft',
+        'GOOGL': 'Google',
+        'AMZN': 'Amazon',
+        'TSLA': 'Tesla'
+    };
+    
+    return symbolMap[symbol] || symbol;
+}
+
+// Helper function to get consistent color for symbols
+function getSymbolColor(symbol) {
+    const colorMap = {
+        'BTC-USD': '#f7931a', // Bitcoin orange
+        'ETH-USD': '#627eea', // Ethereum blue
+        'SPY': '#21ce99',     // Green
+        'QQQ': '#6236ff',     // Purple
+        'GLD': '#f5d742',     // Gold
+        'SLV': '#c0c0c0',     // Silver
+        'VNQ': '#ff6a00',     // Orange
+        'AAPL': '#a2aaad',    // Apple gray
+        'MSFT': '#00a4ef',    // Microsoft blue
+        'GOOGL': '#ea4335',   // Google red
+        'AMZN': '#ff9900',    // Amazon orange
+        'TSLA': '#cc0000'     // Tesla red
+    };
+    
+    // If no predefined color, generate one based on the symbol string
+    if (!colorMap[symbol]) {
+        let hash = 0;
+        for (let i = 0; i < symbol.length; i++) {
+            hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const color = '#' + ('000000' + (hash & 0xFFFFFF).toString(16)).slice(-6);
+        return color;
+    }
+    
+    return colorMap[symbol];
+}
