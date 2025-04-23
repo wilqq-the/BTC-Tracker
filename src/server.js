@@ -1169,22 +1169,58 @@ app.post('/api/admin/transactions', isAuthenticated, async (req, res) => {
         
         await currencyConverter.ensureRates();
         
-        const transaction = new Transaction({
-            ...newTransactionData,
-            id: Date.now().toString(),
+        const transactionData = {
+            id: uuidv4(), // Use UUID instead of timestamp
+            date: newTransactionData.date,
+            type: newTransactionData.type,
+            amount: Number(newTransactionData.amount),
             exchange: 'manual',
-            txType: 'manual',
+            txType: 'spot',
             status: 'Completed',
+            paymentMethod: '',
+            pair: `BTC/${newTransactionData.currency || 'EUR'}`,
+            baseCurrency: 'BTC',
+            quoteCurrency: newTransactionData.currency || 'EUR',
             original: {
                 currency: newTransactionData.currency || 'EUR',
-                price: newTransactionData.price,
-                cost: newTransactionData.amount * newTransactionData.price,
-                fee: newTransactionData.fee || 0
+                price: Number(newTransactionData.price),
+                cost: Number(newTransactionData.amount) * Number(newTransactionData.price),
+                fee: Number(newTransactionData.fee) || 0
             }
-        });
+        };
+
+        // Add base currency conversions
+        const origCurrency = newTransactionData.currency || 'EUR';
+        const origPrice = Number(newTransactionData.price);
+        const origCost = Number(newTransactionData.amount) * origPrice;
+        const origFee = Number(newTransactionData.fee) || 0;
+
+        // Always include EUR base values
+        transactionData.base = {
+            eur: {
+                price: origCurrency === 'EUR' ? origPrice : currencyConverter.convert(origPrice, origCurrency, 'EUR'),
+                cost: origCurrency === 'EUR' ? origCost : currencyConverter.convert(origCost, origCurrency, 'EUR'),
+                fee: origCurrency === 'EUR' ? origFee : currencyConverter.convert(origFee, origCurrency, 'EUR'),
+                rate: origCurrency === 'EUR' ? 1.0 : currencyConverter.getRate(origCurrency, 'EUR')
+            }
+        };
+
+        // Always include USD base values
+        transactionData.base.usd = {
+            price: origCurrency === 'USD' ? origPrice : currencyConverter.convert(origPrice, origCurrency, 'USD'),
+            cost: origCurrency === 'USD' ? origCost : currencyConverter.convert(origCost, origCurrency, 'USD'),
+            fee: origCurrency === 'USD' ? origFee : currencyConverter.convert(origFee, origCurrency, 'USD'),
+            rate: origCurrency === 'USD' ? 1.0 : currencyConverter.getRate(origCurrency, 'USD')
+        };
+        
+        const transaction = new Transaction(transactionData);
         
         if (!transaction.isValid()) {
-            return res.status(400).json({ error: 'Invalid transaction data' });
+            console.error('Invalid transaction data:', transactionData);
+            return res.status(400).json({ 
+                error: 'Invalid transaction data',
+                details: 'Transaction validation failed'
+            });
         }
         
         const txJson = transaction.toJSON();
