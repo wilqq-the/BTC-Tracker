@@ -10,10 +10,54 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <link rel="icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="manifest" href="/manifest.json">
     <style>
+        :root {
+            /* Base colors */
+            --bg-color: #1e1e1e;
+            --bg-color-rgb: 30, 30, 30;
+            --text-color: #ffffff;
+            --border-color: #333;
+            --card-bg-color: #272727;
+            --muted-text-color: #aaa;
+            --accent-color: #f7931a;
+            --accent-color-rgb: 247, 147, 26;
+
+            /* Button colors */
+            --button-bg: #333;
+            --button-hover-bg: #444;
+            --active-button-bg: #f7931a;
+            --active-button-text: #000;
+            --active-button-border: #f7931a;
+            --button-accent-bg: #f7931a;
+            --button-accent-text: #000;
+            --button-accent-hover-bg: #e08217;
+        }
+
+        .light-theme {
+            --bg-color: #f5f5f5;
+            --bg-color-rgb: 245, 245, 245;
+            --text-color: #333;
+            --border-color: #ddd;
+            --card-bg-color: #ffffff;
+            --muted-text-color: #777;
+            --accent-color: #f7931a;
+            --accent-color-rgb: 247, 147, 26;
+
+            /* Button colors */
+            --button-bg: #f0f0f0;
+            --button-hover-bg: #e6e6e6;
+            --active-button-bg: #f7931a;
+            --active-button-text: #000;
+            --active-button-border: #f7931a;
+            --button-accent-bg: #f7931a;
+            --button-accent-text: #000;
+            --button-accent-hover-bg: #e08217;
+        }
+
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
         .mobile-theme-toggle .fa-sun {
@@ -36,6 +80,178 @@
         .light-theme .theme-toggle .fa-moon,
         .light-theme .mobile-theme-toggle .fa-moon {
             display: none;
+        }
+
+        /* Enhanced chart styling */
+        .chart-container {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background-color: var(--card-bg-color);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+
+        .chart-container h2 {
+            padding: 1.2rem 1.5rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-controls {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--card-bg-color);
+        }
+
+        .time-range-buttons {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .time-range-btn {
+            padding: 0.5rem 0.8rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .time-range-btn.active {
+            background-color: var(--active-button-bg);
+            color: var(--active-button-text);
+            font-weight: 600;
+            border-color: var(--active-button-border);
+        }
+
+        .density-control {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .density-control label {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .density-control #densityValue {
+            min-width: 6rem;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--button-accent-bg);
+            color: var(--button-accent-text);
+            border: none;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--button-accent-hover-bg);
+        }
+
+        .refresh-btn i {
+            font-size: 0.9rem;
+        }
+
+        .chart-wrapper {
+            padding: 1rem;
+            position: relative;
+            height: 500px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(var(--bg-color-rgb), 0.8);
+            z-index: 10;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(var(--accent-color-rgb), 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .price-update {
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--muted-text-color);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .pulsing {
+            animation: pulse 1s;
+        }
+
+        @keyframes pulse {
+            0% {
+                color: var(--muted-text-color);
+            }
+            50% {
+                color: var(--accent-color);
+            }
+            100% {
+                color: var(--muted-text-color);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
         /* Desktop navigation - shown by default */
@@ -91,6 +307,24 @@
                 display: block !important;
                 position: relative;
                 margin-top: 10px;
+            }
+
+            .chart-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .density-control {
+                width: 100%;
+            }
+
+            .time-range-buttons {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .refresh-btn {
+                align-self: flex-end;
             }
         }
     </style>
@@ -180,13 +414,17 @@
         </div>
 
         <div class="chart-container">
-            <h2><i class="fas fa-chart-line"></i> BTC Price and Accumulation</h2>
+            <h2><i class="fas fa-chart-line"></i> BTC Price and Buy Transactions</h2>
             <div class="chart-controls">
                 <div class="time-range-buttons">
-                    <button class="time-range-btn active" data-range="30">1M</button>
+                    <button class="time-range-btn" data-range="7">1W</button>
+                    <button class="time-range-btn" data-range="30">1M</button>
                     <button class="time-range-btn" data-range="90">3M</button>
                     <button class="time-range-btn" data-range="180">6M</button>
                     <button class="time-range-btn" data-range="365">1Y</button>
+                    <button class="time-range-btn" data-range="730">2Y</button>
+                    <button class="time-range-btn" data-range="1825">5Y</button>
+                    <button class="time-range-btn" data-range="3650">10Y</button>
                     <button class="time-range-btn" data-range="0">All</button>
                 </div>
                 <div class="density-control">
@@ -201,6 +439,11 @@
             <div class="loading" id="chartLoading">
                 <div class="loading-spinner"></div>
             </div>
+            <div class="loading" id="historical-data-loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div>Loading historical data...</div>
+            </div>
+            <div class="error-message" id="errorMessage" style="display: none; color: var(--loss-color); text-align: center; margin: 1rem 0;"></div>
             <div class="chart-wrapper">
                 <canvas id="combinedChart" width="1200" height="600"></canvas>
             </div>
@@ -264,7 +507,7 @@
         let combinedChart;
         let lastUpdateTime = null;
         const REAL_TIME_UPDATE_INTERVAL = 300000; // 5 minutes in milliseconds
-        let currentTimeRange = 30; // Default to 1 month
+        let currentTimeRange = 7; // Default to 1 week
         let currentDensity = 5; // Default density
         let transactionsWithCumulative = []; // Store transactions globally
         let secondaryCurrency = 'PLN'; // Default secondary currency
@@ -304,15 +547,17 @@
                     document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     currentTimeRange = parseInt(btn.dataset.range);
+                    console.log(`Time range changed to ${currentTimeRange} days`);
+                    
+                    // Always force chart recreation when time range changes to ensure
+                    // proper time unit display and formatting
+                    if (combinedChart) {
+                        combinedChart.destroy();
+                        combinedChart = null;
+                    }
+                    
                     loadData(true);
                 });
-                
-                // Set the active class on the 1M button by default
-                if (btn.dataset.range === '30') {
-                    btn.classList.add('active');
-                } else if (btn.dataset.range === '365') {
-                    btn.classList.remove('active');
-                }
             });
             
             // Density slider
@@ -336,6 +581,16 @@
                 densityValue.textContent = densityLabels[currentDensity - 1];
                 loadData(true);
             });
+
+            // Set the 1W button as active by default
+            document.querySelectorAll('.time-range-btn').forEach(btn => {
+                if (btn.dataset.range === '7') {
+                    btn.classList.add('active');
+                    currentTimeRange = 7; // Ensure the initial time range is set
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         });
 
         function filterAndSampleData(data, days, density) {
@@ -356,18 +611,61 @@
                 });
             }
 
-            // Enhanced density calculation
-            // Using an exponential scale for more aggressive density at higher values
-            const densityFactor = Math.pow(2, density / 2);
-            const sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 5)));
+            // Advanced density calculation for datasets of various sizes
+            let sampleSize = 1;
             
-            if (sampleSize > 1) {
-                // For maximum density (10), show almost all points
-                if (density === 10) {
-                    return filteredData.filter((_, index) => index % 2 === 0);
+            // Base the sampling on dataset size and selected time range
+            if (filteredData.length > 1000) {
+                // For very large datasets (10 years)
+                if (days > 1000 || days === 0) {
+                    // Scale based on density setting - higher density = more points
+                    // At density 10, show at most every 3rd point for readability
+                    sampleSize = Math.max(3, Math.floor((11 - density) * 8));
+                } else if (days > 365) {
+                    // For 1-3 year ranges
+                    sampleSize = Math.max(2, Math.floor((11 - density) * 4));
+                } else {
+                    // For smaller ranges, use original density calculation with slight adjustment
+                    const densityFactor = Math.pow(1.7, density / 2.5);
+                    sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 8)));
                 }
-                // For other densities, use the calculated sample size
+            } else if (filteredData.length > 500) {
+                // For medium datasets
+                const densityFactor = Math.pow(1.8, density / 3);
+                sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 7)));
+            } else {
+                // For small datasets, show more points
+                const densityFactor = Math.pow(2, density / 3);
+                sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 10)));
+            }
+            
+            // For 1-week view, always use maximum density
+            if (days <= 7) {
+                sampleSize = 1; // Show all data points for 1-week view
+            }
+            
+            // Apply sampling
+            if (sampleSize > 1) {
+                // For maximum density (10), ensure we show enough points
+                if (density >= 9) {
+                    sampleSize = Math.max(1, Math.floor(sampleSize / 2));
+                }
+                
+                // Sample the data
                 filteredData = filteredData.filter((_, index) => index % sampleSize === 0);
+                
+                // Always include the first and last points for better visualization
+                if (filteredData.length > 2 && data.length > 2) {
+                    // Check if first point is already included
+                    if (filteredData[0] !== data[0]) {
+                        filteredData.unshift(data[0]);
+                    }
+                    
+                    // Check if last point is already included
+                    if (filteredData[filteredData.length - 1] !== data[data.length - 1]) {
+                        filteredData.push(data[data.length - 1]);
+                    }
+                }
             }
 
             return filteredData;
@@ -511,26 +809,14 @@
                 return value.toLocaleString() + ' ' + mainCurrencySymbol;
             };
             
-            // Get the last transaction data for cumulative BTC and cost
-            const lastTx = transactionsWithCumulative.length > 0 ? 
-                transactionsWithCumulative[transactionsWithCumulative.length - 1] : null;
-                
-            // If no transactions, we can't update P&L data
-            if (!lastTx) return;
+            console.log(`Updating chart with real-time price: ${priceData.price} ${mainCurrencySymbol}`);
             
-            // Calculate latest P&L values
-            const pnlValue = (lastTx.cumulativeBtc * priceData.price) - lastTx.cumulativeCost;
-            const pnlPercentage = lastTx.cumulativeCost > 0 ? 
-                (pnlValue / lastTx.cumulativeCost) * 100 : 0;
-
             // Format just the date part (year, month, day) for comparison
             const formatDateOnly = (date) => {
                 return date.toISOString().split('T')[0];
             };
             
             const todayDateString = formatDateOnly(currentDate);
-            
-            console.log(`Updating chart with real-time price: ${priceData.price} ${mainCurrencySymbol}`);
             
             // Update or add data points based on current date
             if (datasets[0].data.length > 0) {
@@ -545,59 +831,25 @@
                 }
                 
                 if (todayIndex !== -1) {
-                    // Update today's data points with current values
+                    // Update today's data point with current price
                     datasets[0].data[todayIndex].y = priceData.price;
-                    
-                    // Make sure all datasets have the same number of points
-                    if (datasets[1].data.length > todayIndex) {
-                        datasets[1].data[todayIndex].y = lastTx.cumulativeBtc;
-                    }
-                    
-                    if (datasets[2].data.length > todayIndex) {
-                        datasets[2].data[todayIndex].y = pnlValue;
-                    }
-                    
-                    if (datasets[3].data.length > todayIndex) {
-                        datasets[3].data[todayIndex].y = pnlValue * secondaryRate;
-                    }
-                    
-                    if (datasets[4].data.length > todayIndex) {
-                        datasets[4].data[todayIndex].y = pnlPercentage;
-                    }
-                    
                     console.log(`Updated today's data point at index ${todayIndex} with price: ${priceData.price}`);
                 } else {
-                    // No data point for today, add new points
+                    // No data point for today, add new point
                     console.log(`No data point found for today, adding new point with price: ${priceData.price}`);
-                    
-                    // Add a new point to each dataset
                     datasets[0].data.push({ x: currentDate, y: priceData.price });
-                    datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
-                    datasets[2].data.push({ x: currentDate, y: pnlValue });
-                    datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
-                    datasets[4].data.push({ x: currentDate, y: pnlPercentage });
                 }
                 
                 // Always update the last point (in case it's not today's point)
                 const lastIndex = datasets[0].data.length - 1;
                 datasets[0].data[lastIndex].y = priceData.price;
-                datasets[1].data[lastIndex].y = lastTx.cumulativeBtc;
-                datasets[2].data[lastIndex].y = pnlValue;
-                datasets[3].data[lastIndex].y = pnlValue * secondaryRate;
-                datasets[4].data[lastIndex].y = pnlPercentage;
                 
                 // Update dataset labels to display the correct currency
                 datasets[0].label = `BTC Price (${priceData.mainCurrency || 'EUR'})`;
-                datasets[2].label = `P&L (${priceData.mainCurrency || 'EUR'})`;
-                datasets[3].label = `P&L (${secondaryCurrency})`;
             } else {
-                // No data points yet, add initial points
+                // No data points yet, add initial point
                 datasets[0].data.push({ x: currentDate, y: priceData.price });
-                datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
-                datasets[2].data.push({ x: currentDate, y: pnlValue });
-                datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
-                datasets[4].data.push({ x: currentDate, y: pnlPercentage });
-                console.log(`Added initial data points with price: ${priceData.price}`);
+                console.log(`Added initial data point with price: ${priceData.price}`);
             }
 
             // Apply changes to chart with animation disabled for smoother updates
@@ -632,6 +884,14 @@
                 document.getElementById('chartLoading').textContent = 'No historical data for the selected range.';
                 return; // Exit the function if no data after filtering
             }
+            
+            // Log the date range for debugging
+            if (filteredHistoricalData.length > 0) {
+                const firstDate = new Date(filteredHistoricalData[0].timestamp);
+                const lastDate = new Date(filteredHistoricalData[filteredHistoricalData.length - 1].timestamp);
+                console.log(`Chart data range: ${firstDate.toISOString()} to ${lastDate.toISOString()} (${filteredHistoricalData.length} points)`);
+                console.log(`Selected time range: ${currentTimeRange} days`);
+            }
 
             // Prepare data arrays with aligned timestamps
             const btcPrices = [];
@@ -644,17 +904,19 @@
             filteredHistoricalData.forEach(item => {
                 const currentDate = new Date(item.timestamp);
                 
-                // Filter transactions that occurred up to the current historical date point
-                const relevantTransactions = transactionsWithCumulative.filter(tx => 
-                    new Date(tx.date) <= currentDate
-                );
-                
                 // Get the appropriate historical price based on main currency
                 const price = data.mainCurrency === 'EUR' ? 
                     (item.priceEUR || item.price) : 
                     (item.priceUSD || (item.priceEUR * data.eurUsd));
                 
-                // Only continue if we have transactions by this date
+                // Always add price points regardless of transactions
+                btcPrices.push({ x: currentDate, y: price });
+                
+                // Only calculate P&L and other transaction-dependent data if we have transactions by this date
+                const relevantTransactions = transactionsWithCumulative.filter(tx => 
+                    new Date(tx.date) <= currentDate
+                );
+                
                 if (relevantTransactions.length > 0) {
                     // Calculate historical cumulative values as of this date
                     let historicalCumulativeBtc = 0;
@@ -675,19 +937,12 @@
                     
                     // Calculate P&L based on historical values - make sure to use the right price
                     const pnlValue = (historicalCumulativeBtc * price) - historicalCumulativeCost;
-                    // Log some debugging info for the first few points
-                    if (btcPrices.length < 5) {
-                        console.log(`Historical point: Date=${currentDate.toISOString()}, BTC=${historicalCumulativeBtc.toFixed(8)}, Cost=${historicalCumulativeCost.toFixed(2)}, Price=${price.toFixed(2)}, P&L=${pnlValue.toFixed(2)}`);
-                    }
                     
-                    const timePoint = currentDate;
-                    
-                    // Push data points to arrays
-                    btcPrices.push({ x: timePoint, y: price });
-                    cumulativeBtcData.push({ x: timePoint, y: historicalCumulativeBtc });
-                    pnlData.push({ x: timePoint, y: pnlValue });
-                    pnlPLNData.push({ x: timePoint, y: pnlValue * secondaryRate });
-                    pnlPercentageData.push({ x: timePoint, y: pnlValue / historicalCumulativeCost * 100 });
+                    // Store transaction-dependent data
+                    cumulativeBtcData.push({ x: currentDate, y: historicalCumulativeBtc });
+                    pnlData.push({ x: currentDate, y: pnlValue });
+                    pnlPLNData.push({ x: currentDate, y: pnlValue * secondaryRate });
+                    pnlPercentageData.push({ x: currentDate, y: pnlValue / historicalCumulativeCost * 100 });
                 }
             });
             
@@ -770,14 +1025,20 @@
                             data: btcPrices,
                             borderColor: '#f7931a',
                             backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                            borderWidth: 2,
+                            fill: {
+                                target: 'origin',
+                                above: 'rgba(247, 147, 26, 0.05)',
+                                below: 'rgba(247, 147, 26, 0.05)'
+                            },
                             yAxisID: 'y',
-                            tension: 0.4,
+                            tension: 0.2,
                             pointRadius: 0,
                             pointHitRadius: 10
                         },
                         {
                             label: 'Average Buy Price',
-                            data: cumulativeBtcData.map((point, index) => {
+                            data: btcPrices.map(point => {
                                 // Get all buy transactions up to this point
                                 const relevantTransactions = transactionsWithCumulative.filter(tx => 
                                     new Date(tx.date) <= new Date(point.x) && tx.type === 'buy'
@@ -798,6 +1059,7 @@
                             }),
                             borderColor: '#9c27b0',
                             borderDash: [5, 5],
+                            borderWidth: 2,
                             backgroundColor: 'rgba(156, 39, 176, 0.1)',
                             yAxisID: 'y',
                             tension: 0,
@@ -805,48 +1067,71 @@
                             pointHitRadius: 10
                         },
                         {
-                            label: 'Cumulative BTC',
-                            data: cumulativeBtcData,
-                            borderColor: '#4db6ac',
-                            backgroundColor: 'rgba(77, 182, 172, 0.1)',
-                            borderWidth: 2.5,
-                            yAxisID: 'y1',
-                            tension: 0,
-                            stepped: 'middle',
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: `P&L (${data.mainCurrency || 'EUR'})`,
-                            data: pnlData,
-                            borderColor: '#64b5f6',
-                            backgroundColor: 'rgba(100, 181, 246, 0.1)',
-                            yAxisID: 'y3',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: `P&L (${secondaryCurrency})`,
-                            data: pnlPLNData,
-                            borderColor: '#ba68c8',
-                            borderDash: [5, 5],
-                            backgroundColor: 'rgba(186, 104, 200, 0.1)',
-                            yAxisID: 'y3',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            hidden: true
-                        },
-                        {
-                            label: 'P&L (%)',
-                            data: pnlPercentageData,
-                            borderColor: '#ffd54f',
-                            backgroundColor: 'rgba(255, 213, 79, 0.1)',
-                            yAxisID: 'y2',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10
+                            label: 'Buy Transactions',
+                            data: transactionsWithCumulative
+                                .filter(tx => tx.type === 'buy')
+                                .map(tx => {
+                                    // Find closest price point to this transaction date
+                                    const txDate = new Date(tx.date);
+                                    
+                                    // Find closest price point to this transaction date
+                                    let closestPrice = null;
+                                    let minDiff = Infinity;
+                                    
+                                    for (const price of btcPrices) {
+                                        const diff = Math.abs(new Date(price.x) - txDate);
+                                        if (diff < minDiff) {
+                                            minDiff = diff;
+                                            closestPrice = price.y;
+                                        }
+                                    }
+                                    
+                                    // Calculate average buy price (considering all transactions)
+                                    const allBuyTxs = transactionsWithCumulative.filter(t => t.type === 'buy');
+                                    let totalBtc = 0;
+                                    let totalCost = 0;
+                                    
+                                    allBuyTxs.forEach(buyTx => {
+                                        totalBtc += Number(buyTx.amount) || 0;
+                                        totalCost += Number(buyTx.base?.eur?.cost || buyTx.cost || 0);
+                                    });
+                                    
+                                    const averageBuyPrice = totalBtc > 0 ? totalCost / totalBtc : 0;
+                                    
+                                    // Determine if buy was better than average (below average price)
+                                    const isBetterThanAverage = closestPrice < averageBuyPrice;
+                                    
+                                    return {
+                                        x: txDate,
+                                        y: closestPrice,
+                                        amount: tx.amount,
+                                        cost: tx.base?.eur?.cost || tx.cost || 0,
+                                        isBetterThanAverage: isBetterThanAverage,
+                                        averageBuyPrice: averageBuyPrice
+                                    };
+                                }),
+                            showLine: false,
+                            backgroundColor: function(context) {
+                                // Color the point based on whether it's below or above average buy price
+                                if (!context.raw) return 'rgba(76, 175, 80, 0.8)'; // Default green
+                                
+                                return context.raw.isBetterThanAverage ? 
+                                    'rgba(76, 175, 80, 0.8)' : // Green for buys below average price
+                                    'rgba(244, 67, 54, 0.8)';  // Red for buys above average price
+                            },
+                            borderColor: function(context) {
+                                // Color the border based on whether it's below or above average buy price
+                                if (!context.raw) return 'rgba(76, 175, 80, 1)'; // Default green
+                                
+                                return context.raw.isBetterThanAverage ? 
+                                    'rgba(76, 175, 80, 1)' : // Green for buys below average price
+                                    'rgba(244, 67, 54, 1)';  // Red for buys above average price
+                            },
+                            pointStyle: 'circle',
+                            radius: 6,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            yAxisID: 'y'
                         }
                     ]
                 },
@@ -858,22 +1143,43 @@
                         intersect: false,
                     },
                     stacked: false,
+                    layout: {
+                        padding: {
+                            left: 10,
+                            right: 25,
+                            top: 20,
+                            bottom: 10
+                        }
+                    },
                     plugins: {
                         title: {
                             display: true,
-                            text: 'BTC Price and Portfolio Overview',
-                            font: { size: 16, family: "'JetBrains Mono', monospace", weight: 'bold' },
+                            text: 'BTC Price and Buy Transactions',
+                            font: { size: 18, family: "'JetBrains Mono', monospace", weight: 'bold' },
                             color: textColor,
-                            padding: { top: 10, bottom: 20 }
+                            padding: { top: 10, bottom: 30 }
                         },
                         legend: {
                             position: 'top',
+                            align: 'start',
                             labels: {
                                 color: textColor,
-                                font: { size: 11, family: "'Segoe UI', sans-serif" },
+                                font: { size: 12, family: "'Segoe UI', sans-serif" },
                                 usePointStyle: true,
                                 boxWidth: 8,
-                                padding: 15
+                                padding: 15,
+                                generateLabels: function(chart) {
+                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    
+                                    // Customize the Buy Transactions label
+                                    for (let i = 0; i < originalLabels.length; i++) {
+                                        if (originalLabels[i].text === 'Buy Transactions') {
+                                            originalLabels[i].text = 'Buy Transactions (Green: Below avg, Red: Above avg)';
+                                        }
+                                    }
+                                    
+                                    return originalLabels;
+                                }
                             },
                         },
                         tooltip: {
@@ -883,8 +1189,16 @@
                             borderColor: isLightTheme ? '#ccc' : '#555',
                             borderWidth: 1,
                             padding: 10,
+                            cornerRadius: 6,
                             displayColors: true,
                             boxPadding: 4,
+                            titleFont: {
+                                weight: 'bold',
+                                size: 13
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
                             callbacks: {
                                 title: function(tooltipItems) {
                                     const date = new Date(tooltipItems[0].parsed.x);
@@ -898,31 +1212,54 @@
                                     }
 
                                     let valueString = '';
-                                    const axisID = context.dataset.yAxisID;
                                     
-                                    if (axisID === 'y') {
-                                        valueString = `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
-                                    } else if (axisID === 'y1') {
-                                        valueString = `${value.toFixed(8)} BTC`;
-                                    } else if (axisID === 'y3') {
-                                        const mainPnlValue = context.chart.data.datasets[2].data[context.dataIndex]?.y ?? NaN;
-                                        const secondaryPnlValue = context.chart.data.datasets[3].data[context.dataIndex]?.y ?? NaN;
+                                    // Special handling for transaction points
+                                    if (label === 'Buy Transactions') {
+                                        const dataPoint = context.raw;
+                                        const price = dataPoint.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                        const amount = dataPoint.amount.toFixed(8);
+                                        const cost = dataPoint.cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                        const currentPrice = btcPrices[btcPrices.length - 1].y;
+                                        const avgPrice = dataPoint.averageBuyPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                         
-                                if (context.datasetIndex === 2) { 
-                                    valueString = `Main: ${mainPnlValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
-                                    if (!isNaN(secondaryPnlValue)) {
-                                         valueString += `\nSec: ${secondaryPnlValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${secondaryCurrency}`;
+                                        // Calculate vs average
+                                        const diffFromAvg = ((dataPoint.y - dataPoint.averageBuyPrice) / dataPoint.averageBuyPrice) * 100;
+                                        const vsAvgText = diffFromAvg < 0 ? 
+                                            `${Math.abs(diffFromAvg).toFixed(2)}% below average (good)` : 
+                                            `${diffFromAvg.toFixed(2)}% above average (not optimal)`;
+                                        
+                                        // Calculate vs current price
+                                        const diffFromCurrent = ((currentPrice - dataPoint.y) / dataPoint.y) * 100;
+                                        const vsCurrentText = diffFromCurrent >= 0 ? 
+                                            `Up ${diffFromCurrent.toFixed(2)}% since purchase` : 
+                                            `Down ${Math.abs(diffFromCurrent).toFixed(2)}% since purchase`;
+                                        
+                                        return [
+                                            `Buy Transaction`,
+                                            `Price: ${price} ${data.mainCurrency || 'EUR'}`,
+                                            `Amount: ${amount} BTC`,
+                                            `Total: ${cost} ${data.mainCurrency || 'EUR'}`,
+                                            `Average buy price: ${avgPrice} ${data.mainCurrency || 'EUR'}`,
+                                            `${vsAvgText}`,
+                                            `${vsCurrentText}`
+                                        ];
+                                    } else {
+                                        valueString = `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
+                                        return `${label}: ${valueString}`;
                                     }
-                                } else {
-                                    return null; 
-                                }
-                                
-                            } else if (axisID === 'y2') {
-                                valueString = `${value.toFixed(2)}%`;
-                            }
-
-                                    return `${label}: ${valueString}`;
                                 },
+                            }
+                        },
+                        crosshair: {
+                            line: {
+                                color: isLightTheme ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
+                                width: 1
+                            },
+                            sync: {
+                                enabled: true
+                            },
+                            zoom: {
+                                enabled: false
                             }
                         }
                     },
@@ -930,93 +1267,94 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: 'day',
+                                unit: function() {
+                                    // Choose appropriate unit based on time range
+                                    if (currentTimeRange <= 7) return 'day'; // 1 week - daily view
+                                    if (currentTimeRange <= 90) return 'day'; // 3 months or less
+                                    if (currentTimeRange <= 365) return 'week'; // 1 year or less
+                                    if (currentTimeRange <= 1825) return 'month'; // 5 years or less
+                                    return 'year'; // more than 5 years
+                                }(),
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
-                                    day: 'MMM d',
+                                    day: function() {
+                                        // For 1-week view, show day with time
+                                        if (currentTimeRange <= 7) {
+                                            return 'EEE, HH:mm'; // e.g., "Mon, 14:30"
+                                        }
+                                        return 'MMM d'; // e.g., "Jan 5"
+                                    }(),
                                     week: 'MMM d, yyyy',
                                     month: 'MMM yyyy',
                                     year: 'yyyy'
                                 }
                             },
-                            grid: { color: gridColor },
+                            min: function() {
+                                // Set min date based on currentTimeRange
+                                if (currentTimeRange > 0) {
+                                    const now = new Date();
+                                    return new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
+                                }
+                                return null; // For 'All' range, don't set a minimum
+                            },
+                            max: function() {
+                                // Set max date to current date
+                                return new Date();
+                            },
+                            grid: { 
+                                color: gridColor,
+                                drawBorder: true,
+                                borderDash: isLightTheme ? [] : [5, 5]
+                            },
                             ticks: { 
                                 color: textColor,
                                 font: { size: 10, family: "'Segoe UI', sans-serif" },
                                 maxRotation: 0,
                                 autoSkip: true,
-                                maxTicksLimit: 10
+                                maxTicksLimit: 10,
+                                padding: 8
                             },
                             title: {
                                 display: true,
                                 text: 'Date',
                                 color: textColor,
-                                font: { size: 12, family: "'Segoe UI', sans-serif", weight: 'bold' }
+                                font: { size: 12, family: "'Segoe UI', sans-serif", weight: 'bold' },
+                                padding: { top: 10, bottom: 0 }
+                            },
+                            border: {
+                                display: true,
+                                color: gridColor,
+                                width: 1
                             }
                         },
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            grid: { color: gridColor },
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value.toLocaleString() + ' ' + getCurrencySymbol(data.mainCurrency || 'EUR');
+                            beginAtZero: false,
+                            suggestedMin: function() {
+                                // Calculate a suggested minimum that's a bit below the lowest price
+                                if (btcPrices.length > 0) {
+                                    const prices = btcPrices.map(p => p.y);
+                                    const min = Math.min(...prices);
+                                    return min * 0.95; // 5% below the lowest price
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: `BTC Price (${data.mainCurrency || 'EUR'})`,
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value.toFixed(4) + ' B';
+                                return null;
+                            }(),
+                            suggestedMax: function() {
+                                // Calculate a suggested maximum that's a bit above the highest price
+                                if (btcPrices.length > 0) {
+                                    const prices = btcPrices.map(p => p.y);
+                                    const max = Math.max(...prices);
+                                    return max * 1.05; // 5% above the highest price
                                 }
+                                return null;
+                            }(),
+                            grid: { 
+                                color: gridColor, 
+                                drawBorder: true,
+                                borderDash: isLightTheme ? [] : [5, 5]
                             },
-                            title: {
-                                display: true,
-                                text: 'Cumulative BTC',
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y2: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value.toFixed(0) + '%';
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'P&L %',
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y3: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left', 
-                            grid: { drawOnChartArea: false },
-                            offset: true,
                             ticks: {
                                 color: textColor,
                                 font: { size: 11 },
@@ -1027,9 +1365,27 @@
                             },
                             title: {
                                 display: true,
-                                text: `P&L (${data.mainCurrency || 'EUR'})`,
+                                text: `BTC Price (${data.mainCurrency || 'EUR'})`,
                                 color: textColor,
-                                font: { size: 13, weight: 'bold' }
+                                font: { size: 13, weight: 'bold' },
+                                padding: { top: 0, bottom: 10 }
+                            },
+                            border: {
+                                display: true,
+                                color: gridColor,
+                                width: 1
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 750,
+                        easing: 'easeOutQuart'
+                    },
+                    transitions: {
+                        zoom: {
+                            animation: {
+                                duration: 500,
+                                easing: 'easeOutCubic'
                             }
                         }
                     }
@@ -1087,9 +1443,12 @@
                     // Check if transaction count has changed
                     const transactionCountChanged = oldTransactionCount !== transactionsWithCumulative.length;
                     
-                    // If main currency changed or transactions changed, force re-creation of chart
-                    if ((mainCurrencyChanged || transactionCountChanged) && combinedChart) {
-                        console.log('Recreating chart due to currency change or transaction change');
+                    // If main currency changed, transactions changed, or time range changed, recreate chart
+                    const timeRangeChanged = window.lastTimeRange !== undefined && window.lastTimeRange !== currentTimeRange;
+                    window.lastTimeRange = currentTimeRange;
+                    
+                    if ((mainCurrencyChanged || transactionCountChanged || timeRangeChanged) && combinedChart) {
+                        console.log('Recreating chart due to currency, transaction, or time range change');
                         combinedChart.destroy();
                         combinedChart = null;
                     }
@@ -1358,9 +1717,6 @@
             // Update grid colors
             combinedChart.options.scales.x.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
             combinedChart.options.scales.y.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y1.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y2.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y3.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
             
             // Update text colors
             const textColor = isLightTheme ? '#333333' : '#ffffff';
@@ -1368,16 +1724,10 @@
             // Update title colors
             combinedChart.options.scales.x.title.color = textColor;
             combinedChart.options.scales.y.title.color = textColor;
-            combinedChart.options.scales.y1.title.color = textColor;
-            combinedChart.options.scales.y2.title.color = textColor;
-            combinedChart.options.scales.y3.title.color = textColor;
             
             // Update tick colors
             combinedChart.options.scales.x.ticks.color = textColor;
             combinedChart.options.scales.y.ticks.color = textColor;
-            combinedChart.options.scales.y1.ticks.color = textColor;
-            combinedChart.options.scales.y2.ticks.color = textColor;
-            combinedChart.options.scales.y3.ticks.color = textColor;
         }
 
         function generateQRCode() {
@@ -1473,6 +1823,51 @@
                 console.log('ServiceWorker registration failed: ', error);
               });
           });
+        }
+
+        async function fetchHistoricalData() {
+            try {
+                // Show loading indicator
+                document.getElementById('historical-data-loading').style.display = 'flex';
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                // Determine appropriate API endpoint based on requested data size
+                let endpoint = '/api/historical';
+                
+                // If 'All' mode is selected or a range greater than 1 year, use the extended data endpoint
+                const selectedRange = parseInt(document.querySelector('.time-range-btn.active')?.getAttribute('data-range')) || 0;
+                if (selectedRange > 365 || selectedRange === 0) {
+                    // Use more efficient endpoint for large data requests
+                    endpoint = '/api/historical-extended';
+                    console.log('Using extended historical data endpoint for large range: ' + selectedRange + ' days');
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching historical data: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Cache the data
+                historicalBTCData = data;
+                
+                // Update the chart with the data
+                updateHistoricalChart();
+            } catch (error) {
+                console.error('Error fetching historical BTC data:', error);
+                document.getElementById('errorMessage').textContent = `Failed to fetch historical data: ${error.message}`;
+                document.getElementById('errorMessage').style.display = 'block';
+            } finally {
+                // Hide loading indicator
+                document.getElementById('historical-data-loading').style.display = 'none';
+            }
         }
     </script>
     <script src="js/electron-integration.js"></script>
