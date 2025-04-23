@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
     <link rel="manifest" href="/manifest.json?v=0.4.2">
@@ -580,7 +581,7 @@
         </div>
 
         <div class="chart-container">
-            <h2><i class="fas fa-chart-line"></i> BTC Price and Buy Transactions</h2>
+            <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
             <div class="chart-controls">
                 <div class="time-range-control">
                     <div class="range-label">
@@ -604,26 +605,6 @@
                     <label for="dataDensity">Data Density:</label>
                     <input type="range" id="dataDensity" min="1" max="10" value="5">
                     <span id="densityValue">Medium</span>
-                </div>
-                <div class="comparison-control">
-                    <label for="comparisonSelect">Compare with:</label>
-                    <div class="comparison-select-container">
-                        <select id="comparisonSelect" class="comparison-select">
-                            <option value="">None</option>
-                            <option value="ETH-USD">Ethereum</option>
-                            <option value="SPY">S&P 500 ETF</option>
-                            <option value="QQQ">Nasdaq ETF</option>
-                            <option value="GLD">Gold ETF</option>
-                            <option value="SLV">Silver ETF</option>
-                            <option value="VNQ">Real Estate ETF</option>
-                            <option value="AAPL">Apple</option>
-                            <option value="MSFT">Microsoft</option>
-                            <option value="GOOGL">Google</option>
-                            <option value="AMZN">Amazon</option>
-                            <option value="TSLA">Tesla</option>
-                        </select>
-                        <div class="comparison-badges" id="comparisonBadges"></div>
-                    </div>
                 </div>
                 <button id="refreshBtn" class="refresh-btn">
                     <i class="fas fa-sync-alt"></i> Refresh
@@ -697,6 +678,9 @@
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
         
+        // Register Chart.js plugins - using the correct global variable name from the plugin
+        // ChartAnnotation is not defined, we need to use the actual global variable
+        
         let combinedChart;
         let lastUpdateTime = null;
         const REAL_TIME_UPDATE_INTERVAL = 300000; // 5 minutes in milliseconds
@@ -705,8 +689,6 @@
         let transactionsWithCumulative = []; // Store transactions globally
         let secondaryCurrency = 'PLN'; // Default secondary currency
         let secondaryRate = null; // Store exchange rate globally
-        let comparisonData = {}; // Store comparison data globally
-        let activeComparisons = []; // Track active comparison tickers
 
         // Dropdown navigation functionality
         document.addEventListener('DOMContentLoaded', () => {
@@ -757,13 +739,6 @@
                 
                 // First load the main data
                 loadData(true);
-                
-                // Then update any active comparisons for the new time range
-                if (activeComparisons.length > 0) {
-                    setTimeout(() => {
-                        updateComparisonDataForTimeRange(currentTimeRange);
-                    }, 1000); // Small delay to let the main chart load first
-                }
             });
 
             // Set initial value to 1W (index 0)
@@ -1001,17 +976,12 @@
             const currentDate = new Date();
             const datasets = chart.data.datasets;
             
-            // Find the BTC performance dataset
-            const btcDataset = datasets.find(d => d.label.includes('BTC Performance'));
+            const btcDataset = datasets.find(d => d.label === 'BTC Price');
             if (btcDataset && btcDataset.data.length > 0) {
-                const firstValue = btcDataset.data[0].originalValue;
                 const currentPrice = priceData.mainCurrency === 'EUR' ? 
                     (priceData.priceEUR || priceData.price || 0) : 
                     (priceData.priceUSD || (priceData.priceEUR * priceData.eurUsd) || 0);
                 
-                const percentChange = ((currentPrice / firstValue) * 100) - 100;
-                
-                // Update or add the latest point
                 const todayDateString = currentDate.toISOString().split('T')[0];
                 let todayIndex = -1;
                 
@@ -1026,103 +996,248 @@
                 if (todayIndex !== -1) {
                     btcDataset.data[todayIndex] = {
                         x: currentDate,
-                        y: percentChange,
-                        originalValue: currentPrice
+                        y: currentPrice
                     };
                 } else {
                     btcDataset.data.push({
                         x: currentDate,
-                        y: percentChange,
-                        originalValue: currentPrice
+                        y: currentPrice
                     });
                 }
+                
+                chart.update();
             }
-            
-            // Update chart
-            chart.update();
         }
 
         // Function to create the initial chart
         function createChart(data) {
-            // Check if historical data exists and is an array
             if (!data.historicalBTCData || !Array.isArray(data.historicalBTCData) || data.historicalBTCData.length === 0) {
                 console.warn('Historical BTC data is missing or empty. Chart cannot be generated.');
-                // Optionally display a message to the user
                 document.getElementById('chartLoading').textContent = 'No historical data available for chart.';
-                return; // Exit the function if no data
+                return;
             }
 
-            // Get theme setting
             const isLightTheme = document.body.classList.contains('light-theme');
             const textColor = isLightTheme ? '#333' : '#eee';
             const gridColor = isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
 
-            // Filter and sample historical data
+            // Ensure proper data filtering based on time range
+            const now = new Date();
+            const cutoffDate = currentTimeRange > 0 ? new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000) : null;
+
             const filteredHistoricalData = filterAndSampleData(
-                data.historicalBTCData,
+                data.historicalBTCData.filter(item => {
+                    if (!cutoffDate) return true;
+                    const itemDate = new Date(item.timestamp);
+                    return itemDate >= cutoffDate && itemDate <= now;
+                }),
                 currentTimeRange,
                 currentDensity
             );
-            
-            // Further check if filtering resulted in empty data
+
             if (!filteredHistoricalData || filteredHistoricalData.length === 0) {
-                console.warn('No historical data remaining after filtering. Chart cannot be generated.');
+                console.warn('No historical data remaining after filtering.');
                 document.getElementById('chartLoading').textContent = 'No historical data for the selected range.';
-                return; // Exit the function if no data after filtering
-            }
-            
-            // Log the date range for debugging
-            if (filteredHistoricalData.length > 0) {
-                const firstDate = new Date(filteredHistoricalData[0].timestamp);
-                const lastDate = new Date(filteredHistoricalData[filteredHistoricalData.length - 1].timestamp);
-                console.log(`Chart data range: ${firstDate.toISOString()} to ${lastDate.toISOString()} (${filteredHistoricalData.length} points)`);
-                console.log(`Selected time range: ${currentTimeRange} days`);
+                return;
             }
 
-            // Normalize BTC price data for percentage comparison
-            const btcPrices = [];
-            const firstBtcPrice = filteredHistoricalData[0]?.priceEUR || filteredHistoricalData[0]?.price;
-            
-            filteredHistoricalData.forEach(item => {
-                const price = data.mainCurrency === 'EUR' ? 
+            // Prepare datasets
+            let datasets = [];
+
+            // BTC price dataset
+            const btcPrices = filteredHistoricalData.map(item => ({
+                x: new Date(item.timestamp),
+                y: data.mainCurrency === 'EUR' ? 
                     (item.priceEUR || item.price) : 
-                    (item.priceUSD || (item.priceEUR * data.eurUsd));
-                
-                const percentChange = ((price / firstBtcPrice) * 100) - 100;
-                btcPrices.push({
-                    x: new Date(item.timestamp),
-                    y: percentChange,
-                    originalValue: price
+                    (item.priceUSD || (item.priceEUR * data.eurUsd))
+            }));
+
+            // Calculate moving average (30-day window)
+            const movingAverageWindow = Math.min(30, Math.max(5, Math.floor(btcPrices.length / 20))); // Adaptive window size
+            const movingAverages = [];
+            
+            for (let i = 0; i < btcPrices.length; i++) {
+                const startIdx = Math.max(0, i - movingAverageWindow + 1);
+                const windowPrices = btcPrices.slice(startIdx, i + 1);
+                const average = windowPrices.reduce((sum, price) => sum + price.y, 0) / windowPrices.length;
+                movingAverages.push({
+                    x: btcPrices[i].x,
+                    y: average
                 });
+            }
+
+            // Calculate cumulative buying average price trend
+            const buyingAverageTrend = [];
+            if (data.transactions && data.transactions.length > 0) {
+                let cumulativeAmount = 0;
+                let cumulativeCost = 0;
+                const sortedTransactions = [...data.transactions]
+                    .filter(tx => tx.type === 'buy')
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                sortedTransactions.forEach((tx, index) => {
+                    const txDate = new Date(tx.date);
+                    if (!currentTimeRange || txDate >= cutoffDate) {
+                        const mainCurrency = data.mainCurrency || 'EUR';
+                        const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                        const txAmount = tx.amount;
+                        
+                        // For each transaction, add two points to create a step effect:
+                        // First point: just before this transaction (using previous average)
+                        if (index > 0 && cumulativeAmount > 0) {
+                            buyingAverageTrend.push({
+                                x: new Date(txDate.getTime() - 1), // 1ms before
+                                y: cumulativeCost / cumulativeAmount
+                            });
+                        }
+                        
+                        // Update cumulative values
+                        cumulativeAmount += txAmount;
+                        cumulativeCost += txAmount * txPrice;
+                        
+                        // Second point: at this transaction (with new average)
+                        if (cumulativeAmount > 0) {
+                            buyingAverageTrend.push({
+                                x: txDate,
+                                y: cumulativeCost / cumulativeAmount
+                            });
+                        }
+                    }
+                });
+
+                // Extend the last average value to the current date
+                if (buyingAverageTrend.length > 0) {
+                    buyingAverageTrend.push({
+                        x: new Date(),
+                        y: buyingAverageTrend[buyingAverageTrend.length - 1].y
+                    });
+                }
+            }
+
+            // Add datasets in the correct order
+            datasets.push({
+                label: 'BTC Price',
+                data: btcPrices,
+                borderColor: '#f7931a',
+                backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                borderWidth: 2,
+                fill: false,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHitRadius: 10,
+                order: 2
             });
 
-            // Get the canvas context BEFORE creating the chart
+            datasets.push({
+                label: 'Market Average Trend',
+                data: movingAverages,
+                borderColor: '#4a90e2',
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHitRadius: 10,
+                order: 1
+            });
+
+            if (buyingAverageTrend.length > 0) {
+                datasets.push({
+                    label: 'Your Average Buy Price',
+                    data: buyingAverageTrend,
+                    borderColor: '#28a745',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    fill: false,
+                    tension: 0,
+                    pointRadius: 0,
+                    pointHitRadius: 10,
+                    stepped: true,
+                    order: 1
+                });
+            }
+
+            // Add transactions dataset
+            if (data.transactions && data.transactions.length > 0) {
+                const mainCurrency = data.mainCurrency || 'EUR';
+                const transactions = data.transactions
+                    .map(tx => {
+                        const txDate = new Date(tx.date);
+                        if (currentTimeRange > 0 && txDate < cutoffDate) {
+                            return null;
+                        }
+
+                        const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                        
+                        // Find the closest market average
+                        const closestAvg = movingAverages.reduce((closest, avg) => {
+                            if (!closest) return avg;
+                            return Math.abs(new Date(avg.x) - txDate) < Math.abs(new Date(closest.x) - txDate) ? avg : closest;
+                        });
+
+                        // Find the buying average at this point
+                        const buyingAvg = buyingAverageTrend.find(avg => 
+                            Math.abs(new Date(avg.x) - txDate) < 24 * 60 * 60 * 1000
+                        );
+                        
+                        // UPDATED: Compare with the market average instead of buying average
+                        // Green if price is below market average (good deal)
+                        // Red if price is above market average (not as good deal)
+                        const compareAvg = closestAvg?.y; // Use market average for coloring
+                        
+                        const percentDiff = txPrice && compareAvg ? ((txPrice - compareAvg) / compareAvg) * 100 : 0;
+                        const intensity = Math.min(0.9, Math.max(0.5, Math.abs(percentDiff) / 10 + 0.5));
+                        
+                        // More intense color for bigger difference from average
+                        const color = txPrice <= compareAvg ? 
+                            `rgba(0, 180, 0, ${intensity})` : // Green for prices below market average
+                            `rgba(220, 0, 0, ${intensity})`;  // Red for prices above market average
+
+                        return {
+                            x: txDate,
+                            y: txPrice,
+                            // Scale bubble based on BTC value (price * amount) for better visualization
+                            r: Math.min(20, Math.max(5, Math.sqrt(Math.abs(tx.amount * txPrice) / 100) * 3)),
+                            amount: tx.amount,
+                            price: txPrice,
+                            date: tx.date,
+                            type: tx.type,
+                            color: color,
+                            marketAvg: closestAvg?.y,
+                            buyingAvg: buyingAvg?.y,
+                            percentDiff: percentDiff
+                        };
+                    })
+                    .filter(tx => tx !== null);
+
+                if (transactions.length > 0) {
+                    datasets.push({
+                        type: 'bubble',
+                        label: 'Transactions',
+                        data: transactions,
+                        backgroundColor: ctx => {
+                            if (!ctx.raw) return 'rgba(0, 180, 0, 0.7)';
+                            return ctx.raw.color;
+                        },
+                        borderColor: '#fff',
+                        borderWidth: 1,
+                        pointStyle: 'circle',
+                        radius: 0,
+                        hoverRadius: 0,
+                        pointHoverBorderWidth: 2,
+                        order: 3
+                    });
+                }
+            }
+
             const ctx = document.getElementById('combinedChart').getContext('2d');
-            
-            // Destroy existing chart instance if it exists
             if (combinedChart) {
                 combinedChart.destroy();
             }
 
-            // Create chart with configuration
             combinedChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    datasets: [
-                        {
-                            label: `BTC Performance %`,
-                            data: btcPrices,
-                            borderColor: '#f7931a',
-                            backgroundColor: 'rgba(247, 147, 26, 0.1)',
-                            borderWidth: 2,
-                            fill: false,
-                            yAxisID: 'y2',
-                            tension: 0.2,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        }
-                    ]
-                },
+                data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -1130,100 +1245,101 @@
                         mode: 'index',
                         intersect: false,
                     },
-                    stacked: false,
-                    layout: {
-                        padding: {
-                            left: 10,
-                            right: 25,
-                            top: 20,
-                            bottom: 10
-                        }
-                    },
                     plugins: {
+                        crosshair: {
+                            line: {
+                                color: 'rgba(247, 147, 26, 0.5)',
+                                width: 1
+                            },
+                            sync: {
+                                enabled: true,
+                                group: 1,
+                                suppressTooltips: false
+                            },
+                            zoom: {
+                                enabled: false
+                            }
+                        },
+                        // Add a horizontal annotation line for the average purchase price
+                        annotation: {
+                            annotations: {
+                                buyingAvgLine: {
+                                    type: 'line',
+                                    mode: 'horizontal',
+                                    scaleID: 'y',
+                                    value: data.averagePrice?.eur || data.averagePrice || 0,
+                                    borderColor: 'rgba(40, 167, 69, 0.5)',
+                                    borderWidth: 2,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        enabled: true,
+                                        content: 'Your Avg',
+                                        position: 'start',
+                                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                                        color: '#fff',
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                }
+                            }
+                        },
                         title: {
                             display: true,
-                            text: 'BTC Price and Buy Transactions',
+                            text: 'BTC Price and Transactions',
                             font: { size: 18, family: "'JetBrains Mono', monospace", weight: 'bold' },
                             color: textColor,
                             padding: { top: 10, bottom: 30 }
                         },
-                        legend: {
-                            position: 'top',
-                            align: 'start',
-                            labels: {
-                                color: textColor,
-                                font: { size: 12, family: "'Segoe UI', sans-serif" },
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                padding: 15,
-                                generateLabels: function(chart) {
-                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    
-                                    // Customize the Buy Transactions label
-                                    for (let i = 0; i < originalLabels.length; i++) {
-                                        if (originalLabels[i].text === 'Buy Transactions') {
-                                            originalLabels[i].text = 'Buy Transactions (Green: Below avg, Red: Above avg)';
-                                        }
-                                    }
-                                    
-                                    return originalLabels;
-                                }
-                            },
-                        },
                         tooltip: {
-                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(30, 30, 30, 0.9)',
-                            titleColor: isLightTheme ? '#333' : '#eee',
-                            bodyColor: isLightTheme ? '#333' : '#eee',
-                            borderColor: isLightTheme ? '#ccc' : '#555',
-                            borderWidth: 1,
-                            padding: 10,
-                            cornerRadius: 6,
-                            displayColors: true,
-                            boxPadding: 4,
-                            titleFont: {
-                                weight: 'bold',
-                                size: 13
-                            },
-                            bodyFont: {
-                                size: 12
-                            },
                             callbacks: {
-                                title: function(tooltipItems) {
-                                    const date = new Date(tooltipItems[0].parsed.x);
-                                    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                                },
                                 label: function(context) {
                                     const label = context.dataset.label || '';
-                                    const value = context.raw.y;
-                                    const originalValue = context.raw.originalValue;
-                                    
-                                    if (value === null || isNaN(value)) {
-                                        return null;
-                                    }
-
-                                    if (context.dataset.comparisonSymbol || label.includes('BTC Performance')) {
-                                        const symbol = context.dataset.comparisonSymbol || 'BTC';
+                                    if (label === 'BTC Price' || label === 'Market Average Trend' || label === 'Your Average Buy Price') {
+                                        return `${label}: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
+                                    } else if (label === 'Transactions') {
+                                        const dataPoint = context.raw;
+                                        if (!dataPoint) return null;
+                                        const currency = data.mainCurrency || 'EUR';
+                                        const marketAvg = dataPoint.marketAvg?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A';
+                                        const buyingAvg = dataPoint.buyingAvg?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A';
+                                        
+                                        // Calculate transaction value
+                                        const txValue = dataPoint.price * dataPoint.amount;
+                                        // Format percent difference with +/- sign
+                                        const diffSign = dataPoint.percentDiff >= 0 ? '+' : '';
+                                        const formattedDiff = `${diffSign}${(dataPoint.percentDiff || 0).toFixed(2)}%`;
+                                        const compareText = dataPoint.marketAvg && dataPoint.price 
+                                            ? (dataPoint.price <= dataPoint.marketAvg ? 'Below' : 'Above') 
+                                            : 'N/A';
+                                        
                                         return [
-                                            `${label}`,
-                                            `Performance: ${value > 0 ? '+' : ''}${value.toFixed(2)}%`,
-                                            `Value: ${originalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                                            `${label} (${dataPoint.type.toUpperCase()})`,
+                                            `Amount: ${dataPoint.amount.toFixed(8)} BTC`,
+                                            `Price: ${dataPoint.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`,
+                                            `Value: ${txValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`,
+                                            `Vs Market: ${formattedDiff} (${compareText})`,
+                                            `Market Avg: ${marketAvg} ${currency}`,
+                                            `Your Avg: ${buyingAvg} ${currency}`,
+                                            `Date: ${new Date(dataPoint.date).toLocaleDateString()}`
                                         ];
                                     }
-                                    
-                                    // ... rest of existing tooltip callback ...
+                                    return `${label}: ${context.parsed.y}`;
                                 }
                             }
                         },
-                        crosshair: {
-                            line: {
-                                color: isLightTheme ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.3)',
-                                width: 1
-                            },
-                            sync: {
-                                enabled: true
-                            },
-                            zoom: {
-                                enabled: false
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                generateLabels: function(chart) {
+                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                                    originalLabels.forEach(label => {
+                                        if (label.text === 'Transactions') {
+                                            label.text = 'Transactions (Green: Below market avg, Red: Above market avg)';
+                                        }
+                                    });
+                                    return originalLabels;
+                                }
                             }
                         }
                     },
@@ -1232,98 +1348,50 @@
                             type: 'time',
                             time: {
                                 unit: function() {
-                                    // Choose appropriate unit based on time range
-                                    if (currentTimeRange <= 7) return 'day'; // 1 week - daily view
-                                    if (currentTimeRange <= 90) return 'day'; // 3 months or less
-                                    if (currentTimeRange <= 365) return 'week'; // 1 year or less
-                                    if (currentTimeRange <= 1825) return 'month'; // 5 years or less
-                                    return 'year'; // more than 5 years
+                                    if (currentTimeRange <= 7) return 'day';
+                                    if (currentTimeRange <= 90) return 'day';
+                                    if (currentTimeRange <= 365) return 'week';
+                                    if (currentTimeRange <= 1825) return 'month';
+                                    return 'year';
                                 }(),
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
-                                    day: function() {
-                                        // For 1-week view, show day with time
-                                        if (currentTimeRange <= 7) {
-                                            return 'EEE, HH:mm'; // e.g., "Mon, 14:30"
-                                        }
-                                        return 'MMM d'; // e.g., "Jan 5"
-                                    }(),
+                                    day: 'MMM d',
                                     week: 'MMM d, yyyy',
                                     month: 'MMM yyyy',
                                     year: 'yyyy'
                                 }
                             },
-                            min: function() {
-                                // Set min date based on currentTimeRange
-                                if (currentTimeRange > 0) {
-                                    const now = new Date();
-                                    return new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000);
-                                }
-                                return null; // For 'All' range, don't set a minimum
-                            },
-                            max: function() {
-                                // Set max date to current date
-                                return new Date();
-                            },
-                            grid: { 
+                            grid: {
                                 color: gridColor,
-                                drawBorder: true,
-                                borderDash: isLightTheme ? [] : [5, 5]
+                                drawBorder: true
                             },
-                            ticks: { 
+                            ticks: {
                                 color: textColor,
-                                font: { size: 10, family: "'Segoe UI', sans-serif" },
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 10,
-                                padding: 8
-                            },
-                            title: {
-                                display: true,
-                                text: 'Date',
-                                color: textColor,
-                                font: { size: 12, family: "'Segoe UI', sans-serif", weight: 'bold' },
-                                padding: { top: 10, bottom: 0 }
-                            },
-                            border: {
-                                display: true,
-                                color: gridColor,
-                                width: 1
+                                maxRotation: 45
                             }
                         },
                         y: {
                             type: 'linear',
-                            display: false  // Hide the original price axis
-                        },
-                        y2: {
-                            type: 'linear',
                             display: true,
-                            position: 'right',
+                            position: 'left',
                             grid: {
-                                drawOnChartArea: true,
+                                color: gridColor,
+                                drawBorder: true
                             },
                             ticks: {
+                                color: textColor,
                                 callback: function(value) {
-                                    return value.toFixed(1) + '%';
+                                    return value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
                                 }
                             },
                             title: {
                                 display: true,
-                                text: 'Performance %',
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        }
-                    },
-                    animation: {
-                        duration: 750,
-                        easing: 'easeOutQuart'
-                    },
-                    transitions: {
-                        zoom: {
-                            animation: {
-                                duration: 500,
-                                easing: 'easeOutCubic'
+                                text: `BTC Price (${data.mainCurrency || 'EUR'})`,
+                                color: textColor
                             }
                         }
                     }
@@ -1629,9 +1697,6 @@
 
             // Theme toggle functionality
             setupThemeToggle();
-            
-            // Comparison select functionality
-            setupComparisonSelect();
         });
 
         // Function to setup theme toggle
@@ -1820,331 +1885,6 @@
             } finally {
                 // Hide loading indicator
                 document.getElementById('historical-data-loading').style.display = 'none';
-            }
-        }
-
-        // Function to setup comparison select dropdown
-        function setupComparisonSelect() {
-            const comparisonSelect = document.getElementById('comparisonSelect');
-            const comparisonBadges = document.getElementById('comparisonBadges');
-            
-            if (!comparisonSelect || !comparisonBadges) return;
-            
-            comparisonSelect.addEventListener('change', async () => {
-                const symbol = comparisonSelect.value;
-                
-                // Reset the dropdown to default "None" option
-                comparisonSelect.value = '';
-                
-                if (!symbol) return; // No symbol selected
-                
-                // Check if symbol is already active
-                if (activeComparisons.includes(symbol)) {
-                    console.log(`Symbol ${symbol} is already being compared`);
-                    return;
-                }
-                
-                // Maximum 3 comparisons at a time
-                if (activeComparisons.length >= 3) {
-                    alert('Maximum of 3 comparisons allowed. Please remove one before adding another.');
-                    return;
-                }
-                
-                // Add to active comparisons
-                activeComparisons.push(symbol);
-                
-                // Show loading indicator
-                const loadingBadge = document.createElement('div');
-                loadingBadge.className = 'comparison-badge';
-                loadingBadge.setAttribute('data-symbol', symbol);
-                loadingBadge.innerHTML = `
-                    <div class="loading-dot"></div>
-                    <span>Loading ${getSymbolName(symbol)}...</span>
-                `;
-                comparisonBadges.appendChild(loadingBadge);
-                
-                try {
-                    // Fetch comparison data
-                    await fetchComparisonData(symbol, currentTimeRange);
-                    
-                    // Update the badge with actual data
-                    updateComparisonBadge(symbol);
-                    
-                    // Update chart with new comparison data
-                    if (combinedChart) {
-                        addComparisonToChart(symbol);
-                    }
-                } catch (error) {
-                    console.error(`Error adding comparison for ${symbol}:`, error);
-                    
-                    // Remove from active comparisons on error
-                    activeComparisons = activeComparisons.filter(s => s !== symbol);
-                    
-                    // Remove loading badge
-                    const badgeToRemove = comparisonBadges.querySelector(`[data-symbol="${symbol}"]`);
-                    if (badgeToRemove) {
-                        comparisonBadges.removeChild(badgeToRemove);
-                    }
-                    
-                    alert(`Failed to fetch data for ${getSymbolName(symbol)}.`);
-                }
-            });
-            
-            // Handle click on badges (for removal)
-            comparisonBadges.addEventListener('click', (e) => {
-                if (e.target.classList.contains('remove-btn') || e.target.closest('.remove-btn')) {
-                    const badge = e.target.closest('.comparison-badge');
-                    if (badge) {
-                        const symbol = badge.getAttribute('data-symbol');
-                        removeComparison(symbol);
-                    }
-                }
-            });
-        }
-        
-        // Function to get symbol display name
-        function getSymbolName(symbol) {
-            const symbolMap = {
-                'ETH-USD': 'Ethereum',
-                'SPY': 'S&P 500 ETF',
-                'QQQ': 'Nasdaq ETF',
-                'GLD': 'Gold ETF',
-                'SLV': 'Silver ETF',
-                'VNQ': 'Real Estate ETF',
-                'AAPL': 'Apple',
-                'MSFT': 'Microsoft',
-                'GOOGL': 'Google',
-                'AMZN': 'Amazon',
-                'TSLA': 'Tesla'
-            };
-            
-            return symbolMap[symbol] || symbol;
-        }
-        
-        // Function to fetch comparison data
-        async function fetchComparisonData(symbol, timeRange) {
-            try {
-                const response = await fetch(`/api/comparison-data?symbol=${symbol}&timeRange=${timeRange}`, {
-                    credentials: 'include' // Add this line to include authentication credentials
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                // Store the fetched data
-                comparisonData[symbol] = data;
-                console.log(`Fetched comparison data for ${symbol}:`, data);
-                
-                return data;
-            } catch (error) {
-                console.error(`Error fetching comparison data for ${symbol}:`, error);
-                throw error;
-            }
-        }
-        
-        // Function to update comparison badge
-        function updateComparisonBadge(symbol) {
-            const comparisonBadges = document.getElementById('comparisonBadges');
-            if (!comparisonBadges) return;
-            
-            // Remove existing badge if any
-            const existingBadge = comparisonBadges.querySelector(`[data-symbol="${symbol}"]`);
-            if (existingBadge) {
-                comparisonBadges.removeChild(existingBadge);
-            }
-            
-            // Create new badge
-            const badge = document.createElement('div');
-            badge.className = 'comparison-badge';
-            badge.setAttribute('data-symbol', symbol);
-            
-            const symbolData = comparisonData[symbol]?.symbol || { color: '#999', name: getSymbolName(symbol) };
-            const color = symbolData.color || '#999';
-            const name = symbolData.name || symbol;
-            
-            badge.innerHTML = `
-                <div class="color-indicator" style="background-color: ${color};"></div>
-                <span>${name}</span>
-                <button class="remove-btn" title="Remove comparison">×</button>
-            `;
-            
-            comparisonBadges.appendChild(badge);
-        }
-        
-        // Function to add comparison data to chart
-        function addComparisonToChart(symbol) {
-            if (!combinedChart || !comparisonData[symbol]) return;
-            
-            const symbolData = comparisonData[symbol];
-            const color = symbolData.symbol.color || '#999';
-            
-            // Check if dataset already exists
-            const existingDatasetIndex = combinedChart.data.datasets.findIndex(
-                dataset => dataset.comparisonSymbol === symbol
-            );
-            
-            if (existingDatasetIndex >= 0) {
-                // Update existing dataset
-                combinedChart.data.datasets[existingDatasetIndex].data = symbolData.data;
-            } else {
-                // Normalize data for comparison
-                const normalizedData = normalizeComparisonData(symbolData.data);
-                
-                // Add new dataset
-                combinedChart.data.datasets.push({
-                    label: symbolData.symbol.name,
-                    comparisonSymbol: symbol, // For identification
-                    data: normalizedData,
-                    borderColor: color,
-                    backgroundColor: 'transparent',
-                    borderWidth: 2,
-                    borderDash: [],
-                    pointRadius: 0,
-                    pointHoverRadius: 5,
-                    pointStyle: 'circle',
-                    pointBackgroundColor: color,
-                    pointBorderColor: 'white',
-                    pointBorderWidth: 1,
-                    tension: 0.1,
-                    yAxisID: 'y2',  // Use secondary y-axis for comparison
-                    hidden: false
-                });
-                
-                // Make sure the secondary y-axis is enabled
-                enableSecondaryYAxis();
-            }
-            
-            // Update chart
-            combinedChart.update();
-        }
-        
-        // Function to normalize comparison data relative to first point
-        function normalizeComparisonData(data) {
-            if (!data || data.length === 0) return [];
-            
-            const firstValue = data[0].y;
-            
-            // Return data as percentage change from first point
-            return data.map(point => ({
-                x: point.x,
-                y: ((point.y / firstValue) * 100) - 100,  // Percentage change
-                originalValue: point.y // Keep original value for tooltips
-            }));
-        }
-        
-        // Function to enable secondary Y axis for comparisons
-        function enableSecondaryYAxis() {
-            if (!combinedChart) return;
-            
-            // Check if secondary y-axis already exists
-            if (combinedChart.options.scales.y2) {
-                combinedChart.options.scales.y2.display = true;
-                return;
-            }
-            
-            // Add secondary y-axis
-            combinedChart.options.scales.y2 = {
-                type: 'linear',
-                display: true,
-                position: 'right',
-                grid: {
-                    drawOnChartArea: false,
-                },
-                ticks: {
-                    callback: function(value) {
-                        return value.toFixed(1) + '%';
-                    },
-                    color: combinedChart.options.scales.y.ticks.color
-                },
-                title: {
-                    display: true,
-                    text: 'Performance %',
-                    color: combinedChart.options.scales.y.title.color,
-                    font: combinedChart.options.scales.y.title.font
-                },
-                border: {
-                    display: true,
-                    color: combinedChart.options.scales.y.grid.color,
-                    width: 1
-                }
-            };
-        }
-        
-        // Function to remove comparison data
-        function removeComparison(symbol) {
-            // Remove from active comparisons
-            activeComparisons = activeComparisons.filter(s => s !== symbol);
-            
-            // Remove from comparisonData
-            delete comparisonData[symbol];
-            
-            // Remove badge
-            const comparisonBadges = document.getElementById('comparisonBadges');
-            if (comparisonBadges) {
-                const badge = comparisonBadges.querySelector(`[data-symbol="${symbol}"]`);
-                if (badge) {
-                    comparisonBadges.removeChild(badge);
-                }
-            }
-            
-            // Remove from chart
-            if (combinedChart) {
-                combinedChart.data.datasets = combinedChart.data.datasets.filter(
-                    dataset => dataset.comparisonSymbol !== symbol
-                );
-                
-                // Hide secondary y-axis if no comparisons left
-                if (!activeComparisons.length && combinedChart.options.scales.y2) {
-                    combinedChart.options.scales.y2.display = false;
-                }
-                
-                combinedChart.update();
-            }
-        }
-
-        // Function to update all comparison data based on new time range
-        async function updateComparisonDataForTimeRange(newTimeRange) {
-            // Show loading indicator for comparisons
-            const comparisonBadges = document.getElementById('comparisonBadges');
-            if (comparisonBadges) {
-                const badges = comparisonBadges.querySelectorAll('.comparison-badge');
-                badges.forEach(badge => {
-                    const symbol = badge.getAttribute('data-symbol');
-                    if (symbol) {
-                        badge.innerHTML = `
-                            <div class="loading-dot"></div>
-                            <span>Updating ${getSymbolName(symbol)}...</span>
-                        `;
-                    }
-                });
-            }
-
-            // Create a copy of active comparisons to avoid issues with async updates
-            const currentComparisons = [...activeComparisons];
-            
-            try {
-                // First, reload the main BTC data with the new time range
-                await loadData(true);
-                
-                // Then update each comparison
-                for (const symbol of currentComparisons) {
-                    try {
-                        await fetchComparisonData(symbol, newTimeRange);
-                        
-                        if (combinedChart) {
-                            addComparisonToChart(symbol);
-                        }
-                        updateComparisonBadge(symbol);
-                    } catch (error) {
-                        console.error(`Error updating comparison data for ${symbol}:`, error);
-                        removeComparison(symbol);
-                    }
-                }
-            } catch (error) {
-                console.error('Error updating data for new time range:', error);
             }
         }
     </script>
