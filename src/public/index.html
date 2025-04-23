@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>BTC Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.4.2">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json?v=0.4.2">
     <style>
         :root {
             /* Base colors */
@@ -327,6 +330,75 @@
                 align-self: flex-end;
             }
         }
+
+        /* Time Range Slider Styles */
+        .time-range-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .range-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .time-range-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .time-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .time-range-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .range-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
+        }
+
+        #timeRangeValue {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
@@ -416,16 +488,23 @@
         <div class="chart-container">
             <h2><i class="fas fa-chart-line"></i> BTC Price and Buy Transactions</h2>
             <div class="chart-controls">
-                <div class="time-range-buttons">
-                    <button class="time-range-btn" data-range="7">1W</button>
-                    <button class="time-range-btn" data-range="30">1M</button>
-                    <button class="time-range-btn" data-range="90">3M</button>
-                    <button class="time-range-btn" data-range="180">6M</button>
-                    <button class="time-range-btn" data-range="365">1Y</button>
-                    <button class="time-range-btn" data-range="730">2Y</button>
-                    <button class="time-range-btn" data-range="1825">5Y</button>
-                    <button class="time-range-btn" data-range="3650">10Y</button>
-                    <button class="time-range-btn" data-range="0">All</button>
+                <div class="time-range-control">
+                    <div class="range-label">
+                        <label for="timeRange">Time Range:</label>
+                        <span id="timeRangeValue">1W</span>
+                    </div>
+                    <input type="range" id="timeRange" min="0" max="8" value="0" class="time-range-slider">
+                    <div class="range-markers">
+                        <span>1W</span>
+                        <span>1M</span>
+                        <span>3M</span>
+                        <span>6M</span>
+                        <span>1Y</span>
+                        <span>2Y</span>
+                        <span>5Y</span>
+                        <span>10Y</span>
+                        <span>All</span>
+                    </div>
                 </div>
                 <div class="density-control">
                     <label for="dataDensity">Data Density:</label>
@@ -541,24 +620,32 @@
                 regularThemeToggle.click();
             });
             
-            // Time range buttons
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentTimeRange = parseInt(btn.dataset.range);
-                    console.log(`Time range changed to ${currentTimeRange} days`);
-                    
-                    // Always force chart recreation when time range changes to ensure
-                    // proper time unit display and formatting
-                    if (combinedChart) {
-                        combinedChart.destroy();
-                        combinedChart = null;
-                    }
-                    
-                    loadData(true);
-                });
+            // Time range slider functionality
+            const timeRangeSlider = document.getElementById('timeRange');
+            const timeRangeValue = document.getElementById('timeRangeValue');
+            const timeRanges = [7, 30, 90, 180, 365, 730, 1825, 3650, 0];
+            const timeLabels = ['1W', '1M', '3M', '6M', '1Y', '2Y', '5Y', '10Y', 'All'];
+
+            timeRangeSlider.addEventListener('input', () => {
+                const index = parseInt(timeRangeSlider.value);
+                timeRangeValue.textContent = timeLabels[index];
+                currentTimeRange = timeRanges[index];
+                console.log(`Time range changed to ${currentTimeRange} days`);
+                
+                // Always force chart recreation when time range changes to ensure
+                // proper time unit display and formatting
+                if (combinedChart) {
+                    combinedChart.destroy();
+                    combinedChart = null;
+                }
+                
+                loadData(true);
             });
+
+            // Set initial value to 1W (index 0)
+            timeRangeSlider.value = 0;
+            timeRangeValue.textContent = timeLabels[0];
+            currentTimeRange = timeRanges[0];
             
             // Density slider
             const densitySlider = document.getElementById('dataDensity');
@@ -580,16 +667,6 @@
                 ];
                 densityValue.textContent = densityLabels[currentDensity - 1];
                 loadData(true);
-            });
-
-            // Set the 1W button as active by default
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                if (btn.dataset.range === '7') {
-                    btn.classList.add('active');
-                    currentTimeRange = 7; // Ensure the initial time range is set
-                } else {
-                    btn.classList.remove('active');
-                }
             });
         });
 
