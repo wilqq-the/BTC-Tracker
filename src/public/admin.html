@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>BTC Tracker - Admin Panel</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.4.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json?v=0.4.2">
     <style>
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
@@ -630,6 +633,29 @@
                             </div>
                             
                             <div class="form-group">
+                                <label for="historicalDataYears"><i class="fas fa-history"></i> Historical Data (Years):</label>
+                                <select id="historicalDataYears" name="historicalDataYears">
+                                    <option value="1">1 Year</option>
+                                    <option value="2">2 Years</option>
+                                    <option value="3">3 Years</option>
+                                    <option value="5">5 Years</option>
+                                    <option value="10">10 Years</option>
+                                </select>
+                                <p class="help-text">How many years of historical BTC price data to maintain</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="historicalDataRefreshHours"><i class="fas fa-sync-alt"></i> Data Refresh Interval:</label>
+                                <select id="historicalDataRefreshHours" name="historicalDataRefreshHours">
+                                    <option value="12">12 Hours</option>
+                                    <option value="24">24 Hours</option>
+                                    <option value="48">48 Hours</option>
+                                    <option value="168">Weekly</option>
+                                </select>
+                                <p class="help-text">How often to check for and fetch new historical data</p>
+                            </div>
+                            
+                            <div class="form-group">
                                 <label for="coingeckoApiKey"><i class="fas fa-key"></i> CoinGecko API Key (optional):</label>
                                 <div class="api-key-container">
                                     <input type="text" id="coingeckoApiKey" name="coingeckoApiKey" placeholder="Enter your CoinGecko API key">
@@ -644,6 +670,9 @@
                             <div class="form-buttons">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save"></i> Save Settings
+                                </button>
+                                <button type="button" id="refreshHistoricalDataBtn" class="btn btn-secondary">
+                                    <i class="fas fa-sync"></i> Refresh Historical Data
                                 </button>
                             </div>
                         </form>
@@ -1251,6 +1280,10 @@
                 document.getElementById('secondaryCurrency').value = settings.secondaryCurrency || 'PLN';
                 document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
                 
+                // Populate historical data settings
+                document.getElementById('historicalDataYears').value = settings.historicalDataYears || '1';
+                document.getElementById('historicalDataRefreshHours').value = settings.historicalDataRefreshHours || '24';
+                
                 // Populate API key if available
                 if (settings.coingeckoApiKey) {
                     document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
@@ -1273,11 +1306,15 @@
                 const secondaryCurrency = document.getElementById('secondaryCurrency').value;
                 const mainCurrency = document.getElementById('mainCurrency').value;
                 const coingeckoApiKey = document.getElementById('coingeckoApiKey').value;
+                const historicalDataYears = document.getElementById('historicalDataYears').value;
+                const historicalDataRefreshHours = document.getElementById('historicalDataRefreshHours').value;
                 
                 // Create settings object
                 const settings = {
                     secondaryCurrency,
-                    mainCurrency
+                    mainCurrency,
+                    historicalDataYears,
+                    historicalDataRefreshHours
                 };
                 
                 // Only include API key if it's provided
@@ -1897,6 +1934,48 @@
             
             // Load PIN settings when page loads
             loadPinSettings();
+        });
+
+        // Add event listener for the refresh historical data button
+        document.getElementById('refreshHistoricalDataBtn').addEventListener('click', async function() {
+            try {
+                // Show loading state
+                const button = this;
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                button.disabled = true;
+                
+                // Request refresh of historical data
+                const response = await fetch('/api/admin/refresh-historical-data', {
+                    method: 'POST'
+                });
+                
+                if (!response.ok) {
+                    // Check for HTML response (login redirect)
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    throw new Error('Failed to refresh historical data');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`Historical data refreshed successfully! ${result.count || 0} days of data updated.`);
+                } else {
+                    alert(`Failed to refresh data: ${result.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Error refreshing historical data:', error);
+                if (handleAuthError(error)) return;
+                alert('Error: ' + error.message);
+            } finally {
+                // Restore button state
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
         });
     </script>
 </body>

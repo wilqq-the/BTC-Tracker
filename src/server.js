@@ -380,134 +380,353 @@ function saveHistoricalBTCData() {
     }
 }
 
-// Fetch current BTC price
+// Fetch current BTC price using Yahoo Finance
 async function fetchCurrentBTCPrice() {
     try {
-        console.log('[server.js] Fetching current BTC price');
+        console.log('[server.js] Fetching current BTC price from Yahoo Finance');
         
-        const settings = loadSettings();
-        const baseUrl = 'https://api.coingecko.com/api/v3';
+        // Calculate current date timestamps (today only)
+        const endDate = Math.floor(Date.now() / 1000);
+        const startDate = endDate - (24 * 60 * 60); // 1 day ago
         
-        let apiUrl = `${baseUrl}/simple/price?ids=bitcoin&vs_currencies=eur,usd`;
-        if (settings.coingeckoApiKey) {
-            apiUrl += `&x_cg_demo_api_key=${settings.coingeckoApiKey}`;
-            console.log('[server.js] Using CoinGecko API key as query parameter');
+        // Fetch current prices in both EUR and USD
+        const btcEurData = await fetchYahooFinanceData('BTC-EUR', startDate, endDate);
+        const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
+        
+        // Get the latest data points
+        const eurDates = Object.keys(btcEurData).sort();
+        const usdDates = Object.keys(btcUsdData).sort();
+        
+        if (eurDates.length === 0 || usdDates.length === 0) {
+            throw new Error('No current price data available from Yahoo Finance');
         }
         
-        const response = await axios.get(apiUrl);
-        const priceEUR = response.data.bitcoin.eur;
-        const priceUSD = response.data.bitcoin.usd;
+        // Get the most recent prices
+        const latestEurDate = eurDates[eurDates.length - 1];
+        const latestUsdDate = usdDates[usdDates.length - 1];
         
+        const priceEUR = btcEurData[latestEurDate].close;
+        const priceUSD = btcUsdData[latestUsdDate].close;
+        
+        // Update current price cache
         currentBTCPrice = priceEUR;
-        
         await priceCache.updatePrice(priceEUR, priceUSD);
         
-        console.log(`[server.js] Current BTC price updated: ${priceEUR} EUR / ${priceUSD} USD (${new Date().toISOString()})`);
+        console.log(`[server.js] Current BTC price updated from Yahoo Finance: ${priceEUR} EUR / ${priceUSD} USD (${new Date().toISOString()})`);
+        
+        // Return the price data
+        return {
+            priceEUR,
+            priceUSD,
+            timestamp: new Date().toISOString()
+        };
     } catch (error) {
-        console.error('[server.js] Error fetching BTC price:', error);
+        console.error('[server.js] Error fetching BTC price from Yahoo Finance:', error);
+        
+        // Try to use cached data if available
+        const cachedPrices = priceCache.getCachedPrices();
+        if (cachedPrices && cachedPrices.priceEUR) {
+            console.log('[server.js] Using cached price data as fallback');
+            return cachedPrices;
+        }
+        
+        // If all else fails, try to get the last transaction price
         if (transactions.length > 0) {
             currentBTCPrice = transactions[transactions.length - 1].price;
             console.log('[server.js] Fallback to last transaction price:', currentBTCPrice);
+            return {
+                priceEUR: currentBTCPrice,
+                priceUSD: currentBTCPrice * 1.1, // Rough estimate if no better data
+                timestamp: new Date().toISOString()
+            };
         }
+        
+        // Return default values if all fallbacks fail
+        return {
+            priceEUR: 0,
+            priceUSD: 0,
+            timestamp: new Date().toISOString()
+        };
     }
 }
 
-// Fetch exchange rates
+// Fetch exchange rates using Yahoo Finance
 async function fetchExchangeRates() {
     try {
-        console.log('[server.js] Fetching exchange rates');
+        console.log('[server.js] Fetching exchange rates using Yahoo Finance');
         
-        const eurResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
-        const eurRates = eurResponse.data.rates;
+        // Get EUR to USD rate
+        const eurUsdData = await fetchYahooFinanceData('EURUSD=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
         
-        const usdResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-        const usdRates = usdResponse.data.rates;
+        // Get EUR to PLN rate
+        const eurPlnData = await fetchYahooFinanceData('EURPLN=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
         
-        const eurRatesObj = {
-            USD: eurRates.USD,
-            PLN: eurRates.PLN,
-            GBP: eurRates.GBP,
-            JPY: eurRates.JPY,
-            CHF: eurRates.CHF
+        // Get EUR to GBP rate
+        const eurGbpData = await fetchYahooFinanceData('EURGBP=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
+        
+        // Get latest rates
+        const eurUsdDates = Object.keys(eurUsdData).sort();
+        const eurPlnDates = Object.keys(eurPlnData).sort();
+        const eurGbpDates = Object.keys(eurGbpData).sort();
+        
+        const eurUsd = eurUsdDates.length > 0 ? eurUsdData[eurUsdDates[eurUsdDates.length - 1]].close : 1.1;
+        const eurPln = eurPlnDates.length > 0 ? eurPlnData[eurPlnDates[eurPlnDates.length - 1]].close : 4.5;
+        const eurGbp = eurGbpDates.length > 0 ? eurGbpData[eurGbpDates[eurGbpDates.length - 1]].close : 0.85;
+        
+        // Calculate USD rates for common currencies
+        const usdEur = 1 / eurUsd;
+        const usdPln = eurPln / eurUsd;
+        const usdGbp = eurGbp / eurUsd;
+        
+        // Create rates objects
+        const eurRates = {
+            USD: eurUsd,
+            PLN: eurPln,
+            GBP: eurGbp,
+            CHF: 0.95, // Default value, can be fetched similarly with EURCHF=X
+            JPY: 160,  // Default value, can be fetched similarly with EURJPY=X
         };
         
-        const usdRatesObj = {
-            EUR: usdRates.EUR,
-            PLN: usdRates.PLN,
-            GBP: usdRates.GBP,
-            JPY: usdRates.JPY,
-            CHF: usdRates.CHF
+        const usdRates = {
+            EUR: usdEur,
+            PLN: usdPln,
+            GBP: usdGbp,
+            CHF: 0.85, // Default value
+            JPY: 145,  // Default value
         };
         
-        await priceCache.updateExchangeRates(eurRatesObj, usdRatesObj);
+        await priceCache.updateExchangeRates(eurRates, usdRates);
         
-        console.log(`[server.js] Exchange rates updated: 1 EUR = ${eurRatesObj.USD} USD, 1 EUR = ${eurRatesObj.PLN} PLN (${new Date().toISOString()})`);
+        console.log(`[server.js] Exchange rates updated from Yahoo Finance: 1 EUR = ${eurUsd} USD, 1 EUR = ${eurPln} PLN (${new Date().toISOString()})`);
     } catch (error) {
-        console.error('[server.js] Error fetching exchange rates:', error);
+        console.error('[server.js] Error fetching exchange rates from Yahoo Finance:', error);
     }
 }
 
-// Fetch historical BTC data
+// Fetch historical BTC data using Yahoo Finance
 async function fetchHistoricalBTCData() {
     try {
-        const endDate = Math.floor(Date.now() / 1000);
-        const startDate = endDate - (365 * 24 * 60 * 60);
-        
+        console.log('[server.js] Starting historical BTC data fetch process using Yahoo Finance');
         const settings = loadSettings();
-        const baseUrl = 'https://api.coingecko.com/api/v3';
+        const yearsToFetch = parseInt(settings.historicalDataYears || '1');
         
-        let apiKeyParam = '';
-        if (settings.coingeckoApiKey) {
-            apiKeyParam = `&x_cg_demo_api_key=${settings.coingeckoApiKey}`;
-            console.log('[server.js] Using CoinGecko API key for historical data fetch');
+        console.log(`[server.js] Fetching ${yearsToFetch} years of historical BTC data`);
+        
+        // Calculate start and end dates
+        const endDate = Math.floor(Date.now() / 1000);
+        const startDate = endDate - (yearsToFetch * 365 * 24 * 60 * 60); // X years ago in seconds
+        
+        // Get historical data for BTC-USD
+        const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
+        
+        // Get historical data for BTC-EUR
+        const btcEurData = await fetchYahooFinanceData('BTC-EUR', startDate, endDate);
+        
+        console.log(`[server.js] Yahoo Finance API: USD data entries: ${Object.keys(btcUsdData).length}, EUR data entries: ${Object.keys(btcEurData).length}`);
+        
+        // Find common dates (intersection)
+        const usdDates = new Set(Object.keys(btcUsdData));
+        const eurDates = new Set(Object.keys(btcEurData));
+        const commonDates = [...usdDates].filter(date => eurDates.has(date)).sort();
+        
+        console.log(`[server.js] Yahoo Finance API: Common dates found: ${commonDates.length}`);
+        
+        if (commonDates.length === 0) {
+            console.warn('[server.js] No common dates found between USD and EUR data from Yahoo Finance');
+            return;
         }
-            
-        let eurApiUrl = `${baseUrl}/coins/bitcoin/market_chart/range?vs_currency=eur&from=${startDate}&to=${endDate}${apiKeyParam}`;
-        let usdApiUrl = `${baseUrl}/coins/bitcoin/market_chart/range?vs_currency=usd&from=${startDate}&to=${endDate}${apiKeyParam}`;
         
-        const eurResponse = await axios.get(eurApiUrl);
-        const usdResponse = await axios.get(usdApiUrl);
+        // Create the formatted data structure
+        const newHistoricalData = commonDates.map(date => ({
+            date,
+            priceEUR: btcEurData[date].close,
+            timestamp: new Date(date).getTime(),
+            priceUSD: btcUsdData[date].close,
+            price: btcEurData[date].close // Use EUR as the default price
+        }));
         
-        const eurPrices = eurResponse.data.prices;
-        const dailyData = {};
+        // Use new historical data
+        historicalBTCData = newHistoricalData;
         
-        eurPrices.forEach(([timestamp, price]) => {
-            const date = new Date(timestamp).toISOString().split('T')[0];
-            if (!dailyData[date]) {
-                dailyData[date] = {
+        // Save to file
+        saveHistoricalBTCData();
+        
+        console.log(`[server.js] Historical BTC data updated with ${historicalBTCData.length} days of data from Yahoo Finance`);
+        
+        // Get today's price to ensure we have the latest data point
+        await fetchCurrentBTCPrice();
+        
+        return historicalBTCData;
+    } catch (error) {
+        console.error('[server.js] Error fetching historical BTC data:', error);
+    }
+}
+
+// Helper function to fetch data from Yahoo Finance API
+async function fetchYahooFinanceData(symbol, startDate, endDate) {
+    console.log('=== Yahoo Finance API Request ===');
+    console.log(`Symbol: ${symbol}`);
+    console.log(`Start Date: ${new Date(startDate * 1000).toISOString()}`);
+    console.log(`End Date: ${new Date(endDate * 1000).toISOString()}`);
+    
+    try {
+        // Yahoo Finance API v8 endpoint with region and lang parameters
+        const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+        console.log(`Request URL: ${url}`);
+        
+        const params = {
+            period1: startDate,
+            period2: endDate,
+            interval: '1d',
+            events: 'history',
+            includeAdjustedClose: true,
+            region: 'US',
+            lang: 'en-US',
+            corsDomain: 'finance.yahoo.com'
+        };
+        console.log('Request params:', params);
+        
+        // Add necessary headers to avoid being blocked
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': '*/*',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Origin': 'https://finance.yahoo.com',
+            'Referer': 'https://finance.yahoo.com',
+            'Sec-Fetch-Site': 'same-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty'
+        };
+        console.log('Request headers:', headers);
+        
+        console.log('Making request to Yahoo Finance...');
+        const response = await axios.get(url, { 
+            params,
+            headers,
+            timeout: 10000
+        });
+        
+        console.log(`Response status: ${response.status}`);
+        console.log('Response headers:', response.headers);
+        
+        if (!response.data) {
+            console.error('No data received in response');
+            throw new Error('No data received from Yahoo Finance');
+        }
+        
+        if (response.data.error) {
+            console.error('Yahoo Finance API error:', response.data.error);
+            throw new Error(`Yahoo Finance API error: ${response.data.error.description || 'Unknown error'}`);
+        }
+        
+        if (!response.data.chart || !response.data.chart.result || !response.data.chart.result[0]) {
+            console.error('Invalid data format received:', response.data);
+            throw new Error('Invalid data format received from Yahoo Finance');
+        }
+        
+        const result = response.data.chart.result[0];
+        if (!result.timestamp || !result.indicators || !result.indicators.quote || !result.indicators.quote[0]) {
+            console.error('Missing required fields in response:', result);
+            throw new Error('Missing required data fields in Yahoo Finance response');
+        }
+        
+        const timestamps = result.timestamp;
+        const quotes = result.indicators.quote[0];
+        
+        console.log(`Received ${timestamps.length} data points`);
+        
+        // Process data and create a map with date as key
+        const data = {};
+        timestamps.forEach((timestamp, i) => {
+            if (quotes.close && quotes.close[i] !== null) {
+                const date = new Date(timestamp * 1000).toISOString().split('T')[0];
+                data[date] = {
                     date,
-                    priceEUR: price,
-                    timestamp
+                    timestamp: timestamp * 1000,
+                    close: quotes.close[i]
                 };
             }
         });
         
-        const usdPrices = usdResponse.data.prices;
-        usdPrices.forEach(([timestamp, price]) => {
-            const date = new Date(timestamp).toISOString().split('T')[0];
-            if (dailyData[date]) {
-                dailyData[date].priceUSD = price;
-            }
-        });
+        const dataPoints = Object.keys(data).length;
+        console.log(`Processed ${dataPoints} valid data points`);
         
-        historicalBTCData = Object.values(dailyData).sort((a, b) => a.timestamp - b.timestamp);
+        if (dataPoints === 0) {
+            console.error('No valid data points found in processed data');
+            throw new Error('No valid data points found in Yahoo Finance response');
+        }
         
-        historicalBTCData = historicalBTCData.map(day => ({
-            ...day,
-            price: day.priceEUR,
-        }));
+        console.log('=== Yahoo Finance API Request Complete ===');
+        return data;
         
-        saveHistoricalBTCData();
-        console.log(`[server.js] Historical BTC data updated with ${historicalBTCData.length} days of data in both EUR and USD`);
     } catch (error) {
-        console.error('[server.js] Error fetching historical BTC data:', error);
+        console.error('=== Yahoo Finance API Error ===');
+        console.error(`Error fetching data for symbol ${symbol}:`, error.message);
+        
+        if (error.response) {
+            console.error('Response status:', error.response.status);
+            console.error('Response headers:', error.response.headers);
+            console.error('Response data:', error.response.data);
+            
+            const status = error.response.status;
+            if (status === 404) {
+                throw new Error(`Symbol ${symbol} not found on Yahoo Finance`);
+            } else if (status === 429) {
+                throw new Error('Rate limit exceeded for Yahoo Finance API');
+            } else if (status >= 500) {
+                throw new Error('Yahoo Finance service is currently unavailable');
+            }
+        } else if (error.request) {
+            console.error('No response received. Request:', error.request);
+            throw new Error('No response received from Yahoo Finance');
+        }
+        
+        console.error('Stack trace:', error.stack);
+        console.error('=== End Error Log ===');
+        throw error;
     }
 }
 
 // Update data periodically
 setInterval(fetchCurrentBTCPrice, 5 * 60 * 1000);
 setInterval(fetchExchangeRates, 60 * 60 * 1000);
-setInterval(fetchHistoricalBTCData, 24 * 60 * 60 * 1000);
+
+// Update historical data refresh to use settings
+function setupHistoricalDataRefresh() {
+    try {
+        const settings = loadSettings();
+        const refreshHours = parseInt(settings.historicalDataRefreshHours || '24');
+        
+        console.log(`[server.js] Setting up historical data refresh interval: ${refreshHours} hours`);
+        
+        // Convert hours to milliseconds
+        const refreshInterval = refreshHours * 60 * 60 * 1000;
+        
+        // Clear any existing interval
+        if (global.historicalDataRefreshInterval) {
+            clearInterval(global.historicalDataRefreshInterval);
+        }
+        
+        // Set up new interval
+        global.historicalDataRefreshInterval = setInterval(fetchHistoricalBTCData, refreshInterval);
+        
+        // Run initial fetch if needed
+        if (!historicalBTCData || historicalBTCData.length === 0) {
+            console.log('[server.js] No historical data found, running initial fetch');
+            fetchHistoricalBTCData().catch(err => 
+                console.error('[server.js] Initial historical data fetch failed:', err)
+            );
+        }
+    } catch (error) {
+        console.error('[server.js] Error setting up historical data refresh:', error);
+        
+        // Fallback to default 24 hours
+        global.historicalDataRefreshInterval = setInterval(fetchHistoricalBTCData, 24 * 60 * 60 * 1000);
+    }
+}
+
+// Call setup function to initialize the interval
+setupHistoricalDataRefresh();
 
 // Import CSV data with Transaction model support
 function importCSVData(csvFilePath) {
@@ -1044,35 +1263,30 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
         
         const forceFresh = req.query.fresh === 'true';
         if (forceFresh || !cachedPrices.priceEUR || !cachedPrices.timestamp) {
-            const baseUrl = 'https://api.coingecko.com/api/v3';
-                
-            let btcApiUrl = `${baseUrl}/simple/price?ids=bitcoin&vs_currencies=eur,usd`;
-            if (settings.coingeckoApiKey) {
-                btcApiUrl += `&x_cg_demo_api_key=${settings.coingeckoApiKey}`;
-                console.log('[server.js] Using CoinGecko API key for fresh price fetch');
+            console.log('[server.js] Fetching fresh BTC price from Yahoo Finance');
+            
+            // Get fresh data from Yahoo
+            const priceData = await fetchCurrentBTCPrice();
+            
+            if (!priceData || !priceData.priceEUR) {
+                throw new Error('Failed to fetch current BTC price from Yahoo Finance');
             }
             
-            const btcResponse = await axios.get(btcApiUrl);
-            const btcData = btcResponse.data;
-            
-            const exchangeResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
-            const exchangeData = exchangeResponse.data;
-
+            // For exchange rates, use cached rates if available
             const responseData = {
-                priceEUR: btcData.bitcoin.eur,
-                priceUSD: btcData.bitcoin.usd,
+                priceEUR: priceData.priceEUR,
+                priceUSD: priceData.priceUSD,
                 timestamp: new Date(),
-                eurUsd: exchangeData.rates.USD,
-                eurPln: exchangeData.rates.PLN,
+                eurUsd: cachedPrices.eurUsd || priceData.priceUSD / priceData.priceEUR,
+                eurPln: cachedPrices.eurPln || 4.5, // Default if no cached value
                 previousDayPrice: cachedPrices.previousDayPrice,
                 previousWeekPrice: weeklyPrice,
                 mainCurrency: settings.mainCurrency || 'EUR',
-                weeklyPriceDate: closestDate
+                weeklyPriceDate: closestDate,
+                source: 'Yahoo Finance'
             };
 
-            console.log('[server.js] Current price data fetched fresh');
-            
-            await priceCache.updatePrice(responseData.priceEUR, responseData.priceUSD);
+            console.log('[server.js] Current price data fetched fresh from Yahoo Finance');
             
             res.json(responseData);
         } else {
@@ -1088,7 +1302,8 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
                 previousDayPrice: cachedPrices.previousDayPrice,
                 previousWeekPrice: weeklyPrice,
                 mainCurrency: settings.mainCurrency || 'EUR',
-                weeklyPriceDate: closestDate
+                weeklyPriceDate: closestDate,
+                source: 'Yahoo Finance (cached)'
             });
         }
     } catch (error) {
@@ -1511,7 +1726,39 @@ app.put('/api/settings', isAuthenticated, (req, res) => {
             return res.status(400).json({ error: 'Missing secondaryCurrency' });
         }
         
+        // Get current settings to check for changes
+        const currentSettings = loadSettings();
+        
+        // Save the new settings
         if (saveSettings(newSettings)) {
+            // Check if historical data settings changed
+            const refreshHoursChanged = 
+                currentSettings.historicalDataRefreshHours !== newSettings.historicalDataRefreshHours;
+            const yearsChanged = 
+                currentSettings.historicalDataYears !== newSettings.historicalDataYears;
+            
+            // If refresh hours changed, update the interval
+            if (refreshHoursChanged) {
+                console.log('[server.js] Historical data refresh interval setting changed, updating interval');
+                setupHistoricalDataRefresh();
+            }
+            
+            // If years changed, might need to fetch more data
+            if (yearsChanged) {
+                const oldYears = parseInt(currentSettings.historicalDataYears || '1');
+                const newYears = parseInt(newSettings.historicalDataYears || '1');
+                
+                if (newYears > oldYears) {
+                    console.log(`[server.js] Historical data years setting increased from ${oldYears} to ${newYears}, scheduling data fetch`);
+                    // Schedule fetch after response is sent to avoid timeout
+                    setTimeout(() => {
+                        fetchHistoricalBTCData().catch(err => 
+                            console.error('[server.js] Historical data fetch after settings change failed:', err)
+                        );
+                    }, 100);
+                }
+            }
+            
             res.json({ message: 'Settings saved', settings: newSettings });
         } else {
             res.status(500).json({ error: 'Failed to save settings' });
@@ -1522,58 +1769,52 @@ app.put('/api/settings', isAuthenticated, (req, res) => {
     }
 });
 
-// Test CoinGecko API key
+// Test Yahoo Finance API connectivity (replacing CoinGecko test)
 app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) => {
     try {
-        const { apiKey } = req.body;
+        // Note: This function is kept for backwards compatibility with the frontend
+        // but no longer tests CoinGecko API key since we now use Yahoo Finance
+
+        console.log('[server.js] Testing Yahoo Finance API connectivity');
         
-        if (!apiKey) {
-            return res.status(400).json({ error: 'API key is required' });
-        }
+        // Calculate current date timestamps (today only)
+        const endDate = Math.floor(Date.now() / 1000);
+        const startDate = endDate - (24 * 60 * 60); // 1 day ago
         
-        try {
-            const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&x_cg_demo_api_key=${apiKey}`;
-            const response = await axios.get(apiUrl);
-            
-            if (response.data && response.data.bitcoin && response.data.bitcoin.usd) {
-                res.json({ 
-                    success: true, 
-                    message: 'API key is valid!',
-                    currentPrice: response.data.bitcoin.usd
-                });
-            } else {
-                res.json({ 
-                    success: false, 
-                    message: 'Received unexpected response format from CoinGecko'
-                });
-            }
-        } catch (apiError) {
-            console.error('[server.js] CoinGecko API error:', apiError.response?.data || apiError.message);
-            
-            if (apiError.response) {
-                if (apiError.response.status === 401 || apiError.response.status === 403) {
-                    return res.json({ 
-                        success: false, 
-                        message: 'Invalid API key or unauthorized'
-                    });
-                } else if (apiError.response.status === 429) {
-                    return res.json({ 
-                        success: false, 
-                        message: 'Rate limit exceeded. The API key may still be valid.'
-                    });
-                }
-            }
-            
-            res.json({ 
+        // Test Yahoo Finance connection for BTC price
+        const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
+        
+        if (!btcUsdData || Object.keys(btcUsdData).length === 0) {
+            return res.json({ 
                 success: false, 
-                message: 'Error testing API key: ' + (apiError.response?.data?.error || apiError.message)
+                message: 'Could not connect to Yahoo Finance API'
             });
         }
+        
+        // Get the most recent price
+        const dates = Object.keys(btcUsdData).sort();
+        if (dates.length === 0) {
+            return res.json({
+                success: false,
+                message: 'No data returned from Yahoo Finance'
+            });
+        }
+        
+        const latestDate = dates[dates.length - 1];
+        const currentPrice = btcUsdData[latestDate].close;
+        
+        res.json({ 
+            success: true, 
+            message: 'Connection to Yahoo Finance API successful!',
+            currentPrice: currentPrice,
+            source: 'Yahoo Finance'
+        });
     } catch (error) {
-        console.error('[server.js] Server error testing API key:', error);
-        res.status(500).json({ 
+        console.error('[server.js] Yahoo Finance API error:', error);
+            
+        res.json({ 
             success: false, 
-            message: 'Server error when testing API key'
+            message: 'Error connecting to Yahoo Finance API: ' + error.message
         });
     }
 });
@@ -1725,6 +1966,80 @@ app.post('/api/user/change-password', isAuthenticated, async (req, res) => {
 
 // Use exchange routes
 app.use('/api', exchangeRoutes);
+
+// Endpoint to fetch comparison ticker data
+app.get('/api/comparison-data', isAuthenticated, async (req, res) => {
+    try {
+        const { symbol, timeRange } = req.query;
+        console.log(`[comparison-data] Request received for symbol=${symbol}, timeRange=${timeRange}`);
+        
+        if (!symbol) {
+            console.error('[comparison-data] Symbol parameter is missing');
+            return res.status(400).json({ error: 'Symbol parameter is required' });
+        }
+        
+        // Calculate date range based on the requested time range
+        const endDate = Math.floor(Date.now() / 1000); // Current time in seconds
+        let startDate;
+        
+        // Parse time range parameter (in days)
+        const days = parseInt(timeRange || '365', 10);
+        if (isNaN(days)) {
+            startDate = Math.floor(endDate - (365 * 24 * 60 * 60)); // Default to 1 year
+            console.log(`[comparison-data] Invalid timeRange parameter, defaulting to 365 days`);
+        } else {
+            startDate = Math.floor(endDate - (days * 24 * 60 * 60));
+            console.log(`[comparison-data] Using timeRange of ${days} days`);
+        }
+        
+        console.log(`[comparison-data] Fetching data for ${symbol} from ${new Date(startDate * 1000).toISOString()} to ${new Date(endDate * 1000).toISOString()}`);
+        
+        // Fetch data from Yahoo Finance
+        const yahooData = await fetchYahooFinanceData(symbol, startDate, endDate);
+        
+        // Check if we got data
+        if (!yahooData || Object.keys(yahooData).length === 0) {
+            console.error(`[comparison-data] No data returned from Yahoo Finance for ${symbol}`);
+            return res.status(404).json({ 
+                error: 'No data available for the specified symbol and time range',
+                symbol: symbol,
+                timeRange: days
+            });
+        }
+        
+        console.log(`[comparison-data] Received ${Object.keys(yahooData).length} data points for ${symbol}`);
+        
+        // Convert to array format for chart.js
+        const chartData = Object.values(yahooData).map(item => ({
+            x: new Date(item.timestamp).toISOString(),
+            y: item.close
+        }));
+        
+        // Sort by date
+        chartData.sort((a, b) => new Date(a.x) - new Date(b.x));
+        
+        // Get symbol metadata
+        const symbolDetails = {
+            symbol: symbol,
+            name: getSymbolName(symbol),
+            color: getSymbolColor(symbol)
+        };
+        
+        console.log(`[comparison-data] Sending response with ${chartData.length} data points for ${symbol}`);
+        
+        res.json({
+            symbol: symbolDetails,
+            data: chartData
+        });
+    } catch (error) {
+        console.error('[comparison-data] Error fetching comparison data:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch comparison data', 
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+});
 
 // Make sure all API routes are defined BEFORE the catch-all routes
 // API endpoint to get PIN-enabled users
@@ -1927,6 +2242,35 @@ app.get('/api/history', isAuthenticated, (req, res) => {
     }
 });
 
+// Add endpoint to manually refresh historical data from admin panel
+app.post('/api/admin/refresh-historical-data', isAuthenticated, async (req, res) => {
+    try {
+        console.log('[server.js] Manual refresh of historical data requested from admin panel');
+        
+        // Load current settings
+        const settings = loadSettings();
+        const yearsToFetch = parseInt(settings.historicalDataYears || '1');
+        console.log(`[server.js] Manual refresh requesting ${yearsToFetch} years of data from Yahoo Finance`);
+        
+        // Call the function to fetch historical data
+        const updatedData = await fetchHistoricalBTCData();
+        
+        // Return success with count of data points
+        res.json({
+            success: true,
+            message: 'Historical data refreshed successfully',
+            count: updatedData?.length || historicalBTCData.length
+        });
+    } catch (error) {
+        console.error('[server.js] Error refreshing historical data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to refresh historical data',
+            error: error.message
+        });
+    }
+});
+
 // *** Catch-all routes should be AFTER all API routes ***
 // Serve the main application
 app.get(['/', '/admin', '/transactions', '/exchanges'], isAuthenticated, (req, res) => {
@@ -1981,3 +2325,54 @@ async function startServer() {
 }
 
 startServer();
+
+// Helper function to get symbol friendly name
+function getSymbolName(symbol) {
+    const symbolMap = {
+        'BTC-USD': 'Bitcoin',
+        'ETH-USD': 'Ethereum',
+        'SPY': 'S&P 500 ETF',
+        'QQQ': 'Nasdaq ETF',
+        'GLD': 'Gold ETF',
+        'SLV': 'Silver ETF',
+        'VNQ': 'Real Estate ETF',
+        'AAPL': 'Apple',
+        'MSFT': 'Microsoft',
+        'GOOGL': 'Google',
+        'AMZN': 'Amazon',
+        'TSLA': 'Tesla'
+    };
+    
+    return symbolMap[symbol] || symbol;
+}
+
+// Helper function to get consistent color for symbols
+function getSymbolColor(symbol) {
+    const colorMap = {
+        'BTC-USD': '#f7931a', // Bitcoin orange
+        'ETH-USD': '#627eea', // Ethereum blue
+        'SPY': '#21ce99',     // Green
+        'QQQ': '#6236ff',     // Purple
+        'GLD': '#f5d742',     // Gold
+        'SLV': '#c0c0c0',     // Silver
+        'VNQ': '#ff6a00',     // Orange
+        'AAPL': '#a2aaad',    // Apple gray
+        'MSFT': '#00a4ef',    // Microsoft blue
+        'GOOGL': '#ea4335',   // Google red
+        'AMZN': '#ff9900',    // Amazon orange
+        'TSLA': '#cc0000'     // Tesla red
+    };
+    
+    // If no predefined color, generate one based on the symbol string
+    if (!colorMap[symbol]) {
+        let hash = 0;
+        for (let i = 0; i < symbol.length; i++) {
+            hash = symbol.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const color = '#' + ('000000' + (hash & 0xFFFFFF).toString(16)).slice(-6);
+        return color;
+    }
+    
+    return colorMap[symbol];
+}

@@ -1,19 +1,67 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>BTC Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.4.2">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json">
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json?v=0.4.2">
     <style>
+        :root {
+            /* Base colors */
+            --bg-color: #1e1e1e;
+            --bg-color-rgb: 30, 30, 30;
+            --text-color: #ffffff;
+            --border-color: #333;
+            --card-bg-color: #272727;
+            --muted-text-color: #aaa;
+            --accent-color: #f7931a;
+            --accent-color-rgb: 247, 147, 26;
+
+            /* Button colors */
+            --button-bg: #333;
+            --button-hover-bg: #444;
+            --active-button-bg: #f7931a;
+            --active-button-text: #000;
+            --active-button-border: #f7931a;
+            --button-accent-bg: #f7931a;
+            --button-accent-text: #000;
+            --button-accent-hover-bg: #e08217;
+        }
+
+        .light-theme {
+            --bg-color: #f5f5f5;
+            --bg-color-rgb: 245, 245, 245;
+            --text-color: #333;
+            --border-color: #ddd;
+            --card-bg-color: #ffffff;
+            --muted-text-color: #777;
+            --accent-color: #f7931a;
+            --accent-color-rgb: 247, 147, 26;
+
+            /* Button colors */
+            --button-bg: #f0f0f0;
+            --button-hover-bg: #e6e6e6;
+            --active-button-bg: #f7931a;
+            --active-button-text: #000;
+            --active-button-border: #f7931a;
+            --button-accent-bg: #f7931a;
+            --button-accent-text: #000;
+            --button-accent-hover-bg: #e08217;
+        }
+
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
         .mobile-theme-toggle .fa-sun {
@@ -36,6 +84,178 @@
         .light-theme .theme-toggle .fa-moon,
         .light-theme .mobile-theme-toggle .fa-moon {
             display: none;
+        }
+
+        /* Enhanced chart styling */
+        .chart-container {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background-color: var(--card-bg-color);
+            margin-bottom: 2rem;
+            overflow: hidden;
+            padding-bottom: 1rem;
+        }
+
+        .chart-container h2 {
+            padding: 1.2rem 1.5rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chart-controls {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--card-bg-color);
+        }
+
+        .time-range-buttons {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .time-range-btn {
+            padding: 0.5rem 0.8rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .time-range-btn.active {
+            background-color: var(--active-button-bg);
+            color: var(--active-button-text);
+            font-weight: 600;
+            border-color: var(--active-button-border);
+        }
+
+        .density-control {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .density-control label {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .density-control #densityValue {
+            min-width: 6rem;
+            font-size: 0.9rem;
+        }
+
+        .refresh-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--button-accent-bg);
+            color: var(--button-accent-text);
+            border: none;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            background-color: var(--button-accent-hover-bg);
+        }
+
+        .refresh-btn i {
+            font-size: 0.9rem;
+        }
+
+        .chart-wrapper {
+            padding: 1rem;
+            position: relative;
+            height: 500px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(var(--bg-color-rgb), 0.8);
+            z-index: 10;
+            gap: 1rem;
+            font-size: 0.9rem;
+            color: var(--text-color);
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(var(--accent-color-rgb), 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .price-update {
+            text-align: center;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--muted-text-color);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .pulsing {
+            animation: pulse 1s;
+        }
+
+        @keyframes pulse {
+            0% {
+                color: var(--muted-text-color);
+            }
+            50% {
+                color: var(--accent-color);
+            }
+            100% {
+                color: var(--muted-text-color);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
 
         /* Desktop navigation - shown by default */
@@ -92,6 +312,590 @@
                 position: relative;
                 margin-top: 10px;
             }
+
+            .chart-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .density-control {
+                width: 100%;
+            }
+
+            .time-range-buttons {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .refresh-btn {
+                align-self: flex-end;
+            }
+        }
+
+        /* Time Range Slider Styles */
+        .time-range-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .range-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .time-range-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .time-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .time-range-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .range-markers {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 8px;
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
+        }
+
+        #timeRangeValue {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+        
+        /* Comparison Control Styles */
+        .comparison-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            min-width: 200px;
+        }
+        
+        .comparison-select-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .comparison-select {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+        
+        .comparison-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .comparison-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 16px;
+            font-size: 0.85rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+        
+        .comparison-badge .remove-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            color: var(--text-color);
+            font-size: 0.7rem;
+            border: none;
+        }
+        
+        .comparison-badge .remove-btn:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .comparison-badge .color-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            animation: pulse-dot 1.5s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+        
+        @keyframes pulse-dot {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.8);
+                opacity: 0.8;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-control {
+                width: 100%;
+            }
+        }
+
+        .reset-zoom-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-zoom-btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .reset-zoom-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Add tooltip for zoom instructions */
+        .chart-wrapper {
+            position: relative;
+        }
+
+        .zoom-instructions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--card-bg-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .zoom-instructions {
+                display: none;
+            }
+        }
+
+        /* Transaction Timeline Styles */
+        .timeline-container {
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            background-color: var(--card-bg-color);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+
+        .timeline-container h2 {
+            padding: 1.2rem 1.5rem;
+            margin: 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .timeline-controls {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--card-bg-color);
+        }
+
+        .timeline-legend {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--card-bg-color);
+        }
+
+        .legend-dot.buy {
+            background-color: #28a745;
+        }
+
+        .legend-dot.sell {
+            background-color: #dc3545;
+        }
+
+        .legend-line {
+            width: 20px;
+            height: 2px;
+            background-color: #4a90e2;
+            opacity: 0.7;
+        }
+
+        .legend-line.avg-price {
+            background: linear-gradient(90deg, transparent 0%, #4a90e2 20%, #4a90e2 80%, transparent 100%);
+        }
+
+        .timeline-stats {
+            font-size: 0.9rem;
+            color: var(--muted-text-color);
+            font-weight: 500;
+        }
+
+        .timeline-wrapper {
+            padding: 2rem 1.5rem;
+            min-height: 120px;
+            position: relative;
+        }
+
+        .timeline-track {
+            position: relative;
+            width: 100%;
+            height: 80px;
+        }
+
+        .timeline-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                var(--border-color) 0%, 
+                var(--accent-color) 20%, 
+                var(--accent-color) 80%, 
+                var(--border-color) 100%);
+            transform: translateY(-50%);
+        }
+
+        .timeline-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+        }
+
+        .timeline-marker {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 20px;
+            background-color: var(--border-color);
+            opacity: 0.5;
+        }
+
+        .timeline-marker.major {
+            height: 30px;
+            background-color: var(--muted-text-color);
+            opacity: 0.7;
+        }
+
+        .timeline-marker-label {
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--muted-text-color);
+            margin-top: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .timeline-transactions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+        }
+
+        .timeline-transaction {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .timeline-transaction-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--card-bg-color);
+            position: relative;
+            z-index: 2;
+        }
+
+        .timeline-transaction.buy .timeline-transaction-dot {
+            background-color: #28a745;
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.2);
+        }
+
+        .timeline-transaction.sell .timeline-transaction-dot {
+            background-color: #dc3545;
+            box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+        }
+
+        .timeline-transaction.large .timeline-transaction-dot {
+            width: 15px;
+            height: 15px;
+        }
+
+        .timeline-transaction.huge .timeline-transaction-dot {
+            width: 18px;
+            height: 18px;
+        }
+
+        .timeline-transaction:hover {
+            transform: translate(-50%, -50%) scale(1.2);
+            z-index: 10;
+        }
+
+        .timeline-transaction:hover .timeline-transaction-dot {
+            box-shadow: 0 0 0 4px rgba(247, 147, 26, 0.3);
+        }
+
+        /* Transaction count badge for multiple transactions on same day */
+        .timeline-transaction-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--accent-color);
+            color: #000;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 0.6rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3;
+        }
+
+        /* Floating tooltip that appears on hover */
+        .timeline-floating-tooltip {
+            position: fixed;
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.2s ease;
+            max-width: 280px;
+            backdrop-filter: blur(10px);
+        }
+
+        .timeline-floating-tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .timeline-floating-tooltip .tooltip-header {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3rem;
+        }
+
+        .timeline-floating-tooltip .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.3rem;
+        }
+
+        .timeline-floating-tooltip .tooltip-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-floating-tooltip .tooltip-label {
+            color: var(--muted-text-color);
+            font-size: 0.75rem;
+        }
+
+        .timeline-floating-tooltip .tooltip-value {
+            font-weight: 500;
+            text-align: right;
+        }
+
+        .timeline-floating-tooltip .tooltip-value.positive {
+            color: #28a745;
+        }
+
+        .timeline-floating-tooltip .tooltip-value.negative {
+            color: #dc3545;
+        }
+
+        .light-theme .timeline-floating-tooltip {
+            background-color: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+
+
+
+
+        /* Mobile responsive styles for timeline */
+        @media (max-width: 768px) {
+            .timeline-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .timeline-legend {
+                gap: 1rem;
+            }
+
+            .timeline-wrapper {
+                padding: 1.5rem 1rem;
+                min-height: 100px;
+            }
+
+            .timeline-track {
+                height: 60px;
+            }
+
+            .timeline-transaction-dot {
+                width: 10px;
+                height: 10px;
+            }
+
+            .timeline-transaction.large .timeline-transaction-dot {
+                width: 13px;
+                height: 13px;
+            }
+
+            .timeline-transaction.huge .timeline-transaction-dot {
+                width: 16px;
+                height: 16px;
+            }
+
+            .timeline-transaction-count {
+                width: 14px;
+                height: 14px;
+                font-size: 0.55rem;
+                top: -6px;
+                right: -6px;
+            }
+
+            .timeline-marker-label {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Empty timeline state */
+        .timeline-empty {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: var(--muted-text-color);
+        }
+
+        .timeline-empty i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .timeline-empty h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .timeline-empty p {
+            margin: 0;
+            font-size: 0.9rem;
         }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
@@ -180,14 +984,25 @@
         </div>
 
         <div class="chart-container">
-            <h2><i class="fas fa-chart-line"></i> BTC Price and Accumulation</h2>
+            <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
             <div class="chart-controls">
-                <div class="time-range-buttons">
-                    <button class="time-range-btn active" data-range="30">1M</button>
-                    <button class="time-range-btn" data-range="90">3M</button>
-                    <button class="time-range-btn" data-range="180">6M</button>
-                    <button class="time-range-btn" data-range="365">1Y</button>
-                    <button class="time-range-btn" data-range="0">All</button>
+                <div class="time-range-control">
+                    <div class="range-label">
+                        <label for="timeRange">Time Range:</label>
+                        <span id="timeRangeValue">1W</span>
+                    </div>
+                    <input type="range" id="timeRange" min="0" max="8" value="0" class="time-range-slider">
+                    <div class="range-markers">
+                        <span>1W</span>
+                        <span>1M</span>
+                        <span>3M</span>
+                        <span>6M</span>
+                        <span>1Y</span>
+                        <span>2Y</span>
+                        <span>5Y</span>
+                        <span>10Y</span>
+                        <span>All</span>
+                    </div>
                 </div>
                 <div class="density-control">
                     <label for="dataDensity">Data Density:</label>
@@ -201,10 +1016,46 @@
             <div class="loading" id="chartLoading">
                 <div class="loading-spinner"></div>
             </div>
+            <div class="loading" id="historical-data-loading" style="display: none;">
+                <div class="loading-spinner"></div>
+                <div>Loading historical data...</div>
+            </div>
+            <div class="error-message" id="errorMessage" style="display: none; color: var(--loss-color); text-align: center; margin: 1rem 0;"></div>
             <div class="chart-wrapper">
                 <canvas id="combinedChart" width="1200" height="600"></canvas>
             </div>
             <div class="price-update" id="priceUpdate">Last updated: <span id="lastUpdate">-</span></div>
+        </div>
+
+        <!-- Transaction Timeline -->
+        <div class="timeline-container" id="timelineContainer" style="display: none;">
+            <h2><i class="fas fa-history"></i> Transaction Timeline</h2>
+            <div class="timeline-controls">
+                <div class="timeline-legend">
+                    <div class="legend-item">
+                        <div class="legend-dot buy"></div>
+                        <span>Buy Transaction</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot sell"></div>
+                        <span>Sell Transaction</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line avg-price"></div>
+                        <span>Market Average</span>
+                    </div>
+                </div>
+                <div class="timeline-stats">
+                    <span id="timelineStats">No transactions in selected range</span>
+                </div>
+            </div>
+            <div class="timeline-wrapper">
+                <div class="timeline-track" id="timelineTrack">
+                    <div class="timeline-line"></div>
+                    <div class="timeline-markers" id="timelineMarkers"></div>
+                    <div class="timeline-transactions" id="timelineTransactions"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -261,10 +1112,13 @@
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
         
+        // Register Chart.js plugins - using the correct global variable name from the plugin
+        // ChartAnnotation is not defined, we need to use the actual global variable
+        
         let combinedChart;
         let lastUpdateTime = null;
         const REAL_TIME_UPDATE_INTERVAL = 300000; // 5 minutes in milliseconds
-        let currentTimeRange = 30; // Default to 1 month
+        let currentTimeRange = 7; // Default to 1 week
         let currentDensity = 5; // Default density
         let transactionsWithCumulative = []; // Store transactions globally
         let secondaryCurrency = 'PLN'; // Default secondary currency
@@ -298,22 +1152,33 @@
                 regularThemeToggle.click();
             });
             
-            // Time range buttons
-            document.querySelectorAll('.time-range-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.time-range-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    currentTimeRange = parseInt(btn.dataset.range);
-                    loadData(true);
-                });
+            // Time range slider functionality
+            const timeRangeSlider = document.getElementById('timeRange');
+            const timeRangeValue = document.getElementById('timeRangeValue');
+            const timeRanges = [7, 30, 90, 180, 365, 730, 1825, 3650, 0];
+            const timeLabels = ['1W', '1M', '3M', '6M', '1Y', '2Y', '5Y', '10Y', 'All'];
+
+            timeRangeSlider.addEventListener('input', () => {
+                const index = parseInt(timeRangeSlider.value);
+                timeRangeValue.textContent = timeLabels[index];
+                currentTimeRange = timeRanges[index];
+                console.log(`Time range changed to ${currentTimeRange} days`);
                 
-                // Set the active class on the 1M button by default
-                if (btn.dataset.range === '30') {
-                    btn.classList.add('active');
-                } else if (btn.dataset.range === '365') {
-                    btn.classList.remove('active');
+                // Always force chart recreation when time range changes to ensure
+                // proper time unit display and formatting
+                if (combinedChart) {
+                    combinedChart.destroy();
+                    combinedChart = null;
                 }
+                
+                // First load the main data
+                loadData(true);
             });
+
+            // Set initial value to 1W (index 0)
+            timeRangeSlider.value = 0;
+            timeRangeValue.textContent = timeLabels[0];
+            currentTimeRange = timeRanges[0];
             
             // Density slider
             const densitySlider = document.getElementById('dataDensity');
@@ -356,18 +1221,61 @@
                 });
             }
 
-            // Enhanced density calculation
-            // Using an exponential scale for more aggressive density at higher values
-            const densityFactor = Math.pow(2, density / 2);
-            const sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 5)));
+            // Advanced density calculation for datasets of various sizes
+            let sampleSize = 1;
             
-            if (sampleSize > 1) {
-                // For maximum density (10), show almost all points
-                if (density === 10) {
-                    return filteredData.filter((_, index) => index % 2 === 0);
+            // Base the sampling on dataset size and selected time range
+            if (filteredData.length > 1000) {
+                // For very large datasets (10 years)
+                if (days > 1000 || days === 0) {
+                    // Scale based on density setting - higher density = more points
+                    // At density 10, show at most every 3rd point for readability
+                    sampleSize = Math.max(3, Math.floor((11 - density) * 8));
+                } else if (days > 365) {
+                    // For 1-3 year ranges
+                    sampleSize = Math.max(2, Math.floor((11 - density) * 4));
+                } else {
+                    // For smaller ranges, use original density calculation with slight adjustment
+                    const densityFactor = Math.pow(1.7, density / 2.5);
+                    sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 8)));
                 }
-                // For other densities, use the calculated sample size
+            } else if (filteredData.length > 500) {
+                // For medium datasets
+                const densityFactor = Math.pow(1.8, density / 3);
+                sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 7)));
+            } else {
+                // For small datasets, show more points
+                const densityFactor = Math.pow(2, density / 3);
+                sampleSize = Math.max(1, Math.floor(filteredData.length / (densityFactor * 10)));
+            }
+            
+            // For 1-week view, always use maximum density
+            if (days <= 7) {
+                sampleSize = 1; // Show all data points for 1-week view
+            }
+            
+            // Apply sampling
+            if (sampleSize > 1) {
+                // For maximum density (10), ensure we show enough points
+                if (density >= 9) {
+                    sampleSize = Math.max(1, Math.floor(sampleSize / 2));
+                }
+                
+                // Sample the data
                 filteredData = filteredData.filter((_, index) => index % sampleSize === 0);
+                
+                // Always include the first and last points for better visualization
+                if (filteredData.length > 2 && data.length > 2) {
+                    // Check if first point is already included
+                    if (filteredData[0] !== data[0]) {
+                        filteredData.unshift(data[0]);
+                    }
+                    
+                    // Check if last point is already included
+                    if (filteredData[filteredData.length - 1] !== data[data.length - 1]) {
+                        filteredData.push(data[data.length - 1]);
+                    }
+                }
             }
 
             return filteredData;
@@ -502,354 +1410,201 @@
             const currentDate = new Date();
             const datasets = chart.data.datasets;
             
-            // Update chart title to show the correct currency
-            chart.options.scales.y.title.text = priceData.mainCurrency || 'EUR';
-
-            // Update chart y-axis tick format with the correct currency symbol
-            const mainCurrencySymbol = getCurrencySymbol(priceData.mainCurrency || 'EUR');
-            chart.options.scales.y.ticks.callback = function(value) {
-                return value.toLocaleString() + ' ' + mainCurrencySymbol;
-            };
-            
-            // Get the last transaction data for cumulative BTC and cost
-            const lastTx = transactionsWithCumulative.length > 0 ? 
-                transactionsWithCumulative[transactionsWithCumulative.length - 1] : null;
+            const btcDataset = datasets.find(d => d.label === 'BTC Price');
+            if (btcDataset && btcDataset.data.length > 0) {
+                const currentPrice = priceData.mainCurrency === 'EUR' ? 
+                    (priceData.priceEUR || priceData.price || 0) : 
+                    (priceData.priceUSD || (priceData.priceEUR * priceData.eurUsd) || 0);
                 
-            // If no transactions, we can't update P&L data
-            if (!lastTx) return;
-            
-            // Calculate latest P&L values
-            const pnlValue = (lastTx.cumulativeBtc * priceData.price) - lastTx.cumulativeCost;
-            const pnlPercentage = lastTx.cumulativeCost > 0 ? 
-                (pnlValue / lastTx.cumulativeCost) * 100 : 0;
-
-            // Format just the date part (year, month, day) for comparison
-            const formatDateOnly = (date) => {
-                return date.toISOString().split('T')[0];
-            };
-            
-            const todayDateString = formatDateOnly(currentDate);
-            
-            console.log(`Updating chart with real-time price: ${priceData.price} ${mainCurrencySymbol}`);
-            
-            // Update or add data points based on current date
-            if (datasets[0].data.length > 0) {
-                // Find today's data point if it exists
+                const todayDateString = currentDate.toISOString().split('T')[0];
                 let todayIndex = -1;
-                for (let i = datasets[0].data.length - 1; i >= 0; i--) {
-                    const pointDate = new Date(datasets[0].data[i].x);
-                    if (formatDateOnly(pointDate) === todayDateString) {
+                
+                for (let i = btcDataset.data.length - 1; i >= 0; i--) {
+                    const pointDate = new Date(btcDataset.data[i].x);
+                    if (pointDate.toISOString().split('T')[0] === todayDateString) {
                         todayIndex = i;
                         break;
                     }
                 }
                 
                 if (todayIndex !== -1) {
-                    // Update today's data points with current values
-                    datasets[0].data[todayIndex].y = priceData.price;
-                    
-                    // Make sure all datasets have the same number of points
-                    if (datasets[1].data.length > todayIndex) {
-                        datasets[1].data[todayIndex].y = lastTx.cumulativeBtc;
-                    }
-                    
-                    if (datasets[2].data.length > todayIndex) {
-                        datasets[2].data[todayIndex].y = pnlValue;
-                    }
-                    
-                    if (datasets[3].data.length > todayIndex) {
-                        datasets[3].data[todayIndex].y = pnlValue * secondaryRate;
-                    }
-                    
-                    if (datasets[4].data.length > todayIndex) {
-                        datasets[4].data[todayIndex].y = pnlPercentage;
-                    }
-                    
-                    console.log(`Updated today's data point at index ${todayIndex} with price: ${priceData.price}`);
+                    btcDataset.data[todayIndex] = {
+                        x: currentDate,
+                        y: currentPrice
+                    };
                 } else {
-                    // No data point for today, add new points
-                    console.log(`No data point found for today, adding new point with price: ${priceData.price}`);
-                    
-                    // Add a new point to each dataset
-                    datasets[0].data.push({ x: currentDate, y: priceData.price });
-                    datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
-                    datasets[2].data.push({ x: currentDate, y: pnlValue });
-                    datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
-                    datasets[4].data.push({ x: currentDate, y: pnlPercentage });
+                    btcDataset.data.push({
+                        x: currentDate,
+                        y: currentPrice
+                    });
                 }
                 
-                // Always update the last point (in case it's not today's point)
-                const lastIndex = datasets[0].data.length - 1;
-                datasets[0].data[lastIndex].y = priceData.price;
-                datasets[1].data[lastIndex].y = lastTx.cumulativeBtc;
-                datasets[2].data[lastIndex].y = pnlValue;
-                datasets[3].data[lastIndex].y = pnlValue * secondaryRate;
-                datasets[4].data[lastIndex].y = pnlPercentage;
-                
-                // Update dataset labels to display the correct currency
-                datasets[0].label = `BTC Price (${priceData.mainCurrency || 'EUR'})`;
-                datasets[2].label = `P&L (${priceData.mainCurrency || 'EUR'})`;
-                datasets[3].label = `P&L (${secondaryCurrency})`;
-            } else {
-                // No data points yet, add initial points
-                datasets[0].data.push({ x: currentDate, y: priceData.price });
-                datasets[1].data.push({ x: currentDate, y: lastTx.cumulativeBtc });
-                datasets[2].data.push({ x: currentDate, y: pnlValue });
-                datasets[3].data.push({ x: currentDate, y: pnlValue * secondaryRate });
-                datasets[4].data.push({ x: currentDate, y: pnlPercentage });
-                console.log(`Added initial data points with price: ${priceData.price}`);
+                chart.update();
             }
-
-            // Apply changes to chart with animation disabled for smoother updates
-            chart.update();
         }
 
         // Function to create the initial chart
         function createChart(data) {
-            // Check if historical data exists and is an array
             if (!data.historicalBTCData || !Array.isArray(data.historicalBTCData) || data.historicalBTCData.length === 0) {
                 console.warn('Historical BTC data is missing or empty. Chart cannot be generated.');
-                // Optionally display a message to the user
                 document.getElementById('chartLoading').textContent = 'No historical data available for chart.';
-                return; // Exit the function if no data
+                return;
             }
 
-            // Get theme setting
             const isLightTheme = document.body.classList.contains('light-theme');
             const textColor = isLightTheme ? '#333' : '#eee';
             const gridColor = isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
 
-            // Filter and sample historical data
+            // Ensure proper data filtering based on time range
+            const now = new Date();
+            const cutoffDate = currentTimeRange > 0 ? new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000) : null;
+
             const filteredHistoricalData = filterAndSampleData(
-                data.historicalBTCData,
+                data.historicalBTCData.filter(item => {
+                    if (!cutoffDate) return true;
+                    const itemDate = new Date(item.timestamp);
+                    return itemDate >= cutoffDate && itemDate <= now;
+                }),
                 currentTimeRange,
                 currentDensity
             );
-            
-            // Further check if filtering resulted in empty data
+
             if (!filteredHistoricalData || filteredHistoricalData.length === 0) {
-                console.warn('No historical data remaining after filtering. Chart cannot be generated.');
+                console.warn('No historical data remaining after filtering.');
                 document.getElementById('chartLoading').textContent = 'No historical data for the selected range.';
-                return; // Exit the function if no data after filtering
+                return;
             }
 
-            // Prepare data arrays with aligned timestamps
-            const btcPrices = [];
-            const cumulativeBtcData = [];
-            const pnlData = [];
-            const pnlPLNData = [];
-            const pnlPercentageData = [];
+            // Prepare datasets
+            let datasets = [];
 
-            // Calculate data points with timestamp alignment
-            filteredHistoricalData.forEach(item => {
-                const currentDate = new Date(item.timestamp);
-                
-                // Filter transactions that occurred up to the current historical date point
-                const relevantTransactions = transactionsWithCumulative.filter(tx => 
-                    new Date(tx.date) <= currentDate
-                );
-                
-                // Get the appropriate historical price based on main currency
-                const price = data.mainCurrency === 'EUR' ? 
+            // BTC price dataset
+            const btcPrices = filteredHistoricalData.map(item => ({
+                x: new Date(item.timestamp),
+                y: data.mainCurrency === 'EUR' ? 
                     (item.priceEUR || item.price) : 
-                    (item.priceUSD || (item.priceEUR * data.eurUsd));
-                
-                // Only continue if we have transactions by this date
-                if (relevantTransactions.length > 0) {
-                    // Calculate historical cumulative values as of this date
-                    let historicalCumulativeBtc = 0;
-                    let historicalCumulativeCost = 0;
-                    
-                    relevantTransactions.forEach(tx => {
-                        const amount = Number(tx.amount) || 0;
-                        const costEUR = Number(tx.base?.eur?.cost || tx.cost || 0);
-                        
-                        if (tx.type === 'buy') {
-                            historicalCumulativeBtc += amount;
-                            historicalCumulativeCost += costEUR;
-                        } else if (tx.type === 'sell') {
-                            historicalCumulativeBtc -= amount;
-                            // Skip complex cost basis adjustment for sells
-                        }
-                    });
-                    
-                    // Calculate P&L based on historical values - make sure to use the right price
-                    const pnlValue = (historicalCumulativeBtc * price) - historicalCumulativeCost;
-                    // Log some debugging info for the first few points
-                    if (btcPrices.length < 5) {
-                        console.log(`Historical point: Date=${currentDate.toISOString()}, BTC=${historicalCumulativeBtc.toFixed(8)}, Cost=${historicalCumulativeCost.toFixed(2)}, Price=${price.toFixed(2)}, P&L=${pnlValue.toFixed(2)}`);
-                    }
-                    
-                    const timePoint = currentDate;
-                    
-                    // Push data points to arrays
-                    btcPrices.push({ x: timePoint, y: price });
-                    cumulativeBtcData.push({ x: timePoint, y: historicalCumulativeBtc });
-                    pnlData.push({ x: timePoint, y: pnlValue });
-                    pnlPLNData.push({ x: timePoint, y: pnlValue * secondaryRate });
-                    pnlPercentageData.push({ x: timePoint, y: pnlValue / historicalCumulativeCost * 100 });
-                }
-            });
+                    (item.priceUSD || (item.priceEUR * data.eurUsd))
+            }));
+
+            // Calculate moving average (30-day window)
+            const movingAverageWindow = Math.min(30, Math.max(5, Math.floor(btcPrices.length / 20))); // Adaptive window size
+            const movingAverages = [];
             
-            // Add/Update the current point using final cumulative values
-            if (transactionsWithCumulative.length > 0) {
-                // Calculate FINAL cumulative BTC and Cost from ALL transactions
-                let finalCumulativeBtc = 0;
-                let finalCumulativeCost = 0;
-                
-                transactionsWithCumulative.forEach(tx => {
-                    const amount = Number(tx.amount) || 0;
-                    const costEUR = Number(tx.base?.eur?.cost || tx.cost || 0);
-                    
-                    if (tx.type === 'buy') {
-                        finalCumulativeBtc += amount;
-                        finalCumulativeCost += costEUR;
-                    } else if (tx.type === 'sell') {
-                        finalCumulativeBtc -= amount;
-                        // Skip cost basis adjustment for sells
+            for (let i = 0; i < btcPrices.length; i++) {
+                const startIdx = Math.max(0, i - movingAverageWindow + 1);
+                const windowPrices = btcPrices.slice(startIdx, i + 1);
+                const average = windowPrices.reduce((sum, price) => sum + price.y, 0) / windowPrices.length;
+                movingAverages.push({
+                    x: btcPrices[i].x,
+                    y: average
+                });
+            }
+
+            // Calculate cumulative buying average price trend only if there are buy transactions
+            const buyingAverageTrend = [];
+            const hasBuyTransactions = data.transactions?.some(tx => tx.type === 'buy');
+
+            if (hasBuyTransactions && data.transactions && data.transactions.length > 0) {
+                let cumulativeAmount = 0;
+                let cumulativeCost = 0;
+                const sortedTransactions = [...data.transactions]
+                    .filter(tx => tx.type === 'buy')
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                sortedTransactions.forEach((tx, index) => {
+                    const txDate = new Date(tx.date);
+                    if (!currentTimeRange || txDate >= cutoffDate) {
+                        const mainCurrency = data.mainCurrency || 'EUR';
+                        const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                        const txAmount = tx.amount;
+                        
+                        if (index > 0 && cumulativeAmount > 0) {
+                            buyingAverageTrend.push({
+                                x: new Date(txDate.getTime() - 1),
+                                y: cumulativeCost / cumulativeAmount
+                            });
+                        }
+                        
+                        cumulativeAmount += txAmount;
+                        cumulativeCost += txAmount * txPrice;
+                        
+                        if (cumulativeAmount > 0) {
+                            buyingAverageTrend.push({
+                                x: txDate,
+                                y: cumulativeCost / cumulativeAmount
+                            });
+                        }
                     }
                 });
-                
-                const currentDate = new Date();
-                
-                // Get the current price
-                const currentPrice = data.mainCurrency === 'EUR' ? 
-                    (data.priceEUR || data.price || 0) : 
-                    (data.priceUSD || (data.priceEUR * data.eurUsd) || 0);
-                    
-                // Calculate current P&L values
-                const currentPnlValue = (finalCumulativeBtc * currentPrice) - finalCumulativeCost;
-                const currentPnlPercentage = finalCumulativeCost > 0 ? 
-                    (currentPnlValue / finalCumulativeCost) * 100 : 0;
-                
-                // Check if the last point is from today
-                let shouldAddCurrentPoint = true;
-                
-                if (btcPrices.length > 0) {
-                    const lastPoint = btcPrices[btcPrices.length - 1];
-                    const lastPointDate = new Date(lastPoint.x);
-                    
-                    if (lastPointDate.toDateString() === currentDate.toDateString()) {
-                        // Update today's point
-                        lastPoint.y = currentPrice;
-                        cumulativeBtcData[cumulativeBtcData.length - 1].y = finalCumulativeBtc;
-                        pnlData[pnlData.length - 1].y = currentPnlValue;
-                        pnlPLNData[pnlPLNData.length - 1].y = currentPnlValue * secondaryRate;
-                        pnlPercentageData[pnlPercentageData.length - 1].y = currentPnlPercentage;
-                        shouldAddCurrentPoint = false;
-                    }
+
+                if (buyingAverageTrend.length > 0) {
+                    buyingAverageTrend.push({
+                        x: new Date(),
+                        y: buyingAverageTrend[buyingAverageTrend.length - 1].y
+                    });
                 }
-                
-                // If no point for today, add a new one
-                if (shouldAddCurrentPoint) {
-                    btcPrices.push({ x: currentDate, y: currentPrice });
-                    cumulativeBtcData.push({ x: currentDate, y: finalCumulativeBtc });
-                    pnlData.push({ x: currentDate, y: currentPnlValue });
-                    pnlPLNData.push({ x: currentDate, y: currentPnlValue * secondaryRate });
-                    pnlPercentageData.push({ x: currentDate, y: currentPnlPercentage });
-                }
-                
-                console.log('Added/updated current price point:', currentPrice);
             }
 
-            // Get the canvas context BEFORE creating the chart
+            // Add BTC price dataset (main line)
+            datasets.push({
+                label: 'BTC Price',
+                data: btcPrices,
+                borderColor: '#f7931a',
+                backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                borderWidth: 2.5,
+                fill: false,
+                tension: 0.2,
+                pointRadius: 0,
+                pointHitRadius: 10,
+                order: 2,
+                z: 2
+            });
+
+            // Add market average trend with reduced opacity
+            datasets.push({
+                label: 'Market Average',
+                data: movingAverages,
+                borderColor: 'rgba(74, 144, 226, 0.7)',
+                borderWidth: 1.5,
+                borderDash: [5, 5],
+                fill: false,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHitRadius: 10,
+                order: 1,
+                z: 1
+            });
+
+            // Add buying average trend only if there are buy transactions
+            if (hasBuyTransactions && buyingAverageTrend.length > 0) {
+                datasets.push({
+                    label: 'Your Average Buy Price',
+                    data: buyingAverageTrend,
+                    borderColor: 'rgba(40, 167, 69, 0.8)',
+                    borderWidth: 2,
+                    borderDash: [8, 4],
+                    fill: false,
+                    tension: 0,
+                    pointRadius: 0,
+                    pointHitRadius: 10,
+                    stepped: true,
+                    order: 1,
+                    z: 1
+                });
+            }
+
+            // Transactions are now handled by the timeline component below the chart
+            // No longer adding transaction bubbles to the chart for cleaner visualization
+
             const ctx = document.getElementById('combinedChart').getContext('2d');
-            
-            // Destroy existing chart instance if it exists
             if (combinedChart) {
                 combinedChart.destroy();
             }
 
-            // Create chart with configuration
+            // Create chart with optimized configuration
             combinedChart = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    datasets: [
-                        {
-                            label: `BTC Price (${data.mainCurrency || 'EUR'})`,
-                            data: btcPrices,
-                            borderColor: '#f7931a',
-                            backgroundColor: 'rgba(247, 147, 26, 0.1)',
-                            yAxisID: 'y',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: 'Average Buy Price',
-                            data: cumulativeBtcData.map((point, index) => {
-                                // Get all buy transactions up to this point
-                                const relevantTransactions = transactionsWithCumulative.filter(tx => 
-                                    new Date(tx.date) <= new Date(point.x) && tx.type === 'buy'
-                                );
-                                
-                                if (relevantTransactions.length === 0) return { x: point.x, y: null };
-                                
-                                // Calculate average buy price
-                                let totalBtc = 0;
-                                let totalCost = 0;
-                                relevantTransactions.forEach(tx => {
-                                    totalBtc += Number(tx.amount) || 0;
-                                    totalCost += Number(tx.base?.eur?.cost || tx.cost || 0);
-                                });
-                                
-                                const avgPrice = totalBtc > 0 ? totalCost / totalBtc : null;
-                                return { x: point.x, y: avgPrice };
-                            }),
-                            borderColor: '#9c27b0',
-                            borderDash: [5, 5],
-                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
-                            yAxisID: 'y',
-                            tension: 0,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: 'Cumulative BTC',
-                            data: cumulativeBtcData,
-                            borderColor: '#4db6ac',
-                            backgroundColor: 'rgba(77, 182, 172, 0.1)',
-                            borderWidth: 2.5,
-                            yAxisID: 'y1',
-                            tension: 0,
-                            stepped: 'middle',
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: `P&L (${data.mainCurrency || 'EUR'})`,
-                            data: pnlData,
-                            borderColor: '#64b5f6',
-                            backgroundColor: 'rgba(100, 181, 246, 0.1)',
-                            yAxisID: 'y3',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        },
-                        {
-                            label: `P&L (${secondaryCurrency})`,
-                            data: pnlPLNData,
-                            borderColor: '#ba68c8',
-                            borderDash: [5, 5],
-                            backgroundColor: 'rgba(186, 104, 200, 0.1)',
-                            yAxisID: 'y3',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10,
-                            hidden: true
-                        },
-                        {
-                            label: 'P&L (%)',
-                            data: pnlPercentageData,
-                            borderColor: '#ffd54f',
-                            backgroundColor: 'rgba(255, 213, 79, 0.1)',
-                            yAxisID: 'y2',
-                            tension: 0.4,
-                            pointRadius: 0,
-                            pointHitRadius: 10
-                        }
-                    ]
-                },
+                data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
@@ -857,72 +1612,113 @@
                         mode: 'index',
                         intersect: false,
                     },
-                    stacked: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: 'BTC Price and Portfolio Overview',
-                            font: { size: 16, family: "'JetBrains Mono', monospace", weight: 'bold' },
-                            color: textColor,
-                            padding: { top: 10, bottom: 20 }
-                        },
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: textColor,
-                                font: { size: 11, family: "'Segoe UI', sans-serif" },
-                                usePointStyle: true,
-                                boxWidth: 8,
-                                padding: 15
+                        crosshair: {
+                            line: {
+                                color: 'rgba(247, 147, 26, 0.3)',
+                                width: 1
                             },
+                            sync: {
+                                enabled: true,
+                                group: 1,
+                                suppressTooltips: false
+                            },
+                            zoom: {
+                                enabled: false
+                            }
+                        },
+                        annotation: {
+                            annotations: hasBuyTransactions ? {
+                                buyingAvgLine: {
+                                    type: 'line',
+                                    mode: 'horizontal',
+                                    scaleID: 'y',
+                                    value: data.averagePrice?.eur || data.averagePrice || 0,
+                                    borderColor: 'rgba(40, 167, 69, 0.3)',
+                                    borderWidth: 1,
+                                    borderDash: [6, 6],
+                                    label: {
+                                        enabled: true,
+                                        content: 'Your Avg',
+                                        position: 'start',
+                                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                                        color: '#fff',
+                                        font: {
+                                            size: 10,
+                                            weight: 'bold'
+                                        }
+                                    }
+                                }
+                            } : {}
                         },
                         tooltip: {
-                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(30, 30, 30, 0.9)',
-                            titleColor: isLightTheme ? '#333' : '#eee',
-                            bodyColor: isLightTheme ? '#333' : '#eee',
-                            borderColor: isLightTheme ? '#ccc' : '#555',
+                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)',
+                            titleColor: isLightTheme ? '#333' : '#fff',
+                            bodyColor: isLightTheme ? '#333' : '#fff',
+                            borderColor: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
                             borderWidth: 1,
                             padding: 10,
-                            displayColors: true,
-                            boxPadding: 4,
+                            cornerRadius: 4,
                             callbacks: {
-                                title: function(tooltipItems) {
-                                    const date = new Date(tooltipItems[0].parsed.x);
-                                    return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-                                },
                                 label: function(context) {
                                     const label = context.dataset.label || '';
-                                    let value = context.parsed.y;
-                                    if (value === null || isNaN(value)) {
-                                        return null;
-                                    }
-
-                                    let valueString = '';
-                                    const axisID = context.dataset.yAxisID;
+                                    const currency = data.mainCurrency || 'EUR';
                                     
-                                    if (axisID === 'y') {
-                                        valueString = `${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
-                                    } else if (axisID === 'y1') {
-                                        valueString = `${value.toFixed(8)} BTC`;
-                                    } else if (axisID === 'y3') {
-                                        const mainPnlValue = context.chart.data.datasets[2].data[context.dataIndex]?.y ?? NaN;
-                                        const secondaryPnlValue = context.chart.data.datasets[3].data[context.dataIndex]?.y ?? NaN;
-                                        
-                                if (context.datasetIndex === 2) { 
-                                    valueString = `Main: ${mainPnlValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
-                                    if (!isNaN(secondaryPnlValue)) {
-                                         valueString += `\nSec: ${secondaryPnlValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${secondaryCurrency}`;
+                                    if (label === 'BTC Price' || label === 'Market Average' || label === 'Your Average Buy Price') {
+                                        return `${label}: ${context.parsed.y.toLocaleString(undefined, { 
+                                            minimumFractionDigits: 2, 
+                                            maximumFractionDigits: 2 
+                                        })} ${currency}`;
                                     }
-                                } else {
-                                    return null; 
+                                    return label;
                                 }
-                                
-                            } else if (axisID === 'y2') {
-                                valueString = `${value.toFixed(2)}%`;
                             }
-
-                                    return `${label}: ${valueString}`;
+                        },
+                        legend: {
+                            labels: {
+                                color: textColor,
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
                                 },
+                                filter: function(item) {
+                                    // Only show legend items for chart datasets (no transactions)
+                                    return item.text === 'BTC Price' || 
+                                           item.text === 'Market Average' ||
+                                           (item.text === 'Your Average Buy Price' && hasBuyTransactions);
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'ctrl',
+                                onPanComplete: function({ chart }) {
+                                    // Update time range buttons to show "Custom" when panned
+                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+                                }
+                            },
+                            limits: {
+                                x: {min: 'original', max: 'original'},
+                                y: {min: 'original', max: 'original'}
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    modifierKey: 'ctrl'
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                                onZoomComplete: function({ chart }) {
+                                    // Update time range buttons to show "Custom" when zoomed
+                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+                                }
                             }
                         }
                     },
@@ -930,111 +1726,111 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: 'day',
+                                unit: currentTimeRange <= 7 ? 'day' :
+                                      currentTimeRange <= 90 ? 'week' :
+                                      currentTimeRange <= 365 ? 'month' : 'year',
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
                                     day: 'MMM d',
-                                    week: 'MMM d, yyyy',
+                                    week: 'MMM d',
                                     month: 'MMM yyyy',
                                     year: 'yyyy'
                                 }
                             },
-                            grid: { color: gridColor },
-                            ticks: { 
-                                color: textColor,
-                                font: { size: 10, family: "'Segoe UI', sans-serif" },
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 10
+                            grid: {
+                                color: gridColor,
+                                drawBorder: true,
+                                borderDash: [4, 4]
                             },
-                            title: {
-                                display: true,
-                                text: 'Date',
+                            ticks: {
                                 color: textColor,
-                                font: { size: 12, family: "'Segoe UI', sans-serif", weight: 'bold' }
+                                maxRotation: 45,
+                                font: {
+                                    size: 11
+                                }
                             }
                         },
                         y: {
                             type: 'linear',
                             display: true,
                             position: 'left',
-                            grid: { color: gridColor },
+                            grid: {
+                                color: gridColor,
+                                drawBorder: true,
+                                borderDash: [4, 4]
+                            },
                             ticks: {
                                 color: textColor,
-                                font: { size: 11 },
                                 callback: function(value) {
-                                    return value.toLocaleString() + ' ' + getCurrencySymbol(data.mainCurrency || 'EUR');
+                                    return value.toLocaleString(undefined, {
+                                        minimumFractionDigits: 0,
+                                        maximumFractionDigits: 0
+                                    });
+                                },
+                                font: {
+                                    size: 11
                                 }
                             },
                             title: {
                                 display: true,
                                 text: `BTC Price (${data.mainCurrency || 'EUR'})`,
                                 color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y1: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value.toFixed(4) + ' B';
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Cumulative BTC',
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y2: {
-                            type: 'linear',
-                            display: true,
-                            position: 'right',
-                            grid: { drawOnChartArea: false },
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                callback: function(value) {
-                                    return value.toFixed(0) + '%';
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: 'P&L %',
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
-                            }
-                        },
-                        y3: {
-                            type: 'linear',
-                            display: true,
-                            position: 'left', 
-                            grid: { drawOnChartArea: false },
-                            offset: true,
-                            ticks: {
-                                color: textColor,
-                                font: { size: 11 },
-                                padding: 10,
-                                callback: function(value) {
-                                    return value.toLocaleString() + ' ' + getCurrencySymbol(data.mainCurrency || 'EUR');
-                                }
-                            },
-                            title: {
-                                display: true,
-                                text: `P&L (${data.mainCurrency || 'EUR'})`,
-                                color: textColor,
-                                font: { size: 13, weight: 'bold' }
                             }
                         }
                     }
                 }
             });
+
+            // Add reset zoom button to chart controls
+            const chartControls = document.querySelector('.chart-controls');
+            const resetZoomBtn = document.createElement('button');
+            resetZoomBtn.className = 'reset-zoom-btn';
+            resetZoomBtn.innerHTML = '<i class="fas fa-search-minus"></i> Reset Zoom';
+            resetZoomBtn.style.display = 'none'; // Initially hidden
+            chartControls.appendChild(resetZoomBtn);
+
+            // Add event listener for reset zoom
+            resetZoomBtn.addEventListener('click', () => {
+                if (combinedChart) {
+                    combinedChart.resetZoom();
+                    resetZoomBtn.style.display = 'none';
+                }
+            });
+
+            // Show reset zoom button when chart is zoomed
+            combinedChart.options.plugins.zoom.zoom.onZoomComplete = function({ chart }) {
+                resetZoomBtn.style.display = 'block';
+                // Update time range buttons to show "Custom" when zoomed
+                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+            };
+
+            combinedChart.options.plugins.zoom.pan.onPanComplete = function({ chart }) {
+                resetZoomBtn.style.display = 'block';
+                // Update time range buttons to show "Custom" when panned
+                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+            };
+
+            // Add zoom instructions to chart
+            const chartWrapper = document.querySelector('.chart-wrapper');
+            const zoomInstructions = document.createElement('div');
+            zoomInstructions.className = 'zoom-instructions';
+            zoomInstructions.innerHTML = `
+                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Scroll to zoom</div>
+                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Drag to pan</div>
+            `;
+            chartWrapper.appendChild(zoomInstructions);
+
+            // Hide instructions after 5 seconds
+            setTimeout(() => {
+                zoomInstructions.style.opacity = '0';
+                setTimeout(() => zoomInstructions.remove(), 500);
+            }, 5000);
         }
 
         // Modified loadData function
@@ -1044,7 +1840,13 @@
                     document.getElementById('chartLoading').style.display = 'flex';
                     
                     // Fetch all data including cached prices from summary endpoint
-                    const response = await fetch('/api/summary');
+                    const response = await fetch('/api/summary', {
+                        credentials: 'include', // Ensure credentials are included
+                        headers: {
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
                     if (!response.ok) {
                         // If we get redirected to login (status 302), the browser may follow the redirect
                         // Check the content type to see if we received HTML instead of JSON
@@ -1087,9 +1889,12 @@
                     // Check if transaction count has changed
                     const transactionCountChanged = oldTransactionCount !== transactionsWithCumulative.length;
                     
-                    // If main currency changed or transactions changed, force re-creation of chart
-                    if ((mainCurrencyChanged || transactionCountChanged) && combinedChart) {
-                        console.log('Recreating chart due to currency change or transaction change');
+                    // If main currency changed, transactions changed, or time range changed, recreate chart
+                    const timeRangeChanged = window.lastTimeRange !== undefined && window.lastTimeRange !== currentTimeRange;
+                    window.lastTimeRange = currentTimeRange;
+                    
+                    if ((mainCurrencyChanged || transactionCountChanged || timeRangeChanged) && combinedChart) {
+                        console.log('Recreating chart due to currency, transaction, or time range change');
                         combinedChart.destroy();
                         combinedChart = null;
                     }
@@ -1105,6 +1910,9 @@
                     // Create/update chart with historical data
                     createChart(data);
                     
+                    // Create/update timeline with transaction data
+                    createTimeline(data);
+                    
                     // Update last update time
                     lastUpdateTime = new Date(data.priceTimestamp || data.timestamp || new Date());
                     document.getElementById('lastUpdate').textContent = 
@@ -1115,7 +1923,13 @@
                     }, 1000);
                 } else {
                     // For non-full refresh, just get summary without historical data
-                    const response = await fetch('/api/summary?priceOnly=true&fresh=true');
+                    const response = await fetch('/api/summary?priceOnly=true&fresh=true', {
+                        credentials: 'include', // Ensure credentials are included
+                        headers: {
+                            'Accept': 'application/json',
+                            'Cache-Control': 'no-cache'
+                        }
+                    });
                     if (!response.ok) {
                         // If we get redirected to login (status 302), the browser may follow the redirect
                         // Check the content type to see if we received HTML instead of JSON
@@ -1182,6 +1996,11 @@
                     
                     // Update displays with the new price data (pass the full data object)
                     updatePriceDisplays(data);
+                    
+                    // Update timeline if transactions have changed
+                    if (transactionCountChanged) {
+                        createTimeline(data);
+                    }
                     
                     // Always update the chart with the latest price data
                     if (combinedChart) {
@@ -1358,9 +2177,6 @@
             // Update grid colors
             combinedChart.options.scales.x.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
             combinedChart.options.scales.y.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y1.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y2.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y3.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
             
             // Update text colors
             const textColor = isLightTheme ? '#333333' : '#ffffff';
@@ -1368,16 +2184,10 @@
             // Update title colors
             combinedChart.options.scales.x.title.color = textColor;
             combinedChart.options.scales.y.title.color = textColor;
-            combinedChart.options.scales.y1.title.color = textColor;
-            combinedChart.options.scales.y2.title.color = textColor;
-            combinedChart.options.scales.y3.title.color = textColor;
             
             // Update tick colors
             combinedChart.options.scales.x.ticks.color = textColor;
             combinedChart.options.scales.y.ticks.color = textColor;
-            combinedChart.options.scales.y1.ticks.color = textColor;
-            combinedChart.options.scales.y2.ticks.color = textColor;
-            combinedChart.options.scales.y3.ticks.color = textColor;
         }
 
         function generateQRCode() {
@@ -1474,6 +2284,351 @@
               });
           });
         }
+
+        async function fetchHistoricalData() {
+            try {
+                // Show loading indicator
+                document.getElementById('historical-data-loading').style.display = 'flex';
+                document.getElementById('errorMessage').style.display = 'none';
+                
+                // Determine appropriate API endpoint based on requested data size
+                let endpoint = '/api/historical';
+                
+                // If 'All' mode is selected or a range greater than 1 year, use the extended data endpoint
+                const selectedRange = parseInt(document.querySelector('.time-range-btn.active')?.getAttribute('data-range')) || 0;
+                if (selectedRange > 365 || selectedRange === 0) {
+                    // Use more efficient endpoint for large data requests
+                    endpoint = '/api/historical-extended';
+                    console.log('Using extended historical data endpoint for large range: ' + selectedRange + ' days');
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error fetching historical data: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Cache the data
+                historicalBTCData = data;
+                
+                // Update the chart with the data
+                updateHistoricalChart();
+            } catch (error) {
+                console.error('Error fetching historical BTC data:', error);
+                document.getElementById('errorMessage').textContent = `Failed to fetch historical data: ${error.message}`;
+                document.getElementById('errorMessage').style.display = 'block';
+            } finally {
+                // Hide loading indicator
+                document.getElementById('historical-data-loading').style.display = 'none';
+            }
+        }
+
+        // Function to create and update the transaction timeline
+        function createTimeline(data) {
+            const timelineContainer = document.getElementById('timelineContainer');
+            const timelineTrack = document.getElementById('timelineTrack');
+            const timelineMarkers = document.getElementById('timelineMarkers');
+            const timelineTransactions = document.getElementById('timelineTransactions');
+            const timelineStats = document.getElementById('timelineStats');
+
+            // Clear existing content
+            timelineMarkers.innerHTML = '';
+            timelineTransactions.innerHTML = '';
+
+            // Filter transactions based on current time range
+            const now = new Date();
+            const cutoffDate = currentTimeRange > 0 ? new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000) : null;
+            
+            let filteredTransactions = data.transactions || [];
+            if (cutoffDate) {
+                filteredTransactions = filteredTransactions.filter(tx => {
+                    const txDate = new Date(tx.date);
+                    return txDate >= cutoffDate && txDate <= now;
+                });
+            }
+
+            // Show/hide timeline based on whether there are transactions
+            if (filteredTransactions.length === 0) {
+                timelineContainer.style.display = 'none';
+                return;
+            }
+
+            timelineContainer.style.display = 'block';
+
+            // Calculate timeline bounds
+            const timelineStart = cutoffDate || new Date(Math.min(...filteredTransactions.map(tx => new Date(tx.date))));
+            const timelineEnd = now;
+            const timelineRange = timelineEnd.getTime() - timelineStart.getTime();
+
+            // Update stats
+            const buyCount = filteredTransactions.filter(tx => tx.type === 'buy').length;
+            const sellCount = filteredTransactions.filter(tx => tx.type === 'sell').length;
+            const totalValue = filteredTransactions.reduce((sum, tx) => {
+                const mainCurrency = data.mainCurrency || 'EUR';
+                const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                return sum + (tx.amount * txPrice);
+            }, 0);
+            
+            const currency = data.mainCurrency || 'EUR';
+            timelineStats.textContent = `${filteredTransactions.length} transactions (${buyCount} buys, ${sellCount} sells) • Total value: ${totalValue.toLocaleString(undefined, { 
+                minimumFractionDigits: 0, 
+                maximumFractionDigits: 0 
+            })} ${currency}`;
+
+            // Create time markers
+            createTimelineMarkers(timelineMarkers, timelineStart, timelineEnd, timelineRange);
+
+            // Group transactions by day to handle multiple transactions
+            const transactionsByDay = {};
+            filteredTransactions.forEach(tx => {
+                const txDate = new Date(tx.date);
+                const dayKey = txDate.toDateString();
+                if (!transactionsByDay[dayKey]) {
+                    transactionsByDay[dayKey] = [];
+                }
+                transactionsByDay[dayKey].push(tx);
+            });
+
+            // Create transaction dots (one per day, with count badge if multiple)
+            Object.entries(transactionsByDay).forEach(([dayKey, dayTransactions]) => {
+                const representativeDate = new Date(dayTransactions[0].date);
+                const position = ((representativeDate.getTime() - timelineStart.getTime()) / timelineRange) * 100;
+                
+                const transactionElement = document.createElement('div');
+                
+                // Determine primary type (buy vs sell) for the day
+                const buyCount = dayTransactions.filter(tx => tx.type === 'buy').length;
+                const sellCount = dayTransactions.filter(tx => tx.type === 'sell').length;
+                const primaryType = buyCount >= sellCount ? 'buy' : 'sell';
+                
+                transactionElement.className = `timeline-transaction ${primaryType}`;
+                
+                // Size based on total transaction value for the day
+                const mainCurrency = data.mainCurrency || 'EUR';
+                const totalValue = dayTransactions.reduce((sum, tx) => {
+                    const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                    return sum + (tx.amount * txPrice);
+                }, 0);
+                
+                if (totalValue > 10000) {
+                    transactionElement.classList.add('huge');
+                } else if (totalValue > 5000) {
+                    transactionElement.classList.add('large');
+                }
+                
+                const clampedPosition = Math.max(1, Math.min(99, position));
+                transactionElement.style.left = `${clampedPosition}%`;
+                
+                // Create dot
+                const dot = document.createElement('div');
+                dot.className = 'timeline-transaction-dot';
+                transactionElement.appendChild(dot);
+                
+                // Add count badge if multiple transactions
+                if (dayTransactions.length > 1) {
+                    const countBadge = document.createElement('div');
+                    countBadge.className = 'timeline-transaction-count';
+                    countBadge.textContent = dayTransactions.length;
+                    transactionElement.appendChild(countBadge);
+                }
+                
+                // Add hover events for floating tooltip
+                setupTransactionTooltip(transactionElement, dayTransactions, data);
+                
+                timelineTransactions.appendChild(transactionElement);
+            });
+        }
+
+        // Function to create timeline markers
+        function createTimelineMarkers(container, startDate, endDate, range) {
+            const markers = [];
+            
+            // Determine appropriate marker intervals based on time range
+            let interval, format;
+            const days = range / (1000 * 60 * 60 * 24);
+            
+            if (days <= 7) {
+                interval = 1000 * 60 * 60 * 24; // Daily
+                format = { day: 'numeric', month: 'short' };
+            } else if (days <= 30) {
+                interval = 1000 * 60 * 60 * 24 * 7; // Weekly
+                format = { day: 'numeric', month: 'short' };
+            } else if (days <= 365) {
+                interval = 1000 * 60 * 60 * 24 * 30; // Monthly
+                format = { month: 'short', year: '2-digit' };
+            } else {
+                interval = 1000 * 60 * 60 * 24 * 365; // Yearly
+                format = { year: 'numeric' };
+            }
+            
+            // Create markers
+            let currentTime = Math.ceil(startDate.getTime() / interval) * interval;
+            while (currentTime <= endDate.getTime()) {
+                const position = ((currentTime - startDate.getTime()) / range) * 100;
+                
+                if (position >= 0 && position <= 100) {
+                    const marker = document.createElement('div');
+                    marker.className = 'timeline-marker';
+                    marker.style.left = `${position}%`;
+                    
+                    const label = document.createElement('div');
+                    label.className = 'timeline-marker-label';
+                    label.textContent = new Date(currentTime).toLocaleDateString(undefined, format);
+                    marker.appendChild(label);
+                    
+                    container.appendChild(marker);
+                }
+                
+                currentTime += interval;
+            }
+        }
+
+        // Global tooltip element
+        let floatingTooltip = null;
+
+        // Function to setup floating tooltip for transaction element
+        function setupTransactionTooltip(element, transactions, data) {
+            element.addEventListener('mouseenter', (e) => {
+                showFloatingTooltip(e, transactions, data);
+            });
+            
+            element.addEventListener('mouseleave', () => {
+                hideFloatingTooltip();
+            });
+            
+            element.addEventListener('mousemove', (e) => {
+                updateTooltipPosition(e);
+            });
+        }
+
+        // Function to show floating tooltip
+        function showFloatingTooltip(event, transactions, data) {
+            if (!floatingTooltip) {
+                floatingTooltip = document.createElement('div');
+                floatingTooltip.className = 'timeline-floating-tooltip';
+                document.body.appendChild(floatingTooltip);
+            }
+            
+            const mainCurrency = data.mainCurrency || 'EUR';
+            const currencySymbol = getCurrencySymbol(mainCurrency);
+            
+            // Create tooltip content
+            let content = '';
+            
+            if (transactions.length === 1) {
+                const tx = transactions[0];
+                const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                const txValue = tx.amount * txPrice;
+                const date = new Date(tx.date);
+                
+                content = `
+                    <div class="tooltip-header">${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} Transaction</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Amount:</span>
+                        <span class="tooltip-value">${tx.amount.toFixed(4)} BTC</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Price:</span>
+                        <span class="tooltip-value">${txPrice.toLocaleString(undefined, { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        })} ${currencySymbol}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Value:</span>
+                        <span class="tooltip-value">${txValue.toLocaleString(undefined, { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        })} ${currencySymbol}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Date:</span>
+                        <span class="tooltip-value">${date.toLocaleDateString()}</span>
+                    </div>
+                `;
+            } else {
+                // Multiple transactions on same day
+                const date = new Date(transactions[0].date);
+                const buyCount = transactions.filter(tx => tx.type === 'buy').length;
+                const sellCount = transactions.filter(tx => tx.type === 'sell').length;
+                const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+                const totalValue = transactions.reduce((sum, tx) => {
+                    const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
+                    return sum + (tx.amount * txPrice);
+                }, 0);
+                
+                content = `
+                    <div class="tooltip-header">${transactions.length} Transactions</div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Buys:</span>
+                        <span class="tooltip-value">${buyCount}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Sells:</span>
+                        <span class="tooltip-value">${sellCount}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Total Amount:</span>
+                        <span class="tooltip-value">${totalAmount.toFixed(4)} BTC</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Total Value:</span>
+                        <span class="tooltip-value">${totalValue.toLocaleString(undefined, { 
+                            minimumFractionDigits: 2, 
+                            maximumFractionDigits: 2 
+                        })} ${currencySymbol}</span>
+                    </div>
+                    <div class="tooltip-row">
+                        <span class="tooltip-label">Date:</span>
+                        <span class="tooltip-value">${date.toLocaleDateString()}</span>
+                    </div>
+                `;
+            }
+            
+            floatingTooltip.innerHTML = content;
+            updateTooltipPosition(event);
+            floatingTooltip.classList.add('show');
+        }
+
+        // Function to hide floating tooltip
+        function hideFloatingTooltip() {
+            if (floatingTooltip) {
+                floatingTooltip.classList.remove('show');
+            }
+        }
+
+        // Function to update tooltip position
+        function updateTooltipPosition(event) {
+            if (!floatingTooltip) return;
+            
+            const rect = floatingTooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            let x = event.clientX + 15;
+            let y = event.clientY - rect.height - 15;
+            
+            // Adjust if tooltip would go off screen
+            if (x + rect.width > viewportWidth) {
+                x = event.clientX - rect.width - 15;
+            }
+            
+            if (y < 0) {
+                y = event.clientY + 15;
+            }
+            
+            floatingTooltip.style.left = `${x}px`;
+            floatingTooltip.style.top = `${y}px`;
+        }
+
+        // Modified loadData function
     </script>
     <script src="js/electron-integration.js"></script>
 </body>

@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Exchange Integrations - BTC Tracker</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=0.4.2">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json?v=0.4.2">
     <style>
         /* Adjust exchange cards to fit 4 in a row */
         .exchange-list {
@@ -638,7 +641,6 @@
                 
                 const nameElement = card.querySelector('.exchange-name');
                 
-                // Remove Kraken logo code - as requested
                 nameElement.textContent = exchange.name;
                 
                 // Set status
@@ -666,21 +668,6 @@
                 actionButtons.style.flexWrap = 'wrap';
                 actionButtons.style.gap = '10px';
                 actionButtons.style.marginTop = '15px';
-                
-                // Add help text for Kraken if needed
-                if (exchange.id === 'kraken') {
-                    const helpLink = document.createElement('div');
-                    helpLink.className = 'api-help-link';
-                    helpLink.innerHTML = `
-                        <a href="https://support.kraken.com/hc/en-us/articles/how-to-create-an-api-key-on-kraken-pro" target="_blank" title="Learn how to create an API key on Kraken">
-                            <i class="fas fa-life-ring"></i>
-                        </a>
-                    `;
-                    helpLink.style.position = 'relative';
-                    helpLink.style.float = 'right';
-                    helpLink.style.margin = '10px';
-                    formFields.appendChild(helpLink);
-                }
                 
                 // For connected exchanges, hide credential fields but provide a button to reveal them
                 if (exchange.connected) {

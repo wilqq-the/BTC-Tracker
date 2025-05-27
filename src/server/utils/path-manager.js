@@ -134,8 +134,14 @@ class PathManager {
         // Ensure data directory exists
         this.ensureDirectoryExists(this.dataDir);
         
+        // Define default content for each file type
+        const defaultContent = {
+            'exchange-credentials.json': {}, // Empty object for credentials
+            'default': [] // Empty array for other files
+        };
+        
         // Initialize empty JSON files if they don't exist
-        Object.values(this.paths).forEach(filePath => {
+        Object.entries(this.paths).forEach(([key, filePath]) => {
             try {
                 if (!fs.existsSync(filePath)) {
                     // Check if parent directory exists
@@ -143,11 +149,29 @@ class PathManager {
                     if (!fs.existsSync(parentDir)) {
                         fs.mkdirSync(parentDir, { recursive: true });
                     }
-                    fs.writeFileSync(filePath, JSON.stringify([], null, 2));
-                    console.log(`[PathManager] Initialized empty file: ${filePath}`);
+                    
+                    // Use appropriate default content based on file name
+                    const content = defaultContent[path.basename(filePath)] || defaultContent.default;
+                    fs.writeFileSync(filePath, JSON.stringify(content, null, 2));
+                    console.log(`[PathManager] Initialized file: ${filePath} with default content`);
                 } else {
                     // File exists, check if it's readable and writable
                     fs.accessSync(filePath, fs.constants.R_OK | fs.constants.W_OK);
+                    
+                    // If it's the credentials file and it contains an empty array, fix it
+                    if (path.basename(filePath) === 'exchange-credentials.json') {
+                        const content = fs.readFileSync(filePath, 'utf8');
+                        try {
+                            const parsed = JSON.parse(content);
+                            if (Array.isArray(parsed) && parsed.length === 0) {
+                                // Convert empty array to empty object
+                                fs.writeFileSync(filePath, JSON.stringify({}, null, 2));
+                                console.log(`[PathManager] Converted empty array to object in credentials file`);
+                            }
+                        } catch (parseError) {
+                            console.error(`[PathManager] Error parsing ${filePath}:`, parseError);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error(`[PathManager] Error initializing file ${filePath}:`, error);

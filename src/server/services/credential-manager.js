@@ -123,7 +123,26 @@ class CredentialManager {
       
       // Save updated credentials
       allCredentials[exchangeId] = encryptedCreds;
+      
+      // Add more detailed logging
+      console.log(`Writing credentials to file: ${CREDS_FILE}`);
+      console.log(`Saving credentials for exchange: ${exchangeId}`);
+      console.log(`Credential keys being saved: ${Object.keys(encryptedCreds).join(', ')}`);
+      
       await fs.writeFile(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
+      
+      // Verify the file was written
+      try {
+        const verifyData = await fs.readFile(CREDS_FILE, 'utf8');
+        const verifyJson = JSON.parse(verifyData);
+        if (!verifyJson[exchangeId]) {
+          throw new Error('Credentials were not properly saved');
+        }
+        console.log('Successfully verified credentials were saved');
+      } catch (verifyError) {
+        console.error('Failed to verify saved credentials:', verifyError);
+        return false;
+      }
       
       return true;
     } catch (error) {
