@@ -641,7 +641,6 @@
                 
                 const nameElement = card.querySelector('.exchange-name');
                 
-                // Remove Kraken logo code - as requested
                 nameElement.textContent = exchange.name;
                 
                 // Set status
@@ -669,21 +668,6 @@
                 actionButtons.style.flexWrap = 'wrap';
                 actionButtons.style.gap = '10px';
                 actionButtons.style.marginTop = '15px';
-                
-                // Add help text for Kraken if needed
-                if (exchange.id === 'kraken') {
-                    const helpLink = document.createElement('div');
-                    helpLink.className = 'api-help-link';
-                    helpLink.innerHTML = `
-                        <a href="https://support.kraken.com/hc/en-us/articles/how-to-create-an-api-key-on-kraken-pro" target="_blank" title="Learn how to create an API key on Kraken">
-                            <i class="fas fa-life-ring"></i>
-                        </a>
-                    `;
-                    helpLink.style.position = 'relative';
-                    helpLink.style.float = 'right';
-                    helpLink.style.margin = '10px';
-                    formFields.appendChild(helpLink);
-                }
                 
                 // For connected exchanges, hide credential fields but provide a button to reveal them
                 if (exchange.connected) {

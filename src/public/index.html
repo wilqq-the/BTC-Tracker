@@ -14,6 +14,7 @@
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
     <link rel="manifest" href="/manifest.json?v=0.4.2">
@@ -492,6 +493,54 @@
         @media (max-width: 768px) {
             .comparison-control {
                 width: 100%;
+            }
+        }
+
+        .reset-zoom-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reset-zoom-btn:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        .reset-zoom-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Add tooltip for zoom instructions */
+        .chart-wrapper {
+            position: relative;
+        }
+
+        .zoom-instructions {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--card-bg-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: var(--text-color);
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        @media (max-width: 768px) {
+            .zoom-instructions {
+                display: none;
             }
         }
     </style>
@@ -1066,9 +1115,11 @@
                 });
             }
 
-            // Calculate cumulative buying average price trend
+            // Calculate cumulative buying average price trend only if there are buy transactions
             const buyingAverageTrend = [];
-            if (data.transactions && data.transactions.length > 0) {
+            const hasBuyTransactions = data.transactions?.some(tx => tx.type === 'buy');
+
+            if (hasBuyTransactions && data.transactions && data.transactions.length > 0) {
                 let cumulativeAmount = 0;
                 let cumulativeCost = 0;
                 const sortedTransactions = [...data.transactions]
@@ -1082,20 +1133,16 @@
                         const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
                         const txAmount = tx.amount;
                         
-                        // For each transaction, add two points to create a step effect:
-                        // First point: just before this transaction (using previous average)
                         if (index > 0 && cumulativeAmount > 0) {
                             buyingAverageTrend.push({
-                                x: new Date(txDate.getTime() - 1), // 1ms before
+                                x: new Date(txDate.getTime() - 1),
                                 y: cumulativeCost / cumulativeAmount
                             });
                         }
                         
-                        // Update cumulative values
                         cumulativeAmount += txAmount;
                         cumulativeCost += txAmount * txPrice;
                         
-                        // Second point: at this transaction (with new average)
                         if (cumulativeAmount > 0) {
                             buyingAverageTrend.push({
                                 x: txDate,
@@ -1105,7 +1152,6 @@
                     }
                 });
 
-                // Extend the last average value to the current date
                 if (buyingAverageTrend.length > 0) {
                     buyingAverageTrend.push({
                         x: new Date(),
@@ -1114,50 +1160,55 @@
                 }
             }
 
-            // Add datasets in the correct order
+            // Add BTC price dataset (main line)
             datasets.push({
                 label: 'BTC Price',
                 data: btcPrices,
                 borderColor: '#f7931a',
                 backgroundColor: 'rgba(247, 147, 26, 0.1)',
-                borderWidth: 2,
+                borderWidth: 2.5,
                 fill: false,
                 tension: 0.2,
                 pointRadius: 0,
                 pointHitRadius: 10,
-                order: 2
+                order: 2,
+                z: 2
             });
 
+            // Add market average trend with reduced opacity
             datasets.push({
-                label: 'Market Average Trend',
+                label: 'Market Average',
                 data: movingAverages,
-                borderColor: '#4a90e2',
-                borderWidth: 2,
+                borderColor: 'rgba(74, 144, 226, 0.7)',
+                borderWidth: 1.5,
                 borderDash: [5, 5],
                 fill: false,
                 tension: 0.4,
                 pointRadius: 0,
                 pointHitRadius: 10,
-                order: 1
+                order: 1,
+                z: 1
             });
 
-            if (buyingAverageTrend.length > 0) {
+            // Add buying average trend only if there are buy transactions
+            if (hasBuyTransactions && buyingAverageTrend.length > 0) {
                 datasets.push({
                     label: 'Your Average Buy Price',
                     data: buyingAverageTrend,
-                    borderColor: '#28a745',
+                    borderColor: 'rgba(40, 167, 69, 0.8)',
                     borderWidth: 2,
-                    borderDash: [10, 5],
+                    borderDash: [8, 4],
                     fill: false,
                     tension: 0,
                     pointRadius: 0,
                     pointHitRadius: 10,
                     stepped: true,
-                    order: 1
+                    order: 1,
+                    z: 1
                 });
             }
 
-            // Add transactions dataset
+            // Add transactions as bubbles with improved visibility
             if (data.transactions && data.transactions.length > 0) {
                 const mainCurrency = data.mainCurrency || 'EUR';
                 const transactions = data.transactions
@@ -1175,36 +1226,25 @@
                             return Math.abs(new Date(avg.x) - txDate) < Math.abs(new Date(closest.x) - txDate) ? avg : closest;
                         });
 
-                        // Find the buying average at this point
-                        const buyingAvg = buyingAverageTrend.find(avg => 
-                            Math.abs(new Date(avg.x) - txDate) < 24 * 60 * 60 * 1000
-                        );
-                        
-                        // UPDATED: Compare with the market average instead of buying average
-                        // Green if price is below market average (good deal)
-                        // Red if price is above market average (not as good deal)
-                        const compareAvg = closestAvg?.y; // Use market average for coloring
-                        
+                        const compareAvg = closestAvg?.y;
                         const percentDiff = txPrice && compareAvg ? ((txPrice - compareAvg) / compareAvg) * 100 : 0;
-                        const intensity = Math.min(0.9, Math.max(0.5, Math.abs(percentDiff) / 10 + 0.5));
                         
-                        // More intense color for bigger difference from average
+                        // More subtle colors for bubbles
+                        const intensity = Math.min(0.7, Math.max(0.3, Math.abs(percentDiff) / 15 + 0.3));
                         const color = txPrice <= compareAvg ? 
-                            `rgba(0, 180, 0, ${intensity})` : // Green for prices below market average
-                            `rgba(220, 0, 0, ${intensity})`;  // Red for prices above market average
+                            `rgba(40, 167, 69, ${intensity})` :  // Green
+                            `rgba(220, 53, 69, ${intensity})`; // Red
 
                         return {
                             x: txDate,
                             y: txPrice,
-                            // Scale bubble based on BTC value (price * amount) for better visualization
-                            r: Math.min(20, Math.max(5, Math.sqrt(Math.abs(tx.amount * txPrice) / 100) * 3)),
+                            r: Math.min(15, Math.max(5, Math.sqrt(Math.abs(tx.amount * txPrice) / 1000) * 2)),
                             amount: tx.amount,
                             price: txPrice,
                             date: tx.date,
                             type: tx.type,
                             color: color,
                             marketAvg: closestAvg?.y,
-                            buyingAvg: buyingAvg?.y,
                             percentDiff: percentDiff
                         };
                     })
@@ -1213,19 +1253,13 @@
                 if (transactions.length > 0) {
                     datasets.push({
                         type: 'bubble',
-                        label: 'Transactions',
+                        label: 'Your Transactions',
                         data: transactions,
-                        backgroundColor: ctx => {
-                            if (!ctx.raw) return 'rgba(0, 180, 0, 0.7)';
-                            return ctx.raw.color;
-                        },
-                        borderColor: '#fff',
+                        backgroundColor: ctx => ctx.raw?.color || 'rgba(40, 167, 69, 0.5)',
+                        borderColor: isLightTheme ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
                         borderWidth: 1,
-                        pointStyle: 'circle',
-                        radius: 0,
-                        hoverRadius: 0,
-                        pointHoverBorderWidth: 2,
-                        order: 3
+                        order: 3,
+                        z: 3
                     });
                 }
             }
@@ -1235,6 +1269,7 @@
                 combinedChart.destroy();
             }
 
+            // Create chart with optimized configuration
             combinedChart = new Chart(ctx, {
                 type: 'line',
                 data: { datasets },
@@ -1248,7 +1283,7 @@
                     plugins: {
                         crosshair: {
                             line: {
-                                color: 'rgba(247, 147, 26, 0.5)',
+                                color: 'rgba(247, 147, 26, 0.3)',
                                 width: 1
                             },
                             sync: {
@@ -1260,16 +1295,15 @@
                                 enabled: false
                             }
                         },
-                        // Add a horizontal annotation line for the average purchase price
                         annotation: {
-                            annotations: {
+                            annotations: hasBuyTransactions ? {
                                 buyingAvgLine: {
                                     type: 'line',
                                     mode: 'horizontal',
                                     scaleID: 'y',
                                     value: data.averagePrice?.eur || data.averagePrice || 0,
-                                    borderColor: 'rgba(40, 167, 69, 0.5)',
-                                    borderWidth: 2,
+                                    borderColor: 'rgba(40, 167, 69, 0.3)',
+                                    borderWidth: 1,
                                     borderDash: [6, 6],
                                     label: {
                                         enabled: true,
@@ -1278,67 +1312,104 @@
                                         backgroundColor: 'rgba(40, 167, 69, 0.7)',
                                         color: '#fff',
                                         font: {
-                                            size: 10
+                                            size: 10,
+                                            weight: 'bold'
                                         }
                                     }
                                 }
-                            }
-                        },
-                        title: {
-                            display: true,
-                            text: 'BTC Price and Transactions',
-                            font: { size: 18, family: "'JetBrains Mono', monospace", weight: 'bold' },
-                            color: textColor,
-                            padding: { top: 10, bottom: 30 }
+                            } : {}
                         },
                         tooltip: {
+                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)',
+                            titleColor: isLightTheme ? '#333' : '#fff',
+                            bodyColor: isLightTheme ? '#333' : '#fff',
+                            borderColor: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            cornerRadius: 4,
                             callbacks: {
                                 label: function(context) {
                                     const label = context.dataset.label || '';
-                                    if (label === 'BTC Price' || label === 'Market Average Trend' || label === 'Your Average Buy Price') {
-                                        return `${label}: ${context.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${data.mainCurrency || 'EUR'}`;
-                                    } else if (label === 'Transactions') {
+                                    const currency = data.mainCurrency || 'EUR';
+                                    
+                                    if (label === 'BTC Price' || label === 'Market Average' || label === 'Your Average Buy Price') {
+                                        return `${label}: ${context.parsed.y.toLocaleString(undefined, { 
+                                            minimumFractionDigits: 2, 
+                                            maximumFractionDigits: 2 
+                                        })} ${currency}`;
+                                    } else if (label === 'Your Transactions') {
                                         const dataPoint = context.raw;
                                         if (!dataPoint) return null;
-                                        const currency = data.mainCurrency || 'EUR';
-                                        const marketAvg = dataPoint.marketAvg?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A';
-                                        const buyingAvg = dataPoint.buyingAvg?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || 'N/A';
                                         
-                                        // Calculate transaction value
                                         const txValue = dataPoint.price * dataPoint.amount;
-                                        // Format percent difference with +/- sign
                                         const diffSign = dataPoint.percentDiff >= 0 ? '+' : '';
-                                        const formattedDiff = `${diffSign}${(dataPoint.percentDiff || 0).toFixed(2)}%`;
-                                        const compareText = dataPoint.marketAvg && dataPoint.price 
-                                            ? (dataPoint.price <= dataPoint.marketAvg ? 'Below' : 'Above') 
-                                            : 'N/A';
+                                        const formattedDiff = `${diffSign}${(dataPoint.percentDiff || 0).toFixed(1)}%`;
+                                        const compareText = dataPoint.marketAvg ? 
+                                            (dataPoint.price <= dataPoint.marketAvg ? 'below' : 'above') : 
+                                            'at';
                                         
                                         return [
-                                            `${label} (${dataPoint.type.toUpperCase()})`,
                                             `Amount: ${dataPoint.amount.toFixed(8)} BTC`,
-                                            `Price: ${dataPoint.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`,
-                                            `Value: ${txValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`,
-                                            `Vs Market: ${formattedDiff} (${compareText})`,
-                                            `Market Avg: ${marketAvg} ${currency}`,
-                                            `Your Avg: ${buyingAvg} ${currency}`,
+                                            `Price: ${dataPoint.price.toLocaleString(undefined, { 
+                                                minimumFractionDigits: 2, 
+                                                maximumFractionDigits: 2 
+                                            })} ${currency}`,
+                                            `Value: ${txValue.toLocaleString(undefined, { 
+                                                minimumFractionDigits: 2, 
+                                                maximumFractionDigits: 2 
+                                            })} ${currency}`,
+                                            `${formattedDiff} ${compareText} market average`,
                                             `Date: ${new Date(dataPoint.date).toLocaleDateString()}`
                                         ];
                                     }
-                                    return `${label}: ${context.parsed.y}`;
+                                    return label;
                                 }
                             }
                         },
                         legend: {
                             labels: {
                                 color: textColor,
-                                generateLabels: function(chart) {
-                                    const originalLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                                    originalLabels.forEach(label => {
-                                        if (label.text === 'Transactions') {
-                                            label.text = 'Transactions (Green: Below market avg, Red: Above market avg)';
-                                        }
-                                    });
-                                    return originalLabels;
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                },
+                                filter: function(item) {
+                                    // Hide legend items for datasets with no data
+                                    return item.text === 'BTC Price' || 
+                                           (item.text === 'Your Average Buy Price' && hasBuyTransactions) ||
+                                           (item.text === 'Your Transactions' && data.transactions?.length > 0);
+                                }
+                            }
+                        },
+                        zoom: {
+                            pan: {
+                                enabled: true,
+                                mode: 'x',
+                                modifierKey: 'ctrl',
+                                onPanComplete: function({ chart }) {
+                                    // Update time range buttons to show "Custom" when panned
+                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+                                }
+                            },
+                            limits: {
+                                x: {min: 'original', max: 'original'},
+                                y: {min: 'original', max: 'original'}
+                            },
+                            zoom: {
+                                wheel: {
+                                    enabled: true,
+                                    modifierKey: 'ctrl'
+                                },
+                                pinch: {
+                                    enabled: true
+                                },
+                                mode: 'x',
+                                onZoomComplete: function({ chart }) {
+                                    // Update time range buttons to show "Custom" when zoomed
+                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
                                 }
                             }
                         }
@@ -1347,28 +1418,28 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: function() {
-                                    if (currentTimeRange <= 7) return 'day';
-                                    if (currentTimeRange <= 90) return 'day';
-                                    if (currentTimeRange <= 365) return 'week';
-                                    if (currentTimeRange <= 1825) return 'month';
-                                    return 'year';
-                                }(),
+                                unit: currentTimeRange <= 7 ? 'day' :
+                                      currentTimeRange <= 90 ? 'week' :
+                                      currentTimeRange <= 365 ? 'month' : 'year',
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
                                     day: 'MMM d',
-                                    week: 'MMM d, yyyy',
+                                    week: 'MMM d',
                                     month: 'MMM yyyy',
                                     year: 'yyyy'
                                 }
                             },
                             grid: {
                                 color: gridColor,
-                                drawBorder: true
+                                drawBorder: true,
+                                borderDash: [4, 4]
                             },
                             ticks: {
                                 color: textColor,
-                                maxRotation: 45
+                                maxRotation: 45,
+                                font: {
+                                    size: 11
+                                }
                             }
                         },
                         y: {
@@ -1377,7 +1448,8 @@
                             position: 'left',
                             grid: {
                                 color: gridColor,
-                                drawBorder: true
+                                drawBorder: true,
+                                borderDash: [4, 4]
                             },
                             ticks: {
                                 color: textColor,
@@ -1386,17 +1458,71 @@
                                         minimumFractionDigits: 0,
                                         maximumFractionDigits: 0
                                     });
+                                },
+                                font: {
+                                    size: 11
                                 }
                             },
                             title: {
                                 display: true,
                                 text: `BTC Price (${data.mainCurrency || 'EUR'})`,
-                                color: textColor
+                                color: textColor,
+                                font: {
+                                    size: 12,
+                                    weight: 'normal'
+                                }
                             }
                         }
                     }
                 }
             });
+
+            // Add reset zoom button to chart controls
+            const chartControls = document.querySelector('.chart-controls');
+            const resetZoomBtn = document.createElement('button');
+            resetZoomBtn.className = 'reset-zoom-btn';
+            resetZoomBtn.innerHTML = '<i class="fas fa-search-minus"></i> Reset Zoom';
+            resetZoomBtn.style.display = 'none'; // Initially hidden
+            chartControls.appendChild(resetZoomBtn);
+
+            // Add event listener for reset zoom
+            resetZoomBtn.addEventListener('click', () => {
+                if (combinedChart) {
+                    combinedChart.resetZoom();
+                    resetZoomBtn.style.display = 'none';
+                }
+            });
+
+            // Show reset zoom button when chart is zoomed
+            combinedChart.options.plugins.zoom.zoom.onZoomComplete = function({ chart }) {
+                resetZoomBtn.style.display = 'block';
+                // Update time range buttons to show "Custom" when zoomed
+                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+            };
+
+            combinedChart.options.plugins.zoom.pan.onPanComplete = function({ chart }) {
+                resetZoomBtn.style.display = 'block';
+                // Update time range buttons to show "Custom" when panned
+                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+            };
+
+            // Add zoom instructions to chart
+            const chartWrapper = document.querySelector('.chart-wrapper');
+            const zoomInstructions = document.createElement('div');
+            zoomInstructions.className = 'zoom-instructions';
+            zoomInstructions.innerHTML = `
+                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Scroll to zoom</div>
+                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Drag to pan</div>
+            `;
+            chartWrapper.appendChild(zoomInstructions);
+
+            // Hide instructions after 5 seconds
+            setTimeout(() => {
+                zoomInstructions.style.opacity = '0';
+                setTimeout(() => zoomInstructions.remove(), 500);
+            }, 5000);
         }
 
         // Modified loadData function
