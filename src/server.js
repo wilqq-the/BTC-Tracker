@@ -20,6 +20,7 @@ const summaryCache = require('./server/summaryCache');
 const { v4: uuidv4 } = require('uuid');
 const multer = require('multer');
 const pathManager = require('./server/utils/path-manager');
+const { CsvImporter } = require('./server/utils/csvImporter');
 
 // Handle Electron environment
 if (process.env.IS_ELECTRON === 'true') {
@@ -513,190 +514,32 @@ setInterval(fetchHistoricalBTCData, 24 * 60 * 60 * 1000);
 function importCSVData(csvFilePath) {
     return new Promise(async (resolve, reject) => {
         try {
-            console.log(`[server.js] Reading CSV file from path: ${csvFilePath}`);
+            console.log(`[server.js] Starting CSV import from: ${csvFilePath}`);
             
             if (!fs.existsSync(csvFilePath)) {
                 return reject(new Error(`CSV file not found at path: ${csvFilePath}`));
             }
-            
-            const fileContent = fs.readFileSync(csvFilePath, 'utf-8');
-            console.log(`[server.js] CSV file read, content length: ${fileContent.length} bytes`);
-            
-            if (fileContent.length === 0) {
-                return reject(new Error('CSV file is empty'));
-            }
-            
-            parse(fileContent, {
-                columns: true,
-                skip_empty_lines: true,
-                trim: true
-            }, async (err, records) => {
-                if (err) {
-                    console.error('[server.js] Error parsing CSV:', err);
-                    reject(new Error(`Failed to parse CSV: ${err.message}`));
-                    return;
-                }
-            
-                if (!records || records.length === 0) {
-                    console.warn('[server.js] No valid records found in CSV file');
-                    reject(new Error('No valid records found in CSV file'));
-                    return;
-                }
-                
-                console.log(`[server.js] CSV parsed successfully. Found ${records.length} records`);
-                
-                await currencyConverter.ensureRates();
-                
-                const newTransactions = [];
-                let skippedCount = 0;
-                
-                for (const record of records) {
-                    try {
-                        const date = record['Date'] || record['Data transakcji'] || new Date().toISOString();
-                        const type = (record['Type'] || record['Typ transakcji'] || 'buy').toLowerCase();
-                        const amount = parseFloat(record['Amount (BTC)'] || record['Amount'] || record['Wolumen zakupiony (BTC)'] || 0);
-                        const exchange = record['Exchange'] || 'manual';
-                        const paymentMethod = '';
-                        
-                        const origCurrency = record['Original Currency'] || record['Waluta oryginalna'] || 'EUR';
-                        const origPrice = parseFloat(record['Original Price'] || record['Cena oryginalna'] || 0);
-                        const origCost = parseFloat(record['Original Cost'] || record['Koszt oryginalny'] || 0);
-                        const origFee = parseFloat(record['Original Fee'] || record['Opłata oryginalna'] || 0);
-                        
-                        if (!amount || !type || !origCurrency || !origPrice) {
-                            console.warn('[server.js] Skipping invalid record:', record);
-                            skippedCount++;
-                            continue;
-                        }
-                        
-                        const transactionData = {
-                            id: uuidv4(),
-                            exchange,
-                            type,
-                            amount,
-                            date,
-                            txType: 'spot',
-                            status: 'Completed',
-                            paymentMethod,
-                            
-                            original: {
-                                currency: origCurrency,
-                                price: origPrice,
-                                cost: origCost,
-                                fee: origFee
-                            },
-                            
-                            pair: `BTC/${origCurrency}`,
-                            baseCurrency: 'BTC',
-                            quoteCurrency: origCurrency
-                        };
-                        
-                        if (origCurrency.toUpperCase() !== 'EUR') {
-                            try {
-                                const eurValues = currencyConverter.convertValues({
-                                    price: origPrice,
-                                    cost: origCost,
-                                    fee: origFee
-                                }, origCurrency, 'EUR');
-                                
-                                transactionData.base = {
-                                    eur: {
-                                        price: eurValues.price,
-                                        cost: eurValues.cost,
-                                        fee: eurValues.fee,
-                                        rate: eurValues.rate
-                                    }
-                                };
-                            } catch (error) {
-                                console.error(`[server.js] Error converting ${origCurrency} to EUR:`, error.message);
-                                transactionData.base = {
-                                    eur: {
-                                        price: origPrice,
-                                        cost: origCost,
-                                        fee: origFee,
-                                        rate: 1.0
-                                    }
-                                };
-                            }
-                        } else {
-                            transactionData.base = {
-                                eur: {
-                                    price: origPrice,
-                                    cost: origCost,
-                                    fee: origFee,
-                                    rate: 1.0
-                                }
-                            };
-                        }
-                        
-                        if (origCurrency.toUpperCase() !== 'USD') {
-                            try {
-                                const usdValues = currencyConverter.convertValues({
-                                    price: origPrice,
-                                    cost: origCost,
-                                    fee: origFee
-                                }, origCurrency, 'USD');
-                                
-                                transactionData.base.usd = {
-                                    price: usdValues.price,
-                                    cost: usdValues.cost,
-                                    fee: usdValues.fee,
-                                    rate: usdValues.rate
-                                };
-                            } catch (error) {
-                                console.error(`[server.js] Error converting ${origCurrency} to USD:`, error.message);
-                                transactionData.base.usd = {
-                                    price: origPrice,
-                                    cost: origCost,
-                                    fee: origFee,
-                                    rate: 1.0
-                                };
-                            }
-                        } else {
-                            transactionData.base.usd = {
-                                price: origPrice,
-                                cost: origCost,
-                                fee: origFee,
-                                rate: 1.0
-                            };
-                        }
-                        
-                        const transaction = new Transaction(transactionData);
-                        
-                        if (transaction.isValid()) {
-                            newTransactions.push(transaction.toJSON());
-                        } else {
-                            console.warn('[server.js] Skipping invalid transaction:', transactionData);
-                        }
-                    } catch (recordError) {
-                        console.error('[server.js] Error processing record:', recordError, record);
-                    }
-                }
 
-                newTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-
-                console.log(`[server.js] CSV Import Summary:
-                    - Total records: ${records.length}
-                    - Valid transactions: ${newTransactions.length}
-                    - Skipped records: ${skippedCount}`);
-
-                // Append new transactions instead of replacing all transactions
-                const existingTransactionIds = new Set(transactions.map(tx => tx.id));
-                const uniqueNewTransactions = newTransactions.filter(tx => !existingTransactionIds.has(tx.id));
-                
-                console.log(`[server.js] Found ${uniqueNewTransactions.length} unique new transactions to add`);
-                
-                // Combine existing and new transactions
-                transactions = [...transactions, ...uniqueNewTransactions];
-                
-                // Sort all transactions by date
-                transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-                
-                await saveData();
-                console.log(`[server.js] Added ${uniqueNewTransactions.length} new transactions. Total transaction count: ${transactions.length}`);
+            // Create CsvImporter instance with our currency converter
+            const csvImporter = new CsvImporter(currencyConverter);
             
-                resolve();
-            });
+            // Import the CSV data using our new importer
+            const newTransactions = await csvImporter.importCsvData(csvFilePath, transactions);
+            
+            console.log(`[server.js] Successfully imported ${newTransactions.length} new transactions`);
+            
+            // Combine existing and new transactions
+            transactions = [...transactions, ...newTransactions];
+            
+            // Sort all transactions by date
+            transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            // Save the updated transactions
+            await saveData();
+            
+            console.log(`[server.js] Total transaction count after import: ${transactions.length}`);
+            
+            resolve();
         } catch (error) {
             console.error('[server.js] Error importing CSV data:', error);
             reject(error);

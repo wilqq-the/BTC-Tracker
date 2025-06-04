@@ -175,7 +175,57 @@ When you first run the application, you'll be prompted to create an administrato
 1. Navigate to the Admin Panel
 2. Upload a CSV file with your transaction data or use the template
 3. Your transactions will appear in the Transactions page
-4. You can also sync transactions directly from exchante (for non Kraken Pro, Coinbase Pro, Binance and Strike are supported)
+4. You can also sync transactions directly from exchange (for non Kraken Pro, Coinbase Pro, Binance and Strike are supported)
+
+### CSV Import Formats
+
+BTC Tracker supports multiple CSV formats and automatically detects the format of your uploaded file:
+
+#### Supported Formats
+
+1. **BTCTracker Format** (Default)
+   - Delimiter: Comma (,)
+   - Required columns:
+     - Date (YYYY-MM-DD)
+     - Type (buy/sell)
+     - Amount (BTC)
+     - Exchange
+     - Original Currency
+     - Original Price
+     - Original Cost
+     - Original Fee
+
+2. **Trezor Format**
+   - Delimiter: Semicolon (;)
+   - Required columns:
+     - Timestamp
+     - Date
+     - Time
+     - Type (RECV/SENT)
+     - Transaction ID
+     - Fee
+     - Fee unit
+     - Address
+     - Label
+     - Amount
+     - Amount unit
+     - Fiat (USD)
+     - Other
+
+#### CSV Import Features
+
+- **Automatic Format Detection**: The system automatically detects the format of your CSV file
+- **Format Conversion**: All formats are converted to a standardized internal format
+- **Currency Conversion**: Automatic conversion to EUR and USD for all transactions
+- **Duplicate Detection**: Prevents importing duplicate transactions
+- **Validation**: Validates all transactions before import
+- **Template Download**: Download a template in BTCTracker format from the Admin Panel
+
+To get started:
+1. Download the CSV template from the Admin Panel
+2. Fill in your transaction data
+3. Upload the CSV file through the Admin Panel
+4. The system will automatically detect the format and import your transactions
 
 ### Viewing Portfolio Performance
 
