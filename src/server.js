@@ -464,25 +464,32 @@ async function fetchExchangeRates() {
         // Get EUR to GBP rate
         const eurGbpData = await fetchYahooFinanceData('EURGBP=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
         
+        // Get EUR to BRL rate
+        const eurBrlData = await fetchYahooFinanceData('EURBRL=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
+        
         // Get latest rates
         const eurUsdDates = Object.keys(eurUsdData).sort();
         const eurPlnDates = Object.keys(eurPlnData).sort();
         const eurGbpDates = Object.keys(eurGbpData).sort();
+        const eurBrlDates = Object.keys(eurBrlData).sort();
         
         const eurUsd = eurUsdDates.length > 0 ? eurUsdData[eurUsdDates[eurUsdDates.length - 1]].close : 1.1;
         const eurPln = eurPlnDates.length > 0 ? eurPlnData[eurPlnDates[eurPlnDates.length - 1]].close : 4.5;
         const eurGbp = eurGbpDates.length > 0 ? eurGbpData[eurGbpDates[eurGbpDates.length - 1]].close : 0.85;
+        const eurBrl = eurBrlDates.length > 0 ? eurBrlData[eurBrlDates[eurBrlDates.length - 1]].close : 6.0;
         
         // Calculate USD rates for common currencies
         const usdEur = 1 / eurUsd;
         const usdPln = eurPln / eurUsd;
         const usdGbp = eurGbp / eurUsd;
+        const usdBrl = eurBrl / eurUsd;
         
         // Create rates objects
         const eurRates = {
             USD: eurUsd,
             PLN: eurPln,
             GBP: eurGbp,
+            BRL: eurBrl,
             CHF: 0.95, // Default value, can be fetched similarly with EURCHF=X
             JPY: 160,  // Default value, can be fetched similarly with EURJPY=X
         };
@@ -491,13 +498,14 @@ async function fetchExchangeRates() {
             EUR: usdEur,
             PLN: usdPln,
             GBP: usdGbp,
+            BRL: usdBrl,
             CHF: 0.85, // Default value
             JPY: 145,  // Default value
         };
         
         await priceCache.updateExchangeRates(eurRates, usdRates);
         
-        console.log(`[server.js] Exchange rates updated from Yahoo Finance: 1 EUR = ${eurUsd} USD, 1 EUR = ${eurPln} PLN (${new Date().toISOString()})`);
+        console.log(`[server.js] Exchange rates updated from Yahoo Finance: 1 EUR = ${eurUsd} USD, 1 EUR = ${eurPln} PLN, 1 EUR = ${eurBrl} BRL (${new Date().toISOString()})`);
     } catch (error) {
         console.error('[server.js] Error fetching exchange rates from Yahoo Finance:', error);
     }
