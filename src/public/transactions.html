@@ -59,73 +59,113 @@
         #transactionsTable {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed; /* Changed to fixed for more control */
+            table-layout: fixed;
+            font-size: 0.85rem;
         }
         
         #transactionsTable th {
             background-color: #1a1a1a;
             color: #f7931a;
-            padding: 12px 15px;
+            padding: 8px 6px;
             text-align: left;
             position: sticky;
             top: 0;
             z-index: 10;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            border-bottom: 2px solid #2a2a2a;
         }
+
+        #transactionsTable th:hover {
+            background-color: #2a2a2a;
+            cursor: pointer;
+        }
+
+        /* Optimized column width adjustments */
+        .date-col { width: 12%; min-width: 90px; }
+        .type-col { width: 8%; min-width: 60px; }
+        .amount-col { width: 15%; min-width: 110px; }
+        .price-col { width: 15%; min-width: 100px; }
+        .cost-col { width: 15%; min-width: 100px; }
+        .pnl-col { width: 15%; min-width: 100px; }
+        .pnl-percent-col { width: 10%; min-width: 70px; }
+        .pnl-secondary-col { width: 10%; min-width: 100px; }
         
         #transactionsTable td {
-            max-width: 250px;
-            padding: 10px 15px;
+            padding: 6px;
             border-bottom: 1px solid #2a2a2a;
-            text-overflow: ellipsis;
-            overflow: hidden;
-            white-space: nowrap;
+            font-size: 0.8rem;
+            vertical-align: middle;
+        }
+
+        /* Monospace font for numeric values */
+        #transactionsTable .amount-col,
+        #transactionsTable .price-col,
+        #transactionsTable .cost-col,
+        #transactionsTable .pnl-col,
+        #transactionsTable .pnl-percent-col,
+        #transactionsTable .pnl-secondary-col {
+            font-family: 'JetBrains Mono', monospace;
+            text-align: right;
+        }
+
+        /* Type column styling */
+        #transactionsTable .type-col {
+            text-align: center;
+        }
+
+        /* Hover effect */
+        #transactionsTable tbody tr {
+            transition: all 0.2s ease;
+            background: linear-gradient(to right, transparent 0%, rgba(42, 42, 42, 0.05) 100%);
         }
         
-        /* Column width adjustments */
-        .date-col { width: 10%; }
-        .type-col { width: 8%; }
-        .amount-col { width: 14%; }
-        .price-col { width: 12%; }
-        .currency-col { width: 6%; }
-        .cost-col { width: 12%; }
-        .pnl-col { width: 12%; }
-        .pnl-percent-col { width: 8%; }
-        .pnl-secondary-col { width: 18%; }
-        
-        #transactionsTable tr:hover {
+        #transactionsTable tbody tr:hover td {
             background-color: rgba(247, 147, 26, 0.1);
         }
         
-        /* P&L coloring */
-        .positive {
-            color: #00c853;
-            font-weight: bold;
+        /* P&L styling */
+        #transactionsTable .positive {
+            color: #00b894;
+            text-shadow: 0 0 1px rgba(0, 184, 148, 0.2);
         }
         
-        .negative {
-            color: #ff3d00;
-            font-weight: bold;
+        #transactionsTable .negative {
+            color: #ff7675;
+            text-shadow: 0 0 1px rgba(255, 118, 117, 0.2);
         }
         
-        /* Header sorting indicator */
+        /* Enhanced sorting indicators */
         .sortable {
             cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        .sortable:hover {
+            background-color: #2a2a2a !important;
+        }
+
+        .sortable:active {
+            transform: scale(0.98);
         }
         
         .sortable[data-sort-direction="asc"] .sort-icon:before {
-            content: "\f0d8"; /* FontAwesome up arrow */
+            content: "\f0d8";
+            color: #f7931a;
         }
         
         .sortable[data-sort-direction="desc"] .sort-icon:before {
-            content: "\f0d7"; /* FontAwesome down arrow */
+            content: "\f0d7";
+            color: #f7931a;
         }
         
         .sort-icon {
             margin-left: 5px;
             opacity: 0.5;
+            transition: all 0.2s ease;
         }
         
         .sortable[data-sort-direction] .sort-icon {
@@ -133,16 +173,8 @@
             color: #f7931a;
         }
         
-        /* Responsive styles for small screens */
-        @media (max-width: 1200px) {
-            .table-container {
-                max-width: 100%;
-                overflow-x: auto;
-            }
-            
-            #transactionsTable {
-                min-width: 900px; /* Ensure table doesn't get too small */
-            }
+        .sortable:hover .sort-icon {
+            opacity: 0.8;
         }
         
         .bitcoin-logo {
@@ -155,623 +187,412 @@
 
         /* Enhanced style for the actively sorted header */
         #transactionsTable th.sorted-column {
-            background-color: #2a2a2a; /* Slightly darker background */
-            color: #ffffff; /* White text for contrast */
+            background-color: #2a2a2a;
+            color: #ffffff;
         }
 
         .light-theme #transactionsTable th.sorted-column {
-            background-color: #e0e0e0; /* Lighter background for light theme */
+            background-color: #e0e0e0;
             color: #000000;
         }
 
         /* Ensure sort icon is visible on sorted column */
         #transactionsTable th.sorted-column .sort-icon {
             opacity: 1;
-            color: #f7931a; /* Bitcoin orange */
+            color: #f7931a;
         }
 
-        /* Mobile card view for transactions */
-        .mobile-transaction-cards {
-            display: none; /* Hidden by default, shown on mobile */
-        }
-        
-        .transaction-card {
-            background-color: var(--card-background, #2d2d2d);
+        /* Better table responsiveness */
+        .table-container {
             border-radius: 8px;
-            padding: 8px;
-            margin-bottom: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-height: 70vh;
+            overflow: auto;
+            margin-top: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #transactionsTable {
+            min-width: 100%;
+            width: max-content;
+        }
+        
+        /* Responsive styles for smaller screens */
+        @media (max-width: 1400px) {
+            #transactionsTable th,
+            #transactionsTable td {
+                padding: 8px 6px;
+                font-size: 0.8rem;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .table-container {
+                overflow-x: auto;
+        }
+        
+            #transactionsTable {
+                min-width: 900px;
+        }
+        
+            #transactionsTable th,
+            #transactionsTable td {
+                padding: 4px;
+                font-size: 0.75rem;
+        }
+        }
+
+        /* Mobile Controls Section */
+        .mobile-controls {
+            display: none;
+            padding: 1rem;
+            background: var(--card-background, #2d2d2d);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 100;
+            overflow: visible;
+        }
+        
+        .mobile-sort-filter {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .mobile-sort-btn, .mobile-filter-btn {
+            flex: 1;
+            padding: 0.6rem 1rem;
+            background: rgba(247, 147, 26, 0.1);
+            color: var(--text-color, #ffffff);
+            border: 1px solid rgba(247, 147, 26, 0.3);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .mobile-sort-btn:hover, .mobile-filter-btn:hover {
+            background: rgba(247, 147, 26, 0.2);
+            border-color: rgba(247, 147, 26, 0.5);
         }
         
-        /* Row background colors for cards */
+        .mobile-sort-btn.active {
+            background: #f7931a;
+            color: #000;
+            border-color: #f7931a;
+        }
+        
+        .mobile-sort-dropdown {
+            width: 100%;
+            margin-top: 0.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .mobile-sort-dropdown.show {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+        
+        /* Filter dropdown styling */
+        .mobile-filter-dropdown {
+            width: 100%;
+            margin-top: 0.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            }
+            
+        .mobile-filter-dropdown.show {
+            max-height: 140px;
+                overflow-y: auto;
+        }
+
+        .mobile-sort-option, .mobile-filter-option {
+            padding: 0.5rem 0.7rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.75rem;
+        }
+        
+        .mobile-sort-option:last-child, .mobile-filter-option:last-child {
+            border-bottom: none;
+            border-radius: 0 0 6px 6px;
+        }
+        
+        .mobile-sort-option:first-child, .mobile-filter-option:first-child {
+            border-radius: 6px 6px 0 0;
+        }
+        
+        .mobile-sort-option:hover, .mobile-filter-option:hover {
+            background: rgba(247, 147, 26, 0.1);
+        }
+        
+        .mobile-sort-option.active, .mobile-filter-option.active {
+            background: rgba(247, 147, 26, 0.2);
+            color: #f7931a;
+        }
+        
+        /* Custom scrollbar for mobile dropdowns */
+        .mobile-sort-dropdown::-webkit-scrollbar,
+        .mobile-filter-dropdown::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .mobile-sort-dropdown::-webkit-scrollbar-track,
+        .mobile-filter-dropdown::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        .mobile-sort-dropdown::-webkit-scrollbar-thumb,
+        .mobile-filter-dropdown::-webkit-scrollbar-thumb {
+            background: #f7931a;
+            border-radius: 2px;
+        }
+
+        .mobile-sort-dropdown::-webkit-scrollbar-thumb:hover,
+        .mobile-filter-dropdown::-webkit-scrollbar-thumb:hover {
+            background: #e67e00;
+            }
+            
+        /* Compact Mobile Cards */
+        .mobile-transaction-cards {
+            display: none;
+            }
+            
+        .transaction-card {
+                background-color: var(--card-background, #2d2d2d);
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            overflow: hidden;
+            }
+            
+        .transaction-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .transaction-card:active {
+            transform: scale(0.99);
+        }
+
+        /* Collapsed state */
+        .transaction-card:not(.expanded) {
+            padding: 0.5rem 0.75rem;
+        }
+
+        .transaction-card:not(.expanded) .transaction-card-details {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0;
+            overflow: hidden;
+            }
+            
+        /* Expanded state */
+        .transaction-card.expanded .transaction-card-details {
+            max-height: 200px;
+            opacity: 1;
+            margin-top: 0.5rem;
+            }
+            
+        .transaction-card.expanded {
+            background-color: rgba(247, 147, 26, 0.05);
+            border-color: rgba(247, 147, 26, 0.3);
+            }
+            
+        /* Enhanced P&L indicators for mobile cards */
         .transaction-card[data-pnl-scale="high-profit"] {
-            background-color: rgba(0, 255, 0, 0.15);
-            border-left: 3px solid var(--profit-color, #00b894);
-        }
-        
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.08), var(--card-background, #2d2d2d));
+            border-left: 3px solid #00b894;
+            }
+            
         .transaction-card[data-pnl-scale="medium-profit"] {
-            background-color: rgba(0, 255, 0, 0.1);
-            border-left: 2px solid var(--profit-color, #00b894);
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.05), var(--card-background, #2d2d2d));
+            border-left: 2px solid #00b894;
         }
         
         .transaction-card[data-pnl-scale="low-profit"] {
-            background-color: rgba(0, 255, 0, 0.05);
-            border-left: 1px solid var(--profit-color, #00b894);
-        }
-        
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.02), var(--card-background, #2d2d2d));
+            border-left: 1px solid #00b894;
+            }
+            
         .transaction-card[data-pnl-scale="high-loss"] {
-            background-color: rgba(255, 0, 0, 0.15);
-            border-left: 3px solid var(--loss-color, #ff7675);
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.08), var(--card-background, #2d2d2d));
+            border-left: 3px solid #ff7675;
         }
         
         .transaction-card[data-pnl-scale="medium-loss"] {
-            background-color: rgba(255, 0, 0, 0.1);
-            border-left: 2px solid var(--loss-color, #ff7675);
-        }
-        
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.05), var(--card-background, #2d2d2d));
+            border-left: 2px solid #ff7675;
+            }
+            
         .transaction-card[data-pnl-scale="low-loss"] {
-            background-color: rgba(255, 0, 0, 0.05);
-            border-left: 1px solid var(--loss-color, #ff7675);
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.02), var(--card-background, #2d2d2d));
+            border-left: 1px solid #ff7675;
         }
         
         .transaction-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 4px;
-            margin-bottom: 4px;
+            position: relative;
         }
-        
+
+        /* Collapsed header layout */
+        .transaction-card:not(.expanded) .transaction-card-header {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+            }
+            
+        /* Expanded header layout */
+        .transaction-card.expanded .transaction-card-header {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+        .transaction-card-summary {
+                display: flex;
+                align-items: center;
+            gap: 0.5rem;
+                flex: 1;
+            }
+            
         .transaction-card-date {
-            font-weight: bold;
+            font-weight: 600;
             font-size: 0.8rem;
+            color: var(--text-color, #ffffff);
         }
         
         .transaction-card-type {
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: bold;
+            padding: 0.15rem 0.4rem;
+                border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
         }
         
         .transaction-card-type.buy {
             background-color: rgba(0, 184, 148, 0.2);
             color: #00b894;
-        }
-        
+            border: 1px solid rgba(0, 184, 148, 0.3);
+            }
+            
         .transaction-card-type.sell {
             background-color: rgba(255, 118, 117, 0.2);
             color: #ff7675;
+            border: 1px solid rgba(255, 118, 117, 0.3);
+            }
+            
+        .transaction-card-preview {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-color, #ffffff);
+            }
+            
+        .transaction-card-expand-icon {
+            margin-left: 0.5rem;
+            font-size: 0.7rem;
+            color: #f7931a;
+                transition: transform 0.3s ease;
+            }
+            
+        .transaction-card.expanded .transaction-card-expand-icon {
+                transform: rotate(180deg);
+            }
+            
+        .transaction-card-details {
+            transition: all 0.3s ease;
+                overflow: hidden;
         }
-        
+
         .transaction-card-body {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 2px 8px;
-        }
-        
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            }
+            
         .transaction-card-detail {
-            flex: 1 0 40%;
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            margin-bottom: 2px;
-        }
-        
+                display: flex;
+            flex-direction: column;
+            gap: 0.1rem;
+            }
+            
         .transaction-card-label {
             color: var(--text-secondary-color, #cccccc);
-            font-size: 0.7rem;
-        }
-        
-        .transaction-card-value {
+            font-size: 0.65rem;
+            text-transform: uppercase;
             font-weight: 500;
-            text-align: right;
+            letter-spacing: 0.5px;
+            }
+            
+        .transaction-card-value {
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--text-color, #ffffff);
+            font-family: 'JetBrains Mono', monospace;
         }
-        
+
         .transaction-card-pnl {
-            padding-top: 4px;
-            margin-top: 4px;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        
-        .transaction-card-pnl .transaction-card-detail {
-            margin-bottom: 0;
-            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
         }
         
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             .table-container {
-                display: none; /* Hide table on mobile */
+                display: none;
+            }
+            
+            .mobile-controls {
+                display: block;
             }
             
             .mobile-transaction-cards {
-                display: block; /* Show cards on mobile */
-                max-height: 75vh;
+                display: block;
+                max-height: 60vh;
                 overflow-y: auto;
-                padding: 0 8px; /* Add horizontal padding */
+                padding: 0 0.5rem;
             }
             
-            .card {
-                padding: 10px;
-                margin-bottom: 10px;
+            .mobile-transaction-cards::-webkit-scrollbar {
+                width: 4px;
             }
             
-            .mobile-refresh-button {
-                position: sticky;
-                bottom: 10px;
-                margin: 10px auto 5px;
-                z-index: 5;
+            .mobile-transaction-cards::-webkit-scrollbar-track {
+                background: rgba(255, 255, 255, 0.1);
             }
             
-            .refresh-btn {
-                padding: 8px 16px;
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            }
-            
-            /* Adjust card styling to account for container padding */
-            .transaction-card {
-                margin-left: 2px;
-                margin-right: 2px;
-            }
-        }
-        
-        /* Refreshing animation for mobile cards */
-        .mobile-transaction-cards.refreshing {
-            position: relative;
-        }
-
-        .mobile-transaction-cards.refreshing::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            background: linear-gradient(to bottom, 
-                rgba(247, 147, 26, 0.2), 
-                transparent);
-            z-index: 2;
-        }
-        
-        .mobile-refresh-button {
-            display: none;
-            margin-top: 15px;
-            text-align: center;
-        }
-        
-        @media (max-width: 768px) {
-            .mobile-refresh-button {
-                display: block;
-            }
-        }
-        
-        .refresh-btn {
-            background-color: var(--primary-color, #f7931a);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-        }
-        
-        .refresh-btn:hover {
-            background-color: var(--secondary-color, #ffb347);
-        }
-        
-        .refresh-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .refresh-btn i {
-            transition: transform 0.5s ease;
-        }
-        
-        .refresh-btn.refreshing i {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Mobile navigation enhancements */
-        .mobile-nav-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: var(--text-color, #ffffff);
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 5px;
-            margin-left: auto;
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-            header {
-                display: flex;
-                flex-direction: column;
-                padding: 10px 15px;
-                position: relative;
-            }
-            
-            header h1 {
-                font-size: 1.2rem;
-                margin: 0;
-            }
-            
-            .mobile-nav-toggle {
-                display: block;
-                z-index: 11;
-            }
-            
-            nav {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 75%;
-                max-width: 280px;
-                height: 100vh;
-                background-color: var(--card-background, #2d2d2d);
-                box-shadow: -2px 0 10px rgba(0, 0, 0, 0.3);
-                z-index: 10;
-                transition: right 0.3s ease;
-                flex-direction: column;
-                padding: 55px 0 80px 0;
-                box-sizing: border-box;
-                gap: 0;
-                overflow-y: auto;
-            }
-            
-            nav.active {
-                right: 0;
-            }
-            
-            nav a {
-                margin: 0;
-                padding: 14px 20px;
-                justify-content: flex-start;
-                border-radius: 0;
-                border-left: 3px solid transparent;
-                font-size: 0.9rem;
-                transition: all 0.2s ease;
-            }
-            
-            nav a i {
-                min-width: 20px;
-                margin-right: 12px;
-                text-align: center;
-            }
-            
-            nav a.active {
-                background-color: rgba(247, 147, 26, 0.15);
-                border-left: 3px solid var(--accent-color, #f7931a);
-                color: var(--accent-color, #f7931a);
-            }
-            
-            nav a:hover:not(.active) {
-                background-color: rgba(255, 255, 255, 0.05);
-                border-left: 3px solid rgba(247, 147, 26, 0.3);
-            }
-            
-            .theme-toggle {
-                position: absolute;
-                bottom: 20px;
-                right: 20px;
-                background-color: rgba(255, 255, 255, 0.05);
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-            }
-            
-            .logout-btn {
-                margin-top: 10px !important;
-                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-                background-color: rgba(231, 76, 60, 0.08) !important;
-                padding-top: 16px !important;
-                padding-bottom: 16px !important;
-            }
-            
-            /* Close button styling */
-            .mobile-nav-close {
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                background: rgba(0, 0, 0, 0.2);
-                border: none;
-                color: var(--text-color, #ffffff);
-                font-size: 1rem;
-                padding: 8px;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 12;
-                transition: background 0.2s ease;
-            }
-            
-            .mobile-nav-close:hover {
-                background: rgba(0, 0, 0, 0.4);
-            }
-            
-            /* Add overlay when menu is open */
-            .nav-overlay {
-                display: none;
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background-color: rgba(0, 0, 0, 0.5);
-                z-index: 9;
-            }
-            
-            .nav-overlay.active {
-                display: block;
-            }
-        }
-
-        /* Mobile dropdown navigation */
-        .mobile-dropdown-nav {
-            display: none;
-        }
-        
-        @media (max-width: 768px) {
-            header {
-                padding: 10px 15px;
-            }
-            
-            header h1 {
-                font-size: 1.2rem;
-                margin: 0;
-            }
-            
-            /* Hide original nav on mobile */
-            nav {
-                display: none;
-            }
-            
-            /* Show mobile dropdown nav */
-            .mobile-dropdown-nav {
-                display: block;
-                position: relative;
-                margin-top: 10px;
-            }
-            
-            .current-page-text {
-                display: flex;
-                align-items: center;
-                flex: 1;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-text span {
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-btn {
-                width: 100%;
-                padding: 10px 15px;
-                background: var(--card-background);
-                color: var(--text-color);
-                border: 1px solid rgba(247, 147, 26, 0.2);
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                font-size: 0.95rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .current-page-btn:hover {
-                border-color: rgba(247, 147, 26, 0.5);
-            }
-            
-            .current-page-btn i.page-icon {
-                margin-right: 10px;
-                color: var(--accent-color, #f7931a);
-                min-width: 16px;
-            }
-            
-            .current-page-btn i.dropdown-icon {
-                transition: transform 0.3s ease;
-                color: var(--accent-color, #f7931a);
-                margin-left: 12px;
-                font-size: 0.9rem;
-            }
-            
-            .current-page-btn.active i.dropdown-icon {
-                transform: rotate(180deg);
-            }
-            
-            .nav-dropdown {
-                position: absolute;
-                top: calc(100% + 5px);
-                left: 0;
-                right: 0;
-                background: var(--card-background);
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                max-height: 0;
-                transition: max-height 0.3s ease;
-                z-index: 100;
-            }
-            
-            .nav-dropdown.active {
-                max-height: 300px;
-            }
-            
-            .nav-dropdown a {
-                display: flex;
-                align-items: center;
-                padding: 12px 15px;
-                text-decoration: none;
-                color: var(--text-color);
-                border-bottom: 1px solid var(--border-color);
-                transition: background 0.2s ease;
-            }
-            
-            .nav-dropdown a:last-child {
-                border-bottom: none;
-            }
-            
-            .nav-dropdown a.active {
-                background: var(--accent-color);
-                color: var(--background-color);
-            }
-            
-            .nav-dropdown a:hover:not(.active) {
-                background: var(--hover-color);
-            }
-            
-            .nav-dropdown a i {
-                margin-right: 10px;
-                width: 20px;
-                text-align: center;
-            }
-            
-            /* Utils */
-            .mobile-flex-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 15px; /* Add gap between title and buttons */
-                width: 100%;
-                margin-bottom: 5px;
-            }
-            
-            .theme-logout-container {
-                display: flex;
-                gap: 12px;
-            }
-            
-            .mobile-logout-btn {
-                background-color: rgba(231, 76, 60, 0.15);
-                color: var(--text-color);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-width: 36px;
-                min-height: 36px;
-            }
-            
-            .mobile-theme-toggle {
-                background-color: rgba(247, 147, 26, 0.15);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                color: var(--text-color); /* Ensure icon color matches text color */
-                min-width: 36px;
-                min-height: 36px;
-            }
-        }
-
-        /* Theme toggle icon visibility */
-        .theme-toggle .fa-sun,
-        .mobile-theme-toggle .fa-sun {
-            display: none;
-            color: var(--text-color);
-        }
-
-        .theme-toggle .fa-moon,
-        .mobile-theme-toggle .fa-moon {
-            display: inline-block;
-            color: var(--text-color);
-        }
-
-        /* In light theme, show sun and hide moon */
-        .light-theme .theme-toggle .fa-sun,
-        .light-theme .mobile-theme-toggle .fa-sun {
-            display: inline-block;
-        }
-
-        .light-theme .theme-toggle .fa-moon,
-        .light-theme .mobile-theme-toggle .fa-moon {
-            display: none;
-        }
-
-        /* Desktop navigation - shown by default */
-        nav {
-            display: flex;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        /* Mobile elements - hidden by default */
-        .mobile-dropdown-nav,
-        .mobile-flex-row .theme-logout-container {
-            display: none;
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-            header {
-                display: flex;
-                flex-direction: column;
-                padding: 10px 15px;
-                position: relative;
-            }
-            
-            header h1 {
-                font-size: 1.2rem;
-                margin: 0;
-            }
-            
-            /* Hide original nav on mobile */
-            nav {
-                display: none;
-            }
-            
-            /* Show mobile elements */
-            .mobile-flex-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 15px;
-                width: 100%;
-                margin-bottom: 5px;
-            }
-            
-            .mobile-flex-row .theme-logout-container {
-                display: flex;
-                gap: 12px;
-            }
-            
-            /* Show mobile dropdown nav */
-            .mobile-dropdown-nav {
-                display: block;
-                position: relative;
-                margin-top: 10px;
+            .mobile-transaction-cards::-webkit-scrollbar-thumb {
+                background: #f7931a;
+                border-radius: 2px;
             }
         }
     </style>
@@ -826,6 +647,81 @@
         <div class="transactions-section">
             <div class="card">
                 <h2><i class="fas fa-list-ul"></i> Transaction History</h2>
+                
+                <!-- Mobile Controls -->
+                <div class="mobile-controls">
+                    <div class="mobile-sort-filter">
+                        <button class="mobile-sort-btn" id="mobileSortBtn">
+                            <i class="fas fa-sort"></i>
+                            <span>Sort</span>
+                        </button>
+                        <button class="mobile-filter-btn" id="mobileFilterBtn">
+                            <i class="fas fa-filter"></i>
+                            <span>Filter</span>
+                        </button>
+                        <button class="mobile-sort-btn" id="mobileRefreshBtn">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh</span>
+                        </button>
+                    </div>
+                    <div class="mobile-sort-dropdown" id="mobileSortDropdown">
+                        <div class="mobile-sort-option" data-sort="date" data-direction="desc">
+                            <span><i class="fas fa-calendar"></i> Date (Newest)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="date" data-direction="asc">
+                            <span><i class="fas fa-calendar"></i> Date (Oldest)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="amount" data-direction="desc">
+                            <span><i class="fab fa-bitcoin"></i> Amount (High)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="amount" data-direction="asc">
+                            <span><i class="fab fa-bitcoin"></i> Amount (Low)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="pnl" data-direction="desc">
+                            <span><i class="fas fa-chart-line"></i> P&L (High)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="pnl" data-direction="asc">
+                            <span><i class="fas fa-chart-line"></i> P&L (Low)</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-sort-option" data-sort="type" data-direction="desc">
+                            <span><i class="fas fa-exchange-alt"></i> Type</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                    </div>
+                    <div class="mobile-filter-dropdown" id="mobileFilterDropdown">
+                        <div class="mobile-filter-option" data-filter="all">
+                            <span><i class="fas fa-list"></i> All Transactions</span>
+                            <i class="fas fa-check" style="opacity: 1;"></i>
+                        </div>
+                        <div class="mobile-filter-option" data-filter="buy">
+                            <span><i class="fas fa-arrow-up"></i> Buy Only</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-filter-option" data-filter="sell">
+                            <span><i class="fas fa-arrow-down"></i> Sell Only</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-filter-option" data-filter="profitable">
+                            <span><i class="fas fa-chart-line"></i> Profitable Only</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-filter-option" data-filter="loss">
+                            <span><i class="fas fa-chart-line-down"></i> Loss Only</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                        <div class="mobile-filter-option" data-filter="recent">
+                            <span><i class="fas fa-clock"></i> Last 30 Days</span>
+                            <i class="fas fa-check" style="opacity: 0;"></i>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="loading" id="tableLoading">
                     <div class="loading-spinner"></div>
                 </div>
@@ -846,15 +742,11 @@
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                                 <th class="price-col sortable" data-sort="price">
-                                    <i class="fas fa-money-bill"></i> Price
-                                    <i class="fas fa-sort sort-icon"></i>
-                                </th>
-                                <th class="currency-col sortable" data-sort="currency">
-                                    <i class="fas fa-globe"></i> Currency
+                                    <i class="fas fa-tag"></i> Price
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                                 <th class="cost-col sortable" data-sort="cost">
-                                    <i class="fas fa-money-bill-wave"></i> Cost
+                                    <i class="fas fa-money-bill"></i> Total
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                                 <th class="pnl-col sortable" data-sort="pnl">
@@ -862,11 +754,11 @@
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                                 <th class="pnl-percent-col sortable" data-sort="pnlPercentage">
-                                    <i class="fas fa-percentage"></i> P&L%
+                                    <i class="fas fa-percentage"></i> %
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                                 <th class="pnl-secondary-col sortable" data-sort="pnlSecondary">
-                                    <i class="fas fa-money-bill-wave"></i> P&L (Secondary)
+                                    <i class="fas fa-dollar-sign"></i> P&L (USD)
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
                             </tr>
@@ -874,14 +766,9 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                <!-- Add the mobile cards container with refresh button -->
+                <!-- Mobile cards container -->
                 <div class="mobile-transaction-cards" id="mobileTransactionCards">
                     <!-- Will be populated by JavaScript -->
-                </div>
-                <div class="mobile-refresh-button">
-                    <button id="mobileRefreshBtn" class="refresh-btn">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
                 </div>
             </div>
         </div>
@@ -989,12 +876,127 @@
                 }
             });
             
+            // Setup mobile controls
+            setupMobileControls();
+            
             // Add pull-to-refresh for both mobile and desktop views
             setupPullToRefresh();
         });
         
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Setup mobile controls functionality
+        function setupMobileControls() {
+            const mobileSortBtn = document.getElementById('mobileSortBtn');
+            const mobileRefreshBtn = document.getElementById('mobileRefreshBtn');
+            const mobileSortDropdown = document.getElementById('mobileSortDropdown');
+            const mobileFilterBtn = document.getElementById('mobileFilterBtn');
+            const mobileFilterDropdown = document.getElementById('mobileFilterDropdown');
+            
+            // Toggle sort dropdown
+            mobileSortBtn.addEventListener('click', () => {
+                mobileSortBtn.classList.toggle('active');
+                mobileSortDropdown.classList.toggle('show');
+                // Close filter dropdown if open
+                mobileFilterBtn.classList.remove('active');
+                mobileFilterDropdown.classList.remove('show');
+            });
+            
+            // Toggle filter dropdown
+            mobileFilterBtn.addEventListener('click', () => {
+                mobileFilterBtn.classList.toggle('active');
+                mobileFilterDropdown.classList.toggle('show');
+                // Close sort dropdown if open
+                mobileSortBtn.classList.remove('active');
+                mobileSortDropdown.classList.remove('show');
+            });
+
+            // Handle sort option selection
+            const sortOptions = document.querySelectorAll('.mobile-sort-option');
+            sortOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const sortColumn = option.getAttribute('data-sort');
+                    const sortDirection = option.getAttribute('data-direction');
+                    
+                    // Update visual state
+                    sortOptions.forEach(opt => {
+                        opt.classList.remove('active');
+                        opt.querySelector('.fa-check').style.opacity = '0';
+                    });
+                    option.classList.add('active');
+                    option.querySelector('.fa-check').style.opacity = '1';
+                    
+                    // Update sort state and sort transactions
+                    currentSortColumn = sortColumn;
+                    currentSortDirection = sortDirection;
+                    
+                    // Sort the transactions
+                    sortTransactions(sortColumn, sortDirection);
+                    
+                    // Close dropdown
+                    mobileSortBtn.classList.remove('active');
+                    mobileSortDropdown.classList.remove('show');
+                });
+            });
+            
+            // Handle filter option selection
+            const filterOptions = document.querySelectorAll('.mobile-filter-option');
+            filterOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const filterValue = option.getAttribute('data-filter');
+                    
+                    // Update visual state
+                    filterOptions.forEach(opt => {
+                        opt.classList.remove('active');
+                        opt.querySelector('.fa-check').style.opacity = '0';
+                    });
+                    option.classList.add('active');
+                    option.querySelector('.fa-check').style.opacity = '1';
+                    
+                    // Update filter state and apply filter
+                    currentFilter = filterValue;
+                    applyFilter(filterValue);
+                    
+                    // Close dropdown
+                    mobileFilterBtn.classList.remove('active');
+                    mobileFilterDropdown.classList.remove('show');
+                });
+            });
+            
+            // Mobile refresh
+            mobileRefreshBtn.addEventListener('click', () => {
+                mobileRefreshBtn.classList.add('refreshing');
+                const icon = mobileRefreshBtn.querySelector('i');
+                icon.style.animation = 'spin 1s linear infinite';
+                
+                loadTransactions().finally(() => {
+                    setTimeout(() => {
+                        mobileRefreshBtn.classList.remove('refreshing');
+                        icon.style.animation = '';
+                    }, 500);
+                });
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileSortBtn.contains(e.target) && !mobileSortDropdown.contains(e.target)) {
+                    mobileSortBtn.classList.remove('active');
+                    mobileSortDropdown.classList.remove('show');
+                }
+                if (!mobileFilterBtn.contains(e.target) && !mobileFilterDropdown.contains(e.target)) {
+                    mobileFilterBtn.classList.remove('active');
+                    mobileFilterDropdown.classList.remove('show');
+                }
+            });
+            
+            // Set initial sort option (Date - Newest)
+            const defaultOption = document.querySelector('.mobile-sort-option[data-sort="date"][data-direction="desc"]');
+            if (defaultOption) {
+                defaultOption.classList.add('active');
+                defaultOption.querySelector('.fa-check').style.opacity = '1';
+            }
+        }
         
         // Setup pull-to-refresh functionality
         function setupPullToRefresh() {
@@ -1057,8 +1059,10 @@
         }
         
         let transactions = []; // Store transactions globally
+        let allTransactions = []; // Store all transactions for filtering
         let currentSortColumn = 'date'; // Keep track of the current sort column
         let currentSortDirection = 'desc'; // Keep track of the current sort direction
+        let currentFilter = 'all'; // Keep track of current filter
         let mainCurrency = 'EUR';
         let secondaryCurrency = 'USD';
         let secondaryRate = 1;
@@ -1113,7 +1117,7 @@
         };
 
         // Function to sort transactions
-        function sortTransactions(column) {
+        function sortTransactions(column, forcedDirection = null) {
             console.log(`Attempting to sort by: ${column}`); // Add log
             const config = sortConfig[column];
             if (!config) {
@@ -1128,7 +1132,10 @@
             let direction;
 
             // Determine sort direction
-            if (column === currentSortColumn) {
+            if (forcedDirection) {
+                // Use forced direction (from mobile controls)
+                direction = forcedDirection;
+            } else if (column === currentSortColumn) {
                 // If clicking the same column, toggle direction
                 direction = currentSortDirection === 'asc' ? 'desc' : 'asc';
             } else {
@@ -1264,13 +1271,13 @@
                 // Build price display with conversion if needed
                 let priceDisplay = `${origPrice.toFixed(2)} ${origCurrencySymbol}`;
                 if (tx.original?.currency !== mainCurrency) {
-                    priceDisplay += `<div class="conversion-note">(${mainPrice.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                    priceDisplay = `${mainPrice.toFixed(2)} ${mainCurrencySymbol}`;
                 }
                 
                 // Build cost display with conversion if needed
                 let costDisplay = `${origCost.toFixed(2)} ${origCurrencySymbol}`;
                 if (tx.original?.currency !== mainCurrency) {
-                    costDisplay += `<div class="conversion-note">(${mainCost.toFixed(2)} ${mainCurrencySymbol})</div>`;
+                    costDisplay = `${mainCost.toFixed(2)} ${mainCurrencySymbol}`;
                 }
                 
                 // Existing table row HTML
@@ -1278,9 +1285,8 @@
                     <td class="date-col" title="${date.toLocaleString()}">${formattedDate}</td>
                     <td class="type-col">${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
                     <td class="amount-col" title="${tx.amount.toFixed(8)}">${tx.amount.toFixed(8)}</td>
-                    <td class="price-col" title="Original price: ${origPrice.toFixed(2)} ${origCurrencySymbol}">${priceDisplay}</td>
-                    <td class="currency-col">${origCurrencySymbol}</td>
-                    <td class="cost-col" title="Original cost: ${origCost.toFixed(2)} ${origCurrencySymbol}">${costDisplay}</td>
+                    <td class="price-col" title="Original: ${origPrice.toFixed(2)} ${origCurrencySymbol}">${priceDisplay}</td>
+                    <td class="cost-col" title="Original: ${origCost.toFixed(2)} ${origCurrencySymbol}">${costDisplay}</td>
                     <td class="pnl-col ${tx.pnl > 0 ? 'positive' : tx.pnl < 0 ? 'negative' : ''}" 
                         title="P&L in ${mainCurrency}">${pnlDisplay}</td>
                     <td class="pnl-percent-col ${tx.pnlPercentage > 0 ? 'positive' : tx.pnlPercentage < 0 ? 'negative' : ''}" 
@@ -1297,14 +1303,21 @@
                 
                 // Determine CSS class for buy/sell type
                 const typeClass = tx.type.toLowerCase() === 'buy' ? 'buy' : 'sell';
-                const typeLabel = tx.type.toLowerCase() === 'buy' ? 'Buy' : 'Sell';
                 
-                // Build the mobile card HTML
+                // Create preview text (amount for collapsed state)
+                const previewText = `${tx.amount.toFixed(4)} BTC`;
+                
+                // Build the mobile card HTML with collapsible structure
                 card.innerHTML = `
                     <div class="transaction-card-header">
+                        <div class="transaction-card-summary">
                         <div class="transaction-card-date">${formattedDate}</div>
                         <div class="transaction-card-type ${typeClass}">${tx.type === 'buy' ? 'Buy' : 'Sell'}</div>
+                            <div class="transaction-card-preview">${previewText}</div>
                     </div>
+                        <i class="fas fa-chevron-down transaction-card-expand-icon"></i>
+                    </div>
+                    <div class="transaction-card-details">
                     <div class="transaction-card-body">
                         <div class="transaction-card-detail">
                             <div class="transaction-card-label">Amount:</div>
@@ -1331,7 +1344,14 @@
                         </div>
                     </div>
                     ` : ''}
+                    </div>
                 `;
+                
+                // Add click event listener for expand/collapse
+                card.addEventListener('click', function() {
+                    this.classList.toggle('expanded');
+                });
+                
                 mobileCardsContainer.appendChild(card);
             });
         }
@@ -1371,14 +1391,20 @@
                 }
                 
                 const data = await response.json();
-                transactions = data || [];
+                allTransactions = data || []; // Store all transactions
+                transactions = [...allTransactions]; // Initialize filtered transactions
                 
+                // Apply current filter if not "all"
+                if (currentFilter !== 'all') {
+                    applyFilter(currentFilter);
+                } else {
                 // Initial sort by date (newest first)
                 if (Array.isArray(transactions) && transactions.length > 0) {
                     sortTransactions('date');
                 } else {
                     // If no transactions or empty array, just update the table
                     updateTransactionsTable();
+                    }
                 }
             } catch (error) {
                 console.error('Error loading transactions:', error);
@@ -1551,21 +1577,6 @@
             document.getElementById('tableLoading').style.display = 'none';
         }
 
-        // Setup mobile refresh button
-        document.addEventListener('DOMContentLoaded', () => {
-            const mobileRefreshBtn = document.getElementById('mobileRefreshBtn');
-            if (mobileRefreshBtn) {
-                mobileRefreshBtn.addEventListener('click', () => {
-                    mobileRefreshBtn.classList.add('refreshing');
-                    loadTransactions().finally(() => {
-                        setTimeout(() => {
-                            mobileRefreshBtn.classList.remove('refreshing');
-                        }, 500);
-                    });
-                });
-            }
-        });
-
         // Add touch support for mobile
         document.addEventListener('touchstart', function() {}, true);
 
@@ -1580,6 +1591,49 @@
                 console.log('ServiceWorker registration failed: ', error);
               });
           });
+        }
+
+        // Function to apply filters
+        function applyFilter(filterType) {
+            console.log(`Applying filter: ${filterType}`);
+            
+            // Start with all transactions
+            let filteredTransactions = [...allTransactions];
+            
+            switch (filterType) {
+                case 'all':
+                    // Show all transactions
+                    break;
+                case 'buy':
+                    filteredTransactions = filteredTransactions.filter(tx => tx.type.toLowerCase() === 'buy');
+                    break;
+                case 'sell':
+                    filteredTransactions = filteredTransactions.filter(tx => tx.type.toLowerCase() === 'sell');
+                    break;
+                case 'profitable':
+                    filteredTransactions = filteredTransactions.filter(tx => (tx.pnl || 0) > 0);
+                    break;
+                case 'loss':
+                    filteredTransactions = filteredTransactions.filter(tx => (tx.pnl || 0) < 0);
+                    break;
+                case 'recent':
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    filteredTransactions = filteredTransactions.filter(tx => new Date(tx.date) >= thirtyDaysAgo);
+                    break;
+                default:
+                    console.warn(`Unknown filter type: ${filterType}`);
+            }
+            
+            // Update the global transactions array
+            transactions = filteredTransactions;
+            
+            // Re-apply current sort
+            if (currentSortColumn) {
+                sortTransactions(currentSortColumn, currentSortDirection);
+            } else {
+                updateTransactionsTable();
+            }
         }
     </script>
 </body>

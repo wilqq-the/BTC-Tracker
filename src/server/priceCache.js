@@ -150,14 +150,16 @@ class PriceCache {
                     PLN: eurRates.PLN || 4.5,
                     GBP: eurRates.GBP || 0.85,
                     JPY: eurRates.JPY || 160,
-                    CHF: eurRates.CHF || 0.95
+                    CHF: eurRates.CHF || 0.95,
+                    BRL: eurRates.BRL || 6.0
                 },
                 USD: {
                     EUR: usdRates.EUR || 0.9,
                     PLN: usdRates.PLN || 4.0,
                     GBP: usdRates.GBP || 0.75,
                     JPY: usdRates.JPY || 145,
-                    CHF: usdRates.CHF || 0.85
+                    CHF: usdRates.CHF || 0.85,
+                    BRL: usdRates.BRL || 5.2
                 }
             };
             
@@ -171,6 +173,7 @@ class PriceCache {
                 eurGbp: eurRates.GBP,
                 eurJpy: eurRates.JPY,
                 eurChf: eurRates.CHF,
+                eurBrl: eurRates.BRL,
                 exchangeRates,
                 timestamp: new Date().toISOString()
             };
@@ -191,9 +194,10 @@ class PriceCache {
                     eurGbp: 0.85,
                     eurJpy: 160,
                     eurChf: 0.95,
+                    eurBrl: 6.0,
                     exchangeRates: {
-                        EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95 },
-                        USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85 }
+                        EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.0 },
+                        USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.2 }
                     },
                     timestamp: new Date().toISOString()
                 };
@@ -248,6 +252,7 @@ class PriceCache {
             if (eurRates.GBP) this.cache.eurGbp = eurRates.GBP;
             if (eurRates.JPY) this.cache.eurJpy = eurRates.JPY;
             if (eurRates.CHF) this.cache.eurChf = eurRates.CHF;
+            if (eurRates.BRL) this.cache.eurBrl = eurRates.BRL;
         }
         
         // Update USD rates if provided
@@ -277,10 +282,14 @@ class PriceCache {
                 return this.cache.eurUsd;
             } else if (fromCurrency === 'EUR' && toCurrency === 'PLN' && this.cache.eurPln) {
                 return this.cache.eurPln;
+            } else if (fromCurrency === 'EUR' && toCurrency === 'BRL' && this.cache.eurBrl) {
+                return this.cache.eurBrl;
             } else if (fromCurrency === 'USD' && toCurrency === 'EUR' && this.cache.eurUsd) {
                 return 1 / this.cache.eurUsd;
             } else if (fromCurrency === 'PLN' && toCurrency === 'EUR' && this.cache.eurPln) {
                 return 1 / this.cache.eurPln;
+            } else if (fromCurrency === 'BRL' && toCurrency === 'EUR' && this.cache.eurBrl) {
+                return 1 / this.cache.eurBrl;
             }
             
             // Conversion through EUR as base

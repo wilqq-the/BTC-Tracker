@@ -627,6 +627,7 @@
                                     <option value="GBP">British Pound (GBP)</option>
                                     <option value="JPY">Japanese Yen (JPY)</option>
                                     <option value="CHF">Swiss Franc (CHF)</option>
+                                    <option value="BRL">Brazilian Real (BRL)</option>
                                     <option value="EUR">Euro (EUR)</option>
                                 </select>
                                 <p class="help-text">Show P&L in this currency alongside the main currency</p>
@@ -904,6 +905,7 @@
                 'GBP': '£',
                 'JPY': '¥',
                 'CHF': 'Fr',
+                'BRL': 'R$',
                 'BTC': '₿'
             };
             
@@ -952,6 +954,7 @@
                                     <option value="GBP">GBP (£)</option>
                                     <option value="JPY">JPY (¥)</option>
                                     <option value="CHF">CHF (Fr)</option>
+                                    <option value="BRL">BRL (R$)</option>
                                 </select>
                             </div>
                         </div>
@@ -1085,6 +1088,7 @@
                                     <option value="GBP" ${tx.currency === 'GBP' ? 'selected' : ''}>GBP (£)</option>
                                     <option value="JPY" ${tx.currency === 'JPY' ? 'selected' : ''}>JPY (¥)</option>
                                     <option value="CHF" ${tx.currency === 'CHF' ? 'selected' : ''}>CHF (Fr)</option>
+                                    <option value="BRL" ${tx.currency === 'BRL' ? 'selected' : ''}>BRL (R$)</option>
                                 </select>
                             </div>
                         </div>
@@ -1388,8 +1392,9 @@
                 
                 const data = await response.json();
                 
-                // Get current main currency
+                // Get current main and secondary currencies
                 const mainCurrency = document.getElementById('mainCurrency').value;
+                const secondaryCurrency = document.getElementById('secondaryCurrency').value;
                 
                 // Update the rates display based on the main currency
                 const ratesContainer = document.querySelector('.exchange-rates');
@@ -1401,27 +1406,71 @@
                 btcPriceElement.innerHTML = `Current BTC price: <strong>${btcPrice ? btcPrice.toFixed(2) : 'N/A'} ${getCurrencySymbol(mainCurrency)}</strong>`;
                 ratesContainer.appendChild(btcPriceElement);
                 
-                // Show exchange rates
-                if (mainCurrency === 'EUR') {
-                    // Show EUR to other rates
-                    const usdRate = document.createElement('p');
-                    usdRate.innerHTML = `1 EUR = <span>${data.eurUsd ? data.eurUsd.toFixed(4) : 'N/A'} USD</span>`;
-                    ratesContainer.appendChild(usdRate);
+                // Show exchange rates based on main and secondary currencies
+                if (mainCurrency !== secondaryCurrency) {
+                    let exchangeRate = 'N/A';
                     
-                    const plnRate = document.createElement('p');
-                    plnRate.innerHTML = `1 EUR = <span>${data.eurPln ? data.eurPln.toFixed(4) : 'N/A'} PLN</span>`;
-                    ratesContainer.appendChild(plnRate);
-                } else if (mainCurrency === 'USD') {
-                    // Show USD to other rates
-                    const eurRate = document.createElement('p');
-                    const usdToEur = data.exchangeRates?.USD?.EUR || (1 / data.eurUsd);
-                    eurRate.innerHTML = `1 USD = <span>${usdToEur ? usdToEur.toFixed(4) : 'N/A'} EUR</span>`;
-                    ratesContainer.appendChild(eurRate);
-                    
-                    const plnRate = document.createElement('p');
-                    const usdToPln = data.exchangeRates?.USD?.PLN || (data.eurPln / data.eurUsd);
-                    plnRate.innerHTML = `1 USD = <span>${usdToPln ? usdToPln.toFixed(4) : 'N/A'} PLN</span>`;
-                    ratesContainer.appendChild(plnRate);
+                    if (mainCurrency === 'EUR') {
+                        // Show EUR to secondary currency rate
+                        switch(secondaryCurrency) {
+                            case 'USD':
+                                exchangeRate = data.eurUsd ? data.eurUsd.toFixed(4) : 'N/A';
+                                break;
+                            case 'PLN':
+                                exchangeRate = data.eurPln ? data.eurPln.toFixed(4) : 'N/A';
+                                break;
+                            case 'BRL':
+                                exchangeRate = data.exchangeRates?.EUR?.BRL ? data.exchangeRates.EUR.BRL.toFixed(4) : 'N/A';
+                                break;
+                            case 'GBP':
+                                exchangeRate = data.exchangeRates?.EUR?.GBP ? data.exchangeRates.EUR.GBP.toFixed(4) : 'N/A';
+                                break;
+                            case 'JPY':
+                                exchangeRate = data.exchangeRates?.EUR?.JPY ? data.exchangeRates.EUR.JPY.toFixed(2) : 'N/A';
+                                break;
+                            case 'CHF':
+                                exchangeRate = data.exchangeRates?.EUR?.CHF ? data.exchangeRates.EUR.CHF.toFixed(4) : 'N/A';
+                                break;
+                        }
+                        
+                        const rateElement = document.createElement('p');
+                        rateElement.innerHTML = `1 EUR = <span>${exchangeRate} ${secondaryCurrency}</span>`;
+                        ratesContainer.appendChild(rateElement);
+                        
+                    } else if (mainCurrency === 'USD') {
+                        // Show USD to secondary currency rate
+                        switch(secondaryCurrency) {
+                            case 'EUR':
+                                const usdToEur = data.exchangeRates?.USD?.EUR || (1 / data.eurUsd);
+                                exchangeRate = usdToEur ? usdToEur.toFixed(4) : 'N/A';
+                                break;
+                            case 'PLN':
+                                const usdToPln = data.exchangeRates?.USD?.PLN || (data.eurPln / data.eurUsd);
+                                exchangeRate = usdToPln ? usdToPln.toFixed(4) : 'N/A';
+                                break;
+                            case 'BRL':
+                                exchangeRate = data.exchangeRates?.USD?.BRL ? data.exchangeRates.USD.BRL.toFixed(4) : 'N/A';
+                                break;
+                            case 'GBP':
+                                exchangeRate = data.exchangeRates?.USD?.GBP ? data.exchangeRates.USD.GBP.toFixed(4) : 'N/A';
+                                break;
+                            case 'JPY':
+                                exchangeRate = data.exchangeRates?.USD?.JPY ? data.exchangeRates.USD.JPY.toFixed(2) : 'N/A';
+                                break;
+                            case 'CHF':
+                                exchangeRate = data.exchangeRates?.USD?.CHF ? data.exchangeRates.USD.CHF.toFixed(4) : 'N/A';
+                                break;
+                        }
+                        
+                        const rateElement = document.createElement('p');
+                        rateElement.innerHTML = `1 USD = <span>${exchangeRate} ${secondaryCurrency}</span>`;
+                        ratesContainer.appendChild(rateElement);
+                    }
+                } else {
+                    // Main and secondary currencies are the same
+                    const sameElement = document.createElement('p');
+                    sameElement.innerHTML = `<em>Main and secondary currencies are the same</em>`;
+                    ratesContainer.appendChild(sameElement);
                 }
                 
                 // Format the timestamp
@@ -1439,6 +1488,9 @@
 
         // Add event listener to reload exchange rates when main currency changes
         document.getElementById('mainCurrency').addEventListener('change', loadExchangeRates);
+
+        // Add event listener to reload exchange rates when secondary currency changes
+        document.getElementById('secondaryCurrency').addEventListener('change', loadExchangeRates);
 
         // Function to setup theme toggle
         function setupThemeToggle() {

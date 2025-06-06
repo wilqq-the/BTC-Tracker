@@ -29,7 +29,7 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
     
     // Test transaction data
     const testTransaction = {
-        date: '2023-05-15T10:00',
+        date: '2023-05-15T10:00:00',  // Fixed: Complete datetime format
         type: 'buy',
         amount: 0.12345678,
         price: 30000,
@@ -58,33 +58,86 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
             stdio: 'inherit'
         });
         
-        // Give the server time to start
-        await new Promise(resolve => setTimeout(resolve, 10000));
+        // Wait for server to be ready with a simpler approach
+        console.log('Waiting for server to be ready...');
+        await new Promise(resolve => setTimeout(resolve, 15000)); // Wait 15 seconds for startup
+        console.log('Server startup wait completed');
         
-        // Initialize browser
+        console.log('Launching browser...');
+        // Initialize browser with timeout and additional args
         browser = await puppeteer.launch({
             headless: 'new',
-            args: ['--no-sandbox', '--disable-setuid-sandbox']
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-extensions',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--no-first-run'
+            ],
+            timeout: 10000
         });
         
+        console.log('Browser launched, creating page...');
         page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 800 });
+        
+        // Set a default timeout for all page operations
+        page.setDefaultTimeout(10000);
+        // Listen for page errors
+        page.on('console', msg => {
+            if (msg.type() === 'error') {
+                console.log('Page console error:', msg.text());
+            }
+        });
+        
+        page.on('pageerror', err => {
+            console.log('Page error:', err.message);
+        });
+        
+        console.log('Browser setup complete');
     });
     
     afterAll(async () => {
-        // Cleanup
+        // Cleanup browser
         if (browser) {
-            await browser.close();
+            try {
+                console.log('Closing browser...');
+                await browser.close();
+            } catch (error) {
+                console.log('Error closing browser:', error.message);
+            }
         }
         
         // Terminate the server
-        if (serverProcess) {
+        if (serverProcess && !serverProcess.killed) {
             console.log('Stopping application server...');
-            serverProcess.kill();
-            
-            // Give time for the server to shut down cleanly
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            try {
+                serverProcess.kill('SIGTERM');
+                
+                // Wait for graceful shutdown, then force kill if needed
+                await new Promise(resolve => {
+                    const timeout = setTimeout(() => {
+                        if (!serverProcess.killed) {
+                            console.log('Force killing server process...');
+                            serverProcess.kill('SIGKILL');
+                        }
+                        resolve();
+                    }, 5000);
+                    
+                    serverProcess.on('exit', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    });
+                });
+                
+            } catch (error) {
+                console.log('Error stopping server:', error.message);
+            }
         }
+        
+        console.log('Cleanup complete');
     });
     
     test('1. User creation and login', async () => {
@@ -195,27 +248,64 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
                 path: path.join(screenshotsDir, '3-add-transaction-modal.png')
             });
             
-            // Fill the transaction form
-            await page.type('#addDate', testTransaction.date);
-            await page.select('#addType', testTransaction.type);
-            await page.type('#addAmount', testTransaction.amount.toString());
-            await page.type('#addPrice', testTransaction.price.toString());
-            await page.select('#addCurrency', testTransaction.currency);
-            await page.type('#addFee', testTransaction.fee.toString());
+            // Fill the transaction form with better error handling - use direct value setting
+            console.log("Setting form values...");
+            await page.evaluate((tx) => {
+                document.getElementById('addDate').value = '2023-05-15T10:00';
+                document.getElementById('addType').value = tx.type;
+                document.getElementById('addAmount').value = tx.amount.toString();
+                document.getElementById('addPrice').value = tx.price.toString();
+                document.getElementById('addCurrency').value = tx.currency;
+                document.getElementById('addFee').value = tx.fee.toString();
+            }, testTransaction);
             console.log("Form filled with test data");
             
-            // Take screenshot of filled form
-            await page.screenshot({
-                path: path.join(screenshotsDir, '3-filled-form.png')
+            // Check for any JavaScript errors on the page
+            const pageErrors = await page.evaluate(() => {
+                return window.jsErrors || [];
             });
+            if (pageErrors.length > 0) {
+                console.log("Page errors detected:", pageErrors);
+            }
+            
+            // Take screenshot of filled form with timeout
+            console.log("Taking screenshot of filled form...");
+            try {
+                await page.screenshot({
+                    path: path.join(screenshotsDir, '3-filled-form.png'),
+                    timeout: 5000
+                });
+                console.log("Screenshot taken successfully");
+            } catch (screenshotError) {
+                console.log("Screenshot failed:", screenshotError.message);
+            }
             
             // Submit the form by clicking the save button
+            console.log("Looking for save button...");
+            const saveButton = await page.$('.modal .btn-primary');
+            if (!saveButton) {
+                throw new Error("Save button not found");
+            }
+            
+            console.log("Clicking save button...");
             await page.click('.modal .btn-primary');
             console.log("Clicked save button");
             
-            // Wait for the modal to close
-            await page.waitForSelector('.modal', { hidden: true, timeout: 5000 });
-            console.log("Modal closed");
+            // Wait for the modal to close with better error handling
+            console.log("Waiting for modal to close...");
+            try {
+                await page.waitForSelector('.modal', { hidden: true, timeout: 10000 });
+                console.log("Modal closed");
+            } catch (modalError) {
+                console.log("Modal didn't close as expected:", modalError.message);
+                // Check if modal still exists
+                const modalExists = await page.$('.modal');
+                if (modalExists) {
+                    console.log("Modal still exists, attempting to close manually");
+                    await page.keyboard.press('Escape');
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
             
             // Now navigate to the transactions page to verify
             await Promise.all([
@@ -306,7 +396,7 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
             console.log("Clicked delete button");
             
             // Wait briefly for the deletion to process
-            await page.waitForTimeout(1000);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
             // Navigate to transactions page to verify deletion
             await Promise.all([

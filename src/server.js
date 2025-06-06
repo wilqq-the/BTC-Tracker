@@ -89,15 +89,22 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(session({
+// Session configuration - more flexible for different environments
+const sessionConfig = {
   secret: 'btc-tracker-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+  cookie: {
+    // Only require HTTPS for secure cookies when explicitly enabled
+    secure: process.env.HTTPS === 'true',
+    // Use environment-specific cookie duration
+    maxAge: process.env.COOKIE_MAX_AGE ? parseInt(process.env.COOKIE_MAX_AGE) : 
+            (process.env.NODE_ENV === 'production' ? 24 * 60 * 60 * 1000 : 
+             process.env.NODE_ENV === 'test' ? 24 * 60 * 60 * 1000 : 5 * 60 * 1000)
   }
-}));
+};
+
+app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());

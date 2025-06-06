@@ -489,9 +489,12 @@ nav a.active {
 /* Ensure mobile display when below 768px */
 @media (max-width: 768px) {
     /* Override to show mobile elements */
-    .mobile-dropdown-nav,
-    .mobile-flex-row .theme-logout-container {
+    .mobile-dropdown-nav {
         display: block;
+    }
+    
+    .mobile-flex-row .theme-logout-container {
+        display: flex;
     }
 }
 
