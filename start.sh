@@ -9,9 +9,9 @@ fi
 # Create data directory if it doesn't exist
 mkdir -p src/data
 
-# Set default environment variables (can be overridden)
-export NODE_ENV=${NODE_ENV:-production}
-export COOKIE_MAX_AGE=${COOKIE_MAX_AGE:-86400000}  # 24 hours default for production
+# Set default environment variables for local development
+export NODE_ENV=${NODE_ENV:-development}
+export COOKIE_MAX_AGE=${COOKIE_MAX_AGE:-300000}  # 5 minutes default for development
 
 # Start the application
 echo "Starting BTC Tracker..."

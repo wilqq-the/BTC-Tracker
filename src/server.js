@@ -89,23 +89,22 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration with development-friendly cookie expiration
-const isDevelopment = process.env.NODE_ENV !== 'production';
-const cookieMaxAge = process.env.COOKIE_MAX_AGE ? 
-    parseInt(process.env.COOKIE_MAX_AGE) : 
-    (isDevelopment ? 60 * 1000 : 24 * 60 * 60 * 1000); // 1 minute for dev, 24 hours for prod
-
-console.log(`[server.js] Session cookie expiration: ${cookieMaxAge / 1000} seconds (${isDevelopment ? 'development' : 'production'} mode)`);
-
-app.use(session({
+// Session configuration - more flexible for different environments
+const sessionConfig = {
   secret: 'btc-tracker-secret-key',
   resave: false,
   saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: cookieMaxAge
+  cookie: {
+    // Only require HTTPS for secure cookies when explicitly enabled
+    secure: process.env.HTTPS === 'true',
+    // Use environment-specific cookie duration
+    maxAge: process.env.COOKIE_MAX_AGE ? parseInt(process.env.COOKIE_MAX_AGE) : 
+            (process.env.NODE_ENV === 'production' ? 24 * 60 * 60 * 1000 : 
+             process.env.NODE_ENV === 'test' ? 24 * 60 * 60 * 1000 : 5 * 60 * 1000)
   }
-}));
+};
+
+app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
@@ -472,32 +471,25 @@ async function fetchExchangeRates() {
         // Get EUR to GBP rate
         const eurGbpData = await fetchYahooFinanceData('EURGBP=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
         
-        // Get EUR to BRL rate
-        const eurBrlData = await fetchYahooFinanceData('EURBRL=X', Math.floor(Date.now() / 1000) - 24 * 60 * 60, Math.floor(Date.now() / 1000));
-        
         // Get latest rates
         const eurUsdDates = Object.keys(eurUsdData).sort();
         const eurPlnDates = Object.keys(eurPlnData).sort();
         const eurGbpDates = Object.keys(eurGbpData).sort();
-        const eurBrlDates = Object.keys(eurBrlData).sort();
         
         const eurUsd = eurUsdDates.length > 0 ? eurUsdData[eurUsdDates[eurUsdDates.length - 1]].close : 1.1;
         const eurPln = eurPlnDates.length > 0 ? eurPlnData[eurPlnDates[eurPlnDates.length - 1]].close : 4.5;
         const eurGbp = eurGbpDates.length > 0 ? eurGbpData[eurGbpDates[eurGbpDates.length - 1]].close : 0.85;
-        const eurBrl = eurBrlDates.length > 0 ? eurBrlData[eurBrlDates[eurBrlDates.length - 1]].close : 6.0;
         
         // Calculate USD rates for common currencies
         const usdEur = 1 / eurUsd;
         const usdPln = eurPln / eurUsd;
         const usdGbp = eurGbp / eurUsd;
-        const usdBrl = eurBrl / eurUsd;
         
         // Create rates objects
         const eurRates = {
             USD: eurUsd,
             PLN: eurPln,
             GBP: eurGbp,
-            BRL: eurBrl,
             CHF: 0.95, // Default value, can be fetched similarly with EURCHF=X
             JPY: 160,  // Default value, can be fetched similarly with EURJPY=X
         };
@@ -506,14 +498,13 @@ async function fetchExchangeRates() {
             EUR: usdEur,
             PLN: usdPln,
             GBP: usdGbp,
-            BRL: usdBrl,
             CHF: 0.85, // Default value
             JPY: 145,  // Default value
         };
         
         await priceCache.updateExchangeRates(eurRates, usdRates);
         
-        console.log(`[server.js] Exchange rates updated from Yahoo Finance: 1 EUR = ${eurUsd} USD, 1 EUR = ${eurPln} PLN, 1 EUR = ${eurBrl} BRL (${new Date().toISOString()})`);
+        console.log(`[server.js] Exchange rates updated from Yahoo Finance: 1 EUR = ${eurUsd} USD, 1 EUR = ${eurPln} PLN (${new Date().toISOString()})`);
     } catch (error) {
         console.error('[server.js] Error fetching exchange rates from Yahoo Finance:', error);
     }
@@ -1400,22 +1391,58 @@ app.post('/api/admin/transactions', isAuthenticated, async (req, res) => {
         
         await currencyConverter.ensureRates();
         
-        const transaction = new Transaction({
-            ...newTransactionData,
-            id: Date.now().toString(),
+        const transactionData = {
+            id: uuidv4(), // Use UUID instead of timestamp
+            date: newTransactionData.date,
+            type: newTransactionData.type,
+            amount: Number(newTransactionData.amount),
             exchange: 'manual',
-            txType: 'manual',
+            txType: 'spot',
             status: 'Completed',
+            paymentMethod: '',
+            pair: `BTC/${newTransactionData.currency || 'EUR'}`,
+            baseCurrency: 'BTC',
+            quoteCurrency: newTransactionData.currency || 'EUR',
             original: {
                 currency: newTransactionData.currency || 'EUR',
-                price: newTransactionData.price,
-                cost: newTransactionData.amount * newTransactionData.price,
-                fee: newTransactionData.fee || 0
+                price: Number(newTransactionData.price),
+                cost: Number(newTransactionData.amount) * Number(newTransactionData.price),
+                fee: Number(newTransactionData.fee) || 0
             }
-        });
+        };
+
+        // Add base currency conversions
+        const origCurrency = newTransactionData.currency || 'EUR';
+        const origPrice = Number(newTransactionData.price);
+        const origCost = Number(newTransactionData.amount) * origPrice;
+        const origFee = Number(newTransactionData.fee) || 0;
+
+        // Always include EUR base values
+        transactionData.base = {
+            eur: {
+                price: origCurrency === 'EUR' ? origPrice : currencyConverter.convert(origPrice, origCurrency, 'EUR'),
+                cost: origCurrency === 'EUR' ? origCost : currencyConverter.convert(origCost, origCurrency, 'EUR'),
+                fee: origCurrency === 'EUR' ? origFee : currencyConverter.convert(origFee, origCurrency, 'EUR'),
+                rate: origCurrency === 'EUR' ? 1.0 : currencyConverter.getRate(origCurrency, 'EUR')
+            }
+        };
+
+        // Always include USD base values
+        transactionData.base.usd = {
+            price: origCurrency === 'USD' ? origPrice : currencyConverter.convert(origPrice, origCurrency, 'USD'),
+            cost: origCurrency === 'USD' ? origCost : currencyConverter.convert(origCost, origCurrency, 'USD'),
+            fee: origCurrency === 'USD' ? origFee : currencyConverter.convert(origFee, origCurrency, 'USD'),
+            rate: origCurrency === 'USD' ? 1.0 : currencyConverter.getRate(origCurrency, 'USD')
+        };
+        
+        const transaction = new Transaction(transactionData);
         
         if (!transaction.isValid()) {
-            return res.status(400).json({ error: 'Invalid transaction data' });
+            console.error('Invalid transaction data:', transactionData);
+            return res.status(400).json({ 
+                error: 'Invalid transaction data',
+                details: 'Transaction validation failed'
+            });
         }
         
         const txJson = transaction.toJSON();
