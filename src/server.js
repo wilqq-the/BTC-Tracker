@@ -89,13 +89,21 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Session configuration with development-friendly cookie expiration
+const isDevelopment = process.env.NODE_ENV !== 'production';
+const cookieMaxAge = process.env.COOKIE_MAX_AGE ? 
+    parseInt(process.env.COOKIE_MAX_AGE) : 
+    (isDevelopment ? 60 * 1000 : 24 * 60 * 60 * 1000); // 1 minute for dev, 24 hours for prod
+
+console.log(`[server.js] Session cookie expiration: ${cookieMaxAge / 1000} seconds (${isDevelopment ? 'development' : 'production'} mode)`);
+
 app.use(session({
   secret: 'btc-tracker-secret-key',
   resave: false,
   saveUninitialized: false,
   cookie: { 
     secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: cookieMaxAge
   }
 }));
 
