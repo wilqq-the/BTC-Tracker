@@ -55,6 +55,13 @@ describe('Currency Converter and Exchange Rate Tests', () => {
         if (fs.existsSync(testDataDir)) {
             fs.rmSync(testDataDir, { recursive: true });
         }
+        
+        // Force Jest to exit after this test suite
+        setTimeout(() => {
+            if (typeof global.forceJestExit === 'function') {
+                global.forceJestExit();
+            }
+        }, 100);
     });
 
     describe('Currency Support Validation', () => {
