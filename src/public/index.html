@@ -86,24 +86,32 @@
             display: none;
         }
 
-        /* Enhanced chart styling */
+        /* Enhanced chart styling for professional appearance */
         .chart-container {
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             background-color: var(--card-bg-color);
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             overflow: hidden;
-            padding-bottom: 1rem;
+            border: 1px solid var(--border-color);
         }
 
         .chart-container h2 {
-            padding: 1.2rem 1.5rem;
+            padding: 1.25rem 1.5rem;
             margin: 0;
             border-bottom: 1px solid var(--border-color);
-            font-size: 1.4rem;
+            font-size: 1.2rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+        }
+
+        .chart-container h2 i {
+            color: var(--accent-color);
+            margin-right: 0.5rem;
         }
 
         .chart-controls {
@@ -119,71 +127,244 @@
 
         .time-range-buttons {
             display: flex;
-            gap: 0.4rem;
+            gap: 0.25rem;
             flex-wrap: wrap;
             align-items: center;
+            background: rgba(var(--button-bg), 0.3);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
         }
 
         .time-range-btn {
             padding: 0.5rem 0.8rem;
-            background-color: var(--button-bg);
-            color: var(--text-color);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
+            background: transparent;
+            color: var(--muted-text-color);
+            border: none;
+            border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 500;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .time-range-btn:hover {
-            background-color: var(--button-hover-bg);
+            background: rgba(var(--accent-color-rgb), 0.1);
+            color: var(--text-color);
         }
 
         .time-range-btn.active {
-            background-color: var(--active-button-bg);
-            color: var(--active-button-text);
+            background: var(--accent-color);
+            color: #000;
             font-weight: 600;
-            border-color: var(--active-button-border);
         }
 
         .density-control {
             display: flex;
             align-items: center;
             gap: 0.8rem;
+            background: rgba(var(--button-bg), 0.2);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
         }
 
         .density-control label {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--muted-text-color);
             white-space: nowrap;
         }
 
         .density-control #densityValue {
-            min-width: 6rem;
-            font-size: 0.9rem;
+            min-width: 5rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-color);
         }
 
         .refresh-btn {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background-color: var(--button-accent-bg);
-            color: var(--button-accent-text);
+            padding: 0.6rem 1rem;
+            background: var(--accent-color);
+            color: #000;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
         .refresh-btn:hover {
-            background-color: var(--button-accent-hover-bg);
+            background: #e08217;
         }
 
         .refresh-btn i {
+            font-size: 0.8rem;
+        }
+
+        .chart-wrapper {
+            padding: 0;
+            position: relative;
+            height: 450px;
+            background: var(--card-bg-color);
+            overflow: hidden;
+        }
+
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: var(--card-bg-color);
+            z-index: 10;
+            gap: 1rem;
             font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(var(--accent-color-rgb), 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .price-update {
+            text-align: center;
+            padding: 0.8rem;
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
+            background-color: var(--card-bg-color);
+            border-top: 1px solid var(--border-color);
+            font-weight: 500;
+        }
+
+        .pulsing {
+            animation: pulse 1s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                color: var(--muted-text-color);
+            }
+            50% {
+                color: var(--accent-color);
+            }
+        }
+
+        /* Professional range slider styling */
+        .time-range-slider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border-color);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .time-range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border: 2px solid var(--card-bg-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            background: var(--accent-color);
+            border: 2px solid var(--card-bg-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .time-range-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .time-range-slider::-moz-range-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .reset-zoom-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            background: rgba(var(--button-bg), 0.8);
+            color: var(--text-color);
+            border: 1px solid rgba(var(--border-color), 0.5);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(5px);
+        }
+
+        .reset-zoom-btn:hover {
+            background: rgba(var(--button-hover-bg), 0.9);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .zoom-instructions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, rgba(var(--card-bg-color), 0.95), rgba(var(--card-bg-color), 0.85));
+            backdrop-filter: blur(10px);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: var(--muted-text-color);
+            opacity: 0.9;
+            pointer-events: none;
+            z-index: 10;
+            border: 1px solid rgba(var(--border-color), 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Light theme enhancements */
+        .light-theme .chart-container {
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            background: linear-gradient(145deg, var(--card-bg-color), rgba(255, 255, 255, 0.95));
+        }
+
+        .light-theme .loading {
+            background: linear-gradient(145deg, rgba(245, 245, 245, 0.95), rgba(255, 255, 255, 0.85));
+        }
+
+        .light-theme .zoom-instructions {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(245, 245, 245, 0.85));
         }
 
         .chart-wrapper {
@@ -544,34 +725,43 @@
             }
         }
 
-        /* Transaction Timeline Styles */
-        .timeline-container {
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        /* Transaction Timeline Styles - Integrated into chart container */
+        .timeline-section {
+            border-top: 1px solid var(--border-color);
             background-color: var(--card-bg-color);
-            margin-bottom: 2rem;
-            overflow: hidden;
         }
 
-        .timeline-container h2 {
-            padding: 1.2rem 1.5rem;
-            margin: 0;
+        .timeline-header {
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             border-bottom: 1px solid var(--border-color);
-            font-size: 1.4rem;
+            background-color: var(--card-bg-color);
+        }
+
+        .timeline-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .timeline-header h3 i {
+            color: var(--accent-color);
+            font-size: 0.9rem;
         }
 
         .timeline-controls {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--border-color);
+            padding: 0.8rem 1.5rem;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
             background-color: var(--card-bg-color);
+            border-bottom: 1px solid var(--border-color);
         }
 
         .timeline-legend {
@@ -584,8 +774,9 @@
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
+            gap: 0.4rem;
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
         }
 
         .legend-dot {
@@ -615,21 +806,21 @@
         }
 
         .timeline-stats {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--muted-text-color);
             font-weight: 500;
         }
 
         .timeline-wrapper {
-            padding: 2rem 1.5rem;
-            min-height: 120px;
+            padding: 1.5rem;
+            min-height: 100px;
             position: relative;
         }
 
         .timeline-track {
             position: relative;
             width: 100%;
-            height: 80px;
+            height: 70px;
         }
 
         .timeline-line {
@@ -897,6 +1088,522 @@
             margin: 0;
             font-size: 0.9rem;
         }
+
+        /* Main Layout with Sidebar */
+        .main-layout {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            min-height: 600px;
+        }
+
+        /* Portfolio Sidebar */
+        .portfolio-sidebar {
+            width: 300px;
+            background-color: var(--card-bg-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: fit-content;
+            position: sticky;
+            top: 1rem;
+        }
+
+        .sidebar-header {
+            background: linear-gradient(135deg, var(--accent-color), #e08217);
+            color: #000;
+            padding: 1rem 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sidebar-header h2 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-header h2 i {
+            font-size: 1rem;
+        }
+
+        .last-updated-sidebar {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+
+        .sidebar-content {
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s ease;
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-section:hover {
+            background-color: rgba(var(--accent-color-rgb), 0.02);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-color);
+            opacity: 0.9;
+        }
+
+        .section-header i {
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            width: 14px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+            padding: 0.25rem 0;
+        }
+
+        .metric-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .label {
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
+            font-weight: 500;
+            line-height: 1.3;
+        }
+
+        .value {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-color);
+            text-align: right;
+            line-height: 1.3;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .value-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.15rem;
+        }
+
+        .value-secondary {
+            font-size: 0.75rem;
+            color: var(--muted-text-color);
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* P&L specific styling */
+        .value.positive {
+            color: #28a745;
+        }
+
+        .value.negative {
+            color: #dc3545;
+        }
+
+        /* Performance section special styling */
+        .sidebar-section.performance .value.positive::before {
+            content: '↗ ';
+            color: #28a745;
+            font-size: 0.7em;
+        }
+
+        .sidebar-section.performance .value.negative::before {
+            content: '↘ ';
+            color: #dc3545;
+            font-size: 0.7em;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            min-width: 0; /* Prevent flex item from overflowing */
+        }
+
+        /* Light theme adjustments */
+        .light-theme .sidebar-header {
+            background: linear-gradient(135deg, var(--accent-color), #e08217);
+            color: #000;
+        }
+
+        .light-theme .sidebar-section:hover {
+            background-color: rgba(var(--accent-color-rgb), 0.05);
+        }
+
+        /* Responsive design for mobile */
+        @media (max-width: 1024px) {
+            .portfolio-sidebar {
+                width: 280px;
+            }
+            
+            .main-layout {
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Main layout changes for mobile */
+            .main-layout {
+                flex-direction: column;
+                gap: 0;
+                margin-bottom: 0;
+            }
+
+            /* Hide the full portfolio sidebar on mobile */
+            .portfolio-sidebar {
+                display: none;
+            }
+
+            .main-content {
+                order: 1;
+                width: 100%;
+                background: var(--card-bg-color);
+                border-radius: 16px;
+                box-shadow: none;
+                border: none;
+                margin: 0.5rem;
+                overflow: hidden;
+            }
+
+            /* Show mobile portfolio header and time buttons only on mobile */
+            .mobile-portfolio-header,
+            .mobile-time-buttons {
+                display: block !important;
+            }
+
+            /* Modern mobile portfolio header - like reference app */
+            .mobile-portfolio-header {
+                background: var(--card-bg-color);
+                color: var(--text-color);
+                padding: 1.5rem 1rem 1rem 1rem;
+                border-radius: 16px 16px 0 0;
+                margin: 0;
+                font-family: system-ui, -apple-system, sans-serif;
+                text-align: center;
+                border-bottom: none;
+            }
+
+            .mobile-portfolio-title {
+                font-size: 0.85rem;
+                color: var(--muted-text-color);
+                margin-bottom: 0.5rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .mobile-portfolio-value {
+                font-size: 2.2rem;
+                font-weight: 700;
+                color: var(--text-color);
+                margin-bottom: 0.5rem;
+                line-height: 1.1;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
+
+            .mobile-portfolio-currency {
+                font-size: 1rem;
+                color: var(--muted-text-color);
+                font-weight: 500;
+                margin-left: 0.3rem;
+            }
+
+            .mobile-portfolio-change {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 1rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+            }
+
+            .mobile-portfolio-change.positive {
+                color: #f7931a;
+            }
+
+            .mobile-portfolio-change.negative {
+                color: #ff4757;
+            }
+
+            .mobile-holdings-info {
+                font-size: 0.8rem;
+                color: var(--muted-text-color);
+                font-weight: 500;
+            }
+
+            /* Clean chart container for mobile */
+            .chart-container {
+                margin: 0;
+                border-radius: 0;
+                overflow: hidden;
+                background: var(--card-bg-color);
+                border: none;
+                box-shadow: none;
+            }
+
+            .chart-container h2 {
+                display: none; /* Hide chart title on mobile */
+            }
+
+            /* Hide chart controls on mobile */
+            .chart-controls {
+                display: none;
+            }
+
+            /* Mobile time range buttons container - appears after chart */
+            .mobile-time-buttons {
+                display: block;
+                background: var(--card-bg-color);
+                padding: 0.5rem 1rem 1.5rem 1rem;
+                margin: 0;
+                border-top: none;
+                border-radius: 0 0 16px 16px;
+            }
+
+            /* Modern mobile time range buttons */
+            .mobile-time-buttons .time-range-buttons {
+                display: flex;
+                justify-content: center;
+                gap: 0;
+                width: 100%;
+                background: rgba(var(--muted-text-color), 0.1);
+                border-radius: 20px;
+                padding: 0.25rem;
+                margin: 0;
+            }
+
+            /* Mobile time range button styling */
+            .mobile-time-buttons .time-range-btn {
+                flex: 1;
+                padding: 0.5rem 0.75rem;
+                background: transparent;
+                color: var(--muted-text-color);
+                border: none;
+                border-radius: 16px;
+                font-family: system-ui, -apple-system, sans-serif;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .mobile-time-buttons .time-range-btn:hover {
+                color: var(--text-color);
+            }
+
+            .mobile-time-buttons .time-range-btn.active {
+                background: var(--text-color);
+                color: var(--bg-color);
+                font-weight: 600;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            }
+
+            /* Hide density control on mobile for simplicity */
+            .density-control {
+                display: none;
+            }
+
+            /* Hide complex chart elements on mobile */
+            .chart-container .timeline-section,
+            .chart-container .price-update {
+                display: none;
+            }
+
+            /* Ensure seamless mobile container */
+            .main-content .chart-container {
+                background: var(--card-bg-color);
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                margin: 0;
+            }
+
+            /* Modern mobile chart wrapper */
+            .mobile-simple-chart {
+                display: block !important;
+                height: 320px;
+                padding: 0 1rem;
+                background: var(--card-bg-color);
+                border-radius: 0;
+                margin: 0;
+            }
+
+            /* Hide desktop chart wrapper on mobile */
+            .chart-wrapper {
+                display: none;
+            }
+
+            /* Hide refresh button on mobile for clean look */
+            .refresh-btn {
+                display: none;
+            }
+
+            /* Clean timeline section */
+            .timeline-wrapper {
+                padding: 1.5rem;
+                background: var(--card-bg-color);
+                margin-top: 1rem;
+                border-radius: 12px;
+                border: 1px solid var(--border-color);
+            }
+
+            .timeline-controls {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .timeline-controls h3 {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 600;
+                color: var(--text-color);
+            }
+
+            .timeline-legend {
+                display: flex;
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .timeline-legend-item {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.8rem;
+                color: var(--muted-text-color);
+            }
+
+            /* Improved mobile header */
+            header {
+                padding: 1rem 1.25rem;
+                margin-bottom: 0;
+            }
+
+            header h1 {
+                font-size: 1.3rem;
+                margin: 0;
+                font-weight: 700;
+            }
+
+            .mobile-flex-row {
+                margin-bottom: 0.75rem;
+            }
+
+            .mobile-dropdown-nav {
+                margin-top: 0.75rem;
+            }
+
+            .current-page-btn {
+                padding: 0.75rem 1rem;
+                background: rgba(var(--accent-color-rgb), 0.1);
+                border: 1px solid rgba(var(--accent-color-rgb), 0.3);
+                border-radius: 8px;
+                color: var(--text-color);
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            header {
+                padding: 0.75rem 1rem;
+            }
+
+            header h1 {
+                font-size: 1.2rem;
+            }
+
+            .portfolio-sidebar {
+                border-radius: 8px;
+            }
+
+            .sidebar-header {
+                padding: 1.25rem 1rem;
+            }
+
+            .sidebar-content {
+                padding: 1.25rem 1rem;
+            }
+
+            .metric-row .value {
+                font-size: 1.6rem;
+            }
+
+            .chart-container h2 {
+                padding: 1rem 1.25rem;
+                font-size: 1rem;
+            }
+
+            .chart-controls {
+                padding: 0.75rem 1.25rem;
+            }
+
+            .time-range-buttons {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .time-range-btn {
+                padding: 0.6rem 0.4rem;
+                font-size: 0.75rem;
+            }
+
+            .chart-wrapper {
+                height: 250px;
+                padding: 0.75rem;
+            }
+
+            .timeline-wrapper {
+                padding: 1rem;
+                border-radius: 8px;
+            }
+        }
+
+        /* Enhanced chart styling */
+
+        /* Ensure mobile elements are hidden on desktop */
+        .mobile-portfolio-header,
+        .mobile-simple-chart,
+        .mobile-time-buttons {
+            display: none;
+        }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
@@ -947,115 +1654,200 @@
             </div>
         </header>
 
-        <div class="summary-cards">
-            <div class="card">
-                <h3><i class="fab fa-bitcoin"></i> Total BTC</h3>
-                <p id="totalBtc">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-euro-sign" id="currencyIcon"></i> Current Price</h3>
-                <p id="currentBtcPrice">Loading...</p>
-                <p id="currentBtcPriceUSD" class="secondary-value">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-money-bill-wave"></i> Total Cost</h3>
-                <p id="totalCost">Loading...</p>
-                <p id="totalCostPLN" class="secondary-value">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-wallet"></i> Current Value</h3>
-                <p id="currentValue">Loading...</p>
-                <p id="currentValuePLN" class="secondary-value">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-chart-bar"></i> P&L</h3>
-                <p id="pnl" class="pnl">Loading...</p>
-                <p id="pnlPLN" class="pnl secondary-value">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-percentage"></i> P&L (%)</h3>
-                <p id="pnlPercentage" class="pnl">Loading...</p>
-            </div>
-            <div class="card">
-                <h3><i class="fas fa-tag"></i> Average Price</h3>
-                <p id="averagePrice">Loading...</p>
-                <p id="averagePricePLN" class="secondary-value">Loading...</p>
-            </div>
-        </div>
+        <div class="main-layout">
+            <!-- Sidebar Portfolio Overview -->
+            <aside class="portfolio-sidebar">
+                <div class="sidebar-header">
+                    <h2><i class="fas fa-wallet"></i> Portfolio</h2>
+                    <div class="last-updated-sidebar">
+                        <i class="fas fa-clock"></i>
+                        <span id="lastUpdateSidebar">Loading...</span>
+                    </div>
+                </div>
+                
+                <div class="sidebar-content">
+                    <!-- Holdings Section -->
+                    <div class="sidebar-section holdings">
+                        <div class="section-header">
+                            <i class="fab fa-bitcoin"></i>
+                            <span>Holdings</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Total BTC</span>
+                            <span class="value" id="totalBtc">Loading...</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Avg Price</span>
+                            <div class="value-group">
+                                <span class="value" id="averagePrice">Loading...</span>
+                                <span class="value-secondary" id="averagePricePLN">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
 
-        <div class="chart-container">
-            <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
-            <div class="chart-controls">
-                <div class="time-range-control">
-                    <div class="range-label">
-                        <label for="timeRange">Time Range:</label>
-                        <span id="timeRangeValue">1W</span>
+                    <!-- Current Value Section -->
+                    <div class="sidebar-section valuation">
+                        <div class="section-header">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Valuation</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Current Price</span>
+                            <div class="value-group">
+                                <span class="value" id="currentBtcPrice">Loading...</span>
+                                <span class="value-secondary" id="currentBtcPriceUSD">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Portfolio Value</span>
+                            <div class="value-group">
+                                <span class="value" id="currentValue">Loading...</span>
+                                <span class="value-secondary" id="currentValuePLN">Loading...</span>
+                            </div>
+                        </div>
                     </div>
-                    <input type="range" id="timeRange" min="0" max="8" value="0" class="time-range-slider">
-                    <div class="range-markers">
-                        <span>1W</span>
-                        <span>1M</span>
-                        <span>3M</span>
-                        <span>6M</span>
-                        <span>1Y</span>
-                        <span>2Y</span>
-                        <span>5Y</span>
-                        <span>10Y</span>
-                        <span>All</span>
-                    </div>
-                </div>
-                <div class="density-control">
-                    <label for="dataDensity">Data Density:</label>
-                    <input type="range" id="dataDensity" min="1" max="10" value="5">
-                    <span id="densityValue">Medium</span>
-                </div>
-                <button id="refreshBtn" class="refresh-btn">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
-            <div class="loading" id="chartLoading">
-                <div class="loading-spinner"></div>
-            </div>
-            <div class="loading" id="historical-data-loading" style="display: none;">
-                <div class="loading-spinner"></div>
-                <div>Loading historical data...</div>
-            </div>
-            <div class="error-message" id="errorMessage" style="display: none; color: var(--loss-color); text-align: center; margin: 1rem 0;"></div>
-            <div class="chart-wrapper">
-                <canvas id="combinedChart" width="1200" height="600"></canvas>
-            </div>
-            <div class="price-update" id="priceUpdate">Last updated: <span id="lastUpdate">-</span></div>
-        </div>
 
-        <!-- Transaction Timeline -->
-        <div class="timeline-container" id="timelineContainer" style="display: none;">
-            <h2><i class="fas fa-history"></i> Transaction Timeline</h2>
-            <div class="timeline-controls">
-                <div class="timeline-legend">
-                    <div class="legend-item">
-                        <div class="legend-dot buy"></div>
-                        <span>Buy Transaction</span>
+                    <!-- Performance Section -->
+                    <div class="sidebar-section performance">
+                        <div class="section-header">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Performance</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Total P&L</span>
+                            <div class="value-group">
+                                <span class="value" id="pnl">Loading...</span>
+                                <span class="value-secondary" id="pnlPLN">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">P&L %</span>
+                            <span class="value" id="pnlPercentage">Loading...</span>
+                        </div>
                     </div>
-                    <div class="legend-item">
-                        <div class="legend-dot sell"></div>
-                        <span>Sell Transaction</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-line avg-price"></div>
-                        <span>Market Average</span>
+
+                    <!-- Investment Section -->
+                    <div class="sidebar-section investment">
+                        <div class="section-header">
+                            <i class="fas fa-money-bill-wave"></i>
+                            <span>Investment</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="label">Total Cost</span>
+                            <div class="value-group">
+                                <span class="value" id="totalCost">Loading...</span>
+                                <span class="value-secondary" id="totalCostPLN">Loading...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="timeline-stats">
-                    <span id="timelineStats">No transactions in selected range</span>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main class="main-content">
+                <!-- Modern Mobile Portfolio Header (only visible on mobile) -->
+                <div class="mobile-portfolio-header" id="mobilePortfolioHeader" style="display: none;">
+                    <div class="mobile-portfolio-title">Portfolio Value</div>
+                    <div class="mobile-portfolio-value">
+                        <span id="mobileCurrentValue">Loading...</span>
+                        <span class="mobile-portfolio-currency" id="mobileCurrency">EUR</span>
+                    </div>
+                    <div class="mobile-portfolio-change" id="mobileChange">
+                        <span id="mobilePnLAmount">Loading...</span>
+                        <span id="mobilePnLPercent">Loading...</span>
+                    </div>
+                    <div class="mobile-holdings-info" id="mobileHoldings">
+                        Loading... BTC
+                    </div>
                 </div>
-            </div>
-            <div class="timeline-wrapper">
-                <div class="timeline-track" id="timelineTrack">
-                    <div class="timeline-line"></div>
-                    <div class="timeline-markers" id="timelineMarkers"></div>
-                    <div class="timeline-transactions" id="timelineTransactions"></div>
+
+                <div class="chart-container">
+                    <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
+                    <div class="chart-controls">
+                        <div class="time-range-buttons">
+                            <button class="time-range-btn" data-range="7">1W</button>
+                            <button class="time-range-btn" data-range="30">1M</button>
+                            <button class="time-range-btn" data-range="90">3M</button>
+                            <button class="time-range-btn active" data-range="180">6M</button>
+                            <button class="time-range-btn" data-range="365">1Y</button>
+                            <button class="time-range-btn" data-range="730">2Y</button>
+                            <button class="time-range-btn" data-range="1825">5Y</button>
+                            <button class="time-range-btn" data-range="3650">10Y</button>
+                            <button class="time-range-btn" data-range="0">ALL</button>
+                        </div>
+                        <div class="density-control">
+                            <label for="dataDensity">Data Density:</label>
+                            <input type="range" id="dataDensity" min="1" max="10" value="5">
+                            <span id="densityValue">Medium</span>
+                        </div>
+                        <button id="refreshBtn" class="refresh-btn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="loading" id="chartLoading">
+                        <div class="loading-spinner"></div>
+                    </div>
+                    <div class="loading" id="historical-data-loading" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <div>Loading historical data...</div>
+                    </div>
+                    <div class="error-message" id="errorMessage" style="display: none; color: var(--loss-color); text-align: center; margin: 1rem 0;"></div>
+                    <div class="chart-wrapper">
+                        <canvas id="combinedChart" width="1200" height="600"></canvas>
+                    </div>
+                    
+                    <!-- Simple Mobile Chart (only visible on mobile) -->
+                    <div class="mobile-simple-chart" id="mobileSimpleChart" style="display: none;">
+                        <canvas id="mobileChart" width="400" height="300"></canvas>
+                    </div>
+                    
+                    <!-- Mobile Time Range Buttons (only visible on mobile) -->
+                    <div class="mobile-time-buttons" id="mobileTimeButtons" style="display: none;">
+                        <div class="time-range-buttons">
+                            <button class="time-range-btn active" data-range="7">1W</button>
+                            <button class="time-range-btn" data-range="30">1M</button>
+                            <button class="time-range-btn" data-range="180">6M</button>
+                            <button class="time-range-btn" data-range="365">1Y</button>
+                            <button class="time-range-btn" data-range="0">ALL</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Transaction Timeline - Integrated into chart container -->
+                    <div class="timeline-section" id="timelineContainer">
+                        <div class="timeline-header">
+                            <h3><i class="fas fa-history"></i> Transaction Timeline</h3>
+                            <div class="timeline-stats">
+                                <span id="timelineStats">No transactions in selected range</span>
+                            </div>
+                        </div>
+                        <div class="timeline-controls">
+                            <div class="timeline-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot buy"></div>
+                                    <span>Buy</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot sell"></div>
+                                    <span>Sell</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-line avg-price"></div>
+                                    <span>Market Avg</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-wrapper">
+                            <div class="timeline-track" id="timelineTrack">
+                                <div class="timeline-line"></div>
+                                <div class="timeline-markers" id="timelineMarkers"></div>
+                                <div class="timeline-transactions" id="timelineTransactions"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="price-update" id="priceUpdate">Last updated: <span id="lastUpdate">-</span></div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
 
@@ -1118,11 +1910,25 @@
         let combinedChart;
         let lastUpdateTime = null;
         const REAL_TIME_UPDATE_INTERVAL = 300000; // 5 minutes in milliseconds
-        let currentTimeRange = 7; // Default to 1 week
+        let currentTimeRange = window.innerWidth <= 768 ? 7 : 180; // Default to 1 week for mobile, 6 months for desktop
         let currentDensity = 5; // Default density
         let transactionsWithCumulative = []; // Store transactions globally
         let secondaryCurrency = 'PLN'; // Default secondary currency
         let secondaryRate = null; // Store exchange rate globally
+
+        // Function to update active time range button based on current layout
+        function updateActiveTimeRangeButton() {
+            // Update time range based on current screen size
+            const isMobile = window.innerWidth <= 768;
+            currentTimeRange = isMobile ? 7 : 180;
+            
+            // Update button states
+            const activeBtn = document.querySelector(`.time-range-btn[data-range="${currentTimeRange}"]`);
+            if (activeBtn) {
+                document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
+                activeBtn.classList.add('active');
+            }
+        }
 
         // Dropdown navigation functionality
         document.addEventListener('DOMContentLoaded', () => {
@@ -1151,34 +1957,75 @@
                 // Trigger the original theme toggle functionality
                 regularThemeToggle.click();
             });
-            
-            // Time range slider functionality
-            const timeRangeSlider = document.getElementById('timeRange');
-            const timeRangeValue = document.getElementById('timeRangeValue');
-            const timeRanges = [7, 30, 90, 180, 365, 730, 1825, 3650, 0];
-            const timeLabels = ['1W', '1M', '3M', '6M', '1Y', '2Y', '5Y', '10Y', 'All'];
 
-            timeRangeSlider.addEventListener('input', () => {
-                const index = parseInt(timeRangeSlider.value);
-                timeRangeValue.textContent = timeLabels[index];
-                currentTimeRange = timeRanges[index];
-                console.log(`Time range changed to ${currentTimeRange} days`);
-                
-                // Always force chart recreation when time range changes to ensure
-                // proper time unit display and formatting
-                if (combinedChart) {
-                    combinedChart.destroy();
-                    combinedChart = null;
-                }
-                
-                // First load the main data
-                loadData(true);
+            // Handle window resize to recreate charts when switching between mobile/desktop
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(() => {
+                    const isMobile = window.innerWidth <= 768;
+                    const wasMobile = currentTimeRange === 7; // Approximate check
+                    
+                    // If switching between mobile and desktop layouts
+                    if ((isMobile && combinedChart) || (!isMobile && window.mobileChart)) {
+                        // Update time range for new layout
+                        currentTimeRange = isMobile ? 7 : 180;
+                        
+                        // Destroy existing charts
+                        if (combinedChart) {
+                            combinedChart.destroy();
+                            combinedChart = null;
+                        }
+                        if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                            window.mobileChart.destroy();
+                            window.mobileChart = null;
+                        }
+                        
+                        // Update button states
+                        updateActiveTimeRangeButton();
+                        
+                        // Reload data with new layout
+                        loadData(true);
+                    }
+                }, 250); // Debounce resize events
+            });
+            
+            // Time range button functionality (both desktop and mobile)
+            const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+            
+            timeRangeButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Get the range value and update current time range
+                    currentTimeRange = parseInt(button.getAttribute('data-range'));
+                    console.log(`Time range changed to ${currentTimeRange} days`);
+                    
+                    // Always force chart recreation when time range changes to ensure
+                    // proper time unit display and formatting
+                    if (window.innerWidth <= 768) {
+                        if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                            window.mobileChart.destroy();
+                            window.mobileChart = null;
+                        }
+                    } else {
+                        if (combinedChart) {
+                            combinedChart.destroy();
+                            combinedChart = null;
+                        }
+                    }
+                    
+                    // Load the data with new time range
+                    loadData(true);
+                });
             });
 
-            // Set initial value to 1W (index 0)
-            timeRangeSlider.value = 0;
-            timeRangeValue.textContent = timeLabels[0];
-            currentTimeRange = timeRanges[0];
+            // Set correct time range for current layout and sync button state
+            updateActiveTimeRangeButton();
             
             // Density slider
             const densitySlider = document.getElementById('dataDensity');
@@ -1350,6 +2197,12 @@
             const pnlPercentageElement = document.getElementById('pnlPercentage');
             pnlPercentageElement.textContent = `${pnlPercentage.toFixed(2)}%`;
             pnlPercentageElement.className = `pnl ${pnlPercentage >= 0 ? 'positive' : 'negative'}`;
+
+            // Add mobile styling classes for performance metrics
+            addMobilePerformanceClasses(pnlEUR, pnlPercentage);
+
+            // Update mobile portfolio header
+            updateMobilePortfolioHeader(priceData);
             
             // Average Price (Main: EUR, Secondary: Configured Secondary)
             const averagePriceEUR = isNested ? priceData.averagePrice.eur : priceData.averagePrice;
@@ -1364,10 +2217,19 @@
             
             // Update Last Update Time
             const lastUpdateElement = document.getElementById('lastUpdate');
+            const lastUpdateSidebar = document.getElementById('lastUpdateSidebar');
             if (priceData.timestamp) {
-                lastUpdateElement.textContent = new Date(priceData.timestamp).toLocaleString();
+                const timeText = new Date(priceData.timestamp).toLocaleString();
+                const shortTimeText = new Date(priceData.timestamp).toLocaleTimeString();
+                lastUpdateElement.textContent = timeText;
+                if (lastUpdateSidebar) {
+                    lastUpdateSidebar.textContent = shortTimeText;
+                }
             } else {
                 lastUpdateElement.textContent = 'N/A';
+                if (lastUpdateSidebar) {
+                    lastUpdateSidebar.textContent = 'N/A';
+                }
             }
             
             // Handle case where there are no transactions
@@ -1401,6 +2263,114 @@
             };
             
             return symbols[currency] || currency;
+        }
+
+        // Helper function to add mobile styling classes for performance metrics
+        function addMobilePerformanceClasses(pnlEUR, pnlPercentage) {
+            // Add mobile-specific classes to performance metric rows
+            const performanceSection = document.querySelector('.sidebar-section.performance');
+            if (performanceSection) {
+                const metricRows = performanceSection.querySelectorAll('.metric-row');
+                metricRows.forEach(row => {
+                    const value = row.querySelector('.value');
+                    if (value) {
+                        // Check if this is a P&L related metric by content
+                        const valueText = value.textContent;
+                        if (valueText.includes('€') || valueText.includes('$') || valueText.includes('%')) {
+                            // Add appropriate class based on positive/negative
+                            row.classList.remove('pnl-positive', 'pnl-negative');
+                            if ((valueText.includes('%') && pnlPercentage >= 0) || 
+                                (!valueText.includes('%') && pnlEUR >= 0)) {
+                                row.classList.add('pnl-positive');
+                            } else if ((valueText.includes('%') && pnlPercentage < 0) || 
+                                      (!valueText.includes('%') && pnlEUR < 0)) {
+                                row.classList.add('pnl-negative');
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Helper function to update modern mobile portfolio header
+        function updateMobilePortfolioHeader(priceData) {
+            const isNested = priceData.averagePrice && typeof priceData.averagePrice === 'object';
+            const mainCurrency = priceData.mainCurrency || 'EUR';
+            const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
+            
+            // Update portfolio value (large display)
+            const currentValueEUR = isNested ? priceData.currentValue.eur : priceData.currentValue;
+            const formattedValue = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(currentValueEUR || 0);
+            
+            document.getElementById('mobileCurrentValue').textContent = formattedValue;
+            document.getElementById('mobileCurrency').textContent = mainCurrencySymbol;
+
+            // Update P&L change (like +4 800,28 +2.91%)
+            const pnlEUR = isNested ? priceData.pnl.eur : priceData.pnl;
+            const pnlPercentage = priceData.pnlPercentage || 0;
+            
+            const formattedPnL = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(Math.abs(pnlEUR || 0));
+            
+            const sign = (pnlEUR >= 0) ? '+' : '-';
+            document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedPnL}`;
+            document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(pnlPercentage).toFixed(2)}%`;
+            
+            // Update holdings info
+            document.getElementById('mobileHoldings').textContent = `${(priceData.totalBTC || 0).toFixed(6)} BTC`;
+            
+            // Add appropriate styling classes
+            const changeElement = document.getElementById('mobileChange');
+            changeElement.classList.remove('positive', 'negative');
+            if (pnlEUR >= 0) {
+                changeElement.classList.add('positive');
+            } else {
+                changeElement.classList.add('negative');
+            }
+        }
+
+        // Function to update mobile chart with current price
+        function updateMobileChartWithLatestPrice(chart, priceData) {
+            if (!chart || !priceData) return;
+
+            const currentDate = new Date();
+            const dataset = chart.data.datasets[0]; // Only one dataset for mobile chart
+            
+            if (dataset && dataset.data.length > 0) {
+                const currentPrice = priceData.mainCurrency === 'EUR' ? 
+                    (priceData.priceEUR || priceData.price || 0) : 
+                    (priceData.priceUSD || (priceData.priceEUR * priceData.eurUsd) || 0);
+                
+                const todayDateString = currentDate.toISOString().split('T')[0];
+                let todayIndex = -1;
+                
+                for (let i = dataset.data.length - 1; i >= 0; i--) {
+                    const pointDate = new Date(dataset.data[i].x);
+                    if (pointDate.toISOString().split('T')[0] === todayDateString) {
+                        todayIndex = i;
+                        break;
+                    }
+                }
+                
+                if (todayIndex !== -1) {
+                    dataset.data[todayIndex] = {
+                        x: currentDate,
+                        y: currentPrice
+                    };
+                } else {
+                    dataset.data.push({
+                        x: currentDate,
+                        y: currentPrice
+                    });
+                }
+                
+                chart.update();
+            }
         }
 
         // Function to update chart with current price
@@ -1443,6 +2413,129 @@
             }
         }
 
+        // Function to create simple mobile chart (BTC price only)
+        function createMobileChart(data) {
+            if (!data.historicalBTCData || !Array.isArray(data.historicalBTCData) || data.historicalBTCData.length === 0) {
+                console.warn('Historical BTC data is missing for mobile chart');
+                return;
+            }
+
+            const mobileChartCanvas = document.getElementById('mobileChart');
+            if (!mobileChartCanvas) return;
+
+            const ctx = mobileChartCanvas.getContext('2d');
+            const isLightTheme = document.body.classList.contains('light-theme');
+
+            // Filter data for current time range
+            const now = new Date();
+            const cutoffDate = currentTimeRange > 0 ? new Date(now.getTime() - currentTimeRange * 24 * 60 * 60 * 1000) : null;
+
+            const filteredData = data.historicalBTCData.filter(item => {
+                if (!cutoffDate) return true;
+                const itemDate = new Date(item.timestamp);
+                return itemDate >= cutoffDate && itemDate <= now;
+            });
+
+            // Simple price data for mobile chart
+            const priceData = filteredData.map(item => ({
+                x: new Date(item.timestamp),
+                y: parseFloat(item.price)
+            }));
+
+            // Destroy existing mobile chart if it exists
+            if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                window.mobileChart.destroy();
+            }
+
+            // Create beautiful Bitcoin-themed mobile chart with gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(247, 147, 26, 0.3)');
+            gradient.addColorStop(0.5, 'rgba(247, 147, 26, 0.15)');
+            gradient.addColorStop(1, 'rgba(247, 147, 26, 0.02)');
+
+            window.mobileChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: priceData,
+                        borderColor: '#f7931a',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointRadius: 0,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(39, 39, 39, 0.95)',
+                            titleColor: isLightTheme ? '#2d3748' : '#e2e8f0',
+                            bodyColor: isLightTheme ? '#2d3748' : '#e2e8f0',
+                            borderColor: '#f7931a',
+                            borderWidth: 2,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(context) {
+                                    return new Date(context[0].parsed.x).toLocaleDateString();
+                                },
+                                label: function(context) {
+                                    const price = context.parsed.y;
+                                    const currency = window.currentMainCurrency || 'EUR';
+                                    const symbol = getCurrencySymbol(currency);
+                                    return `${price.toFixed(2)} ${symbol}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: currentTimeRange <= 7 ? 'day' : 'week',
+                                displayFormats: {
+                                    day: 'MMM dd',
+                                    week: 'MMM dd'
+                                }
+                            },
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            },
+                            border: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                display: false
+                            },
+                            border: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Function to create the initial chart
         function createChart(data) {
             if (!data.historicalBTCData || !Array.isArray(data.historicalBTCData) || data.historicalBTCData.length === 0) {
@@ -1452,8 +2545,19 @@
             }
 
             const isLightTheme = document.body.classList.contains('light-theme');
-            const textColor = isLightTheme ? '#333' : '#eee';
-            const gridColor = isLightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)';
+            
+            // Modern color scheme
+            const colors = {
+                background: isLightTheme ? '#ffffff' : '#272727',
+                gridColor: isLightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.08)',
+                textColor: isLightTheme ? '#2d3748' : '#e2e8f0',
+                mutedText: isLightTheme ? '#718096' : '#a0aec0',
+                btcPrice: '#f7931a',
+                marketAvg: '#667eea',
+                buyingAvg: '#48bb78',
+                tooltipBg: isLightTheme ? 'rgba(255, 255, 255, 0.98)' : 'rgba(39, 39, 39, 0.98)',
+                chartBg: isLightTheme ? '#ffffff' : '#272727'
+            };
 
             // Ensure proper data filtering based on time range
             const now = new Date();
@@ -1545,34 +2649,43 @@
                 }
             }
 
-            // Add BTC price dataset (main line)
+            // Add BTC price dataset with clean styling
             datasets.push({
                 label: 'BTC Price',
                 data: btcPrices,
-                borderColor: '#f7931a',
-                backgroundColor: 'rgba(247, 147, 26, 0.1)',
+                borderColor: colors.btcPrice,
+                backgroundColor: isLightTheme ? 'rgba(247, 147, 26, 0.08)' : 'rgba(247, 147, 26, 0.12)',
                 borderWidth: 2.5,
-                fill: false,
+                fill: true,
                 tension: 0.2,
                 pointRadius: 0,
+                pointHoverRadius: 4,
                 pointHitRadius: 10,
-                order: 2,
-                z: 2
+                pointHoverBorderWidth: 2,
+                pointHoverBorderColor: colors.btcPrice,
+                pointHoverBackgroundColor: colors.background,
+                order: 3,
+                z: 3
             });
 
-            // Add market average trend with reduced opacity
+            // Add market average trend
             datasets.push({
                 label: 'Market Average',
                 data: movingAverages,
-                borderColor: 'rgba(74, 144, 226, 0.7)',
+                borderColor: colors.marketAvg,
+                backgroundColor: 'transparent',
                 borderWidth: 1.5,
-                borderDash: [5, 5],
+                borderDash: [6, 3],
                 fill: false,
-                tension: 0.4,
+                tension: 0.3,
                 pointRadius: 0,
-                pointHitRadius: 10,
-                order: 1,
-                z: 1
+                pointHoverRadius: 3,
+                pointHitRadius: 8,
+                pointHoverBorderWidth: 2,
+                pointHoverBorderColor: colors.marketAvg,
+                pointHoverBackgroundColor: colors.background,
+                order: 2,
+                z: 2
             });
 
             // Add buying average trend only if there are buy transactions
@@ -1580,51 +2693,108 @@
                 datasets.push({
                     label: 'Your Average Buy Price',
                     data: buyingAverageTrend,
-                    borderColor: 'rgba(40, 167, 69, 0.8)',
+                    borderColor: colors.buyingAvg,
+                    backgroundColor: 'transparent',
                     borderWidth: 2,
                     borderDash: [8, 4],
                     fill: false,
                     tension: 0,
                     pointRadius: 0,
-                    pointHitRadius: 10,
+                    pointHoverRadius: 3,
+                    pointHitRadius: 8,
+                    pointHoverBorderWidth: 2,
+                    pointHoverBorderColor: colors.buyingAvg,
+                    pointHoverBackgroundColor: colors.background,
                     stepped: true,
                     order: 1,
                     z: 1
                 });
             }
 
-            // Transactions are now handled by the timeline component below the chart
-            // No longer adding transaction bubbles to the chart for cleaner visualization
-
             const ctx = document.getElementById('combinedChart').getContext('2d');
             if (combinedChart) {
                 combinedChart.destroy();
             }
 
-            // Create chart with optimized configuration
+            // Create clean, modern chart
             combinedChart = new Chart(ctx, {
                 type: 'line',
                 data: { datasets },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            top: 20,
+                            right: 20,
+                            bottom: 10,
+                            left: 20
+                        }
+                    },
                     interaction: {
                         mode: 'index',
                         intersect: false,
                     },
                     plugins: {
-                        crosshair: {
-                            line: {
-                                color: 'rgba(247, 147, 26, 0.3)',
-                                width: 1
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: {
+                                color: colors.textColor,
+                                usePointStyle: true,
+                                pointStyle: 'line',
+                                padding: 25,
+                                font: {
+                                    size: 12,
+                                    weight: '500'
+                                },
+                                boxWidth: 30,
+                                boxHeight: 2,
+                                filter: function(item) {
+                                    return item.text === 'BTC Price' || 
+                                           item.text === 'Market Average' ||
+                                           (item.text === 'Your Average Buy Price' && hasBuyTransactions);
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: colors.tooltipBg,
+                            titleColor: colors.textColor,
+                            bodyColor: colors.textColor,
+                            borderColor: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(247, 147, 26, 0.2)',
+                            borderWidth: 1,
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: {
+                                size: 13,
+                                weight: '600'
                             },
-                            sync: {
-                                enabled: true,
-                                group: 1,
-                                suppressTooltips: false
+                            bodyFont: {
+                                size: 12,
+                                weight: '500'
                             },
-                            zoom: {
-                                enabled: false
+                            displayColors: true,
+                            usePointStyle: true,
+                            callbacks: {
+                                title: function(context) {
+                                    const date = new Date(context[0].parsed.x);
+                                    return date.toLocaleDateString(undefined, {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric'
+                                    });
+                                },
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    const currency = data.mainCurrency || 'EUR';
+                                    const value = context.parsed.y;
+                                    
+                                    return `${label}: ${value.toLocaleString(undefined, { 
+                                        minimumFractionDigits: 0, 
+                                        maximumFractionDigits: 0 
+                                    })} ${currency}`;
+                                }
                             }
                         },
                         annotation: {
@@ -1634,76 +2804,20 @@
                                     mode: 'horizontal',
                                     scaleID: 'y',
                                     value: data.averagePrice?.eur || data.averagePrice || 0,
-                                    borderColor: 'rgba(40, 167, 69, 0.3)',
+                                    borderColor: isLightTheme ? 'rgba(72, 187, 120, 0.3)' : 'rgba(72, 187, 120, 0.4)',
                                     borderWidth: 1,
                                     borderDash: [6, 6],
                                     label: {
-                                        enabled: true,
-                                        content: 'Your Avg',
-                                        position: 'start',
-                                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
-                                        color: '#fff',
-                                        font: {
-                                            size: 10,
-                                            weight: 'bold'
-                                        }
+                                        enabled: false
                                     }
                                 }
                             } : {}
-                        },
-                        tooltip: {
-                            backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(0, 0, 0, 0.85)',
-                            titleColor: isLightTheme ? '#333' : '#fff',
-                            bodyColor: isLightTheme ? '#333' : '#fff',
-                            borderColor: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                            borderWidth: 1,
-                            padding: 10,
-                            cornerRadius: 4,
-                            callbacks: {
-                                label: function(context) {
-                                    const label = context.dataset.label || '';
-                                    const currency = data.mainCurrency || 'EUR';
-                                    
-                                    if (label === 'BTC Price' || label === 'Market Average' || label === 'Your Average Buy Price') {
-                                        return `${label}: ${context.parsed.y.toLocaleString(undefined, { 
-                                            minimumFractionDigits: 2, 
-                                            maximumFractionDigits: 2 
-                                        })} ${currency}`;
-                                    }
-                                    return label;
-                                }
-                            }
-                        },
-                        legend: {
-                            labels: {
-                                color: textColor,
-                                usePointStyle: true,
-                                padding: 15,
-                                font: {
-                                    size: 12
-                                },
-                                filter: function(item) {
-                                    // Only show legend items for chart datasets (no transactions)
-                                    return item.text === 'BTC Price' || 
-                                           item.text === 'Market Average' ||
-                                           (item.text === 'Your Average Buy Price' && hasBuyTransactions);
-                                }
-                            }
                         },
                         zoom: {
                             pan: {
                                 enabled: true,
                                 mode: 'x',
-                                modifierKey: 'ctrl',
-                                onPanComplete: function({ chart }) {
-                                    // Update time range buttons to show "Custom" when panned
-                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-                                }
-                            },
-                            limits: {
-                                x: {min: 'original', max: 'original'},
-                                y: {min: 'original', max: 'original'}
+                                modifierKey: 'ctrl'
                             },
                             zoom: {
                                 wheel: {
@@ -1713,12 +2827,7 @@
                                 pinch: {
                                     enabled: true
                                 },
-                                mode: 'x',
-                                onZoomComplete: function({ chart }) {
-                                    // Update time range buttons to show "Custom" when zoomed
-                                    const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-                                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-                                }
+                                mode: 'x'
                             }
                         }
                     },
@@ -1738,46 +2847,61 @@
                                 }
                             },
                             grid: {
-                                color: gridColor,
-                                drawBorder: true,
-                                borderDash: [4, 4]
+                                display: true,
+                                color: colors.gridColor,
+                                lineWidth: 1,
+                                drawBorder: false,
+                                drawTicks: false
+                            },
+                            border: {
+                                display: false
                             },
                             ticks: {
-                                color: textColor,
-                                maxRotation: 45,
+                                color: colors.mutedText,
+                                padding: 8,
+                                maxRotation: 0,
                                 font: {
-                                    size: 11
+                                    size: 11,
+                                    weight: '500'
                                 }
                             }
                         },
                         y: {
                             type: 'linear',
-                            display: true,
-                            position: 'left',
+                            position: 'right',
                             grid: {
-                                color: gridColor,
-                                drawBorder: true,
-                                borderDash: [4, 4]
+                                display: true,
+                                color: colors.gridColor,
+                                lineWidth: 1,
+                                drawBorder: false,
+                                drawTicks: false
+                            },
+                            border: {
+                                display: false
                             },
                             ticks: {
-                                color: textColor,
+                                color: colors.mutedText,
+                                padding: 12,
                                 callback: function(value) {
-                                    return value.toLocaleString(undefined, {
+                                    return new Intl.NumberFormat(undefined, {
                                         minimumFractionDigits: 0,
-                                        maximumFractionDigits: 0
-                                    });
+                                        maximumFractionDigits: 0,
+                                        notation: value >= 100000 ? 'compact' : 'standard'
+                                    }).format(value);
                                 },
                                 font: {
-                                    size: 11
+                                    size: 11,
+                                    weight: '500'
                                 }
                             },
                             title: {
                                 display: true,
-                                text: `BTC Price (${data.mainCurrency || 'EUR'})`,
-                                color: textColor,
+                                text: `Price (${data.mainCurrency || 'EUR'})`,
+                                color: colors.mutedText,
+                                padding: 12,
                                 font: {
                                     size: 12,
-                                    weight: 'normal'
+                                    weight: '600'
                                 }
                             }
                         }
@@ -1785,52 +2909,11 @@
                 }
             });
 
-            // Add reset zoom button to chart controls
-            const chartControls = document.querySelector('.chart-controls');
-            const resetZoomBtn = document.createElement('button');
-            resetZoomBtn.className = 'reset-zoom-btn';
-            resetZoomBtn.innerHTML = '<i class="fas fa-search-minus"></i> Reset Zoom';
-            resetZoomBtn.style.display = 'none'; // Initially hidden
-            chartControls.appendChild(resetZoomBtn);
+            // Set chart background
+            ctx.canvas.style.backgroundColor = colors.chartBg;
 
-            // Add event listener for reset zoom
-            resetZoomBtn.addEventListener('click', () => {
-                if (combinedChart) {
-                    combinedChart.resetZoom();
-                    resetZoomBtn.style.display = 'none';
-                }
-            });
-
-            // Show reset zoom button when chart is zoomed
-            combinedChart.options.plugins.zoom.zoom.onZoomComplete = function({ chart }) {
-                resetZoomBtn.style.display = 'block';
-                // Update time range buttons to show "Custom" when zoomed
-                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-            };
-
-            combinedChart.options.plugins.zoom.pan.onPanComplete = function({ chart }) {
-                resetZoomBtn.style.display = 'block';
-                // Update time range buttons to show "Custom" when panned
-                const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-                timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-            };
-
-            // Add zoom instructions to chart
-            const chartWrapper = document.querySelector('.chart-wrapper');
-            const zoomInstructions = document.createElement('div');
-            zoomInstructions.className = 'zoom-instructions';
-            zoomInstructions.innerHTML = `
-                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Scroll to zoom</div>
-                <div><i class="fas fa-info-circle"></i> Hold Ctrl + Drag to pan</div>
-            `;
-            chartWrapper.appendChild(zoomInstructions);
-
-            // Hide instructions after 5 seconds
-            setTimeout(() => {
-                zoomInstructions.style.opacity = '0';
-                setTimeout(() => zoomInstructions.remove(), 500);
-            }, 5000);
+            // Transactions are now handled by the timeline component below the chart
+            // No longer adding transaction bubbles to the chart for cleaner visualization
         }
 
         // Modified loadData function
@@ -1908,7 +2991,11 @@
                     updatePriceDisplays(data);
                     
                     // Create/update chart with historical data
-                    createChart(data);
+                    if (window.innerWidth <= 768) {
+                        createMobileChart(data);
+                    } else {
+                        createChart(data);
+                    }
                     
                     // Create/update timeline with transaction data
                     createTimeline(data);
@@ -2003,7 +3090,20 @@
                     }
                     
                     // Always update the chart with the latest price data
-                    if (combinedChart) {
+                    if (window.innerWidth <= 768 && window.mobileChart && typeof window.mobileChart.update === 'function') {
+                        // Update mobile chart with latest price
+                        console.log('Updating mobile chart with latest price:', price);
+                        const chartPriceData = {
+                            price: price,
+                            priceEUR: data.priceEUR || data.price || 0,
+                            priceUSD: data.priceUSD || 0,
+                            mainCurrency: mainCurrency,
+                            eurUsd: data.eurUsd,
+                            secondaryRate: secondaryRate,
+                            timestamp: data.priceTimestamp || data.timestamp || new Date().toISOString()
+                        };
+                        updateMobileChartWithLatestPrice(window.mobileChart, chartPriceData);
+                    } else if (combinedChart) {
                         console.log('Updating chart with latest price:', price);
                         // updateChartWithLatestPrice needs price info, construct a specific object for it
                         const chartPriceData = {
@@ -2019,7 +3119,11 @@
                     } else {
                         // If chart doesn't exist for some reason, create it
                         console.log('Chart not found during price update, creating new chart');
-                        createChart(data);
+                        if (window.innerWidth <= 768) {
+                            createMobileChart(data);
+                        } else {
+                            createChart(data);
+                        }
                     }
                     
                     // Update last update time
@@ -2052,6 +3156,12 @@
                 document.getElementById('pnl').textContent = 'Error';
                 document.getElementById('pnlPercentage').textContent = 'Error';
                 document.getElementById('averagePrice').textContent = 'Error';
+                
+                // Update mobile portfolio header error state
+                document.getElementById('mobileCurrentValue').textContent = 'Error';
+                document.getElementById('mobilePnLAmount').textContent = 'Error';
+                document.getElementById('mobilePnLPercent').textContent = 'Error';
+                document.getElementById('mobileHoldings').textContent = 'Error BTC';
                 
                 // Show error message to user
                 const errorMessage = document.createElement('div');
@@ -2161,13 +3271,38 @@
                 localStorage.setItem('theme', currentTheme);
                 
                 // If we have a chart, update it to match the new theme
-                if (combinedChart) {
+                if (window.innerWidth <= 768 && window.mobileChart && typeof window.mobileChart.update === 'function') {
+                    updateMobileChartTheme();
+                    window.mobileChart.update();
+                } else if (combinedChart) {
                     updateChartTheme();
                     combinedChart.update();
                 }
             });
         }
         
+        // Function to update mobile chart theme
+        function updateMobileChartTheme() {
+            if (!window.mobileChart || typeof window.mobileChart.update !== 'function') return;
+            
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            // Update grid colors
+            window.mobileChart.options.scales.x.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+            window.mobileChart.options.scales.y.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+            
+            // Update text colors
+            const textColor = isLightTheme ? '#718096' : '#a0aec0';
+            window.mobileChart.options.scales.x.ticks.color = textColor;
+            window.mobileChart.options.scales.y.ticks.color = textColor;
+            
+            // Update tooltip colors
+            window.mobileChart.options.plugins.tooltip.backgroundColor = isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(39, 39, 39, 0.95)';
+            window.mobileChart.options.plugins.tooltip.titleColor = isLightTheme ? '#2d3748' : '#e2e8f0';
+            window.mobileChart.options.plugins.tooltip.bodyColor = isLightTheme ? '#2d3748' : '#e2e8f0';
+            window.mobileChart.options.plugins.tooltip.borderColor = isLightTheme ? '#e2e8f0' : '#4a5568';
+        }
+
         // Function to update chart theme based on current theme
         function updateChartTheme() {
             if (!combinedChart) return;
@@ -2354,13 +3489,17 @@
                 });
             }
 
-            // Show/hide timeline based on whether there are transactions
+            // Always show timeline
+            timelineContainer.style.display = 'block';
+
+            // Handle empty transactions case
             if (filteredTransactions.length === 0) {
-                timelineContainer.style.display = 'none';
+                timelineStats.textContent = 'No transactions in selected time range';
+                // Clear existing markers and transactions
+                timelineMarkers.innerHTML = '';
+                timelineTransactions.innerHTML = '';
                 return;
             }
-
-            timelineContainer.style.display = 'block';
 
             // Calculate timeline bounds
             const timelineStart = cutoffDate || new Date(Math.min(...filteredTransactions.map(tx => new Date(tx.date))));
