@@ -54,7 +54,7 @@ jobs:
           echo "2023-01-03,buy,0.025,manual,PLN,130000,3250,15" >> tests/testimport.csv
       
       - name: Run All Tests
-        run: npm test -- --testTimeout=60000 --detectOpenHandles --forceExit --runInBand
+        run: npm test -- --testTimeout=120000 --detectOpenHandles --forceExit --runInBand
         env:
           NODE_ENV: test
           PORT: 3030

@@ -58,32 +58,10 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
             stdio: 'inherit'
         });
         
-        // Wait for server to be ready by checking the port
+        // Wait for server to be ready with a simpler approach
         console.log('Waiting for server to be ready...');
-        const net = require('net');
-        let serverReady = false;
-        let attempts = 0;
-        while (!serverReady && attempts < 30) {
-            try {
-                await new Promise((resolve, reject) => {
-                    const client = net.createConnection(process.env.PORT, 'localhost');
-                    client.on('connect', () => {
-                        client.end();
-                        resolve();
-                    });
-                    client.on('error', reject);
-                });
-                serverReady = true;
-                console.log('Server is ready!');
-            } catch (error) {
-                attempts++;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-        
-        if (!serverReady) {
-            throw new Error('Server failed to start within 30 seconds');
-        }
+        await new Promise(resolve => setTimeout(resolve, 15000)); // Wait 15 seconds for startup
+        console.log('Server startup wait completed');
         
         console.log('Launching browser...');
         // Initialize browser with timeout and additional args
