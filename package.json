@@ -11,6 +11,7 @@
     "test:e2e": "jest tests/setup.test.js",
     "test:pin": "jest tests/pin-auth.test.js",
     "test:admin": "jest tests/admin-transactions.test.js",
+    "test:currency": "jest tests/currency-converter.test.js --verbose",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "electron": "npx electron src/electron-main.js",

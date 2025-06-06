@@ -53,8 +53,8 @@ jobs:
           echo "2023-01-02,buy,0.05,manual,USD,27000,1350,3" >> tests/testimport.csv
           echo "2023-01-03,buy,0.025,manual,PLN,130000,3250,15" >> tests/testimport.csv
       
-      - name: Run E2E tests
-        run: npm run test:e2e -- --testTimeout=60000
+      - name: Run All Tests
+        run: npm test -- --testTimeout=60000
         env:
           NODE_ENV: test
           PORT: 3030
