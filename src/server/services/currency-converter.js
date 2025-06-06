@@ -7,7 +7,7 @@ class CurrencyConverter {
         this.baseCurrencies = ['EUR', 'USD'];
         
         // Secondary currencies that we support
-        this.secondaryCurrencies = ['GBP', 'JPY', 'CHF', 'PLN'];
+        this.secondaryCurrencies = ['GBP', 'JPY', 'CHF', 'PLN', 'BRL'];
         
         // All supported currencies
         this.supportedCurrencies = [...this.baseCurrencies, ...this.secondaryCurrencies];
@@ -63,6 +63,11 @@ class CurrencyConverter {
      * @returns {number} Converted amount
      */
     convert(amount, from, to) {
+        // Handle null/undefined amounts
+        if (amount === null || amount === undefined || isNaN(amount)) {
+            return 0;
+        }
+        
         const rate = this.getRate(from, to);
         return amount * rate;
     }
