@@ -56,11 +56,11 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 
 ### 🔄 **Data Management**
 - **CSV Import/Export**: Easy data migration with enhanced UI
-- **Backup & Restore**: Comprehensive data backup solutions
+- **Backup & Restore**: Comprehensive data backup solutions 
 - **Transaction Validation**: Bitcoin precision validation (satoshi-level accuracy)
 
 ### 🚀 **Integration & Deployment**
-- **CoinGecko API Integration**: Optional API key support for higher rate limits
+- **Yahoo Finance Integration**: Reliable real-time price data with built-in rate limiting
 - **Containerized**: Runs in Docker or Podman with minimal setup
 - **Exchange Integration**: Automatic sync of BTC buy transactions with major exchanges (Binance, Coinbase, Kraken, Strike) using READ-ONLY API keys
 - **Windows Desktop App**: Native Windows application with system tray support and automatic updates
@@ -296,27 +296,22 @@ wilqq-the
 - CoinGecko for cryptocurrency price data
 - ExchangeRate API for currency conversions
 
-### CoinGecko API Integration
+### Yahoo Finance Integration
 
-The application uses CoinGecko's API to fetch Bitcoin price data. By default, it uses the free tier which has rate limitations.
+The application uses Yahoo Finance to fetch Bitcoin price data. This provides reliable, real-time price information without requiring any API keys.
 
-#### Adding Your CoinGecko API Key
+#### Price Data Features
 
-1. Navigate to the Admin Panel
-2. In the settings section, enter your CoinGecko API key
-3. Click "Test Key" to verify it works correctly
-4. Save your settings
+- Real-time Bitcoin price data from Yahoo Finance
+- Automatic rate limiting and caching for optimal performance
+- Fallback mechanisms if the primary data source is unavailable
+- Support for multiple currency pairs and conversions
+- Historical price data for charting and analysis
 
-#### How to Get a CoinGecko API Key
+#### Data Reliability
 
-1. Visit [CoinGecko API Pricing](https://www.coingecko.com/en/api/pricing)
-2. Sign up for the "Demo" plan (free, no credit card required)
-3. Copy your API key that starts with "CG-"
-
-#### API Key Usage Notes
-
-- Demo API keys (starting with "CG-") are passed as URL query parameters (`x_cg_demo_api_key`)
-- This increases your rate limit from approximately 10-30 calls/minute to 10,000 calls/month
-- The app will automatically handle correctly formatting API requests with your key
-- If no API key is provided, the application uses the standard free tier endpoint 
+- Yahoo Finance provides enterprise-grade financial data
+- Built-in rate limiting prevents service disruptions
+- Smart caching reduces API calls while maintaining accuracy
+- Automatic retry logic handles temporary outages
 - For exchanges use **READONLY** API keys for security reasons
