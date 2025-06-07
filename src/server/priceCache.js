@@ -439,22 +439,26 @@ class PriceCache {
                 'EURUSD=X', 'EURPLN=X', 'EURGBP=X', 'EURJPY=X', 'EURCHF=X', 'EURBRL=X'
             ];
 
+            if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                logger.debug(`[priceCache] 🚀 Starting exchange rate fetch process`);
+                logger.debug(`[priceCache] 📋 Currency pairs to fetch: ${essentialPairs.join(', ')}`);
+                logger.debug(`[priceCache] 📅 Time range: ${new Date(startDate * 1000).toISOString()} to ${new Date(endDate * 1000).toISOString()}`);
+                logger.debug(`[priceCache] ⏱️  Sequential fetching with 200ms delays to prevent rate limiting`);
+            }
+
             logger.debug(`[priceCache] Fetching ${essentialPairs.length} essential currency pairs to minimize Yahoo Finance requests`);
 
-            const ratePromises = essentialPairs.map(pair => 
-                this.fetchYahooFinanceData(pair, startDate, endDate).catch(error => {
-                    logger.warn(`[priceCache] Failed to fetch ${pair}:`, error.message);
-                    return { error: error.message, pair }; // Return error info instead of null
-                })
-            );
-
-            const rateResults = await Promise.all(ratePromises);
-
-            // Process results and build exchange rates object
+            // Process results and build exchange rates object with fallback values
             const exchangeRates = {
                 EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34 },
                 USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76 }
             };
+
+            if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                logger.debug(`[priceCache] 🛡️  Default fallback rates initialized:`);
+                logger.debug(`[priceCache] 💶 EUR rates: ${JSON.stringify(exchangeRates.EUR)}`);
+                logger.debug(`[priceCache] 💵 USD rates: ${JSON.stringify(exchangeRates.USD)}`);
+            }
 
             // Track successful and failed fetches
             const fetchResults = {
@@ -463,58 +467,92 @@ class PriceCache {
                 usingFallback: []
             };
 
-            // Update with actual rates where available
-            rateResults.forEach((data, index) => {
-                const pair = essentialPairs[index];
+            // Fetch rates sequentially with delays to avoid rate limiting
+            for (let i = 0; i < essentialPairs.length; i++) {
+                const pair = essentialPairs[i];
                 
-                if (data && data.error) {
-                    // This pair failed to fetch
-                    fetchResults.failed.push({ pair, error: data.error });
-                    fetchResults.usingFallback.push(pair);
-                    logger.warn(`[priceCache] Using fallback rate for ${pair} due to fetch error:`, data.error);
-                } else if (data && Object.keys(data).length > 0) {
-                    const dates = Object.keys(data).sort();
-                    const latestDate = dates[dates.length - 1];
-                    const rate = data[latestDate].close;
-
-                    fetchResults.successful.push({ pair, rate, date: latestDate });
-
-                    // Map the rates to our structure
-                    if (pair === 'EURUSD=X') {
-                        exchangeRates.EUR.USD = rate;
-                        exchangeRates.USD.EUR = 1 / rate; // Calculate inverse
-                        logger.debug(`[priceCache] Updated EUR/USD rate: ${rate} (inverse: ${exchangeRates.USD.EUR.toFixed(4)})`);
-                    } else if (pair === 'EURPLN=X') {
-                        exchangeRates.EUR.PLN = rate;
-                        exchangeRates.USD.PLN = rate / exchangeRates.EUR.USD; // Calculate USD/PLN
-                        logger.debug(`[priceCache] Updated EUR/PLN rate: ${rate}, calculated USD/PLN: ${exchangeRates.USD.PLN.toFixed(4)}`);
-                    } else if (pair === 'EURGBP=X') {
-                        exchangeRates.EUR.GBP = rate;
-                        exchangeRates.USD.GBP = rate / exchangeRates.EUR.USD; // Calculate USD/GBP
-                        logger.debug(`[priceCache] Updated EUR/GBP rate: ${rate}, calculated USD/GBP: ${exchangeRates.USD.GBP.toFixed(4)}`);
-                    } else if (pair === 'EURJPY=X') {
-                        exchangeRates.EUR.JPY = rate;
-                        exchangeRates.USD.JPY = rate / exchangeRates.EUR.USD; // Calculate USD/JPY
-                        logger.debug(`[priceCache] Updated EUR/JPY rate: ${rate}, calculated USD/JPY: ${exchangeRates.USD.JPY.toFixed(2)}`);
-                    } else if (pair === 'EURCHF=X') {
-                        exchangeRates.EUR.CHF = rate;
-                        exchangeRates.USD.CHF = rate / exchangeRates.EUR.USD; // Calculate USD/CHF
-                        logger.debug(`[priceCache] Updated EUR/CHF rate: ${rate}, calculated USD/CHF: ${exchangeRates.USD.CHF.toFixed(4)}`);
-                    } else if (pair === 'EURBRL=X') {
-                        exchangeRates.EUR.BRL = rate;
-                        exchangeRates.USD.BRL = rate / exchangeRates.EUR.USD; // Calculate USD/BRL
-                        logger.debug(`[priceCache] Updated EUR/BRL rate: ${rate}, calculated USD/BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
-                    }
-                } else {
-                    // Empty data received
-                    fetchResults.failed.push({ pair, error: 'Empty data received' });
-                    fetchResults.usingFallback.push(pair);
-                    logger.warn(`[priceCache] Using fallback rate for ${pair} - received empty data`);
+                if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                    logger.debug(`[priceCache] 🔄 [${i + 1}/${essentialPairs.length}] Fetching ${pair}...`);
                 }
-            });
+                
+                try {
+                    // Add delay between requests to avoid rate limiting
+                    if (i > 0) {
+                        if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                            logger.debug(`[priceCache] ⏳ Waiting 200ms before next request...`);
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+                    }
+                    
+                    const data = await this.fetchYahooFinanceData(pair, startDate, endDate);
+                    
+                    if (data && Object.keys(data).length > 0) {
+                        const dates = Object.keys(data).sort();
+                        const latestDate = dates[dates.length - 1];
+                        const rate = data[latestDate].close;
+
+                        fetchResults.successful.push({ pair, rate, date: latestDate });
+
+                        if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                            logger.debug(`[priceCache] ${pair} successful: ${rate} (${latestDate})`);
+                        }
+
+                        // Map the rates to our structure
+                        if (pair === 'EURUSD=X') {
+                            exchangeRates.EUR.USD = rate;
+                            exchangeRates.USD.EUR = 1 / rate; // Calculate inverse
+                            logger.debug(`[priceCache] Updated EUR/USD rate: ${rate} (inverse: ${exchangeRates.USD.EUR.toFixed(4)})`);
+                        } else if (pair === 'EURPLN=X') {
+                            exchangeRates.EUR.PLN = rate;
+                            exchangeRates.USD.PLN = rate / exchangeRates.EUR.USD; // Calculate USD/PLN
+                            logger.debug(`[priceCache] Updated EUR/PLN rate: ${rate}, calculated USD/PLN: ${exchangeRates.USD.PLN.toFixed(4)}`);
+                        } else if (pair === 'EURGBP=X') {
+                            exchangeRates.EUR.GBP = rate;
+                            exchangeRates.USD.GBP = rate / exchangeRates.EUR.USD; // Calculate USD/GBP
+                            logger.debug(`[priceCache] Updated EUR/GBP rate: ${rate}, calculated USD/GBP: ${exchangeRates.USD.GBP.toFixed(4)}`);
+                        } else if (pair === 'EURJPY=X') {
+                            exchangeRates.EUR.JPY = rate;
+                            exchangeRates.USD.JPY = rate / exchangeRates.EUR.USD; // Calculate USD/JPY
+                            logger.debug(`[priceCache] Updated EUR/JPY rate: ${rate}, calculated USD/JPY: ${exchangeRates.USD.JPY.toFixed(2)}`);
+                        } else if (pair === 'EURCHF=X') {
+                            exchangeRates.EUR.CHF = rate;
+                            exchangeRates.USD.CHF = rate / exchangeRates.EUR.USD; // Calculate USD/CHF
+                            logger.debug(`[priceCache] Updated EUR/CHF rate: ${rate}, calculated USD/CHF: ${exchangeRates.USD.CHF.toFixed(4)}`);
+                        } else if (pair === 'EURBRL=X') {
+                            exchangeRates.EUR.BRL = rate;
+                            exchangeRates.USD.BRL = rate / exchangeRates.EUR.USD; // Calculate USD/BRL
+                            logger.debug(`[priceCache] Updated EUR/BRL rate: ${rate}, calculated USD/BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
+                        }
+                    } else {
+                        // Empty data received
+                        fetchResults.failed.push({ pair, error: 'Empty data received' });
+                        fetchResults.usingFallback.push(pair);
+                        logger.warn(`[priceCache] Using fallback rate for ${pair} - received empty data`);
+                        
+                        if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                            logger.debug(`[priceCache] ${pair} failed: Empty data received`);
+                        }
+                    }
+                } catch (error) {
+                    fetchResults.failed.push({ pair, error: error.message });
+                    fetchResults.usingFallback.push(pair);
+                    logger.warn(`[priceCache] Failed to fetch ${pair}: ${error.message}, using fallback rate`);
+                    
+                    if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                        logger.debug(`[priceCache] ${pair} failed: ${error.message}`);
+                    }
+                }
+            }
 
             // Log comprehensive results
             logger.info(`[priceCache] Exchange rate fetch summary - Success: ${fetchResults.successful.length}/${essentialPairs.length}, Failed: ${fetchResults.failed.length}`);
+            
+            if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                logger.debug(`[priceCache] Detailed fetch results:`);
+                logger.debug(`[priceCache] Successful (${fetchResults.successful.length}): ${fetchResults.successful.map(r => r.pair).join(', ')}`);
+                logger.debug(`[priceCache] Failed (${fetchResults.failed.length}): ${fetchResults.failed.map(r => r.pair).join(', ')}`);
+                logger.debug(`[priceCache] Using fallback (${fetchResults.usingFallback.length}): ${fetchResults.usingFallback.join(', ')}`);
+            }
             
             if (fetchResults.successful.length > 0) {
                 const successfulPairs = fetchResults.successful.map(r => `${r.pair}=${r.rate.toFixed(4)}`).join(', ');
@@ -524,6 +562,12 @@ class PriceCache {
             if (fetchResults.failed.length > 0) {
                 const failedPairs = fetchResults.failed.map(r => r.pair).join(', ');
                 logger.warn(`[priceCache] Failed to fetch rates for: ${failedPairs}`);
+                
+                if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                    fetchResults.failed.forEach(failure => {
+                        logger.debug(`[priceCache] ${failure.pair} failure details: ${failure.error}`);
+                    });
+                }
             }
 
             if (fetchResults.usingFallback.length > 0) {
@@ -535,9 +579,20 @@ class PriceCache {
             logger.info(`[priceCache] Final EUR exchange rates - USD: ${exchangeRates.EUR.USD.toFixed(4)}, PLN: ${exchangeRates.EUR.PLN.toFixed(4)}, GBP: ${exchangeRates.EUR.GBP.toFixed(4)}, JPY: ${exchangeRates.EUR.JPY.toFixed(2)}, CHF: ${exchangeRates.EUR.CHF.toFixed(4)}, BRL: ${exchangeRates.EUR.BRL.toFixed(4)}`);
             logger.info(`[priceCache] Final USD exchange rates - EUR: ${exchangeRates.USD.EUR.toFixed(4)}, PLN: ${exchangeRates.USD.PLN.toFixed(4)}, GBP: ${exchangeRates.USD.GBP.toFixed(4)}, JPY: ${exchangeRates.USD.JPY.toFixed(2)}, CHF: ${exchangeRates.USD.CHF.toFixed(4)}, BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
 
+            if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                logger.debug(`[priceCache] Exchange rate fetch process completed successfully`);
+                logger.debug(`[priceCache] Final rate structure:`, JSON.stringify(exchangeRates, null, 2));
+            }
+
             return exchangeRates;
         } catch (error) {
             logger.error('[priceCache] Error fetching exchange rates from Yahoo Finance:', error.message);
+            
+            if (process.env.DEBUG_EXCHANGE_RATES === 'true') {
+                logger.error(`[priceCache] Fatal error in fetchExchangeRatesFromYahoo:`);
+                logger.error(`[priceCache] Error details:`, error);
+            }
+            
             throw error;
         }
     }
@@ -569,11 +624,35 @@ class PriceCache {
                 'Sec-Fetch-Dest': 'empty'
             };
             
+            // Debug logging for Yahoo Finance API calls
+            if (process.env.DEBUG_YAHOO_API === 'true') {
+                logger.debug(`[priceCache] Yahoo Finance API Request:`);
+                logger.debug(`[priceCache] 📡URL: ${url}`);
+                logger.debug(`[priceCache] 📋 Symbol: ${symbol}`);
+                logger.debug(`[priceCache] 📅 Period: ${new Date(startDate * 1000).toISOString()} to ${new Date(endDate * 1000).toISOString()}`);
+                logger.debug(`[priceCache] 🔧 Params:`, JSON.stringify(params, null, 2));
+            }
+            
             const response = await axios.get(url, { 
                 params,
                 headers,
                 timeout: 10000
             });
+            
+            // Debug response logging
+            if (process.env.DEBUG_YAHOO_API === 'true') {
+                logger.debug(`[priceCache] Yahoo Finance Response for ${symbol}:`);
+                logger.debug(`[priceCache] Status: ${response.status} ${response.statusText}`);
+                logger.debug(`[priceCache] Response size: ${JSON.stringify(response.data).length} characters`);
+                
+                if (response.data && response.data.chart && response.data.chart.result && response.data.chart.result[0]) {
+                    const result = response.data.chart.result[0];
+                    logger.debug(`[priceCache] Data points available: ${result.timestamp ? result.timestamp.length : 0}`);
+                    logger.debug(`[priceCache] Meta info:`, JSON.stringify(result.meta, null, 2));
+                } else {
+                    logger.debug(`[priceCache] Invalid data structure in response`);
+                }
+            }
             
             if (!response.data || response.data.error) {
                 throw new Error(`Yahoo Finance API error: ${response.data?.error?.description || 'Unknown error'}`);
@@ -608,9 +687,29 @@ class PriceCache {
                 throw new Error('No valid data points found in Yahoo Finance response');
             }
             
+            // Debug processed data
+            if (process.env.DEBUG_YAHOO_API === 'true') {
+                const dates = Object.keys(data).sort();
+                const latestDate = dates[dates.length - 1];
+                const latestRate = data[latestDate];
+                
+                logger.debug(`[priceCache] Processed ${symbol} data:`);
+                logger.debug(`[priceCache] Valid data points: ${Object.keys(data).length}`);
+                logger.debug(`[priceCache] Date range: ${dates[0]} to ${latestDate}`);
+                logger.debug(`[priceCache] Latest rate: ${latestRate.close} (${latestDate})`);
+                logger.debug(`[priceCache] All rates:`, Object.entries(data).map(([date, info]) => `${date}: ${info.close}`).join(', '));
+            }
+            
             return data;
             
         } catch (error) {
+            if (process.env.DEBUG_YAHOO_API === 'true') {
+                logger.error(`[priceCache] Yahoo Finance API Error for ${symbol}:`);
+                logger.error(`[priceCache] Error type: ${error.name}`);
+                logger.error(`[priceCache] Error message: ${error.message}`);
+                logger.error(`[priceCache] Error stack:`, error.stack);
+            }
+            
             logger.error(`[priceCache] Error fetching data for symbol ${symbol}:`, error.message);
             throw error;
         }
