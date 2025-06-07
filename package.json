@@ -33,7 +33,7 @@
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
     "unzipper": "^0.10.14",
-    "uuid": "^9.0.1"
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
