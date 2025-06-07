@@ -1949,14 +1949,7 @@
                 }
             });
             
-            // Handle theme toggle for mobile
-            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
-            const regularThemeToggle = document.getElementById('themeToggle');
-            
-            mobileThemeToggle.addEventListener('click', () => {
-                // Trigger the original theme toggle functionality
-                regularThemeToggle.click();
-            });
+            // Mobile theme toggle is now handled in setupThemeToggle()
 
             // Handle window resize to recreate charts when switching between mobile/desktop
             let resizeTimeout;
@@ -2133,19 +2126,73 @@
             // Check if data structure is the new nested format or the old flat format
             const isNested = priceData.averagePrice && typeof priceData.averagePrice === 'object';
             
-            // Get main and secondary currencies from data, default to EUR/USD
-            const mainCurrency = priceData.mainCurrency || 'EUR';
-            const secondaryCurrency = priceData.secondaryCurrency || 'USD'; 
+            // IMPORTANT: Always use global settings (from loadCurrencySettings) as the source of truth
+            // Server data might be cached with old currency settings
+            const mainCurrency = window.currentMainCurrency || 'EUR';
+            const secondaryCurrency = window.currentSecondaryCurrency || 'USD'; 
             const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
             const secondaryCurrencySymbol = getCurrencySymbol(secondaryCurrency);
             
-            // Get the EUR -> Secondary Currency exchange rate
-            // Use secondaryRate from flat structure first, fallback to eurUsd if secondary is USD, else default
-            let secondaryRate = priceData.secondaryRate;
-            if (secondaryRate === undefined || secondaryRate === null) {
-                 secondaryRate = (secondaryCurrency === 'USD' && priceData.eurUsd) ? priceData.eurUsd : 1.0;
+            console.log('=== PRICE DISPLAY DEBUG ===');
+            console.log('Server mainCurrency:', priceData.mainCurrency);
+            console.log('Global mainCurrency (using this):', window.currentMainCurrency);
+            console.log('Final mainCurrency:', mainCurrency);
+            console.log('Server secondaryCurrency:', priceData.secondaryCurrency);
+            console.log('Global secondaryCurrency (using this):', window.currentSecondaryCurrency);
+            console.log('Final secondaryCurrency:', secondaryCurrency);
+            console.log('Available exchange rates:', { 
+                eurUsd: priceData.eurUsd,
+                eurPln: priceData.eurPln,
+                eurGbp: priceData.eurGbp,
+                eurJpy: priceData.eurJpy,
+                eurChf: priceData.eurChf,
+                eurBrl: priceData.eurBrl
+            });
+            
+            // Get the correct exchange rate based on main currency
+            let secondaryRate = 1.0;
+            if (mainCurrency !== secondaryCurrency) {
+                if (mainCurrency === 'EUR') {
+                    // EUR to secondary currency - check all supported currencies
+                    const directRateKey = `eur${secondaryCurrency.toLowerCase()}`;
+                    const directRate = priceData[directRateKey];
+                    
+                    if (directRate) {
+                        secondaryRate = directRate;
+                    } else {
+                        // Fallback to generic secondaryRate or exchange rates
+                        secondaryRate = priceData.secondaryRate || 
+                                      priceData.exchangeRates?.EUR?.[secondaryCurrency] || 1.0;
+                    }
+                } else if (mainCurrency === 'USD') {
+                    // USD to secondary currency
+                    if (secondaryCurrency === 'EUR') {
+                        secondaryRate = 1 / (priceData.eurUsd || 1.0);
+                    } else {
+                        // For USD to other currencies, calculate via EUR or use direct rate
+                        const eurToSecondary = priceData[`eur${secondaryCurrency.toLowerCase()}`] || 
+                                             priceData.exchangeRates?.EUR?.[secondaryCurrency];
+                        const eurToUsd = priceData.eurUsd || 1.0;
+                        
+                        if (eurToSecondary && eurToUsd) {
+                            secondaryRate = eurToSecondary / eurToUsd;
+                        } else {
+                            secondaryRate = priceData.secondaryRate || 
+                                          priceData.exchangeRates?.USD?.[secondaryCurrency] || 1.0;
+                        }
+                    }
+                }
             }
-            secondaryRate = Number(secondaryRate) || 1.0; // Ensure it's a number
+            
+            console.log('Calculated secondary rate:', secondaryRate);
+            console.log('Available rates from server:', {
+                eurUsd: priceData.eurUsd,
+                eurPln: priceData.eurPln,
+                secondaryRate: priceData.secondaryRate,
+                priceEUR: priceData.priceEUR,
+                priceUSD: priceData.priceUSD,
+                pricePLN: priceData.pricePLN
+            });
 
             // Update total BTC (always available)
             document.getElementById('totalBtc').textContent = 
@@ -2153,65 +2200,112 @@
 
             // --- Update Cards --- 
 
-            // Current Price (Main: EUR, Secondary: Configured Secondary)
-            const currentPriceEUR = isNested ? priceData.currentPrice.eur : priceData.priceEUR;
-            const currentPriceSecondary = (currentPriceEUR || 0) * secondaryRate;
+            // Current Price - use the correct price for main currency
+            let currentPriceMain, currentPriceSecondary;
+            
+            if (mainCurrency === 'EUR') {
+                currentPriceMain = isNested ? priceData.currentPrice?.eur : (priceData.priceEUR || priceData.price);
+            } else if (mainCurrency === 'USD') {
+                currentPriceMain = isNested ? priceData.currentPrice?.usd : (priceData.priceUSD || priceData.price);
+            } else {
+                // Fallback to EUR price if unknown currency
+                currentPriceMain = isNested ? priceData.currentPrice?.eur : (priceData.priceEUR || priceData.price);
+            }
+            
+            currentPriceSecondary = (currentPriceMain || 0) * secondaryRate;
+            
+            console.log('Current prices:', { main: currentPriceMain, secondary: currentPriceSecondary });
+            
             document.getElementById('currentBtcPrice').textContent = 
-                `${(currentPriceEUR || 0).toFixed(2)} ${mainCurrencySymbol}`;
-            // Use the element with ID 'currentBtcPriceUSD' but display secondary currency
+                `${(currentPriceMain || 0).toFixed(2)} ${mainCurrencySymbol}`;
             document.getElementById('currentBtcPriceUSD').textContent = 
                 `${(currentPriceSecondary || 0).toFixed(2)} ${secondaryCurrencySymbol}`;
             
-            // Total Cost (Main: EUR, Secondary: Configured Secondary)
-            const totalCostEUR = isNested ? priceData.totalCost.eur : priceData.totalCost;
-            const totalCostSecondary = (totalCostEUR || 0) * secondaryRate;
+            // Total Cost - use correct currency based on main currency setting
+            let totalCostMain, totalCostSecondary;
+            if (mainCurrency === 'EUR') {
+                totalCostMain = isNested ? priceData.totalCost?.eur : priceData.totalCost;
+            } else if (mainCurrency === 'USD') {
+                totalCostMain = isNested ? priceData.totalCost?.usd : (priceData.totalCostUSD || priceData.totalCost);
+            } else {
+                totalCostMain = isNested ? priceData.totalCost?.eur : priceData.totalCost;
+            }
+            totalCostSecondary = (totalCostMain || 0) * secondaryRate;
+            
             document.getElementById('totalCost').textContent = 
-                `${(totalCostEUR || 0).toFixed(2)} ${mainCurrencySymbol}`;
-            // Use the element with ID 'totalCostPLN' but display secondary currency
+                `${(totalCostMain || 0).toFixed(2)} ${mainCurrencySymbol}`;
             document.getElementById('totalCostPLN').textContent = 
                 `${(totalCostSecondary || 0).toFixed(2)} ${secondaryCurrencySymbol}`;
 
-            // Current Value (Main: EUR, Secondary: Configured Secondary)
-            const currentValueEUR = isNested ? priceData.currentValue.eur : priceData.currentValue;
-            const currentValueSecondary = (currentValueEUR || 0) * secondaryRate;
+            // Current Value - use correct currency based on main currency setting  
+            let currentValueMain, currentValueSecondary;
+            if (mainCurrency === 'EUR') {
+                currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
+            } else if (mainCurrency === 'USD') {
+                currentValueMain = isNested ? priceData.currentValue?.usd : (priceData.currentValueUSD || priceData.currentValue);
+            } else {
+                currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
+            }
+            currentValueSecondary = (currentValueMain || 0) * secondaryRate;
+            
             document.getElementById('currentValue').textContent = 
-                `${(currentValueEUR || 0).toFixed(2)} ${mainCurrencySymbol}`;
-             // Use the element with ID 'currentValuePLN' but display secondary currency
+                `${(currentValueMain || 0).toFixed(2)} ${mainCurrencySymbol}`;
             document.getElementById('currentValuePLN').textContent = 
                 `${(currentValueSecondary || 0).toFixed(2)} ${secondaryCurrencySymbol}`;
 
-            // P&L (Main: EUR, Secondary: Configured Secondary)
-            const pnlEUR = isNested ? priceData.pnl.eur : priceData.pnl;
-            const pnlSecondary = (pnlEUR || 0) * secondaryRate;
-            const pnlElement = document.getElementById('pnl');
-            pnlElement.textContent = `${(pnlEUR || 0).toFixed(2)} ${mainCurrencySymbol}`;
-            pnlElement.className = `pnl ${(pnlEUR || 0) >= 0 ? 'positive' : 'negative'}`;
+            // P&L - use correct currency based on main currency setting
+            let pnlMain, pnlSecondary;
+            if (mainCurrency === 'EUR') {
+                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+            } else if (mainCurrency === 'USD') {
+                pnlMain = isNested ? priceData.pnl?.usd : (priceData.pnlUSD || priceData.pnl);
+            } else {
+                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+            }
+            pnlSecondary = (pnlMain || 0) * secondaryRate;
             
-            // Use the element with ID 'pnlPLN' but display secondary currency
+            const pnlElement = document.getElementById('pnl');
+            pnlElement.textContent = `${(pnlMain || 0).toFixed(2)} ${mainCurrencySymbol}`;
+            pnlElement.className = `pnl ${(pnlMain || 0) >= 0 ? 'positive' : 'negative'}`;
+            
             const pnlSecElement = document.getElementById('pnlPLN'); 
             pnlSecElement.textContent = `${(pnlSecondary || 0).toFixed(2)} ${secondaryCurrencySymbol}`;
             pnlSecElement.className = `pnl secondary-value ${(pnlSecondary || 0) >= 0 ? 'positive' : 'negative'}`;
 
-            // P&L Percentage (Uses main currency P&L %)
+            // P&L Percentage - should be consistent regardless of currency
             const pnlPercentage = priceData.pnlPercentage || 0; 
             const pnlPercentageElement = document.getElementById('pnlPercentage');
             pnlPercentageElement.textContent = `${pnlPercentage.toFixed(2)}%`;
             pnlPercentageElement.className = `pnl ${pnlPercentage >= 0 ? 'positive' : 'negative'}`;
 
             // Add mobile styling classes for performance metrics
-            addMobilePerformanceClasses(pnlEUR, pnlPercentage);
+            addMobilePerformanceClasses(pnlMain, pnlPercentage);
 
             // Update mobile portfolio header
             updateMobilePortfolioHeader(priceData);
             
-            // Average Price (Main: EUR, Secondary: Configured Secondary)
-            const averagePriceEUR = isNested ? priceData.averagePrice.eur : priceData.averagePrice;
-            const averagePriceSecondary = (averagePriceEUR || 0) * secondaryRate;
+            // Average Price - use correct currency based on main currency setting
+            let averagePriceMain, averagePriceSecondary;
+            if (mainCurrency === 'EUR') {
+                averagePriceMain = isNested ? priceData.averagePrice?.eur : priceData.averagePrice;
+            } else if (mainCurrency === 'USD') {
+                averagePriceMain = isNested ? priceData.averagePrice?.usd : (priceData.averagePriceUSD || priceData.averagePrice);
+            } else {
+                averagePriceMain = isNested ? priceData.averagePrice?.eur : priceData.averagePrice;
+            }
+            averagePriceSecondary = (averagePriceMain || 0) * secondaryRate;
+            
             document.getElementById('averagePrice').textContent = 
-                `${(averagePriceEUR || 0).toFixed(2)} ${mainCurrencySymbol}`;
-             // Use the element with ID 'averagePricePLN' but display secondary currency
+                `${(averagePriceMain || 0).toFixed(2)} ${mainCurrencySymbol}`;
             document.getElementById('averagePricePLN').textContent = 
                 `${(averagePriceSecondary || 0).toFixed(2)} ${secondaryCurrencySymbol}`;
+            
+            console.log('Final calculated values:', {
+                currentPrice: { main: currentPriceMain, secondary: currentPriceSecondary },
+                currentValue: { main: currentValueMain, secondary: currentValueSecondary },
+                pnl: { main: pnlMain, secondary: pnlSecondary },
+                averagePrice: { main: averagePriceMain, secondary: averagePriceSecondary }
+            });
 
             // --- Update Footer/Meta Info ---
             
@@ -2259,6 +2353,7 @@
                 'GBP': '£',
                 'JPY': '¥',
                 'CHF': 'Fr',
+                'BRL': 'R$',
                 'BTC': '₿'
             };
             
@@ -2295,29 +2390,47 @@
         // Helper function to update modern mobile portfolio header
         function updateMobilePortfolioHeader(priceData) {
             const isNested = priceData.averagePrice && typeof priceData.averagePrice === 'object';
-            const mainCurrency = priceData.mainCurrency || 'EUR';
+            const mainCurrency = window.currentMainCurrency || 'EUR';
             const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
             
+            // Get current value in the correct currency
+            let currentValueMain;
+            if (mainCurrency === 'EUR') {
+                currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
+            } else if (mainCurrency === 'USD') {
+                currentValueMain = isNested ? priceData.currentValue?.usd : (priceData.currentValueUSD || priceData.currentValue);
+            } else {
+                currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
+            }
+            
             // Update portfolio value (large display)
-            const currentValueEUR = isNested ? priceData.currentValue.eur : priceData.currentValue;
             const formattedValue = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(currentValueEUR || 0);
+            }).format(currentValueMain || 0);
             
             document.getElementById('mobileCurrentValue').textContent = formattedValue;
             document.getElementById('mobileCurrency').textContent = mainCurrencySymbol;
 
+            // Get P&L in the correct currency
+            let pnlMain;
+            if (mainCurrency === 'EUR') {
+                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+            } else if (mainCurrency === 'USD') {
+                pnlMain = isNested ? priceData.pnl?.usd : (priceData.pnlUSD || priceData.pnl);
+            } else {
+                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+            }
+            
             // Update P&L change (like +4 800,28 +2.91%)
-            const pnlEUR = isNested ? priceData.pnl.eur : priceData.pnl;
             const pnlPercentage = priceData.pnlPercentage || 0;
             
             const formattedPnL = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(Math.abs(pnlEUR || 0));
+            }).format(Math.abs(pnlMain || 0));
             
-            const sign = (pnlEUR >= 0) ? '+' : '-';
+            const sign = (pnlMain >= 0) ? '+' : '-';
             document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedPnL}`;
             document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(pnlPercentage).toFixed(2)}%`;
             
@@ -2327,7 +2440,7 @@
             // Add appropriate styling classes
             const changeElement = document.getElementById('mobileChange');
             changeElement.classList.remove('positive', 'negative');
-            if (pnlEUR >= 0) {
+            if (pnlMain >= 0) {
                 changeElement.classList.add('positive');
             } else {
                 changeElement.classList.add('negative');
@@ -2419,6 +2532,9 @@
                 console.warn('Historical BTC data is missing for mobile chart');
                 return;
             }
+
+            // Store data for theme switching
+            window.mobileChartData = data;
 
             const mobileChartCanvas = document.getElementById('mobileChart');
             if (!mobileChartCanvas) return;
@@ -2582,12 +2698,13 @@
             // Prepare datasets
             let datasets = [];
 
-            // BTC price dataset
+            // BTC price dataset - use global currency settings
+            const mainCurrency = window.currentMainCurrency || 'EUR';
             const btcPrices = filteredHistoricalData.map(item => ({
                 x: new Date(item.timestamp),
-                y: data.mainCurrency === 'EUR' ? 
+                y: mainCurrency === 'EUR' ? 
                     (item.priceEUR || item.price) : 
-                    (item.priceUSD || (item.priceEUR * data.eurUsd))
+                    (item.priceUSD || (item.priceEUR * (data.eurUsd || 1)))
             }));
 
             // Calculate moving average (30-day window)
@@ -2618,7 +2735,6 @@
                 sortedTransactions.forEach((tx, index) => {
                     const txDate = new Date(tx.date);
                     if (!currentTimeRange || txDate >= cutoffDate) {
-                        const mainCurrency = data.mainCurrency || 'EUR';
                         const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || 0;
                         const txAmount = tx.amount;
                         
@@ -2787,13 +2903,12 @@
                                 },
                                 label: function(context) {
                                     const label = context.dataset.label || '';
-                                    const currency = data.mainCurrency || 'EUR';
                                     const value = context.parsed.y;
                                     
                                     return `${label}: ${value.toLocaleString(undefined, { 
                                         minimumFractionDigits: 0, 
                                         maximumFractionDigits: 0 
-                                    })} ${currency}`;
+                                    })} ${mainCurrency}`;
                                 }
                             }
                         },
@@ -2896,7 +3011,7 @@
                             },
                             title: {
                                 display: true,
-                                text: `Price (${data.mainCurrency || 'EUR'})`,
+                                text: `Price (${mainCurrency})`,
                                 color: colors.mutedText,
                                 padding: 12,
                                 font: {
@@ -2911,9 +3026,65 @@
 
             // Set chart background
             ctx.canvas.style.backgroundColor = colors.chartBg;
+            
+            // Store chart data for theme switching
+            window.combinedChartData = data;
 
             // Transactions are now handled by the timeline component below the chart
             // No longer adding transaction bubbles to the chart for cleaner visualization
+        }
+
+        // Function to load currency settings
+        async function loadCurrencySettings() {
+            try {
+                const response = await fetch('/api/settings', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                if (response.ok) {
+                    const settings = await response.json();
+                    const newMainCurrency = settings.mainCurrency || 'EUR';
+                    const newSecondaryCurrency = settings.secondaryCurrency || 'USD';
+                    
+                    console.log('=== CURRENCY SETTINGS LOAD ===');
+                    console.log('Fetched settings:', { mainCurrency: newMainCurrency, secondaryCurrency: newSecondaryCurrency });
+                    console.log('Previous currencies:', { main: window.currentMainCurrency, secondary: window.currentSecondaryCurrency });
+                    
+                    // Check if currency has changed
+                    const currencyChanged = window.currentMainCurrency !== newMainCurrency || 
+                                          window.currentSecondaryCurrency !== newSecondaryCurrency;
+                    
+                    // Update global currency settings - this is the source of truth!
+                    window.currentMainCurrency = newMainCurrency;
+                    window.currentSecondaryCurrency = newSecondaryCurrency;
+                    
+                    if (currencyChanged) {
+                        console.log('🔄 CURRENCY CHANGED! Main:', newMainCurrency, 'Secondary:', newSecondaryCurrency);
+                    } else {
+                        console.log('✅ Currency settings unchanged');
+                    }
+                    console.log('=== END CURRENCY SETTINGS ===');
+                    
+                    return currencyChanged;
+                } else {
+                    console.error('Failed to load currency settings, response not ok:', response.status);
+                    // Check if redirected to login
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('text/html')) {
+                        console.log('Redirected to login, reloading page');
+                        window.location.href = '/login';
+                        return false;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading currency settings:', error);
+            }
+            return false;
         }
 
         // Modified loadData function
@@ -2922,12 +3093,37 @@
                 if (isFullRefresh) {
                     document.getElementById('chartLoading').style.display = 'flex';
                     
+                    // Load currency settings first and check if they changed
+                    const currencyChanged = await loadCurrencySettings();
+                    
+                    // If currency changed, force full refresh
+                    if (currencyChanged) {
+                        console.log('🔄 Currency settings changed, forcing full data refresh with cache-busting');
+                        isFullRefresh = true;
+                        
+                        // Destroy existing charts to recreate with new currency
+                        if (combinedChart) {
+                            combinedChart.destroy();
+                            combinedChart = null;
+                        }
+                        if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                            window.mobileChart.destroy();
+                            window.mobileChart = null;
+                        }
+                    }
+                    
+                    // Add cache-busting parameter and currency info to force server to use latest settings
+                    const cacheParam = currencyChanged ? `&bustCache=${Date.now()}` : '';
+                    const currencyParam = `&preferredMain=${window.currentMainCurrency}&preferredSecondary=${window.currentSecondaryCurrency}`;
+                    
                     // Fetch all data including cached prices from summary endpoint
-                    const response = await fetch('/api/summary', {
+                    const response = await fetch(`/api/summary?v=${Date.now()}${cacheParam}${currencyParam}`, {
                         credentials: 'include', // Ensure credentials are included
                         headers: {
                             'Accept': 'application/json',
-                            'Cache-Control': 'no-cache'
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache',
+                            'Expires': '0'
                         }
                     });
                     if (!response.ok) {
@@ -2944,14 +3140,58 @@
                     
                     const data = await response.json();
 
-                    // Get secondary currency settings
-                    secondaryCurrency = data.secondaryCurrency || 'PLN';
-                    secondaryRate = data.secondaryRate || 1;
+                    // IMPORTANT: Check for server/client currency mismatch
+                    const serverMainCurrency = data.mainCurrency || 'EUR';
+                    const serverSecondaryCurrency = data.secondaryCurrency || 'USD';
+                    const clientMainCurrency = window.currentMainCurrency || 'EUR';
+                    const clientSecondaryCurrency = window.currentSecondaryCurrency || 'USD';
                     
-                    // Check if main currency has changed
-                    const mainCurrency = data.mainCurrency || 'EUR';
-                    const mainCurrencyChanged = window.currentMainCurrency && window.currentMainCurrency !== mainCurrency;
-                    window.currentMainCurrency = mainCurrency;
+                    // If server is returning different currency than client expects, there's a cache issue
+                    if (serverMainCurrency !== clientMainCurrency || serverSecondaryCurrency !== clientSecondaryCurrency) {
+                        console.warn('🚨 SERVER CACHE MISMATCH DETECTED!');
+                        console.warn('Server currency:', { main: serverMainCurrency, secondary: serverSecondaryCurrency });
+                        console.warn('Client currency:', { main: clientMainCurrency, secondary: clientSecondaryCurrency });
+                        console.warn('Ignoring server currency data and using client settings');
+                        
+                        // Try to trigger server cache refresh immediately
+                        try {
+                            fetch('/api/admin/clear-cache', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include'
+                            }).then(response => {
+                                if (response.ok) {
+                                    console.log('🧹 Server cache cleared, retrying immediately');
+                                    // Retry faster since we just cleared the cache
+                                    setTimeout(() => {
+                                        console.log('🔄 Retrying with fresh server data after cache clear...');
+                                        loadData(true);
+                                    }, 500);
+                                } else {
+                                    console.warn('Failed to clear server cache, using standard retry');
+                                    standardRetry();
+                                }
+                            }).catch(() => {
+                                console.warn('Error clearing server cache, using standard retry');
+                                standardRetry();
+                            });
+                        } catch (error) {
+                            console.warn('Error triggering cache clear, using standard retry');
+                            standardRetry();
+                        }
+
+                        function standardRetry() {
+                            // Force another refresh in 1 second (reduced from 2 seconds)
+                            setTimeout(() => {
+                                console.log('🔄 Retrying with fresh server data...');
+                                loadData(true);
+                            }, 1000);
+                        }
+                    }
+
+                    // Get secondary currency settings (but prioritize client settings)
+                    secondaryCurrency = clientSecondaryCurrency;
+                    secondaryRate = data.secondaryRate || 1;
                     
                     // Store current transaction count to check for changes
                     const oldTransactionCount = transactionsWithCumulative.length;
@@ -2976,13 +3216,14 @@
                     const timeRangeChanged = window.lastTimeRange !== undefined && window.lastTimeRange !== currentTimeRange;
                     window.lastTimeRange = currentTimeRange;
                     
-                    if ((mainCurrencyChanged || transactionCountChanged || timeRangeChanged) && combinedChart) {
+                    if ((currencyChanged || transactionCountChanged || timeRangeChanged) && combinedChart) {
                         console.log('Recreating chart due to currency, transaction, or time range change');
                         combinedChart.destroy();
                         combinedChart = null;
                     }
 
-                    // Get main currency price
+                    // Get main currency price - use client settings as source of truth
+                    const mainCurrency = window.currentMainCurrency || 'EUR';
                     const price = mainCurrency === 'EUR' ? 
                         data.priceEUR || data.price || 0 : 
                         data.priceUSD || 0;
@@ -3010,11 +3251,12 @@
                     }, 1000);
                 } else {
                     // For non-full refresh, just get summary without historical data
-                    const response = await fetch('/api/summary?priceOnly=true&fresh=true', {
+                    const response = await fetch(`/api/summary?priceOnly=true&fresh=true&v=${Date.now()}`, {
                         credentials: 'include', // Ensure credentials are included
                         headers: {
                             'Accept': 'application/json',
-                            'Cache-Control': 'no-cache'
+                            'Cache-Control': 'no-cache, no-store, must-revalidate',
+                            'Pragma': 'no-cache'
                         }
                     });
                     if (!response.ok) {
@@ -3185,12 +3427,70 @@
         }
 
         // Initial load and setup intervals
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Page loaded, initializing...');
+            
+            // CRITICAL: Load currency settings FIRST before any data operations
+            console.log('📋 Loading currency settings...');
+            await loadCurrencySettings();
+            
+            console.log('📊 Currency settings loaded, now loading data...');
+            console.log('Current settings:', { 
+                main: window.currentMainCurrency, 
+                secondary: window.currentSecondaryCurrency 
+            });
+            
             loadData(true);  // Initial full load
             
             // Set up intervals
             setInterval(() => loadData(true), 24 * 60 * 60 * 1000); // Full refresh once per day
-            setInterval(() => loadData(false), 60 * 1000); // Price update every minute
+            setInterval(() => loadData(false), 5 * 60 * 1000); // Price update every 5 minutes (reduced from 1 minute)
+            
+            // Check for currency settings changes every 30 seconds (reduced from 3 seconds)
+            setInterval(async () => {
+                const currencyChanged = await loadCurrencySettings();
+                if (currencyChanged) {
+                    console.log('🔄 Currency settings changed in polling, forcing refresh');
+                    // Destroy charts to recreate with new currency
+                    if (combinedChart) {
+                        combinedChart.destroy();
+                        combinedChart = null;
+                    }
+                    if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                        window.mobileChart.destroy();
+                        window.mobileChart = null;
+                    }
+                    loadData(true); // Force full refresh
+                }
+            }, 30000); // Check every 30 seconds (reduced from 3 seconds)
+            
+            // Listen for localStorage changes to detect immediate settings updates from other tabs
+            window.addEventListener('storage', async (e) => {
+                if (e.key === 'btc_tracker_settings_updated') {
+                    console.log('Settings updated in another tab, forcing page reload for clean currency switch');
+                    // Force page reload for clean currency switching
+                    window.location.reload();
+                }
+            });
+            
+            // Also listen for window focus events for immediate checks
+            window.addEventListener('focus', async () => {
+                console.log('Window focused, checking for currency changes');
+                const currencyChanged = await loadCurrencySettings();
+                if (currencyChanged) {
+                    console.log('Currency changed while window was unfocused, refreshing');
+                    // Destroy charts to recreate with new currency
+                    if (combinedChart) {
+                        combinedChart.destroy();
+                        combinedChart = null;
+                    }
+                    if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                        window.mobileChart.destroy();
+                        window.mobileChart = null;
+                    }
+                    loadData(true); // Force full refresh
+                }
+            });
             
             // Setup refresh button
             document.getElementById('refreshBtn').addEventListener('click', async () => {
@@ -3239,21 +3539,202 @@
                 }
             });
             
-            // Trigger refresh when returning to the page to catch any added transactions
-            document.addEventListener('visibilitychange', () => {
+            // Trigger refresh when returning to the page to catch any added transactions or settings changes
+            document.addEventListener('visibilitychange', async () => {
                 if (document.visibilityState === 'visible') {
-                    console.log('Page visible again - refreshing data to check for new transactions');
+                    console.log('👁️ Page visible again - checking for settings changes and refreshing data');
+                    
+                    // ALWAYS reload currency settings when page becomes visible
+                    console.log('🔄 Reloading currency settings...');
+                    const currencyChanged = await loadCurrencySettings();
+                    
+                    if (currencyChanged) {
+                        console.log('💥 Currency settings changed while away, forcing full refresh');
+                        // Destroy charts to recreate with new currency
+                        if (combinedChart) {
+                            combinedChart.destroy();
+                            combinedChart = null;
+                        }
+                        if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                            window.mobileChart.destroy();
+                            window.mobileChart = null;
+                        }
+                    }
+                    
                     loadData(true); // Do a full refresh when coming back to the page
                 }
             });
 
             // Theme toggle functionality
             setupThemeToggle();
+            
+            // Add debug functions to window for manual testing
+            window.debugCurrency = async function() {
+                console.log('=== MANUAL CURRENCY DEBUG ===');
+                console.log('Current global currencies:', {
+                    main: window.currentMainCurrency,
+                    secondary: window.currentSecondaryCurrency
+                });
+                
+                try {
+                    const settingsResponse = await fetch('/api/settings');
+                    const settings = await settingsResponse.json();
+                    console.log('Server settings:', settings);
+                    
+                    const summaryResponse = await fetch('/api/summary');
+                    const summary = await summaryResponse.json();
+                    console.log('Server summary data currencies:', {
+                        mainCurrency: summary.mainCurrency,
+                        secondaryCurrency: summary.secondaryCurrency,
+                        priceEUR: summary.priceEUR,
+                        priceUSD: summary.priceUSD
+                    });
+                } catch (error) {
+                    console.error('Debug error:', error);
+                }
+                console.log('=== END MANUAL DEBUG ===');
+            };
+            
+            // Add function to force currency refresh
+            window.forceCurrencyRefresh = async function() {
+                console.log('🔄 FORCING CURRENCY REFRESH...');
+                await loadCurrencySettings();
+                
+                // Destroy charts
+                if (combinedChart) {
+                    combinedChart.destroy();
+                    combinedChart = null;
+                }
+                if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                    window.mobileChart.destroy();
+                    window.mobileChart = null;
+                }
+                
+                // Reload data with aggressive cache busting
+                loadData(true);
+                console.log('✅ Currency refresh complete');
+            };
+            
+            // Add function to check for server cache issues
+            window.checkServerCache = async function() {
+                console.log('🔍 CHECKING SERVER CACHE STATUS...');
+                
+                try {
+                    // Get settings
+                    const settingsResp = await fetch('/api/settings?v=' + Date.now());
+                    const settings = await settingsResp.json();
+                    
+                    // Get summary
+                    const summaryResp = await fetch('/api/summary?v=' + Date.now());
+                    const summary = await summaryResp.json();
+                    
+                    console.log('Settings API says:', { main: settings.mainCurrency, secondary: settings.secondaryCurrency });
+                    console.log('Summary API says:', { main: summary.mainCurrency, secondary: summary.secondaryCurrency });
+                    console.log('Client has:', { main: window.currentMainCurrency, secondary: window.currentSecondaryCurrency });
+                    
+                    if (settings.mainCurrency !== summary.mainCurrency) {
+                        console.warn('🚨 SERVER CACHE INCONSISTENCY DETECTED!');
+                        console.warn('Settings and Summary APIs are returning different currencies');
+                    } else {
+                        console.log('✅ Server cache is consistent');
+                    }
+                } catch (error) {
+                    console.error('Cache check failed:', error);
+                }
+            };
+            
+            // Add function to test immediate cache invalidation
+            window.testCacheInvalidation = async function() {
+                console.log('🧪 TESTING CACHE INVALIDATION...');
+                
+                try {
+                    // Check cache status before
+                    console.log('Before cache clear:');
+                    await window.checkServerCache();
+                    
+                    // Clear cache
+                    console.log('Clearing cache...');
+                    const response = await fetch('/api/admin/clear-cache', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log('Cache clear result:', result);
+                        
+                        // Wait a moment and check again
+                        setTimeout(async () => {
+                            console.log('After cache clear:');
+                            await window.checkServerCache();
+                        }, 1000);
+                    } else {
+                        console.error('Failed to clear cache:', response.status);
+                    }
+                } catch (error) {
+                    console.error('Cache invalidation test failed:', error);
+                }
+            };
         });
 
+        // Function to handle theme change
+        function handleThemeChange() {
+            // Toggle the theme
+            document.body.classList.toggle('light-theme');
+            
+            // Save the preference to localStorage
+            const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            
+            // Update charts based on current layout
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile && window.mobileChart && typeof window.mobileChart.destroy === 'function') {
+                // For mobile chart, recreate with new theme for proper gradient update
+                const currentData = window.mobileChartData; // Store current data if available
+                window.mobileChart.destroy();
+                window.mobileChart = null;
+                
+                // Recreate mobile chart if we have data
+                if (currentData || window.mobileChartData) {
+                    createMobileChart(currentData || window.mobileChartData);
+                } else {
+                    // Reload data to recreate chart
+                    loadData(true);
+                }
+            } else if (!isMobile && combinedChart) {
+                // For desktop chart, try update first, but recreate if gradients need updating
+                try {
+                    updateChartTheme();
+                    combinedChart.update('none'); // Update without animation for immediate change
+                    
+                    // Force a redraw to ensure gradient updates are applied
+                    setTimeout(() => {
+                        if (combinedChart) {
+                            combinedChart.update();
+                        }
+                    }, 50);
+                } catch (error) {
+                    console.log('Chart update failed, recreating chart:', error);
+                    // If update fails, recreate the chart
+                    combinedChart.destroy();
+                    combinedChart = null;
+                    
+                    // Try to recreate with stored data, otherwise reload
+                    if (window.combinedChartData) {
+                        createChart(window.combinedChartData);
+                    } else {
+                        loadData(true);
+                    }
+                }
+            }
+        }
+        
         // Function to setup theme toggle
         function setupThemeToggle() {
             const themeToggle = document.getElementById('themeToggle');
+            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
             
             // Check if user has a saved preference
             const savedTheme = localStorage.getItem('theme');
@@ -3261,24 +3742,14 @@
                 document.body.classList.add('light-theme');
             }
             
-            // Add click event listener
-            themeToggle.addEventListener('click', () => {
-                // Toggle the theme
-                document.body.classList.toggle('light-theme');
-                
-                // Save the preference to localStorage
-                const currentTheme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
-                localStorage.setItem('theme', currentTheme);
-                
-                // If we have a chart, update it to match the new theme
-                if (window.innerWidth <= 768 && window.mobileChart && typeof window.mobileChart.update === 'function') {
-                    updateMobileChartTheme();
-                    window.mobileChart.update();
-                } else if (combinedChart) {
-                    updateChartTheme();
-                    combinedChart.update();
-                }
-            });
+            // Add click event listeners for both desktop and mobile theme toggles
+            if (themeToggle) {
+                themeToggle.addEventListener('click', handleThemeChange);
+            }
+            
+            if (mobileThemeToggle) {
+                mobileThemeToggle.addEventListener('click', handleThemeChange);
+            }
         }
         
         // Function to update mobile chart theme
@@ -3300,7 +3771,13 @@
             window.mobileChart.options.plugins.tooltip.backgroundColor = isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(39, 39, 39, 0.95)';
             window.mobileChart.options.plugins.tooltip.titleColor = isLightTheme ? '#2d3748' : '#e2e8f0';
             window.mobileChart.options.plugins.tooltip.bodyColor = isLightTheme ? '#2d3748' : '#e2e8f0';
-            window.mobileChart.options.plugins.tooltip.borderColor = isLightTheme ? '#e2e8f0' : '#4a5568';
+            window.mobileChart.options.plugins.tooltip.borderColor = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(247, 147, 26, 0.2)';
+            
+            // Update canvas background
+            const ctx = window.mobileChart.ctx;
+            if (ctx && ctx.canvas) {
+                ctx.canvas.style.backgroundColor = isLightTheme ? '#ffffff' : '#272727';
+            }
         }
 
         // Function to update chart theme based on current theme
@@ -3309,20 +3786,61 @@
             
             const isLightTheme = document.body.classList.contains('light-theme');
             
+            // Define theme colors
+            const colors = {
+                background: isLightTheme ? '#ffffff' : '#272727',
+                gridColor: isLightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(255, 255, 255, 0.08)',
+                textColor: isLightTheme ? '#2d3748' : '#e2e8f0',
+                mutedText: isLightTheme ? '#718096' : '#a0aec0',
+                tooltipBg: isLightTheme ? 'rgba(255, 255, 255, 0.98)' : 'rgba(39, 39, 39, 0.98)',
+                tooltipBorder: isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(247, 147, 26, 0.2)'
+            };
+            
             // Update grid colors
-            combinedChart.options.scales.x.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
-            combinedChart.options.scales.y.grid.color = isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+            combinedChart.options.scales.x.grid.color = colors.gridColor;
+            combinedChart.options.scales.y.grid.color = colors.gridColor;
             
             // Update text colors
-            const textColor = isLightTheme ? '#333333' : '#ffffff';
+            combinedChart.options.scales.x.ticks.color = colors.mutedText;
+            combinedChart.options.scales.y.ticks.color = colors.mutedText;
             
             // Update title colors
-            combinedChart.options.scales.x.title.color = textColor;
-            combinedChart.options.scales.y.title.color = textColor;
+            if (combinedChart.options.scales.x.title) {
+                combinedChart.options.scales.x.title.color = colors.mutedText;
+            }
+            if (combinedChart.options.scales.y.title) {
+                combinedChart.options.scales.y.title.color = colors.mutedText;
+            }
             
-            // Update tick colors
-            combinedChart.options.scales.x.ticks.color = textColor;
-            combinedChart.options.scales.y.ticks.color = textColor;
+            // Update legend colors
+            if (combinedChart.options.plugins.legend && combinedChart.options.plugins.legend.labels) {
+                combinedChart.options.plugins.legend.labels.color = colors.textColor;
+            }
+            
+            // Update tooltip colors
+            if (combinedChart.options.plugins.tooltip) {
+                combinedChart.options.plugins.tooltip.backgroundColor = colors.tooltipBg;
+                combinedChart.options.plugins.tooltip.titleColor = colors.textColor;
+                combinedChart.options.plugins.tooltip.bodyColor = colors.textColor;
+                combinedChart.options.plugins.tooltip.borderColor = colors.tooltipBorder;
+            }
+            
+            // Update canvas background
+            const ctx = combinedChart.ctx;
+            if (ctx && ctx.canvas) {
+                ctx.canvas.style.backgroundColor = colors.background;
+            }
+            
+            // Update dataset background colors (especially for gradients)
+            combinedChart.data.datasets.forEach((dataset, index) => {
+                if (dataset.label === 'BTC Price' && dataset.backgroundColor) {
+                    // Recreate gradient for BTC price dataset
+                    const gradient = ctx.createLinearGradient(0, 0, 0, combinedChart.height);
+                    gradient.addColorStop(0, isLightTheme ? 'rgba(247, 147, 26, 0.08)' : 'rgba(247, 147, 26, 0.12)');
+                    gradient.addColorStop(1, 'rgba(247, 147, 26, 0.02)');
+                    dataset.backgroundColor = gradient;
+                }
+            });
         }
 
         function generateQRCode() {

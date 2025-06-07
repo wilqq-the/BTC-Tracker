@@ -13,7 +13,7 @@ class PriceCache {
             exchangeRates: {}, // All exchange rates
             timestamp: null
         };
-        this.updateInterval = 5 * 60 * 1000; // 5 minutes
+        this.updateInterval = 10 * 60 * 1000; // 10 minutes (increased from 5 to reduce Yahoo Finance requests)
         this.isUpdating = false;
         this.cacheFilePath = pathManager.getPriceCachePath();
         this.lastDayUpdate = null;
@@ -102,14 +102,15 @@ class PriceCache {
         
         this.isUpdating = true;
         try {
-            console.log('[priceCache] Updating BTC prices and exchange rates');
+            console.log('[priceCache] Updating BTC prices and exchange rates using Yahoo Finance');
             
-            const btcResponse = await axios.get('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=eur,usd');
-            const btcPriceEUR = btcResponse.data.bitcoin.eur;
-            const btcPriceUSD = btcResponse.data.bitcoin.usd;
+            // Use Yahoo Finance for BTC prices
+            const { btcPriceEUR, btcPriceUSD } = await this.fetchBTCPricesFromYahoo();
+            
+            // Use Yahoo Finance for exchange rates
+            const exchangeRates = await this.fetchExchangeRatesFromYahoo();
             
             const now = new Date();
-            const currentDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
             
             // Check if we need to update the previous day price
             if (!this.lastDayUpdate || now.getDate() !== this.lastDayUpdate.getDate()) {
@@ -122,7 +123,6 @@ class PriceCache {
             }
             
             // Check if we need to update the previous week price
-            // Update on Mondays (day 1) or if we haven't updated in over 7 days
             const daysSinceLastUpdate = this.lastWeekUpdate ? 
                 Math.floor((now - this.lastWeekUpdate) / (24 * 60 * 60 * 1000)) : 
                 8; // Force update if never updated
@@ -138,52 +138,28 @@ class PriceCache {
                 console.log(`[priceCache] Keeping previous week price: ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
             }
             
-            const eurRatesResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
-            const eurRates = eurRatesResponse.data.rates;
-            
-            const usdRatesResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-            const usdRates = usdRatesResponse.data.rates;
-            
-            const exchangeRates = {
-                EUR: {
-                    USD: eurRates.USD || 1.1,
-                    PLN: eurRates.PLN || 4.5,
-                    GBP: eurRates.GBP || 0.85,
-                    JPY: eurRates.JPY || 160,
-                    CHF: eurRates.CHF || 0.95,
-                    BRL: eurRates.BRL || 6.0
-                },
-                USD: {
-                    EUR: usdRates.EUR || 0.9,
-                    PLN: usdRates.PLN || 4.0,
-                    GBP: usdRates.GBP || 0.75,
-                    JPY: usdRates.JPY || 145,
-                    CHF: usdRates.CHF || 0.85,
-                    BRL: usdRates.BRL || 5.2
-                }
-            };
-            
             this.cache = {
                 ...this.cache,
                 priceEUR: btcPriceEUR,
                 priceUSD: btcPriceUSD,
                 price: btcPriceEUR,
-                eurUsd: eurRates.USD,
-                eurPln: eurRates.PLN,
-                eurGbp: eurRates.GBP,
-                eurJpy: eurRates.JPY,
-                eurChf: eurRates.CHF,
-                eurBrl: eurRates.BRL,
+                eurUsd: exchangeRates.EUR.USD,
+                eurPln: exchangeRates.EUR.PLN,
+                eurGbp: exchangeRates.EUR.GBP,
+                eurJpy: exchangeRates.EUR.JPY,
+                eurChf: exchangeRates.EUR.CHF,
+                eurBrl: exchangeRates.EUR.BRL,
                 exchangeRates,
                 timestamp: new Date().toISOString()
             };
             
             await this.saveToDisk();
-            console.log(`[priceCache] BTC prices: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
+            console.log(`[priceCache] BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
         } catch (error) {
-            console.error('[priceCache] Error updating prices');
+            console.error('[priceCache] Error updating prices from Yahoo Finance:', error.message);
             
             if (!this.cache.priceEUR && !this.cache.priceUSD) {
+                console.log('[priceCache] Setting default fallback values');
                 this.cache = {
                     ...this.cache,
                     priceEUR: 0,
@@ -194,10 +170,10 @@ class PriceCache {
                     eurGbp: 0.85,
                     eurJpy: 160,
                     eurChf: 0.95,
-                    eurBrl: 6.0,
+                    eurBrl: 6.34, // Updated BRL rate
                     exchangeRates: {
-                        EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.0 },
-                        USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.2 }
+                        EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34 },
+                        USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76 }
                     },
                     timestamp: new Date().toISOString()
                 };
@@ -381,6 +357,213 @@ class PriceCache {
         // 2. Previous day or week price was updated
         const fiveMinutesAgo = 5 * 60; // in seconds
         return lastUpdate.secondsAgo > fiveMinutesAgo;
+    }
+
+    // Clear the cache and force immediate refresh
+    async clearCache() {
+        console.log('[priceCache] Clearing cache and forcing immediate refresh');
+        
+        // Reset cache to initial state but keep structure
+        this.cache = {
+            priceEUR: null,
+            priceUSD: null,
+            previousDayPrice: this.cache.previousDayPrice, // Keep historical data
+            previousWeekPrice: this.cache.previousWeekPrice, // Keep historical data
+            exchangeRates: {},
+            timestamp: null
+        };
+        
+        // Remove the cache file
+        try {
+            await fs.unlink(this.cacheFilePath);
+            console.log('[priceCache] Cache file removed');
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                console.error('[priceCache] Error removing cache file:', error);
+            }
+        }
+        
+        // Force immediate update
+        await this.updatePrices();
+        
+        console.log('[priceCache] Cache cleared and refreshed');
+    }
+
+    // Fetch BTC prices from Yahoo Finance
+    async fetchBTCPricesFromYahoo() {
+        try {
+            const endDate = Math.floor(Date.now() / 1000);
+            const startDate = endDate - (24 * 60 * 60); // 1 day ago
+
+            // Fetch both EUR and USD prices
+            const [btcEurData, btcUsdData] = await Promise.all([
+                this.fetchYahooFinanceData('BTC-EUR', startDate, endDate),
+                this.fetchYahooFinanceData('BTC-USD', startDate, endDate)
+            ]);
+
+            // Get the latest prices
+            const eurDates = Object.keys(btcEurData).sort();
+            const usdDates = Object.keys(btcUsdData).sort();
+
+            if (eurDates.length === 0 || usdDates.length === 0) {
+                throw new Error('No BTC price data available from Yahoo Finance');
+            }
+
+            const latestEurDate = eurDates[eurDates.length - 1];
+            const latestUsdDate = usdDates[usdDates.length - 1];
+
+            const btcPriceEUR = btcEurData[latestEurDate].close;
+            const btcPriceUSD = btcUsdData[latestUsdDate].close;
+
+            console.log(`[priceCache] Fetched BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD`);
+
+            return { btcPriceEUR, btcPriceUSD };
+        } catch (error) {
+            console.error('[priceCache] Error fetching BTC prices from Yahoo Finance:', error.message);
+            throw error;
+        }
+    }
+
+    // Fetch exchange rates from Yahoo Finance
+    async fetchExchangeRatesFromYahoo() {
+        try {
+            const endDate = Math.floor(Date.now() / 1000);
+            const startDate = endDate - (24 * 60 * 60); // 1 day ago
+
+            // Fetch only essential currency pairs to reduce API calls
+            const essentialPairs = [
+                'EURUSD=X', 'EURPLN=X', 'EURGBP=X', 'EURJPY=X', 'EURCHF=X', 'EURBRL=X'
+            ];
+
+            console.log(`[priceCache] Fetching ${essentialPairs.length} essential currency pairs to minimize Yahoo Finance requests`);
+
+            const ratePromises = essentialPairs.map(pair => 
+                this.fetchYahooFinanceData(pair, startDate, endDate).catch(error => {
+                    console.warn(`[priceCache] Failed to fetch ${pair}:`, error.message);
+                    return null;
+                })
+            );
+
+            const rateResults = await Promise.all(ratePromises);
+
+            // Process results and build exchange rates object
+            const exchangeRates = {
+                EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34 },
+                USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76 }
+            };
+
+            // Update with actual rates where available
+            rateResults.forEach((data, index) => {
+                if (data && Object.keys(data).length > 0) {
+                    const pair = essentialPairs[index];
+                    const dates = Object.keys(data).sort();
+                    const latestDate = dates[dates.length - 1];
+                    const rate = data[latestDate].close;
+
+                    // Map the rates to our structure
+                    if (pair === 'EURUSD=X') {
+                        exchangeRates.EUR.USD = rate;
+                        exchangeRates.USD.EUR = 1 / rate; // Calculate inverse
+                    } else if (pair === 'EURPLN=X') {
+                        exchangeRates.EUR.PLN = rate;
+                        exchangeRates.USD.PLN = rate / exchangeRates.EUR.USD; // Calculate USD/PLN
+                    } else if (pair === 'EURGBP=X') {
+                        exchangeRates.EUR.GBP = rate;
+                        exchangeRates.USD.GBP = rate / exchangeRates.EUR.USD; // Calculate USD/GBP
+                    } else if (pair === 'EURJPY=X') {
+                        exchangeRates.EUR.JPY = rate;
+                        exchangeRates.USD.JPY = rate / exchangeRates.EUR.USD; // Calculate USD/JPY
+                    } else if (pair === 'EURCHF=X') {
+                        exchangeRates.EUR.CHF = rate;
+                        exchangeRates.USD.CHF = rate / exchangeRates.EUR.USD; // Calculate USD/CHF
+                    } else if (pair === 'EURBRL=X') {
+                        exchangeRates.EUR.BRL = rate;
+                        exchangeRates.USD.BRL = rate / exchangeRates.EUR.USD; // Calculate USD/BRL
+                    }
+                }
+            });
+
+            console.log(`[priceCache] Fetched exchange rates from Yahoo Finance: EUR/USD=${exchangeRates.EUR.USD}, EUR/BRL=${exchangeRates.EUR.BRL}`);
+
+            return exchangeRates;
+        } catch (error) {
+            console.error('[priceCache] Error fetching exchange rates from Yahoo Finance:', error.message);
+            throw error;
+        }
+    }
+
+    // Yahoo Finance data fetching method (copied from server.js)
+    async fetchYahooFinanceData(symbol, startDate, endDate) {
+        try {
+            const url = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`;
+            
+            const params = {
+                period1: startDate,
+                period2: endDate,
+                interval: '1d',
+                events: 'history',
+                includeAdjustedClose: true,
+                region: 'US',
+                lang: 'en-US',
+                corsDomain: 'finance.yahoo.com'
+            };
+            
+            const headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Origin': 'https://finance.yahoo.com',
+                'Referer': 'https://finance.yahoo.com',
+                'Sec-Fetch-Site': 'same-site',
+                'Sec-Fetch-Mode': 'cors',
+                'Sec-Fetch-Dest': 'empty'
+            };
+            
+            const response = await axios.get(url, { 
+                params,
+                headers,
+                timeout: 10000
+            });
+            
+            if (!response.data || response.data.error) {
+                throw new Error(`Yahoo Finance API error: ${response.data?.error?.description || 'Unknown error'}`);
+            }
+            
+            if (!response.data.chart || !response.data.chart.result || !response.data.chart.result[0]) {
+                throw new Error('Invalid data format received from Yahoo Finance');
+            }
+            
+            const result = response.data.chart.result[0];
+            if (!result.timestamp || !result.indicators || !result.indicators.quote || !result.indicators.quote[0]) {
+                throw new Error('Missing required data fields in Yahoo Finance response');
+            }
+            
+            const timestamps = result.timestamp;
+            const quotes = result.indicators.quote[0];
+            
+            // Process data and create a map with date as key
+            const data = {};
+            timestamps.forEach((timestamp, i) => {
+                if (quotes.close && quotes.close[i] !== null) {
+                    const date = new Date(timestamp * 1000).toISOString().split('T')[0];
+                    data[date] = {
+                        date,
+                        timestamp: timestamp * 1000,
+                        close: quotes.close[i]
+                    };
+                }
+            });
+            
+            if (Object.keys(data).length === 0) {
+                throw new Error('No valid data points found in Yahoo Finance response');
+            }
+            
+            return data;
+            
+        } catch (error) {
+            console.error(`[priceCache] Error fetching data for symbol ${symbol}:`, error.message);
+            throw error;
+        }
     }
 }
 

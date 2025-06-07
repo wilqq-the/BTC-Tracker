@@ -245,6 +245,12 @@
         .light-theme .mobile-theme-toggle .fa-moon {
             display: none;
         }
+
+        /* Spinner animation for auth loading */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -398,11 +404,102 @@
         </div>
     </template>
 
+    <!-- Subtle authentication loading indicator -->
+    <div id="authLoadingOverlay" style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 15px 20px;
+        z-index: 9999;
+        color: var(--text-color, #fff);
+        font-family: 'JetBrains Mono', monospace;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9rem;
+    ">
+        <div style="
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--accent-color, #f7931a);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        "></div>
+        <span style="color: var(--accent-color, #f7931a);">
+            <i class="fas fa-shield-alt" style="margin-right: 6px;"></i>Verifying access...
+        </span>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="/js/ticker.js"></script>
     <script src="js/electron-integration.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Check authentication before loading anything
+        async function checkAuthAndInitialize() {
+            const authOverlay = document.getElementById('authLoadingOverlay');
+            let overlayTimeout;
+            
+            try {
+                // Show loading indicator after a short delay (only for slow connections)
+                overlayTimeout = setTimeout(() => {
+                    if (authOverlay) {
+                        authOverlay.style.opacity = '1';
+                        authOverlay.style.transform = 'translateY(0)';
+                    }
+                }, 150); // Show after 150ms if still loading
+                
+                // Make a simple authenticated request to check if we're logged in
+                const response = await fetch('/api/settings', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                // Clear the timeout since we got a response
+                clearTimeout(overlayTimeout);
+                
+                // If we get HTML response instead of JSON, we're being redirected to login
+                const contentType = response.headers.get('content-type');
+                if (!response.ok || (contentType && contentType.includes('text/html'))) {
+                    console.log('Not authenticated, redirecting to login...');
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                // If we get here, we're authenticated - proceed with normal initialization
+                console.log('Authentication verified, loading exchanges page...');
+                
+                // Hide the authentication loading overlay smoothly
+                if (authOverlay) {
+                    authOverlay.style.opacity = '0';
+                    authOverlay.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        authOverlay.style.display = 'none';
+                    }, 300);
+                }
+                
+                // Initialize the page
+                await initializePage();
+                
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                clearTimeout(overlayTimeout);
+                // On any error, redirect to login to be safe
+                window.location.href = '/login';
+            }
+        }
+
+        async function initializePage() {
             // Set current year in footer
             document.getElementById('current-year').textContent = new Date().getFullYear();
             
@@ -943,6 +1040,11 @@
                   });
               });
             }
+        }
+
+        // Initialize page after authentication check
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndInitialize();
         });
 
         function generateQRCode() {

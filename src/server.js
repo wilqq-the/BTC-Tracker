@@ -694,9 +694,9 @@ async function fetchYahooFinanceData(symbol, startDate, endDate) {
     }
 }
 
-// Update data periodically
-setInterval(fetchCurrentBTCPrice, 5 * 60 * 1000);
-setInterval(fetchExchangeRates, 60 * 60 * 1000);
+// Update data periodically (reduced frequency to avoid Yahoo Finance rate limits)
+setInterval(fetchCurrentBTCPrice, 10 * 60 * 1000); // Every 10 minutes (was 5 minutes)
+setInterval(fetchExchangeRates, 2 * 60 * 60 * 1000); // Every 2 hours (was 1 hour)
 
 // Update historical data refresh to use settings
 function setupHistoricalDataRefresh() {
@@ -1098,6 +1098,11 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 secondaryCurrency: secondaryCurrency,
                 secondaryRate: secondaryRate,
                 eurUsd: cachedPrices.eurUsd || 1.13,
+                eurPln: cachedPrices.eurPln || 4.28,
+                eurGbp: cachedPrices.eurGbp || 0.85,
+                eurJpy: cachedPrices.eurJpy || 160,
+                eurChf: cachedPrices.eurChf || 0.95,
+                eurBrl: cachedPrices.eurBrl || 6.0,
     
                 currentPrice: {
                     [mainCurrency.toLowerCase()]: currentBTCPriceMain || 0,
@@ -1725,7 +1730,7 @@ app.get('/api/settings', isAuthenticated, (req, res) => {
 });
 
 // Update settings endpoint
-app.put('/api/settings', isAuthenticated, (req, res) => {
+app.put('/api/settings', isAuthenticated, async (req, res) => {
     try {
         const newSettings = req.body;
         
@@ -1738,6 +1743,37 @@ app.put('/api/settings', isAuthenticated, (req, res) => {
         
         // Save the new settings
         if (saveSettings(newSettings)) {
+            // Check if currency settings changed
+            const mainCurrencyChanged = 
+                currentSettings.mainCurrency !== newSettings.mainCurrency;
+            const secondaryCurrencyChanged = 
+                currentSettings.secondaryCurrency !== newSettings.secondaryCurrency;
+            
+            // If currency settings changed, invalidate cache to force immediate recalculation
+            if (mainCurrencyChanged || secondaryCurrencyChanged) {
+                console.log('[server.js] Currency settings changed, invalidating summary cache');
+                console.log(`[server.js] Main currency: ${currentSettings.mainCurrency} → ${newSettings.mainCurrency}`);
+                console.log(`[server.js] Secondary currency: ${currentSettings.secondaryCurrency} → ${newSettings.secondaryCurrency}`);
+                
+                // Force immediate cache invalidation
+                summaryCache.invalidateCache();
+                
+                // Also clear price cache to ensure fresh exchange rates
+                await priceCache.clearCache();
+                
+                // Force fresh rate fetch
+                setTimeout(async () => {
+                    try {
+                        console.log('[server.js] Fetching fresh exchange rates after currency change');
+                        await currencyConverter.ensureRates();
+                        await priceCache.updatePrices();
+                        console.log('[server.js] Fresh exchange rates fetched successfully');
+                    } catch (error) {
+                        console.error('[server.js] Error fetching fresh rates after currency change:', error);
+                    }
+                }, 100);
+            }
+            
             // Check if historical data settings changed
             const refreshHoursChanged = 
                 currentSettings.historicalDataRefreshHours !== newSettings.historicalDataRefreshHours;
@@ -1766,7 +1802,21 @@ app.put('/api/settings', isAuthenticated, (req, res) => {
                 }
             }
             
-            res.json({ message: 'Settings saved', settings: newSettings });
+            // Add response indicating currency changes for client-side handling
+            const responseData = { 
+                message: 'Settings saved', 
+                settings: newSettings 
+            };
+            
+            if (mainCurrencyChanged || secondaryCurrencyChanged) {
+                responseData.settingsChanged = {
+                    mainCurrency: mainCurrencyChanged,
+                    secondaryCurrency: secondaryCurrencyChanged
+                };
+                responseData.message = 'Settings saved - currency settings changed, cache invalidated';
+            }
+            
+            res.json(responseData);
         } else {
             res.status(500).json({ error: 'Failed to save settings' });
         }
@@ -2170,19 +2220,44 @@ app.post('/pin-login', async (req, res) => {
 
 // Add additional admin routes
 
+// Endpoint to test Yahoo Finance fetching
+app.get('/api/admin/test-yahoo', isAuthenticated, async (req, res) => {
+    try {
+        console.log('[server.js] Testing Yahoo Finance integration requested by user:', req.user?.username || 'unknown');
+        
+        // Force fresh price cache update
+        await priceCache.clearCache();
+        
+        const cachedPrices = priceCache.getCachedPrices();
+        
+        res.json({ 
+            success: true, 
+            message: 'Yahoo Finance test completed',
+            data: {
+                priceEUR: cachedPrices.priceEUR,
+                priceUSD: cachedPrices.priceUSD,
+                eurBrl: cachedPrices.eurBrl,
+                exchangeRates: cachedPrices.exchangeRates,
+                timestamp: cachedPrices.timestamp
+            }
+        });
+    } catch (error) {
+        console.error('[server.js] Error testing Yahoo Finance:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to test Yahoo Finance',
+            error: error.message 
+        });
+    }
+});
+
 // Endpoint to clear the summary cache
 app.post('/api/admin/clear-cache', isAuthenticated, (req, res) => {
     try {
-        // Verify the user is an admin
-        if (!req.user || !req.user.isAdmin) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Only administrators can clear the cache' 
-            });
-        }
-        
         // Clear the summary cache
         summaryCache.clearCache();
+        
+        console.log('[server.js] Summary cache cleared by user:', req.user?.username || 'unknown');
         
         // Return success
         res.json({ 

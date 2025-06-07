@@ -134,6 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial fetch
     fetchPriceData();
     
-    // Update every minute
-    setInterval(fetchPriceData, 60000);
+    // Update every 5 minutes (reduced from 1 minute to avoid rate limits)
+    setInterval(fetchPriceData, 5 * 60 * 1000);
 }); 
