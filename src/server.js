@@ -2277,6 +2277,22 @@ app.post('/api/admin/clear-cache', isAuthenticated, (req, res) => {
     }
 });
 
+// Endpoint to get application version
+app.get('/api/version', (req, res) => {
+    try {
+        const packageJson = require('../package.json');
+        res.json({ 
+            version: packageJson.version,
+            name: packageJson.name
+        });
+    } catch (error) {
+        logger.error('[server.js] Error fetching version:', error);
+        res.status(500).json({ 
+            error: 'Failed to fetch version information'
+        });
+    }
+});
+
 // Add endpoint for historical price data 
 app.get('/api/history', isAuthenticated, (req, res) => {
     try {

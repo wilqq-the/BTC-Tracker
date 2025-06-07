@@ -2484,4 +2484,126 @@ footer {
 
 #minimize-to-tray:hover {
     background-color: var(--hover-color);
+}
+
+/* Enhanced Donation Section Styles */
+.payment-method-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.method-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--card-background);
+    border: none;
+    color: var(--text-secondary-color);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-right: 1px solid var(--border-color);
+}
+
+.method-btn:last-child {
+    border-right: none;
+}
+
+.method-btn:hover {
+    background: var(--hover-color);
+    color: var(--text-color);
+}
+
+.method-btn.active {
+    background: var(--primary-color);
+    color: #000000;
+    font-weight: 600;
+}
+
+.method-btn.active:hover {
+    background: var(--secondary-color);
+}
+
+.donation-section {
+    transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.donation-section .donation-address p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.payment-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--hover-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.payment-info i {
+    color: var(--primary-color);
+    opacity: 0.7;
+}
+
+/* Lightning-specific styling */
+#lightningSection .method-btn.active {
+    background: #f7931a;
+    color: #000000;
+}
+
+#lightningSection .payment-info {
+    border-left: 3px solid #f7931a;
+}
+
+/* Professional theme enhancements for donation section */
+.professional-theme .method-btn.active {
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    color: #000000;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.3);
+}
+
+.professional-theme .payment-info {
+    background: rgba(0, 255, 136, 0.1);
+    border-left: 3px solid #00ff88;
+}
+
+.professional-theme .payment-info i {
+    color: #00ff88;
+}
+
+/* Mobile responsive adjustments for donation */
+@media (max-width: 480px) {
+    .method-btn {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+    
+    .payment-info {
+        font-size: 0.8rem;
+        padding: 8px;
+    }
+    
+    .donation-content {
+        padding: 15px;
+    }
 } 

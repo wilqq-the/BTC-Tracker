@@ -2213,21 +2213,53 @@
         <div class="donation-tooltip" id="donationTooltip">
             <div class="donation-content">
                 <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
-                <div class="donation-address">
-                    <p>BTC Address:</p>
-                    <div class="address-container">
-                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
-                        <button onclick="copyAddress()" title="Copy address">
-                            <i class="fas fa-copy"></i>
-                        </button>
-                    </div>
+                
+                <!-- Payment Method Toggle -->
+                <div class="payment-method-toggle">
+                    <button class="method-btn" data-method="onchain" id="onchainBtn">
+                        <i class="fab fa-bitcoin"></i> On-Chain
+                    </button>
+                    <button class="method-btn active" data-method="lightning" id="lightningBtn">
+                        <i class="fas fa-bolt"></i> Lightning
+                    </button>
                 </div>
-                <div class="qr-container">
-                    <div id="qrcode"></div>
+                
+                <!-- Lightning Section (Default) -->
+                <div class="donation-section" id="lightningSection">
+                    <div class="donation-address">
+                        <p><i class="fas fa-bolt"></i> Lightning Address:</p>
+                        <div class="address-container">
+                            <code id="lightningAddress">szymon_@strike.me</code>
+                            <button onclick="copyAddress('lightning')" title="Copy Lightning address">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="qr-container">
+                        <div id="lightningQrcode"></div>
+                    </div>
+                    <p class="payment-info"><i class="fas fa-bolt"></i> Instant payments with minimal fees via Lightning Network</p>
+                </div>
+                
+                <!-- On-Chain Section -->
+                <div class="donation-section" id="onchainSection" style="display: none;">
+                    <div class="donation-address">
+                        <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
+                        <div class="address-container">
+                            <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                            <button onclick="copyAddress('btc')" title="Copy address">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="qr-container">
+                        <div id="qrcode"></div>
+                    </div>
+                    <p class="payment-info"><i class="fas fa-info-circle"></i> Standard Bitcoin transaction (slower, higher fees)</p>
                 </div>
             </div>
         </div>
-        <div class="license">© <span id="current-year">2023</span> BTC Tracker. Released under the MIT License.</div>
+        <div class="license">© <span id="current-year">2023</span> BTC Tracker v<span id="app-version">Loading...</span>. Released under the MIT License.</div>
     </footer>
 
     <!-- Daily Ticker Bar -->
@@ -2255,6 +2287,17 @@
     <script>
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Fetch and display app version
+        fetch('/api/version')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('app-version').textContent = data.version;
+            })
+            .catch(error => {
+                console.error('Failed to fetch version:', error);
+                document.getElementById('app-version').textContent = '0.5.3';
+            });
         
         // Register Chart.js plugins - using the correct global variable name from the plugin
         // ChartAnnotation is not defined, we need to use the actual global variable
@@ -4652,45 +4695,208 @@
             
             // Get current theme
             const isLightTheme = document.body.classList.contains('light-theme');
+            const isProfessionalTheme = document.body.classList.contains('professional-theme');
             
-            // Generate QR code
-            QRCode.toCanvas(canvas, address, {
+            // Generate QR code with theme-appropriate colors
+            let colors;
+            if (isProfessionalTheme) {
+                colors = {
+                    dark: '#00ff88',
+                    light: '#000000'
+                };
+            } else if (isLightTheme) {
+                colors = {
+                    dark: '#000000',
+                    light: '#ffffff'
+                };
+            } else {
+                colors = {
+                    dark: '#ffffff',
+                    light: '#000000'
+                };
+            }
+            
+            QRCode.toCanvas(canvas, `bitcoin:${address}`, {
                 width: 150,
                 margin: 1,
-                color: {
-                    dark: isLightTheme ? '#000000' : '#ffffff',
-                    light: isLightTheme ? '#ffffff' : '#000000'
-                }
+                color: colors
             }, function (error) {
                 if (error) {
-                    console.error('Error generating QR code:', error);
+                    console.error('Error generating Bitcoin QR code:', error);
                     qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
                 }
             });
         }
 
-        function copyAddress() {
-            const address = document.getElementById('btcAddress').textContent;
-            navigator.clipboard.writeText(address).then(() => {
-                const button = event.currentTarget;
-                const originalIcon = button.innerHTML;
-                button.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(() => {
-                    button.innerHTML = originalIcon;
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy address:', err);
-                alert('Failed to copy address. Please try again.');
+        function generateLightningQRCode() {
+            const lightningAddress = document.getElementById('lightningAddress').textContent;
+            const qrcodeDiv = document.getElementById('lightningQrcode');
+            
+            // Skip QR generation if no Lightning address is set
+            if (!lightningAddress || lightningAddress === 'Add your Lightning address here') {
+                qrcodeDiv.innerHTML = '<p style="color: var(--text-secondary-color); text-align: center; font-size: 0.8rem; padding: 20px;">Lightning address not configured</p>';
+                return;
+            }
+            
+            // Clear any existing QR code
+            qrcodeDiv.innerHTML = '';
+            
+            // Create a canvas element
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            // Get current theme
+            const isLightTheme = document.body.classList.contains('light-theme');
+            const isProfessionalTheme = document.body.classList.contains('professional-theme');
+            
+            // Generate Lightning QR code with theme-appropriate colors
+            let colors;
+            if (isProfessionalTheme) {
+                colors = {
+                    dark: '#00ff88',
+                    light: '#000000'
+                };
+            } else if (isLightTheme) {
+                colors = {
+                    dark: '#000000',
+                    light: '#ffffff'
+                };
+            } else {
+                colors = {
+                    dark: '#ffffff',
+                    light: '#000000'
+                };
+            }
+            
+            QRCode.toCanvas(canvas, `lightning:${lightningAddress}`, {
+                width: 150,
+                margin: 1,
+                color: colors
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating Lightning QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate Lightning QR code</p>';
+                }
             });
         }
 
-        // Handle donation tooltip
+        function copyAddress(type = 'btc') {
+            let address;
+            if (type === 'lightning') {
+                address = document.getElementById('lightningAddress').textContent;
+            } else {
+                address = document.getElementById('btcAddress').textContent;
+            }
+            
+            const button = event.currentTarget;
+            const originalIcon = button.innerHTML;
+            
+            // Try modern clipboard API first
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(address)
+                    .then(() => {
+                        // Success - show checkmark
+                        button.innerHTML = '<i class="fas fa-check"></i>';
+                        setTimeout(() => {
+                            button.innerHTML = originalIcon;
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.warn('Clipboard API failed, trying fallback method:', err);
+                        // Try fallback method
+                        tryFallbackCopy(address, button, originalIcon);
+                    });
+            } else {
+                // Fallback for older browsers
+                tryFallbackCopy(address, button, originalIcon);
+            }
+        }
+        
+        function tryFallbackCopy(address, button, originalIcon) {
+            try {
+                // Create a temporary textarea element
+                const textArea = document.createElement('textarea');
+                textArea.value = address;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                textArea.style.top = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                
+                // Try execCommand
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (successful) {
+                    // Success - show checkmark
+                    button.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(() => {
+                        button.innerHTML = originalIcon;
+                    }, 2000);
+                } else {
+                    throw new Error('execCommand failed');
+                }
+            } catch (err) {
+                console.error('All copy methods failed:', err);
+                // Show error message only if all methods fail
+                button.innerHTML = '<i class="fas fa-times"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+                
+                // Show user-friendly message
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #ff4444;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    font-family: 'JetBrains Mono', monospace;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                `;
+                toast.textContent = 'Copy failed. Please select and copy manually.';
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 3000);
+            }
+        }
+
+        // Handle donation tooltip and payment method toggle
         document.addEventListener('DOMContentLoaded', () => {
             const donationLink = document.getElementById('donationLink');
             const donationTooltip = document.getElementById('donationTooltip');
+            const onchainBtn = document.getElementById('onchainBtn');
+            const lightningBtn = document.getElementById('lightningBtn');
+            const onchainSection = document.getElementById('onchainSection');
+            const lightningSection = document.getElementById('lightningSection');
 
-            // Generate QR code once when page loads
+            // Generate QR codes when page loads
             generateQRCode();
+            generateLightningQRCode();
+
+            // Payment method toggle functionality
+            onchainBtn.addEventListener('click', () => {
+                // Switch to on-chain
+                onchainBtn.classList.add('active');
+                lightningBtn.classList.remove('active');
+                onchainSection.style.display = 'block';
+                lightningSection.style.display = 'none';
+            });
+
+            lightningBtn.addEventListener('click', () => {
+                // Switch to lightning
+                lightningBtn.classList.add('active');
+                onchainBtn.classList.remove('active');
+                lightningSection.style.display = 'block';
+                onchainSection.style.display = 'none';
+            });
 
             let tooltipTimeout;
 

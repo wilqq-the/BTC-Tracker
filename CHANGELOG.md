@@ -5,6 +5,18 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2025-06-07
+
+- **Lightning Network donation support** - Dual payment system with Lightning Network as default option for instant, low-fee donations alongside traditional on-chain Bitcoin payments
+
+### Enhanced Currency Logging
+- Added detailed currency exchange rate debugging and monitoring
+- New debug modes: `./start.sh currency` for Yahoo Finance API logging
+- Enhanced error handling and sequential fetching to prevent rate limiting
+- Improved logging output with professional formatting (removed emojis)
+
+---
+
 ## [0.5.2] - 2025-06-07
 
 ### 🚀 Major Fixes & Enhancements
