@@ -1705,6 +1705,201 @@
 
         /* Enhanced chart styling */
 
+        /* Portfolio Add Transaction Buttons */
+        .sidebar-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .sidebar-add-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: #000;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+
+        .sidebar-add-btn:hover {
+            background: rgba(0, 0, 0, 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-add-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Mobile Portfolio Add Button */
+        .mobile-portfolio-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        .mobile-add-btn {
+            width: 28px;
+            height: 28px;
+            background: rgba(var(--accent-color-rgb), 0.2);
+            border: 1px solid rgba(var(--accent-color-rgb), 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            transition: all 0.2s ease;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .mobile-add-btn:hover {
+            background: rgba(var(--accent-color-rgb), 0.3);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.3);
+        }
+
+        .mobile-add-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Modal styles for transaction form */
+        /* Modal styles (copied from admin.html) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            padding: 25px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid #333;
+        }
+        
+        .modal-content h2 {
+            color: #f7931a;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 4px;
+            background-color: #222;
+            color: #eee;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #f7931a;
+            outline: none;
+        }
+
+        .help-text {
+            font-size: 0.8rem;
+            color: var(--muted-text-color);
+            margin-top: 0.25rem;
+            margin-bottom: 0;
+        }
+        
+        .form-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #f7931a;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background-color: #e67e00;
+        }
+        
+        .btn-secondary {
+            background-color: #333;
+            color: #eee;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #444;
+        }
+        
+        #calculatedCost {
+            padding: 10px;
+            background-color: #333;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+
+
         /* Ensure mobile elements are hidden on desktop */
         .mobile-portfolio-header,
         .mobile-simple-chart,
@@ -1765,7 +1960,12 @@
             <!-- Sidebar Portfolio Overview -->
             <aside class="portfolio-sidebar">
                 <div class="sidebar-header">
-                    <h2><i class="fas fa-wallet"></i> Portfolio</h2>
+                    <div class="sidebar-header-top">
+                        <h2><i class="fas fa-wallet"></i> Portfolio</h2>
+                        <button class="sidebar-add-btn" id="sidebarAddBtn" title="Add new transaction">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                     <div class="last-updated-sidebar">
                         <i class="fas fa-clock"></i>
                         <span id="lastUpdateSidebar">Loading...</span>
@@ -1854,7 +2054,12 @@
             <main class="main-content">
                 <!-- Modern Mobile Portfolio Header (only visible on mobile) -->
                 <div class="mobile-portfolio-header" id="mobilePortfolioHeader" style="display: none;">
-                    <div class="mobile-portfolio-title">Portfolio Value</div>
+                    <div class="mobile-portfolio-header-top">
+                        <div class="mobile-portfolio-title">Portfolio Value</div>
+                        <button class="mobile-add-btn" id="mobileAddBtn" title="Add new transaction">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                     <div class="mobile-portfolio-value">
                         <span id="mobileCurrentValue">Loading...</span>
                         <span class="mobile-portfolio-currency" id="mobileCurrency">EUR</span>
@@ -1995,6 +2200,8 @@
             </main>
         </div>
     </div>
+
+
 
     <footer>
         <div class="footer-links">
@@ -3775,6 +3982,242 @@
             }
         }
 
+        // Quick Add Transaction functionality
+        function showQuickAddTransaction() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            
+            // Get current date and time in ISO format for default value
+            const now = new Date();
+            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h2><i class="fas fa-plus"></i> Add New Transaction</h2>
+                    <form id="quickAddTransactionForm">
+                        <div class="form-group">
+                            <label for="quickAddDate"><i class="fas fa-calendar"></i> Date</label>
+                            <input type="datetime-local" id="quickAddDate" value="${localISOString}" required>
+                        </div>
+                                                 <div class="form-group">
+                             <label for="quickAddType"><i class="fas fa-exchange-alt"></i> Type</label>
+                             <select id="quickAddType" required>
+                                 <option value="buy">🟢 Buy</option>
+                                 <option value="sell">🔴 Sell</option>
+                             </select>
+                         </div>
+                        <div class="form-group">
+                            <label for="quickAddAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <input type="number" id="quickAddAmount" step="0.00000001" placeholder="0.12345678" required>
+                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
+                        </div>
+                                                <div class="form-row">
+                            <div class="form-group">
+                                <label for="quickAddPrice"><i class="fas fa-money-bill"></i> Price</label>
+                                <input type="number" id="quickAddPrice" step="0.01" placeholder="25000.00" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="quickAddCurrency"><i class="fas fa-globe"></i> Currency</label>
+                                <select id="quickAddCurrency" required>
+                                    <option value="EUR" selected>EUR €</option>
+                                    <option value="USD">USD $</option>
+                                    <option value="PLN">PLN zł</option>
+                                    <option value="GBP">GBP £</option>
+                                    <option value="JPY">JPY ¥</option>
+                                    <option value="CHF">CHF Fr</option>
+                                    <option value="BRL">BRL R$</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="quickAddFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
+                            <input type="number" id="quickAddFee" step="0.01" placeholder="5.00" value="0">
+                            <p class="help-text">Transaction fee in the specified currency</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div id="calculatedCost" style="margin-top: 10px; font-weight: bold;">
+                                Calculated Cost: <span>0.00</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-buttons">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Transaction
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            
+            // Add event listeners for price and amount to calculate cost automatically
+            const priceInput = document.getElementById('quickAddPrice');
+            const amountInput = document.getElementById('quickAddAmount');
+            const costDisplay = document.querySelector('#calculatedCost span');
+            
+            const updateCalculatedCost = () => {
+                const price = parseFloat(priceInput.value) || 0;
+                const amount = parseFloat(amountInput.value) || 0;
+                const cost = price * amount;
+                costDisplay.textContent = cost.toFixed(2);
+            };
+            
+            priceInput.addEventListener('input', updateCalculatedCost);
+            amountInput.addEventListener('input', updateCalculatedCost);
+            
+            // Add Bitcoin precision validation and easter egg
+            amountInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) {
+                    // Easter egg: Check if trying to add more than 21 million BTC
+                    if (value > 21000000) {
+                        const funnyMessages = [
+                            "🤔 Wait a minute... There are only 21 million Bitcoin in existence! Are you Satoshi Nakamoto? 👨‍💻",
+                            "🚀 Whoa there, time traveler! Did you mine all the Bitcoin from the future? ⏰",
+                            "😂 21 million BTC? That's more Bitcoin than exists! Maybe try buying the entire world first? 🌍",
+                            "🎩 Found the secret Bitcoin printer, eh? The Federal Reserve wants to know your location! 🏦",
+                            "🤑 21M+ BTC? At that point you'd own more Bitcoin than Bitcoin itself! That's some next-level HODLing! 💎🙌",
+                            "🧙‍♂️ Ah yes, the legendary Bitcoin whale who owns more Bitcoin than mathematically possible! 🐋",
+                            "🎪 Step right up! See the person who broke the laws of Bitcoin economics! 🎭"
+                        ];
+                        
+                        const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+                        
+                        // Show the funny message
+                        showNotification(randomMessage, 'error');
+                        
+                        // Reset to a reasonable amount
+                        this.value = "21000000";
+                        console.log("🎉 Easter egg triggered! Someone tried to add more than 21M BTC!");
+                        updateCalculatedCost();
+                        return;
+                    }
+                    
+                    // Round to 8 decimal places (satoshi precision)
+                    const rounded = Math.round(value * 100000000) / 100000000;
+                    if (rounded !== value) {
+                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
+                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
+                        updateCalculatedCost(); // Recalculate cost with rounded amount
+                    }
+                }
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+
+            // Handle form submission
+            const form = modal.querySelector('#quickAddTransactionForm');
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                try {
+                    const submitBtn = form.querySelector('.btn-primary');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                    submitBtn.disabled = true;
+                    
+                    const rawAmount = parseFloat(document.getElementById('quickAddAmount').value);
+                    const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
+                    
+                    const newTransaction = {
+                        date: new Date(document.getElementById('quickAddDate').value).toISOString(),
+                        type: document.getElementById('quickAddType').value,
+                        amount: roundedAmount,
+                        price: parseFloat(document.getElementById('quickAddPrice').value),
+                        currency: document.getElementById('quickAddCurrency').value,
+                        fee: parseFloat(document.getElementById('quickAddFee').value) || 0
+                    };
+                    
+                    // Calculate cost
+                    newTransaction.cost = newTransaction.amount * newTransaction.price;
+                    
+                    // Add the transaction
+                    const response = await fetch('/api/admin/transactions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(newTransaction)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to add transaction');
+                    }
+                    
+                    // Success!
+                    modal.remove();
+                    
+                    // Show success notification
+                    showNotification('✅ Transaction added successfully!', 'success');
+                    
+                    // Refresh the dashboard data
+                    console.log('Transaction added, refreshing dashboard...');
+                    loadData(true); // Force full refresh to include new transaction
+                    
+                } catch (error) {
+                    console.error('Error adding transaction:', error);
+                    showNotification('❌ Error adding transaction: ' + error.message, 'error');
+                    
+                    // Re-enable button
+                    const submitBtn = form.querySelector('.btn-primary');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Focus on amount field for quick entry
+            setTimeout(() => {
+                document.getElementById('quickAddAmount').focus();
+            }, 100);
+        }
+
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                ${type === 'success' ? 'background: linear-gradient(135deg, #48bb78, #38a169);' : 
+                  type === 'error' ? 'background: linear-gradient(135deg, #f56565, #e53e3e);' :
+                  'background: linear-gradient(135deg, #4299e1, #3182ce);'}
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Remove after 4 seconds
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 4000);
+        }
+
         // Initial load and setup intervals
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Page loaded, initializing...');
@@ -3916,6 +4359,15 @@
 
             // Theme toggle functionality
             setupThemeToggle();
+
+            // Setup add transaction buttons
+            document.getElementById('sidebarAddBtn').addEventListener('click', () => {
+                showQuickAddTransaction();
+            });
+            
+            document.getElementById('mobileAddBtn').addEventListener('click', () => {
+                showQuickAddTransaction();
+            });
             
             // Add debug functions to window for manual testing
             window.debugCurrency = async function() {

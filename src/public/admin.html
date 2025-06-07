@@ -869,20 +869,20 @@
                 <div class="import-export-grid">
                     <div class="import-section">
                         <h3><i class="fas fa-upload"></i> Import Data</h3>
-                        <form id="importForm" class="form" enctype="multipart/form-data">
-                            <div class="form-group">
-                                <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
-                                <input type="file" id="csvFile" name="file" accept=".csv" required>
-                            </div>
+                <form id="importForm" class="form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
+                        <input type="file" id="csvFile" name="file" accept=".csv" required>
+                    </div>
                             <div class="compact-buttons">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-upload"></i> Import
-                                </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
                                 <button type="button" class="btn btn-info btn-small" onclick="downloadCSVTemplate()">
                                     <i class="fas fa-file-download"></i> Template
-                                </button>
-                            </div>
-                        </form>
+                        </button>
+                    </div>
+                </form>
                     </div>
                     
                     <div class="export-section">
@@ -891,7 +891,7 @@
                         <div class="compact-buttons">
                             <button type="button" class="btn btn-secondary" onclick="exportTransactionsCSV()">
                                 <i class="fas fa-download"></i> Export CSV
-                            </button>
+                    </button>
                         </div>
                     </div>
                 </div>
@@ -907,7 +907,7 @@
                                     <li><code>Type</code>: "buy" or "sell"</li>
                                     <li><code>Amount (BTC)</code>: BTC amount</li>
                                     <li><code>Exchange</code>: Exchange or "manual"</li>
-                                </ul>
+                    </ul>
                             </div>
                             <div class="format-column">
                                 <strong>Financial Data:</strong>
@@ -1041,10 +1041,15 @@
                         <!-- Display current exchange rates -->
                         <div class="exchange-rates">
                             <div class="rates-header">
-                                <h3>Current Exchange Rates</h3>
-                                <button type="button" id="refreshRatesBtn" class="btn btn-secondary btn-small">
-                                    <i class="fas fa-sync"></i> Refresh Rates
-                                </button>
+                            <h3>Current Exchange Rates</h3>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" id="refreshRatesBtn" class="btn btn-secondary btn-small">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                    <button type="button" id="forceRefreshRatesBtn" class="btn btn-warning btn-small" style="background-color: #f39c12; color: #fff;" title="Force refresh - clears cache and retries multiple times">
+                                        <i class="fas fa-bolt"></i> Force
+                                    </button>
+                                </div>
                             </div>
                             <div id="ratesDisplay">
                                 <p>Loading exchange rates...</p>
@@ -1870,20 +1875,35 @@
             const ratesDisplay = document.getElementById('ratesDisplay');
             const rateValidation = document.getElementById('rateValidation');
             const validationMessage = document.getElementById('validationMessage');
-            const maxRetries = 3;
+            const maxRetries = 5; // Increased from 3 to 5
             
             try {
                 // Show loading state
                 ratesDisplay.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading exchange rates...</p>';
                 rateValidation.style.display = 'none';
                 
-                const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now());
+                // Add cache busting and longer timeout for problematic requests
+                const cacheParam = `t=${Date.now()}&retry=${retryCount}`;
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch(`/api/summary?priceOnly=true&${cacheParam}`, {
+                    signal: controller.signal,
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
-                    throw new Error('Failed to load rates');
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
-                console.log('Exchange rate data received:', data);
+                console.log(`Exchange rate data received (attempt ${retryCount + 1}):`, data);
                 
                 // Get current main and secondary currencies
                 const mainCurrency = document.getElementById('mainCurrency').value;
@@ -1905,18 +1925,33 @@
                 if (mainCurrency !== secondaryCurrency) {
                     const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
                     
-                    // If rate is missing and we haven't retried too many times, retry after a short delay
+                    // Enhanced retry logic with exponential backoff
                     if (rateInfo.status === 'unavailable' && retryCount < maxRetries) {
-                        console.log(`Exchange rate missing for ${mainCurrency}/${secondaryCurrency}, retrying in 2 seconds... (attempt ${retryCount + 1}/${maxRetries})`);
+                        const delay = Math.min(2000 * Math.pow(1.5, retryCount), 10000); // Exponential backoff, max 10s
+                        console.log(`Exchange rate missing for ${mainCurrency}/${secondaryCurrency}, retrying in ${delay}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+                        console.log('Missing data details:', {
+                            mainCurrency,
+                            secondaryCurrency,
+                            eurUsd: data.eurUsd,
+                            eurPln: data.eurPln,
+                            eurBrl: data.eurBrl,
+                            eurGbp: data.eurGbp,
+                            eurJpy: data.eurJpy,
+                            eurChf: data.eurChf
+                        });
+                        
                         setTimeout(() => {
                             loadExchangeRates(retryCount + 1);
-                        }, 2000);
+                        }, delay);
                         
-                        // Show retry message
+                        // Show retry message with more details
                         ratesDisplay.innerHTML = `
-                            <p><i class="fas fa-spinner fa-spin"></i> Exchange rate loading...</p>
+                            <p><i class="fas fa-spinner fa-spin"></i> Fetching exchange rates...</p>
                             <p style="font-size: 0.8rem; color: var(--text-secondary-color);">
-                                <i class="fas fa-clock"></i> Waiting for exchange rates... (${retryCount + 1}/${maxRetries})
+                                <i class="fas fa-clock"></i> Attempt ${retryCount + 1}/${maxRetries} - Retrying in ${Math.round(delay/1000)}s
+                            </p>
+                            <p style="font-size: 0.75rem; color: var(--text-secondary-color); opacity: 0.7;">
+                                Yahoo Finance sometimes has delays for ${mainCurrency}/${secondaryCurrency} rates
                             </p>
                         `;
                         return;
@@ -2047,29 +2082,39 @@
             let statusText = 'Missing';
             let freshRate = null;
             
-            if (mainCurrency === 'EUR') {
-                switch(secondaryCurrency) {
-                    case 'USD':
-                        if (data.eurUsd) {
+            // Enhanced logging for debugging
+            console.log(`Getting rate info for ${mainCurrency}/${secondaryCurrency}`, {
+                eurUsd: data.eurUsd,
+                eurPln: data.eurPln,
+                eurBrl: data.eurBrl,
+                eurGbp: data.eurGbp,
+                eurJpy: data.eurJpy,
+                eurChf: data.eurChf
+            });
+                    
+                    if (mainCurrency === 'EUR') {
+                        switch(secondaryCurrency) {
+                            case 'USD':
+                        if (data.eurUsd && data.eurUsd > 0) {
                             freshRate = data.eurUsd;
                             rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
                         } else {
-                            console.log('EUR/USD rate missing - eurUsd:', data.eurUsd);
+                            console.warn('EUR/USD rate missing or invalid - eurUsd:', data.eurUsd);
                         }
-                        break;
-                    case 'PLN':
-                        if (data.eurPln) {
+                                break;
+                            case 'PLN':
+                        if (data.eurPln && data.eurPln > 0) {
                             freshRate = data.eurPln;
                             rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
                         } else {
-                            console.log('EUR/PLN rate missing - eurPln:', data.eurPln);
+                            console.warn('EUR/PLN rate missing or invalid - eurPln:', data.eurPln);
                         }
-                        break;
-                    case 'BRL':
+                                break;
+                            case 'BRL':
                         if (data.eurBrl) {
                             freshRate = data.eurBrl;
                             rate = freshRate.toFixed(4);
@@ -2078,8 +2123,8 @@
                         } else {
                             console.log('EUR/BRL rate missing - eurBrl:', data.eurBrl);
                         }
-                        break;
-                    case 'GBP':
+                                break;
+                            case 'GBP':
                         if (data.eurGbp) {
                             freshRate = data.eurGbp;
                             rate = freshRate.toFixed(4);
@@ -2088,8 +2133,8 @@
                         } else {
                             console.log('EUR/GBP rate missing - eurGbp:', data.eurGbp);
                         }
-                        break;
-                    case 'JPY':
+                                break;
+                            case 'JPY':
                         if (data.eurJpy) {
                             freshRate = data.eurJpy;
                             rate = freshRate.toFixed(2);
@@ -2098,8 +2143,8 @@
                         } else {
                             console.log('EUR/JPY rate missing - eurJpy:', data.eurJpy);
                         }
-                        break;
-                    case 'CHF':
+                                break;
+                            case 'CHF':
                         if (data.eurChf) {
                             freshRate = data.eurChf;
                             rate = freshRate.toFixed(4);
@@ -2108,31 +2153,40 @@
                         } else {
                             console.log('EUR/CHF rate missing - eurChf:', data.eurChf);
                         }
-                        break;
-                }
-            } else if (mainCurrency === 'USD') {
-                switch(secondaryCurrency) {
-                    case 'EUR':
-                        if (data.eurUsd) {
+                                break;
+                        }
+                    } else if (mainCurrency === 'USD') {
+                        switch(secondaryCurrency) {
+                            case 'EUR':
+                        if (data.eurUsd && data.eurUsd > 0) {
                             freshRate = 1 / data.eurUsd;
                             rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
                         } else {
-                            console.log('USD/EUR rate missing - eurUsd:', data.eurUsd);
+                            console.warn('USD/EUR rate missing - eurUsd:', data.eurUsd);
                         }
-                        break;
-                    case 'PLN':
-                        if (data.eurPln && data.eurUsd) {
+                                break;
+                            case 'PLN':
+                        if (data.eurPln && data.eurPln > 0 && data.eurUsd && data.eurUsd > 0) {
                             freshRate = data.eurPln / data.eurUsd;
                             rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                            console.log(`USD/PLN calculated: ${data.eurPln} / ${data.eurUsd} = ${freshRate}`);
                         } else {
-                            console.log('USD/PLN rate missing - eurPln:', data.eurPln, 'eurUsd:', data.eurUsd);
+                            console.warn('USD/PLN rate missing - eurPln:', data.eurPln, 'eurUsd:', data.eurUsd);
+                            // Check if we have partial data
+                            if (data.eurPln && !data.eurUsd) {
+                                console.warn('Have EUR/PLN but missing EUR/USD for USD/PLN calculation');
+                            } else if (!data.eurPln && data.eurUsd) {
+                                console.warn('Have EUR/USD but missing EUR/PLN for USD/PLN calculation');
+                            } else {
+                                console.warn('Missing both EUR/PLN and EUR/USD for USD/PLN calculation');
+                            }
                         }
-                        break;
-                    case 'BRL':
+                                break;
+                            case 'BRL':
                         if (data.eurBrl && data.eurUsd) {
                             freshRate = data.eurBrl / data.eurUsd;
                             rate = freshRate.toFixed(4);
@@ -2141,8 +2195,8 @@
                         } else {
                             console.log('USD/BRL rate missing - eurBrl:', data.eurBrl, 'eurUsd:', data.eurUsd);
                         }
-                        break;
-                    case 'GBP':
+                                break;
+                            case 'GBP':
                         if (data.eurGbp && data.eurUsd) {
                             freshRate = data.eurGbp / data.eurUsd;
                             rate = freshRate.toFixed(4);
@@ -2151,8 +2205,8 @@
                         } else {
                             console.log('USD/GBP rate missing - eurGbp:', data.eurGbp, 'eurUsd:', data.eurUsd);
                         }
-                        break;
-                    case 'JPY':
+                                break;
+                            case 'JPY':
                         if (data.eurJpy && data.eurUsd) {
                             freshRate = data.eurJpy / data.eurUsd;
                             rate = freshRate.toFixed(2);
@@ -2161,8 +2215,8 @@
                         } else {
                             console.log('USD/JPY rate missing - eurJpy:', data.eurJpy, 'eurUsd:', data.eurUsd);
                         }
-                        break;
-                    case 'CHF':
+                                break;
+                            case 'CHF':
                         if (data.eurChf && data.eurUsd) {
                             freshRate = data.eurChf / data.eurUsd;
                             rate = freshRate.toFixed(4);
@@ -2171,7 +2225,7 @@
                         } else {
                             console.log('USD/CHF rate missing - eurChf:', data.eurChf, 'eurUsd:', data.eurUsd);
                         }
-                        break;
+                                break;
                 }
             }
             
@@ -2214,14 +2268,14 @@
                 rateValidation.className = 'rate-validation info';
                 const ageText = rateInfo.age === 0 ? 'less than 1 hour' : `${rateInfo.age} hour${rateInfo.age > 1 ? 's' : ''}`;
                 validationMessage.innerHTML = `<i class="fas fa-clock"></i> Using cached exchange rate for ${mainCurrency}/${secondaryCurrency} (${ageText} old). Fresh rate will be loaded when available.`;
-            } else {
+                } else {
                 rateValidation.className = 'rate-validation error';
                 validationMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Exchange rate not available for ${mainCurrency}/${secondaryCurrency}. Please choose a different currency combination or refresh rates.`;
             }
         }
 
-        // Enhanced refresh rates function
-        async function refreshExchangeRates() {
+        // Enhanced refresh rates function with force refresh
+        async function refreshExchangeRates(forceRefresh = false) {
             const refreshBtn = document.getElementById('refreshRatesBtn');
             const icon = refreshBtn.querySelector('i');
             
@@ -2230,16 +2284,51 @@
             refreshBtn.disabled = true;
             
             try {
-                // Force refresh by adding timestamp to bypass cache
-                const response = await fetch(`/api/summary?priceOnly=true&t=${Date.now()}`, {
-                    cache: 'no-cache'
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to refresh rates');
+                // Clear cached rates if force refresh
+                if (forceRefresh) {
+                    clearCachedRates();
+                    console.log('Force refresh: cleared cached rates');
                 }
                 
-                // Reload the rates display (this will also cache new rates)
+                // Multiple requests with different cache busting
+                const timestamp = Date.now();
+                const requests = [];
+                
+                // Try multiple parallel requests to increase success rate
+                for (let i = 0; i < 3; i++) {
+                    requests.push(
+                        fetch(`/api/summary?priceOnly=true&t=${timestamp}&attempt=${i}&force=${forceRefresh}`, {
+                            cache: 'no-cache',
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache'
+                            }
+                        })
+                    );
+                }
+                
+                // Use Promise.allSettled to try all requests
+                const responses = await Promise.allSettled(requests);
+                
+                // Find the first successful response
+                let successfulData = null;
+                for (const result of responses) {
+                    if (result.status === 'fulfilled' && result.value.ok) {
+                        const data = await result.value.json();
+                        // Check if we have meaningful exchange rate data
+                        if (data.eurUsd || data.eurPln || data.eurBrl) {
+                            successfulData = data;
+                            console.log('Successful rate refresh with data:', data);
+                            break;
+                        }
+                    }
+                }
+                
+                if (!successfulData) {
+                    throw new Error('All refresh attempts failed to get valid exchange rate data');
+                }
+                
+                // Reload the rates display with successful data (this will also cache new rates)
                 await loadExchangeRates();
                 
                 // Show success feedback briefly
@@ -2256,22 +2345,146 @@
                 setTimeout(() => {
                     refreshBtn.innerHTML = '<i class="fas fa-sync"></i> Refresh Rates';
                 }, 2000);
+                
+                // Try to fall back to cached rates
+                console.log('Attempting to fall back to cached rates...');
+                await loadExchangeRates();
             } finally {
                 refreshBtn.disabled = false;
             }
         }
+        
+        // Enhanced debugging function for currency rates
+        window.debugCurrencyRates = async function() {
+            console.log('=== BTC Tracker Currency Rate Debug ===');
+            
+            try {
+                console.log('1. Fetching fresh exchange rate data from server...');
+                const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('2. Raw server response:', data);
+                
+                console.log('3. Exchange rates breakdown:');
+                console.log('   EUR/USD:', data.eurUsd, typeof data.eurUsd, data.eurUsd > 0 ? '✓' : '✗');
+                console.log('   EUR/PLN:', data.eurPln, typeof data.eurPln, data.eurPln > 0 ? '✓' : '✗');
+                console.log('   EUR/BRL:', data.eurBrl, typeof data.eurBrl, data.eurBrl > 0 ? '✓' : '✗');
+                console.log('   EUR/GBP:', data.eurGbp, typeof data.eurGbp, data.eurGbp > 0 ? '✓' : '✗');
+                console.log('   EUR/JPY:', data.eurJpy, typeof data.eurJpy, data.eurJpy > 0 ? '✓' : '✗');
+                console.log('   EUR/CHF:', data.eurChf, typeof data.eurChf, data.eurChf > 0 ? '✓' : '✗');
+                
+                console.log('4. Calculated USD rates:');
+                if (data.eurUsd && data.eurUsd > 0) {
+                    console.log('   USD/EUR:', (1 / data.eurUsd).toFixed(4));
+                    if (data.eurPln && data.eurPln > 0) {
+                        console.log('   USD/PLN:', (data.eurPln / data.eurUsd).toFixed(4), '✓');
+                    } else {
+                        console.log('   USD/PLN: Cannot calculate - missing EUR/PLN', '✗');
+                    }
+                    if (data.eurBrl && data.eurBrl > 0) {
+                        console.log('   USD/BRL:', (data.eurBrl / data.eurUsd).toFixed(4), '✓');
+                    } else {
+                        console.log('   USD/BRL: Cannot calculate - missing EUR/BRL', '✗');
+                    }
+                } else {
+                    console.log('   Cannot calculate USD rates - missing EUR/USD', '✗');
+                }
+                
+                console.log('5. Current currency settings:');
+                const mainCurrency = document.getElementById('mainCurrency')?.value || 'N/A';
+                const secondaryCurrency = document.getElementById('secondaryCurrency')?.value || 'N/A';
+                console.log('   Main:', mainCurrency);
+                console.log('   Secondary:', secondaryCurrency);
+                console.log('   Required rate:', `${mainCurrency}/${secondaryCurrency}`);
+                
+                console.log('6. Rate calculation test:');
+                const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
+                console.log('   Result:', rateInfo);
+                
+                console.log('7. Last update timestamps:');
+                console.log('   Data timestamp:', data.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A');
+                console.log('   Cache info:', data.cacheInfo || 'N/A');
+                
+                console.log('8. Recommendations:');
+                if (!data.eurPln || data.eurPln <= 0) {
+                    console.log('   - EUR/PLN rate is missing or invalid');
+                    console.log('   - Check Yahoo Finance availability for EURPLN=X');
+                    console.log('   - Try the "Force" refresh button');
+                }
+                if (!data.eurUsd || data.eurUsd <= 0) {
+                    console.log('   - EUR/USD rate is missing or invalid');
+                    console.log('   - This is critical as it affects all USD calculations');
+                }
+                
+                return data;
+                
+            } catch (error) {
+                console.error('Debug function error:', error);
+                console.log('Check network connectivity and server logs');
+                return null;
+            }
+        };
         
         // Function to clear cached rates (useful for debugging)
         function clearCachedRates() {
             try {
                 localStorage.removeItem('btc_tracker_exchange_rates');
                 console.log('Cached exchange rates cleared');
-                // Reload rates to show current state
-                loadExchangeRates();
+                // Don't automatically reload here to avoid loops
             } catch (e) {
                 console.warn('Failed to clear cached rates:', e);
             }
         }
+        
+        // Debug helper function for administrators (call from browser console)
+        window.debugCurrencyRates = function() {
+            console.group('🔍 Currency Debug Information');
+            
+            // Show cached rates
+            const cached = getCachedRates();
+            console.log('📦 Cached rates:', cached);
+            
+            // Show current page currencies
+            const mainCurrency = document.getElementById('mainCurrency').value;
+            const secondaryCurrency = document.getElementById('secondaryCurrency').value;
+            console.log('💱 Current settings:', { mainCurrency, secondaryCurrency });
+            
+            // Force fetch fresh data
+            console.log('🔄 Fetching fresh data...');
+            fetch('/api/summary?priceOnly=true&debug=true&t=' + Date.now())
+                .then(response => response.json())
+                .then(data => {
+                    console.log('📊 Fresh API data:', data);
+                    console.log('✅ Available rates:', {
+                        eurUsd: !!data.eurUsd,
+                        eurPln: !!data.eurPln,
+                        eurBrl: !!data.eurBrl,
+                        eurGbp: !!data.eurGbp,
+                        eurJpy: !!data.eurJpy,
+                        eurChf: !!data.eurChf
+                    });
+                    
+                    // Show what rate we would get
+                    const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
+                    console.log('📈 Rate calculation result:', rateInfo);
+                    
+                    console.groupEnd();
+                })
+                .catch(error => {
+                    console.error('❌ Debug fetch failed:', error);
+                    console.groupEnd();
+                });
+        };
 
         // Currency pair validation function
         async function validateCurrencyPair(mainCurrency, secondaryCurrency) {
@@ -2366,6 +2579,9 @@
 
         // Add event listener for refresh rates button
         document.getElementById('refreshRatesBtn').addEventListener('click', refreshExchangeRates);
+        
+        // Add event listener for force refresh rates button
+        document.getElementById('forceRefreshRatesBtn').addEventListener('click', () => refreshExchangeRates(true));
 
         // Function to setup theme toggle
         function setupThemeToggle() {
@@ -2433,9 +2649,9 @@
                     }, 300);
                 }
                 
-                loadSettings();
-                loadTransactions();
-                setupThemeToggle();
+            loadSettings();
+            loadTransactions();
+            setupThemeToggle();
                 
             } catch (error) {
                 console.error('Authentication check failed:', error);
