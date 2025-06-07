@@ -8,6 +8,10 @@
 const fs = require('fs');
 const pathManager = require('./utils/path-manager');
 const priceCache = require('./priceCache');
+const Logger = require('./utils/logger');
+
+// Initialize logger
+const logger = Logger.create('SUMMARY-CACHE');
 
 // Cache storage
 let summaryCache = {
@@ -28,9 +32,9 @@ function initializeCache() {
         try {
             const data = fs.readFileSync(cachePath, 'utf8');
             summaryCache = JSON.parse(data);
-            console.log(`[summaryCache] Loaded summary cache from ${cachePath}`);
+            logger.debug(`[summaryCache] Loaded summary cache from ${cachePath}`);
         } catch (error) {
-            console.error('[summaryCache] Error loading summary cache:', error);
+            logger.error('[summaryCache] Error loading summary cache:', error);
             summaryCache = { 
                 data: null, 
                 lastUpdated: null, 
@@ -40,7 +44,7 @@ function initializeCache() {
             };
         }
     } else {
-        console.log('[summaryCache] No existing summary cache found');
+        logger.debug('[summaryCache] No existing summary cache found');
         saveCache({ 
             data: null, 
             lastUpdated: null,
@@ -58,9 +62,9 @@ function saveCache(cache) {
     
     try {
         fs.writeFileSync(cachePath, JSON.stringify(cache, null, 2));
-        console.log(`[summaryCache] Saved summary cache to ${cachePath}`);
+        logger.debug(`[summaryCache] Saved summary cache to ${cachePath}`);
     } catch (error) {
-        console.error('[summaryCache] Error saving summary cache:', error);
+        logger.error('[summaryCache] Error saving summary cache:', error);
     }
 }
 
@@ -93,7 +97,7 @@ function isCacheValid(transactionCount = null, transactionTimestamp = null) {
     // If transaction count provided, check if it matches
     if (transactionCount !== null && 
         summaryCache.transactionCount !== transactionCount) {
-        console.log(`[summaryCache] Transaction count changed from ${summaryCache.transactionCount} to ${transactionCount}, invalidating cache`);
+        logger.debug(`[summaryCache] Transaction count changed from ${summaryCache.transactionCount} to ${transactionCount}, invalidating cache`);
         return false;
     }
     
@@ -103,7 +107,7 @@ function isCacheValid(transactionCount = null, transactionTimestamp = null) {
         const newTimestamp = new Date(transactionTimestamp).getTime();
         
         if (newTimestamp > cachedTimestamp) {
-            console.log(`[summaryCache] Transactions were modified after cache was created, invalidating cache`);
+            logger.debug(`[summaryCache] Transactions were modified after cache was created, invalidating cache`);
             return false;
         }
     }
@@ -134,7 +138,7 @@ function updateCache(summaryData, transactionCount = null, transactionTimestamp 
  * This should be called whenever transactions are added, deleted, or modified
  */
 function invalidateCache() {
-    console.log('[summaryCache] Invalidating cache due to transaction changes');
+    logger.debug('[summaryCache] Invalidating cache due to transaction changes');
     summaryCache.lastUpdated = null;
     saveCache(summaryCache);
 }
@@ -149,19 +153,19 @@ function invalidateCache() {
 async function generateSummary(calculateSummary, transactionCount = null, transactionTimestamp = null) {
     // Prevent multiple simultaneous updates
     if (summaryCache.isUpdating) {
-        console.log('[summaryCache] Summary generation already in progress');
+        logger.debug('[summaryCache] Summary generation already in progress');
         return summaryCache.data;
     }
     
     summaryCache.isUpdating = true;
     
     try {
-        console.log('[summaryCache] Generating fresh summary data');
+        logger.debug('[summaryCache] Generating fresh summary data');
         const freshSummary = await calculateSummary();
         updateCache(freshSummary, transactionCount, transactionTimestamp);
         return freshSummary;
     } catch (error) {
-        console.error('[summaryCache] Error generating summary:', error);
+        logger.error('[summaryCache] Error generating summary:', error);
         summaryCache.isUpdating = false;
         return summaryCache.data;
     }
@@ -177,7 +181,7 @@ async function generateSummary(calculateSummary, transactionCount = null, transa
  */
 async function getSummary(calculateSummary, forceFresh = false, transactionCount = null, transactionTimestamp = null) {
     if (!forceFresh && isCacheValid(transactionCount, transactionTimestamp)) {
-        console.log('[summaryCache] Using valid cached summary data');
+        logger.debug('[summaryCache] Using valid cached summary data');
         return summaryCache.data;
     }
     
@@ -191,7 +195,7 @@ async function getSummary(calculateSummary, forceFresh = false, transactionCount
  * @param {number} intervalMs Update interval in milliseconds (default: 5 minutes)
  */
 function scheduleUpdates(calculateSummary, getTransactionInfo = null, intervalMs = 5 * 60 * 1000) {
-    console.log(`[summaryCache] Scheduling summary cache updates every ${intervalMs/1000} seconds`);
+    logger.debug(`[summaryCache] Scheduling summary cache updates every ${intervalMs/1000} seconds`);
     
     setInterval(async () => {
         try {
@@ -210,12 +214,12 @@ function scheduleUpdates(calculateSummary, getTransactionInfo = null, intervalMs
             const cacheValid = isCacheValid(transactionCount, transactionTimestamp);
             
             if (!summaryCache.isUpdating && (!cacheValid || priceChanged)) {
-                console.log('[summaryCache] Running scheduled summary update - ' + 
+                logger.debug('[summaryCache] Running scheduled summary update - ' + 
                             (priceChanged ? 'Price changed' : 'Cache invalid'));
                 await generateSummary(calculateSummary, transactionCount, transactionTimestamp);
             }
         } catch (error) {
-            console.error('[summaryCache] Error in scheduled update:', error);
+            logger.error('[summaryCache] Error in scheduled update:', error);
         }
     }, intervalMs);
 }
@@ -225,7 +229,7 @@ function scheduleUpdates(calculateSummary, getTransactionInfo = null, intervalMs
  * This can be called manually when needed (e.g. after server updates)
  */
 function clearCache() {
-    console.log('[summaryCache] Clearing summary cache');
+    logger.debug('[summaryCache] Clearing summary cache');
     summaryCache = { 
         data: null, 
         lastUpdated: null, 

@@ -2,6 +2,10 @@ const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const pathManager = require('./utils/path-manager');
+const Logger = require('./utils/logger');
+
+// Initialize logger
+const logger = Logger.create('PRICE-CACHE');
 
 class PriceCache {
     constructor() {
@@ -39,16 +43,16 @@ class PriceCache {
             if (!this.cache.previousWeekPrice && this.cache.priceEUR) {
                 this.cache.previousWeekPrice = this.cache.priceEUR;
                 this.lastWeekUpdate = new Date();
-                console.log(`[priceCache] Initialized previousWeekPrice to ${this.cache.previousWeekPrice}`);
+                logger.debug(`[priceCache] Initialized previousWeekPrice to ${this.cache.previousWeekPrice}`);
                 await this.saveToDisk();
             }
             
             // Set up periodic updates
             setInterval(() => this.updatePrices(), this.updateInterval);
             
-            console.log('[priceCache] Initialized with data:', this.cache);
+            logger.debug('[priceCache] Initialized with data:', this.cache);
         } catch (error) {
-            console.error('[priceCache] Initialization error:', error);
+            logger.error('[priceCache] Initialization error:', error);
             // If initialization fails, still try to set up updates
             setInterval(() => this.updatePrices(), this.updateInterval);
         }
@@ -73,12 +77,12 @@ class PriceCache {
                     ...cachedData,
                     exchangeRates: cachedData.exchangeRates || {}
                 };
-                console.log('[priceCache] Loaded from disk');
+                logger.debug('[priceCache] Loaded from disk');
                 return true;
             }
         } catch (error) {
             if (error.code !== 'ENOENT') {
-                console.error('[priceCache] Error loading from disk:', error);
+                logger.error('[priceCache] Error loading from disk:', error);
             }
         }
         return false;
@@ -91,9 +95,9 @@ class PriceCache {
                 JSON.stringify(this.cache, null, 2),
                 'utf8'
             );
-            console.log('[priceCache] Saved to disk');
+            logger.debug('[priceCache] Saved to disk');
         } catch (error) {
-            console.error('[priceCache] Error saving to disk:', error);
+            logger.error('[priceCache] Error saving to disk:', error);
         }
     }
 
@@ -102,7 +106,7 @@ class PriceCache {
         
         this.isUpdating = true;
         try {
-            console.log('[priceCache] Updating BTC prices and exchange rates using Yahoo Finance');
+            logger.debug('[priceCache] Updating BTC prices and exchange rates using Yahoo Finance');
             
             // Use Yahoo Finance for BTC prices
             const { btcPriceEUR, btcPriceUSD } = await this.fetchBTCPricesFromYahoo();
@@ -117,9 +121,9 @@ class PriceCache {
                 const oldPrice = this.cache.previousDayPrice;
                 this.cache.previousDayPrice = this.cache.priceEUR || btcPriceEUR;
                 this.lastDayUpdate = now;
-                console.log(`[priceCache] Updated previous day price: ${oldPrice} -> ${this.cache.previousDayPrice}`);
+                logger.debug(`[priceCache] Updated previous day price: ${oldPrice} -> ${this.cache.previousDayPrice}`);
             } else {
-                console.log(`[priceCache] Keeping previous day price: ${this.cache.previousDayPrice}`);
+                logger.debug(`[priceCache] Keeping previous day price: ${this.cache.previousDayPrice}`);
             }
             
             // Check if we need to update the previous week price
@@ -133,9 +137,9 @@ class PriceCache {
                 const oldWeeklyPrice = this.cache.previousWeekPrice;
                 this.cache.previousWeekPrice = this.cache.priceEUR || btcPriceEUR;
                 this.lastWeekUpdate = now;
-                console.log(`[priceCache] Updated previous week price: ${oldWeeklyPrice} -> ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
+                logger.debug(`[priceCache] Updated previous week price: ${oldWeeklyPrice} -> ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
             } else {
-                console.log(`[priceCache] Keeping previous week price: ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
+                logger.debug(`[priceCache] Keeping previous week price: ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
             }
             
             this.cache = {
@@ -154,12 +158,12 @@ class PriceCache {
             };
             
             await this.saveToDisk();
-            console.log(`[priceCache] BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
+            logger.debug(`[priceCache] BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
         } catch (error) {
-            console.error('[priceCache] Error updating prices from Yahoo Finance:', error.message);
+            logger.error('[priceCache] Error updating prices from Yahoo Finance:', error.message);
             
             if (!this.cache.priceEUR && !this.cache.priceUSD) {
-                console.log('[priceCache] Setting default fallback values');
+                logger.debug('[priceCache] Setting default fallback values');
                 this.cache = {
                     ...this.cache,
                     priceEUR: 0,
@@ -213,7 +217,7 @@ class PriceCache {
         this.cache.timestamp = new Date().toISOString();
         
         await this.saveToDisk();
-        console.log(`[priceCache] Prices updated to ${priceEUR} EUR / ${priceUSD || 'N/A'} USD at ${this.cache.timestamp}`);
+        logger.debug(`[priceCache] Prices updated to ${priceEUR} EUR / ${priceUSD || 'N/A'} USD at ${this.cache.timestamp}`);
     }
 
     async updateExchangeRates(eurRates, usdRates = null) {
@@ -239,7 +243,7 @@ class PriceCache {
         
         this.cache.timestamp = new Date().toISOString();
         await this.saveToDisk();
-        console.log(`[priceCache] Exchange rates updated at ${this.cache.timestamp}`);
+        logger.debug(`[priceCache] Exchange rates updated at ${this.cache.timestamp}`);
     }
     
     // Get rate between any two currencies
@@ -297,10 +301,10 @@ class PriceCache {
             }
             
             // Fallback
-            console.warn(`[priceCache] No exchange rate found for ${fromCurrency} to ${toCurrency}, using 1`);
+            logger.warn(`[priceCache] No exchange rate found for ${fromCurrency} to ${toCurrency}, using 1`);
             return 1;
         } catch (error) {
-            console.error(`[priceCache] Error getting exchange rate from ${fromCurrency} to ${toCurrency}:`, error);
+            logger.error(`[priceCache] Error getting exchange rate from ${fromCurrency} to ${toCurrency}:`, error);
             return 1;
         }
     }
@@ -361,7 +365,7 @@ class PriceCache {
 
     // Clear the cache and force immediate refresh
     async clearCache() {
-        console.log('[priceCache] Clearing cache and forcing immediate refresh');
+        logger.debug('[priceCache] Clearing cache and forcing immediate refresh');
         
         // Reset cache to initial state but keep structure
         this.cache = {
@@ -376,17 +380,17 @@ class PriceCache {
         // Remove the cache file
         try {
             await fs.unlink(this.cacheFilePath);
-            console.log('[priceCache] Cache file removed');
+            logger.debug('[priceCache] Cache file removed');
         } catch (error) {
             if (error.code !== 'ENOENT') {
-                console.error('[priceCache] Error removing cache file:', error);
+                logger.error('[priceCache] Error removing cache file:', error);
             }
         }
         
         // Force immediate update
         await this.updatePrices();
         
-        console.log('[priceCache] Cache cleared and refreshed');
+        logger.debug('[priceCache] Cache cleared and refreshed');
     }
 
     // Fetch BTC prices from Yahoo Finance
@@ -415,11 +419,11 @@ class PriceCache {
             const btcPriceEUR = btcEurData[latestEurDate].close;
             const btcPriceUSD = btcUsdData[latestUsdDate].close;
 
-            console.log(`[priceCache] Fetched BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD`);
+            logger.debug(`[priceCache] Fetched BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD`);
 
             return { btcPriceEUR, btcPriceUSD };
         } catch (error) {
-            console.error('[priceCache] Error fetching BTC prices from Yahoo Finance:', error.message);
+            logger.error('[priceCache] Error fetching BTC prices from Yahoo Finance:', error.message);
             throw error;
         }
     }
@@ -435,11 +439,11 @@ class PriceCache {
                 'EURUSD=X', 'EURPLN=X', 'EURGBP=X', 'EURJPY=X', 'EURCHF=X', 'EURBRL=X'
             ];
 
-            console.log(`[priceCache] Fetching ${essentialPairs.length} essential currency pairs to minimize Yahoo Finance requests`);
+            logger.debug(`[priceCache] Fetching ${essentialPairs.length} essential currency pairs to minimize Yahoo Finance requests`);
 
             const ratePromises = essentialPairs.map(pair => 
                 this.fetchYahooFinanceData(pair, startDate, endDate).catch(error => {
-                    console.warn(`[priceCache] Failed to fetch ${pair}:`, error.message);
+                    logger.warn(`[priceCache] Failed to fetch ${pair}:`, error.message);
                     return null;
                 })
             );
@@ -483,11 +487,11 @@ class PriceCache {
                 }
             });
 
-            console.log(`[priceCache] Fetched exchange rates from Yahoo Finance: EUR/USD=${exchangeRates.EUR.USD}, EUR/BRL=${exchangeRates.EUR.BRL}`);
+            logger.debug(`[priceCache] Fetched exchange rates from Yahoo Finance: EUR/USD=${exchangeRates.EUR.USD}, EUR/BRL=${exchangeRates.EUR.BRL}`);
 
             return exchangeRates;
         } catch (error) {
-            console.error('[priceCache] Error fetching exchange rates from Yahoo Finance:', error.message);
+            logger.error('[priceCache] Error fetching exchange rates from Yahoo Finance:', error.message);
             throw error;
         }
     }
@@ -561,7 +565,7 @@ class PriceCache {
             return data;
             
         } catch (error) {
-            console.error(`[priceCache] Error fetching data for symbol ${symbol}:`, error.message);
+            logger.error(`[priceCache] Error fetching data for symbol ${symbol}:`, error.message);
             throw error;
         }
     }

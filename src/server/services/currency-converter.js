@@ -1,4 +1,8 @@
 const priceCache = require('../priceCache');
+const Logger = require('../utils/logger');
+
+// Initialize logger
+const logger = Logger.create('CURRENCY-CONVERTER');
 
 class CurrencyConverter {
     constructor() {
@@ -18,7 +22,7 @@ class CurrencyConverter {
      */
     initialize() {
         // No need to initialize rates as we'll use priceCache
-        console.log('CurrencyConverter initialized, using priceCache for rates');
+        logger.debug('CurrencyConverter initialized, using priceCache for rates');
     }
 
     /**
@@ -106,14 +110,14 @@ class CurrencyConverter {
      */
     async updateRates() {
         try {
-            console.log('Fetching fresh exchange rates from Yahoo Finance...');
+            logger.debug('Fetching fresh exchange rates from Yahoo Finance...');
             
             // Let priceCache handle the Yahoo Finance fetching
             await priceCache.updatePrices();
             
-            console.log('Exchange rates updated successfully from Yahoo Finance');
+            logger.debug('Exchange rates updated successfully from Yahoo Finance');
         } catch (error) {
-            console.error('Error updating exchange rates from Yahoo Finance:', error);
+            logger.error('Error updating exchange rates from Yahoo Finance:', error);
             throw error;
         }
     }

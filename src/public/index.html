@@ -3512,10 +3512,8 @@
                                 credentials: 'include'
                             }).then(response => {
                                 if (response.ok) {
-                                    console.log('🧹 Server cache cleared, retrying immediately');
                                     // Retry faster since we just cleared the cache
                                     setTimeout(() => {
-                                        console.log('🔄 Retrying with fresh server data after cache clear...');
                                         loadData(true);
                                     }, 500);
                                 } else {
@@ -3737,7 +3735,6 @@
                     error.message.includes('<!DOCTYPE') || 
                     error.message.includes('SyntaxError')
                 )) {
-                    console.log('Authentication issue detected. Redirecting to login...');
                     window.location.href = '/login';
                     return;
                 }
@@ -3969,8 +3966,6 @@
             
             // Add function to check for server cache issues
             window.checkServerCache = async function() {
-                console.log('🔍 CHECKING SERVER CACHE STATUS...');
-                
                 try {
                     // Get settings
                     const settingsResp = await fetch('/api/settings?v=' + Date.now());
@@ -3980,15 +3975,12 @@
                     const summaryResp = await fetch('/api/summary?v=' + Date.now());
                     const summary = await summaryResp.json();
                     
-                    console.log('Settings API says:', { main: settings.mainCurrency, secondary: settings.secondaryCurrency });
-                    console.log('Summary API says:', { main: summary.mainCurrency, secondary: summary.secondaryCurrency });
-                    console.log('Client has:', { main: window.currentMainCurrency, secondary: window.currentSecondaryCurrency });
-                    
                     if (settings.mainCurrency !== summary.mainCurrency) {
-                        console.warn('🚨 SERVER CACHE INCONSISTENCY DETECTED!');
+                        console.warn('SERVER CACHE INCONSISTENCY DETECTED!');
                         console.warn('Settings and Summary APIs are returning different currencies');
-                    } else {
-                        console.log('✅ Server cache is consistent');
+                        console.warn('Settings API says:', { main: settings.mainCurrency, secondary: settings.secondaryCurrency });
+                        console.warn('Summary API says:', { main: summary.mainCurrency, secondary: summary.secondaryCurrency });
+                        console.warn('Client has:', { main: window.currentMainCurrency, secondary: window.currentSecondaryCurrency });
                     }
                 } catch (error) {
                     console.error('Cache check failed:', error);

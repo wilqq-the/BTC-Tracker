@@ -3,10 +3,14 @@ const router = express.Router();
 const exchangeService = require('../server/services/exchange-service');
 const fs = require('fs');
 const path = require('path');
+const Logger = require('../server/utils/logger');
 
 // Constants
 const DATA_DIR = path.join(__dirname, '../data');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
+
+// Initialize logger
+const logger = Logger.create('EXCHANGE-ROUTES');
 
 // Middleware for authentication
 function isAuthenticated(req, res, next) {
@@ -27,11 +31,11 @@ function loadTransactions(req) {
     try {
       const appTransactions = req.app.locals.getTransactions();
       if (Array.isArray(appTransactions) && appTransactions.length > 0) {
-        console.log(`[exchange-routes.js] Using ${appTransactions.length} transactions from application memory`);
+        logger.debug(`Using ${appTransactions.length} transactions from application memory`);
         return appTransactions;
       }
     } catch (err) {
-      console.error('[exchange-routes.js] Error accessing application transactions:', err);
+      logger.error('Error accessing application transactions:', err);
     }
   }
   
@@ -59,13 +63,13 @@ function loadTransactions(req) {
         return tx;
       });
       
-      console.log(`[exchange-routes.js] Loaded ${processedTransactions.length} transactions from file with normalized values`);
+      logger.debug(`Loaded ${processedTransactions.length} transactions from file with normalized values`);
       return processedTransactions;
     }
-    console.log('[exchange-routes.js] No transactions file exists, returning empty array');
+    logger.debug('No transactions file exists, returning empty array');
     return [];
   } catch (error) {
-    console.error('[exchange-routes.js] Error loading transactions from file:', error);
+    logger.error('Error loading transactions from file:', error);
     return [];
   }
 }
@@ -80,7 +84,7 @@ function saveTransactions(transactions) {
     fs.writeFileSync(TRANSACTIONS_FILE, JSON.stringify(transactions, null, 2));
     return true;
   } catch (error) {
-    console.error('[exchange-routes.js] Error saving transactions:', error);
+    logger.error('Error saving transactions:', error);
     return false;
   }
 }
@@ -92,7 +96,7 @@ function normalizeTransaction(tx, mainCurrency) {
   }
   
   // Fallback implementation if global function not available
-  console.warn('[exchange-routes.js] Global normalizeTransaction function not found, using fallback implementation');
+  logger.warn('Global normalizeTransaction function not found, using fallback implementation');
   const originalCurrency = tx.currency || tx.fiatCurrency || 'EUR';
   return {
     ...tx,
@@ -114,7 +118,7 @@ router.get('/exchanges', isAuthenticated, (req, res) => {
     const exchanges = exchangeService.getAvailableExchanges();
     res.json(exchanges);
   } catch (error) {
-    console.error('[exchange-routes.js] Error getting exchanges:', error);
+    logger.error('Error getting exchanges:', error);
     res.status(500).json({ error: 'Failed to get exchanges' });
   }
 });
@@ -135,7 +139,7 @@ router.get('/exchanges/:id', isAuthenticated, (req, res) => {
       connected: exchange.getStatus()
     });
   } catch (error) {
-    console.error('[exchange-routes.js] Error getting exchange:', error);
+    logger.error('Error getting exchange:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -147,7 +151,7 @@ router.post('/exchanges/:exchangeId/test', isAuthenticated, async (req, res) => 
     const credentials = req.body;
     
     // Log attempt (but not credentials)
-    console.log(`[exchange-routes.js] Testing connection for ${exchangeId} with keys: ${Object.keys(credentials).join(', ')}`);
+    logger.info(`Testing connection for ${exchangeId} with keys: ${Object.keys(credentials).join(', ')}`);
     
     // Get adapter class
     const exchange = exchangeService.getExchange(exchangeId);
@@ -158,7 +162,7 @@ router.post('/exchanges/:exchangeId/test', isAuthenticated, async (req, res) => 
     } else {
       const AdapterClass = exchangeService.getAdapterClass(exchangeId);
       if (!AdapterClass) {
-        console.error(`[exchange-routes.js] No adapter found for exchange: ${exchangeId}`);
+        logger.error(`No adapter found for exchange: ${exchangeId}`);
         return res.status(404).json({ error: 'Exchange not found' });
       }
       
@@ -170,7 +174,7 @@ router.post('/exchanges/:exchangeId/test', isAuthenticated, async (req, res) => 
       const missingFields = requiredFields.filter(field => !credentials[field]);
       
       if (missingFields.length > 0) {
-        console.error(`[exchange-routes.js] Missing required fields for ${exchangeId}: ${missingFields.join(', ')}`);
+        logger.error(`Missing required fields for ${exchangeId}: ${missingFields.join(', ')}`);
         return res.status(400).json({ 
           error: 'Missing required credentials',
           missingFields
@@ -182,17 +186,17 @@ router.post('/exchanges/:exchangeId/test', isAuthenticated, async (req, res) => 
     const valid = await adapter.testConnection(credentials);
     
     if (!valid) {
-      console.log(`[exchange-routes.js] Connection test failed for ${exchangeId}`);
+      logger.warn(`Connection test failed for ${exchangeId}`);
       return res.status(401).json({ 
         error: 'Authentication failed',
         message: 'The provided API credentials were rejected by the exchange'
       });
     }
     
-    console.log(`[exchange-routes.js] Connection test successful for ${exchangeId}`);
+    logger.info(`Connection test successful for ${exchangeId}`);
     res.json({ success: valid });
   } catch (error) {
-    console.error(`[exchange-routes.js] Error testing exchange connection for ${req.params.exchangeId}:`, error);
+    logger.error(`Error testing exchange connection for ${req.params.exchangeId}:`, error);
     res.status(500).json({ 
       error: 'Internal server error', 
       message: error.message 
@@ -208,19 +212,19 @@ router.post('/exchanges/:exchangeId/credentials', isAuthenticated, async (req, r
     
     // Validate that we have the required credentials
     if (!credentials || Object.keys(credentials).length === 0) {
-      console.error(`[exchange-routes.js] Missing credentials for ${exchangeId}`);
+      logger.error(`Missing credentials for ${exchangeId}`);
       return res.status(400).json({ error: 'Missing credentials' });
     }
     
     // Log the keys we're receiving (but not the values for security)
-    console.log(`[exchange-routes.js] Saving credentials for ${exchangeId}, keys: ${Object.keys(credentials).join(', ')}`);
+    logger.info(`Saving credentials for ${exchangeId}, keys: ${Object.keys(credentials).join(', ')}`);
     
     // Get adapter to check required fields
     const exchange = exchangeService.getExchange(exchangeId);
     if (!exchange) {
       const adapterClass = exchangeService.getAdapterClass(exchangeId);
       if (!adapterClass) {
-        console.error(`[exchange-routes.js] No adapter found for exchange: ${exchangeId}`);
+        logger.error(`No adapter found for exchange: ${exchangeId}`);
         return res.status(404).json({ error: 'Exchange not found' });
       }
       
@@ -231,7 +235,7 @@ router.post('/exchanges/:exchangeId/credentials', isAuthenticated, async (req, r
       // Validate we have all required fields
       const missingFields = requiredFields.filter(field => !credentials[field]);
       if (missingFields.length > 0) {
-        console.error(`[exchange-routes.js] Missing required fields for ${exchangeId}: ${missingFields.join(', ')}`);
+        logger.error(`Missing required fields for ${exchangeId}: ${missingFields.join(', ')}`);
         return res.status(400).json({ 
           error: 'Missing required credentials',
           missingFields
@@ -243,13 +247,13 @@ router.post('/exchanges/:exchangeId/credentials', isAuthenticated, async (req, r
     const saved = await exchangeService.saveExchangeCredentials(exchangeId, credentials);
     
     if (!saved) {
-      console.error(`[exchange-routes.js] Failed to save or validate credentials for ${exchangeId}`);
+      logger.error(`Failed to save or validate credentials for ${exchangeId}`);
       return res.status(400).json({ error: 'Invalid credentials or failed to save' });
     }
     
     res.json({ success: true });
   } catch (error) {
-    console.error(`[exchange-routes.js] Error saving exchange credentials for ${req.params.exchangeId}:`, error);
+    logger.error(`Error saving exchange credentials for ${req.params.exchangeId}:`, error);
     res.status(500).json({ error: 'Internal server error', message: error.message });
   }
 });
@@ -264,7 +268,7 @@ router.delete('/exchanges/:exchangeId', isAuthenticated, (req, res) => {
     
     res.json({ success: removed });
   } catch (error) {
-    console.error('[exchange-routes.js] Error deleting exchange:', error);
+    logger.error('Error deleting exchange:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -279,7 +283,7 @@ router.get('/exchanges/:exchangeId/balances', isAuthenticated, async (req, res) 
     
     res.json(balances);
   } catch (error) {
-    console.error('[exchange-routes.js] Error getting exchange balances:', error);
+    logger.error('Error getting exchange balances:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -291,7 +295,7 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
     const options = req.body || {};
     
     // Log the received options for debugging
-    console.log(`[exchange-routes.js] Received sync options for ${exchangeId}:`, options);
+    logger.info(`Received sync options for ${exchangeId}:`, options);
     
     // Sanitize date inputs if present
     if (options.startDate) {
@@ -301,15 +305,15 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
           const date = new Date(options.startDate);
           if (!isNaN(date.getTime())) {
             options.startDate = date.toISOString().split('T')[0]; // Keep date part only
-            console.log(`[exchange-routes.js] Parsed startDate to: ${options.startDate}`);
+            logger.debug(`Parsed startDate to: ${options.startDate}`);
           } else {
             delete options.startDate;
-            console.warn(`[exchange-routes.js] Invalid startDate provided: ${options.startDate}`);
+            logger.warn(`Invalid startDate provided: ${options.startDate}`);
           }
         }
       } catch (err) {
         delete options.startDate;
-        console.error('[exchange-routes.js] Error parsing startDate:', err);
+        logger.error('Error parsing startDate:', err);
       }
     }
     
@@ -320,15 +324,15 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
           const date = new Date(options.endDate);
           if (!isNaN(date.getTime())) {
             options.endDate = date.toISOString().split('T')[0]; // Keep date part only
-            console.log(`[exchange-routes.js] Parsed endDate to: ${options.endDate}`);
+            logger.debug(`Parsed endDate to: ${options.endDate}`);
           } else {
             delete options.endDate;
-            console.warn(`[exchange-routes.js] Invalid endDate provided: ${options.endDate}`);
+            logger.warn(`Invalid endDate provided: ${options.endDate}`);
           }
         }
       } catch (err) {
         delete options.endDate;
-        console.error('[exchange-routes.js] Error parsing endDate:', err);
+        logger.error('Error parsing endDate:', err);
       }
     }
     
@@ -371,22 +375,22 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
           mainCurrency = settings.mainCurrency || 'EUR';
         }
       } catch (error) {
-        console.error('[exchange-routes.js] Error loading app settings:', error);
+        logger.error('Error loading app settings:', error);
       }
       
       // For binance transactions, ensure the price is properly converted to the main currency
       // This is especially important for fiat purchases like those in the transactions.json example
       if (standardTx.exchange === 'binance' && standardTx.type === 'buy' && standardTx.currency !== mainCurrency) {
-        console.log(`[exchange-routes.js] Processing Binance transaction: ID=${standardTx.id}, Currency=${standardTx.currency}, Amount=${standardTx.amount}, Price=${standardTx.price}`);
+        logger.debug(`Processing Binance transaction: ID=${standardTx.id}, Currency=${standardTx.currency}, Amount=${standardTx.amount}, Price=${standardTx.price}`);
         
         // Try to use the global normalizeTransaction function from server.js
         if (typeof global.normalizeTransaction === 'function') {
           const normalizedTx = global.normalizeTransaction(standardTx, mainCurrency);
-          console.log(`[exchange-routes.js] Normalized with global function: Original=${standardTx.price} ${standardTx.currency}, Normalized=${normalizedTx.normalizedPrice} ${mainCurrency}`);
+          logger.debug(`Normalized with global function: Original=${standardTx.price} ${standardTx.currency}, Normalized=${normalizedTx.normalizedPrice} ${mainCurrency}`);
           return normalizedTx;
         } else {
           // Fallback to local implementation
-          console.log('[exchange-routes.js] Global normalizeTransaction not available, using local implementation');
+          logger.debug('Global normalizeTransaction not available, using local implementation');
           
           // Get priceCache for currency conversion
           const priceCache = require('../server/priceCache');
@@ -415,7 +419,7 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
               cost: normalizedCost
             };
             
-            console.log(`[exchange-routes.js] Manual conversion: ${standardTx.price} ${standardTx.currency} → ${normalizedPrice} ${mainCurrency} (rate: ${exchangeRate})`);
+            logger.debug(`Manual conversion: ${standardTx.price} ${standardTx.currency} → ${normalizedPrice} ${mainCurrency} (rate: ${exchangeRate})`);
             return normalizedTx;
           }
         }
@@ -432,7 +436,7 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
     });
     
     // Log the standardized transactions for debugging
-    console.log(`[exchange-routes.js] Standardized ${standardizedTransactions.length} transactions from ${exchangeId}`);
+    logger.debug(`Standardized ${standardizedTransactions.length} transactions from ${exchangeId}`);
     
     // Load existing transactions
     const existingTransactions = loadTransactions(req);
@@ -463,13 +467,13 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
         addedTransactions.push(newTx);
         // For Kraken transactions, log with more details
         if (newTx.exchange === 'kraken' && newTx.krakenData) {
-          console.log(`[exchange-routes.js] Added new Kraken transaction: ${newTx.type} ${newTx.amount} BTC at ${newTx.price} ${newTx.original?.currency || 'Unknown'} (Order ID: ${newTx.krakenData.ordertxid}, Trade ID: ${newTx.krakenData.txid})`);
+          logger.debug(`Added new Kraken transaction: ${newTx.type} ${newTx.amount} BTC at ${newTx.price} ${newTx.original?.currency || 'Unknown'} (Order ID: ${newTx.krakenData.ordertxid}, Trade ID: ${newTx.krakenData.txid})`);
         } else {
-          console.log(`[exchange-routes.js] Added new transaction: ${newTx.exchange} ${newTx.type} ${newTx.amount} BTC at ${newTx.price} ${newTx.original?.currency || 'Unknown'}`);
+          logger.debug(`Added new transaction: ${newTx.exchange} ${newTx.type} ${newTx.amount} BTC at ${newTx.price} ${newTx.original?.currency || 'Unknown'}`);
         }
       } else {
         // Log the duplicate
-        console.log(`[exchange-routes.js] Skipping duplicate transaction by ID: ${newTx.id}`);
+        logger.debug(`Skipping duplicate transaction by ID: ${newTx.id}`);
       }
     }
     
@@ -485,10 +489,10 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
       if (app.locals.updateTransactions) {
         app.locals.updateTransactions(existingTransactions);
       } else {
-        console.warn('[exchange-routes.js] Unable to update application transactions array - function not available');
+        logger.warn('Unable to update application transactions array - function not available');
       }
     } catch (error) {
-      console.error('[exchange-routes.js] Error updating application transactions array:', error);
+      logger.error('Error updating application transactions array:', error);
     }
     
     res.json({ 
@@ -497,7 +501,7 @@ router.post('/exchanges/:exchangeId/sync', isAuthenticated, async (req, res) => 
       transactions: addedTransactions
     });
   } catch (error) {
-    console.error('[exchange-routes.js] Error syncing exchange transactions:', error);
+    logger.error('Error syncing exchange transactions:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
