@@ -1024,11 +1024,24 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
             }, 0);
     
             const cachedPrices = priceCache.getCachedPrices();
+            logger.debug(`[server.js] Cached prices retrieved for summary:`, {
+                priceEUR: cachedPrices.priceEUR,
+                priceUSD: cachedPrices.priceUSD,
+                eurUsd: cachedPrices.eurUsd,
+                eurPln: cachedPrices.eurPln,
+                eurBrl: cachedPrices.eurBrl,
+                eurGbp: cachedPrices.eurGbp,
+                eurJpy: cachedPrices.eurJpy,
+                eurChf: cachedPrices.eurChf,
+                timestamp: cachedPrices.timestamp
+            });
+            
             const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
             
             let secondaryRate = 1.0;
             if (mainCurrency !== secondaryCurrency) {
                  secondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
+                 logger.debug(`[server.js] Exchange rate ${mainCurrency}/${secondaryCurrency}: ${secondaryRate}`);
             }
             secondaryRate = Number(secondaryRate) || 1.0; 
     
@@ -1141,7 +1154,21 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
             summary.historicalBTCData = historicalBTCData;
         }
 
-        logger.debug('Sending summary to client');
+        if (priceOnly) {
+            logger.debug('[server.js] Sending price-only summary to client with exchange rates:', {
+                eurUsd: summary.eurUsd,
+                eurPln: summary.eurPln,
+                eurBrl: summary.eurBrl,
+                eurGbp: summary.eurGbp,
+                eurJpy: summary.eurJpy,
+                eurChf: summary.eurChf,
+                priceEUR: summary.priceEUR,
+                priceUSD: summary.priceUSD,
+                timestamp: summary.timestamp
+            });
+        } else {
+            logger.debug('Sending full summary to client');
+        }
         res.json(summary);
     } catch (error) {
         logger.error('Error getting summary:', error);
