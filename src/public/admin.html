@@ -549,6 +549,12 @@
             color: #856404;
             border: 1px solid rgba(255, 193, 7, 0.3);
         }
+        
+        .rate-status.cached {
+            background: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+            border: 1px solid rgba(23, 162, 184, 0.3);
+        }
 
         .rate-validation {
             margin-top: 15px;
@@ -567,6 +573,12 @@
             background: rgba(255, 193, 7, 0.1);
             border: 1px solid rgba(255, 193, 7, 0.3);
             color: #856404;
+        }
+        
+        .rate-validation.info {
+            background: rgba(23, 162, 184, 0.1);
+            border: 1px solid rgba(23, 162, 184, 0.3);
+            color: #0c5460;
         }
 
         .rate-validation.error {
@@ -589,6 +601,182 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        
+        /* Import/Export section restructured styles */
+        .import-export-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .import-export-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+        
+        .import-section, .export-section {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .import-section h3, .export-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1rem;
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .section-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary-color);
+            margin: 0 0 15px 0;
+        }
+        
+        .compact-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .compact-buttons .btn {
+            flex: 1;
+            min-width: auto;
+        }
+        
+        .compact-buttons .btn-small {
+            flex: 0 0 auto;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        
+        /* CSV Format Info - Collapsible */
+        .csv-format-info {
+            margin: 15px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .csv-format-info details {
+            margin: 0;
+        }
+        
+        .csv-format-info summary {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s ease;
+        }
+        
+        .csv-format-info summary:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .csv-format-info[open] summary {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(247, 147, 26, 0.1);
+            color: var(--accent-color);
+        }
+        
+        .format-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            padding: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .format-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+        
+        .format-column strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent-color);
+            font-size: 0.9rem;
+        }
+        
+        .compact-list {
+            margin: 0;
+            padding-left: 15px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        .compact-list li {
+            margin-bottom: 4px;
+        }
+        
+        .compact-list code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+        }
+        
+        .format-tip {
+            margin: 15px 15px 0 15px;
+            padding: 10px;
+            background: rgba(247, 147, 26, 0.05);
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: var(--text-secondary-color);
+            border-left: 3px solid var(--accent-color);
+        }
+        
+        /* Compact Danger Zone */
+        .danger-zone-compact {
+            margin-top: 20px;
+            padding: 12px 15px;
+            background: rgba(220, 53, 69, 0.05);
+            border: 1px solid rgba(220, 53, 69, 0.2);
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .danger-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #dc3545;
+            font-size: 0.9rem;
+        }
+        
+        .danger-header i {
+            font-size: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .danger-zone-compact {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            
+            .danger-zone-compact .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -677,46 +865,72 @@
         <div class="admin-section">
             <div class="card">
                 <h2><i class="fas fa-file-import"></i> Import/Export Transactions</h2>
-                <form id="importForm" class="form" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
-                        <input type="file" id="csvFile" name="file" accept=".csv" required>
-                    </div>
-                    <div class="form-buttons">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-upload"></i> Import
-                        </button>
-                        <button type="button" class="btn btn-secondary" onclick="exportTransactionsCSV()">
-                            <i class="fas fa-download"></i> Export CSV
-                        </button>
-                        <button type="button" class="btn btn-info" onclick="downloadCSVTemplate()">
-                            <i class="fas fa-file-download"></i> CSV Template
-                        </button>
-                    </div>
-                </form>
                 
-                <div class="danger-zone">
-                    <h3><i class="fas fa-exclamation-triangle"></i> Danger Zone</h3>
-                    <p>The following actions are destructive and cannot be undone:</p>
-                    <button type="button" class="btn btn-danger" onclick="deleteAllTransactions()">
-                        <i class="fas fa-trash-alt"></i> Delete All Transactions
-                    </button>
+                <div class="import-export-grid">
+                    <div class="import-section">
+                        <h3><i class="fas fa-upload"></i> Import Data</h3>
+                        <form id="importForm" class="form" enctype="multipart/form-data">
+                            <div class="form-group">
+                                <label for="csvFile"><i class="fas fa-file-csv"></i> CSV File</label>
+                                <input type="file" id="csvFile" name="file" accept=".csv" required>
+                            </div>
+                            <div class="compact-buttons">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Import
+                                </button>
+                                <button type="button" class="btn btn-info btn-small" onclick="downloadCSVTemplate()">
+                                    <i class="fas fa-file-download"></i> Template
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <div class="export-section">
+                        <h3><i class="fas fa-download"></i> Export Data</h3>
+                        <p class="section-desc">Download your transaction data</p>
+                        <div class="compact-buttons">
+                            <button type="button" class="btn btn-secondary" onclick="exportTransactionsCSV()">
+                                <i class="fas fa-download"></i> Export CSV
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="help-note">
-                    <h4>CSV Format</h4>
-                    <p>Your CSV file should have the following columns:</p>
-                    <ul>
-                        <li><strong>Date</strong>: Transaction date in YYYY-MM-DD format</li>
-                        <li><strong>Type</strong>: "buy" or "sell"</li>
-                        <li><strong>Amount (BTC)</strong>: BTC amount bought or sold</li>
-                        <li><strong>Exchange</strong>: Exchange name or "manual" for manual entries</li>
-                        <li><strong>Original Currency</strong>: Currency code (EUR, USD, PLN, etc.)</li>
-                        <li><strong>Original Price</strong>: Price per BTC in the original currency</li>
-                        <li><strong>Original Cost</strong>: Total cost in the original currency</li>
-                        <li><strong>Original Fee</strong>: Transaction fee in the original currency</li>
-                    </ul>
-                    <p><i class="fas fa-info-circle"></i> Tip: Download the CSV Template for a properly formatted example.</p>
+                <div class="csv-format-info">
+                    <details>
+                        <summary><i class="fas fa-info-circle"></i> CSV Format Requirements</summary>
+                        <div class="format-grid">
+                            <div class="format-column">
+                                <strong>Required Columns:</strong>
+                                <ul class="compact-list">
+                                    <li><code>Date</code>: YYYY-MM-DD format</li>
+                                    <li><code>Type</code>: "buy" or "sell"</li>
+                                    <li><code>Amount (BTC)</code>: BTC amount</li>
+                                    <li><code>Exchange</code>: Exchange or "manual"</li>
+                                </ul>
+                            </div>
+                            <div class="format-column">
+                                <strong>Financial Data:</strong>
+                                <ul class="compact-list">
+                                    <li><code>Original Currency</code>: EUR, USD, PLN, etc.</li>
+                                    <li><code>Original Price</code>: Price per BTC</li>
+                                    <li><code>Original Cost</code>: Total transaction cost</li>
+                                    <li><code>Original Fee</code>: Transaction fee</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <p class="format-tip"><i class="fas fa-lightbulb"></i> <strong>Tip:</strong> Download the template for a properly formatted example.</p>
+                    </details>
+                </div>
+                
+                <div class="danger-zone-compact">
+                    <div class="danger-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span><strong>Danger Zone</strong> - Destructive actions</span>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-small" onclick="deleteAllTransactions()">
+                        <i class="fas fa-trash-alt"></i> Delete All Transactions
+                    </button>
                 </div>
             </div>
 
@@ -1096,6 +1310,7 @@
                         <div class="form-group">
                             <label for="addAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
                             <input type="number" id="addAmount" step="0.00000001" placeholder="0.12345678" required>
+                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -1155,15 +1370,32 @@
             
             priceInput.addEventListener('input', updateCalculatedCost);
             amountInput.addEventListener('input', updateCalculatedCost);
+            
+            // Add Bitcoin precision validation to add form
+            amountInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) {
+                    // Round to 8 decimal places (satoshi precision)
+                    const rounded = Math.round(value * 100000000) / 100000000;
+                    if (rounded !== value) {
+                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
+                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
+                        updateCalculatedCost(); // Recalculate cost with rounded amount
+                    }
+                }
+            });
 
             const form = modal.querySelector('#addTransactionForm');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
+                    const rawAmount = parseFloat(document.getElementById('addAmount').value);
+                    const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
+                    
                     const newTransaction = {
                         date: new Date(document.getElementById('addDate').value).toISOString(),
                         type: document.getElementById('addType').value,
-                        amount: parseFloat(document.getElementById('addAmount').value),
+                        amount: roundedAmount,
                         price: parseFloat(document.getElementById('addPrice').value),
                         currency: document.getElementById('addCurrency').value,
                         fee: parseFloat(document.getElementById('addFee').value) || 0
@@ -1230,6 +1462,7 @@
                         <div class="form-group">
                             <label for="editAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
                             <input type="number" id="editAmount" step="0.00000001" value="${tx.amount || 0}" required>
+                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -1267,6 +1500,20 @@
 
             document.body.appendChild(modal);
 
+            // Add Bitcoin precision validation to edit form
+            const editAmountInput = document.getElementById('editAmount');
+            editAmountInput.addEventListener('blur', function() {
+                const value = parseFloat(this.value);
+                if (!isNaN(value)) {
+                    // Round to 8 decimal places (satoshi precision)
+                    const rounded = Math.round(value * 100000000) / 100000000;
+                    if (rounded !== value) {
+                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
+                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
+                    }
+                }
+            });
+
             const form = modal.querySelector('#editTransactionForm');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -1274,11 +1521,14 @@
                     // --- Data Sent to Server ---
                     // Send only the ID (in URL) and the editable fields.
                     // Server will recalculate cost and base values.
+                    const rawAmount = parseFloat(document.getElementById('editAmount').value);
+                    const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
+                    
                     const dataToSend = {
                         // id: tx.id, // ID is in the URL
                         date: new Date(document.getElementById('editDate').value).toISOString(),
                         type: document.getElementById('editType').value,
-                        amount: parseFloat(document.getElementById('editAmount').value),
+                        amount: roundedAmount,
                         // Send original values for the server to process
                         originalPrice: parseFloat(document.getElementById('editPrice').value),
                         originalCurrency: document.getElementById('editCurrency').value,
@@ -1615,23 +1865,25 @@
             }
         }
 
-        // Function to load exchange rates with enhanced validation
-        async function loadExchangeRates() {
+        // Function to load exchange rates with enhanced validation and retry logic
+        async function loadExchangeRates(retryCount = 0) {
             const ratesDisplay = document.getElementById('ratesDisplay');
             const rateValidation = document.getElementById('rateValidation');
             const validationMessage = document.getElementById('validationMessage');
+            const maxRetries = 3;
             
             try {
                 // Show loading state
                 ratesDisplay.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading exchange rates...</p>';
                 rateValidation.style.display = 'none';
                 
-                const response = await fetch('/api/summary?priceOnly=true');
+                const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now());
                 if (!response.ok) {
                     throw new Error('Failed to load rates');
                 }
                 
                 const data = await response.json();
+                console.log('Exchange rate data received:', data);
                 
                 // Get current main and secondary currencies
                 const mainCurrency = document.getElementById('mainCurrency').value;
@@ -1652,6 +1904,23 @@
                 // Validate and show exchange rates based on main and secondary currencies
                 if (mainCurrency !== secondaryCurrency) {
                     const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
+                    
+                    // If rate is missing and we haven't retried too many times, retry after a short delay
+                    if (rateInfo.status === 'unavailable' && retryCount < maxRetries) {
+                        console.log(`Exchange rate missing for ${mainCurrency}/${secondaryCurrency}, retrying in 2 seconds... (attempt ${retryCount + 1}/${maxRetries})`);
+                        setTimeout(() => {
+                            loadExchangeRates(retryCount + 1);
+                        }, 2000);
+                        
+                        // Show retry message
+                        ratesDisplay.innerHTML = `
+                            <p><i class="fas fa-spinner fa-spin"></i> Exchange rate loading...</p>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary-color);">
+                                <i class="fas fa-clock"></i> Waiting for exchange rates... (${retryCount + 1}/${maxRetries})
+                            </p>
+                        `;
+                        return;
+                    }
                     
                     const rateElement = document.createElement('p');
                     rateElement.innerHTML = `
@@ -1689,6 +1958,20 @@
                 
             } catch (error) {
                 console.error('Error loading exchange rates:', error);
+                
+                // If we haven't reached max retries, try again
+                if (retryCount < maxRetries) {
+                    console.log(`Retrying exchange rate load... (attempt ${retryCount + 1}/${maxRetries})`);
+                    setTimeout(() => {
+                        loadExchangeRates(retryCount + 1);
+                    }, 3000);
+                    
+                    ratesDisplay.innerHTML = `
+                        <p style="color: var(--text-secondary-color);"><i class="fas fa-exclamation-triangle"></i> Loading exchange rates... (${retryCount + 1}/${maxRetries})</p>
+                    `;
+                    return;
+                }
+                
                 ratesDisplay.innerHTML = `<p style="color: var(--error-color, #dc3545);"><i class="fas fa-exclamation-triangle"></i> Failed to load exchange rates</p>`;
                 
                 // Show error validation
@@ -1698,54 +1981,132 @@
             }
         }
 
-        // Helper function to get rate information with status
+        // Exchange rate caching functions
+        function getCachedRates() {
+            try {
+                const cached = localStorage.getItem('btc_tracker_exchange_rates');
+                return cached ? JSON.parse(cached) : {};
+            } catch (e) {
+                console.warn('Failed to load cached rates:', e);
+                return {};
+            }
+        }
+        
+        function setCachedRates(rates) {
+            try {
+                const cacheData = {
+                    rates: rates,
+                    timestamp: Date.now(),
+                    expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                };
+                localStorage.setItem('btc_tracker_exchange_rates', JSON.stringify(cacheData));
+            } catch (e) {
+                console.warn('Failed to cache rates:', e);
+            }
+        }
+        
+        function getCachedRate(mainCurrency, secondaryCurrency) {
+            const cached = getCachedRates();
+            if (!cached.rates || !cached.timestamp || Date.now() > cached.expires) {
+                return null;
+            }
+            
+            const key = `${mainCurrency}_${secondaryCurrency}`;
+            const rate = cached.rates[key];
+            
+            if (rate) {
+                const ageHours = Math.floor((Date.now() - cached.timestamp) / (1000 * 60 * 60));
+                return {
+                    rate: rate.value,
+                    status: 'cached',
+                    statusText: `Cached (${ageHours}h ago)`,
+                    age: ageHours
+                };
+            }
+            
+            return null;
+        }
+        
+        function cacheRate(mainCurrency, secondaryCurrency, rateValue) {
+            const cached = getCachedRates();
+            if (!cached.rates) cached.rates = {};
+            
+            const key = `${mainCurrency}_${secondaryCurrency}`;
+            cached.rates[key] = {
+                value: rateValue,
+                timestamp: Date.now()
+            };
+            
+            setCachedRates(cached.rates);
+        }
+
+        // Helper function to get rate information with status and caching
         function getRateInfo(data, mainCurrency, secondaryCurrency) {
             let rate = 'N/A';
             let status = 'unavailable';
             let statusText = 'Missing';
+            let freshRate = null;
             
             if (mainCurrency === 'EUR') {
                 switch(secondaryCurrency) {
                     case 'USD':
                         if (data.eurUsd) {
-                            rate = data.eurUsd.toFixed(4);
+                            freshRate = data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/USD rate missing - eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'PLN':
                         if (data.eurPln) {
-                            rate = data.eurPln.toFixed(4);
+                            freshRate = data.eurPln;
+                            rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/PLN rate missing - eurPln:', data.eurPln);
                         }
                         break;
                     case 'BRL':
                         if (data.eurBrl) {
-                            rate = data.eurBrl.toFixed(4);
+                            freshRate = data.eurBrl;
+                            rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/BRL rate missing - eurBrl:', data.eurBrl);
                         }
                         break;
                     case 'GBP':
                         if (data.eurGbp) {
-                            rate = data.eurGbp.toFixed(4);
+                            freshRate = data.eurGbp;
+                            rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/GBP rate missing - eurGbp:', data.eurGbp);
                         }
                         break;
                     case 'JPY':
                         if (data.eurJpy) {
-                            rate = data.eurJpy.toFixed(2);
+                            freshRate = data.eurJpy;
+                            rate = freshRate.toFixed(2);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/JPY rate missing - eurJpy:', data.eurJpy);
                         }
                         break;
                     case 'CHF':
                         if (data.eurChf) {
-                            rate = data.eurChf.toFixed(4);
+                            freshRate = data.eurChf;
+                            rate = freshRate.toFixed(4);
                             status = 'available';
                             statusText = 'Direct';
+                        } else {
+                            console.log('EUR/CHF rate missing - eurChf:', data.eurChf);
                         }
                         break;
                 }
@@ -1753,46 +2114,83 @@
                 switch(secondaryCurrency) {
                     case 'EUR':
                         if (data.eurUsd) {
-                            rate = (1 / data.eurUsd).toFixed(4);
+                            freshRate = 1 / data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/EUR rate missing - eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'PLN':
                         if (data.eurPln && data.eurUsd) {
-                            rate = (data.eurPln / data.eurUsd).toFixed(4);
+                            freshRate = data.eurPln / data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/PLN rate missing - eurPln:', data.eurPln, 'eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'BRL':
                         if (data.eurBrl && data.eurUsd) {
-                            rate = (data.eurBrl / data.eurUsd).toFixed(4);
+                            freshRate = data.eurBrl / data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/BRL rate missing - eurBrl:', data.eurBrl, 'eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'GBP':
                         if (data.eurGbp && data.eurUsd) {
-                            rate = (data.eurGbp / data.eurUsd).toFixed(4);
+                            freshRate = data.eurGbp / data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/GBP rate missing - eurGbp:', data.eurGbp, 'eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'JPY':
                         if (data.eurJpy && data.eurUsd) {
-                            rate = (data.eurJpy / data.eurUsd).toFixed(2);
+                            freshRate = data.eurJpy / data.eurUsd;
+                            rate = freshRate.toFixed(2);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/JPY rate missing - eurJpy:', data.eurJpy, 'eurUsd:', data.eurUsd);
                         }
                         break;
                     case 'CHF':
                         if (data.eurChf && data.eurUsd) {
-                            rate = (data.eurChf / data.eurUsd).toFixed(4);
+                            freshRate = data.eurChf / data.eurUsd;
+                            rate = freshRate.toFixed(4);
                             status = 'calculated';
                             statusText = 'Calculated';
+                        } else {
+                            console.log('USD/CHF rate missing - eurChf:', data.eurChf, 'eurUsd:', data.eurUsd);
                         }
                         break;
+                }
+            }
+            
+            // If we got a fresh rate, cache it
+            if (freshRate !== null && status !== 'unavailable') {
+                cacheRate(mainCurrency, secondaryCurrency, freshRate);
+            }
+            
+            // If no fresh rate available, try to use cached rate
+            if (status === 'unavailable') {
+                const cachedRate = getCachedRate(mainCurrency, secondaryCurrency);
+                if (cachedRate) {
+                    console.log(`Using cached rate for ${mainCurrency}/${secondaryCurrency}:`, cachedRate);
+                    return {
+                        rate: (secondaryCurrency === 'JPY' ? parseFloat(cachedRate.rate).toFixed(2) : parseFloat(cachedRate.rate).toFixed(4)),
+                        status: cachedRate.status,
+                        statusText: cachedRate.statusText,
+                        age: cachedRate.age
+                    };
                 }
             }
             
@@ -1812,6 +2210,10 @@
             } else if (rateInfo.status === 'calculated') {
                 rateValidation.className = 'rate-validation warning';
                 validationMessage.innerHTML = `<i class="fas fa-calculator"></i> Exchange rate calculated from EUR base rates. Currency pair ${mainCurrency}/${secondaryCurrency} is supported via calculation.`;
+            } else if (rateInfo.status === 'cached') {
+                rateValidation.className = 'rate-validation info';
+                const ageText = rateInfo.age === 0 ? 'less than 1 hour' : `${rateInfo.age} hour${rateInfo.age > 1 ? 's' : ''}`;
+                validationMessage.innerHTML = `<i class="fas fa-clock"></i> Using cached exchange rate for ${mainCurrency}/${secondaryCurrency} (${ageText} old). Fresh rate will be loaded when available.`;
             } else {
                 rateValidation.className = 'rate-validation error';
                 validationMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Exchange rate not available for ${mainCurrency}/${secondaryCurrency}. Please choose a different currency combination or refresh rates.`;
@@ -1837,7 +2239,7 @@
                     throw new Error('Failed to refresh rates');
                 }
                 
-                // Reload the rates display
+                // Reload the rates display (this will also cache new rates)
                 await loadExchangeRates();
                 
                 // Show success feedback briefly
@@ -1856,6 +2258,18 @@
                 }, 2000);
             } finally {
                 refreshBtn.disabled = false;
+            }
+        }
+        
+        // Function to clear cached rates (useful for debugging)
+        function clearCachedRates() {
+            try {
+                localStorage.removeItem('btc_tracker_exchange_rates');
+                console.log('Cached exchange rates cleared');
+                // Reload rates to show current state
+                loadExchangeRates();
+            } catch (e) {
+                console.warn('Failed to clear cached rates:', e);
             }
         }
 
