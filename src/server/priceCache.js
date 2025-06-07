@@ -444,7 +444,7 @@ class PriceCache {
             const ratePromises = essentialPairs.map(pair => 
                 this.fetchYahooFinanceData(pair, startDate, endDate).catch(error => {
                     logger.warn(`[priceCache] Failed to fetch ${pair}:`, error.message);
-                    return null;
+                    return { error: error.message, pair }; // Return error info instead of null
                 })
             );
 
@@ -456,38 +456,84 @@ class PriceCache {
                 USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76 }
             };
 
+            // Track successful and failed fetches
+            const fetchResults = {
+                successful: [],
+                failed: [],
+                usingFallback: []
+            };
+
             // Update with actual rates where available
             rateResults.forEach((data, index) => {
-                if (data && Object.keys(data).length > 0) {
-                    const pair = essentialPairs[index];
+                const pair = essentialPairs[index];
+                
+                if (data && data.error) {
+                    // This pair failed to fetch
+                    fetchResults.failed.push({ pair, error: data.error });
+                    fetchResults.usingFallback.push(pair);
+                    logger.warn(`[priceCache] Using fallback rate for ${pair} due to fetch error:`, data.error);
+                } else if (data && Object.keys(data).length > 0) {
                     const dates = Object.keys(data).sort();
                     const latestDate = dates[dates.length - 1];
                     const rate = data[latestDate].close;
+
+                    fetchResults.successful.push({ pair, rate, date: latestDate });
 
                     // Map the rates to our structure
                     if (pair === 'EURUSD=X') {
                         exchangeRates.EUR.USD = rate;
                         exchangeRates.USD.EUR = 1 / rate; // Calculate inverse
+                        logger.debug(`[priceCache] Updated EUR/USD rate: ${rate} (inverse: ${exchangeRates.USD.EUR.toFixed(4)})`);
                     } else if (pair === 'EURPLN=X') {
                         exchangeRates.EUR.PLN = rate;
                         exchangeRates.USD.PLN = rate / exchangeRates.EUR.USD; // Calculate USD/PLN
+                        logger.debug(`[priceCache] Updated EUR/PLN rate: ${rate}, calculated USD/PLN: ${exchangeRates.USD.PLN.toFixed(4)}`);
                     } else if (pair === 'EURGBP=X') {
                         exchangeRates.EUR.GBP = rate;
                         exchangeRates.USD.GBP = rate / exchangeRates.EUR.USD; // Calculate USD/GBP
+                        logger.debug(`[priceCache] Updated EUR/GBP rate: ${rate}, calculated USD/GBP: ${exchangeRates.USD.GBP.toFixed(4)}`);
                     } else if (pair === 'EURJPY=X') {
                         exchangeRates.EUR.JPY = rate;
                         exchangeRates.USD.JPY = rate / exchangeRates.EUR.USD; // Calculate USD/JPY
+                        logger.debug(`[priceCache] Updated EUR/JPY rate: ${rate}, calculated USD/JPY: ${exchangeRates.USD.JPY.toFixed(2)}`);
                     } else if (pair === 'EURCHF=X') {
                         exchangeRates.EUR.CHF = rate;
                         exchangeRates.USD.CHF = rate / exchangeRates.EUR.USD; // Calculate USD/CHF
+                        logger.debug(`[priceCache] Updated EUR/CHF rate: ${rate}, calculated USD/CHF: ${exchangeRates.USD.CHF.toFixed(4)}`);
                     } else if (pair === 'EURBRL=X') {
                         exchangeRates.EUR.BRL = rate;
                         exchangeRates.USD.BRL = rate / exchangeRates.EUR.USD; // Calculate USD/BRL
+                        logger.debug(`[priceCache] Updated EUR/BRL rate: ${rate}, calculated USD/BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
                     }
+                } else {
+                    // Empty data received
+                    fetchResults.failed.push({ pair, error: 'Empty data received' });
+                    fetchResults.usingFallback.push(pair);
+                    logger.warn(`[priceCache] Using fallback rate for ${pair} - received empty data`);
                 }
             });
 
-            logger.debug(`[priceCache] Fetched exchange rates from Yahoo Finance: EUR/USD=${exchangeRates.EUR.USD}, EUR/BRL=${exchangeRates.EUR.BRL}`);
+            // Log comprehensive results
+            logger.info(`[priceCache] Exchange rate fetch summary - Success: ${fetchResults.successful.length}/${essentialPairs.length}, Failed: ${fetchResults.failed.length}`);
+            
+            if (fetchResults.successful.length > 0) {
+                const successfulPairs = fetchResults.successful.map(r => `${r.pair}=${r.rate.toFixed(4)}`).join(', ');
+                logger.debug(`[priceCache] Successfully fetched rates: ${successfulPairs}`);
+            }
+            
+            if (fetchResults.failed.length > 0) {
+                const failedPairs = fetchResults.failed.map(r => r.pair).join(', ');
+                logger.warn(`[priceCache] Failed to fetch rates for: ${failedPairs}`);
+            }
+
+            if (fetchResults.usingFallback.length > 0) {
+                const fallbackPairs = fetchResults.usingFallback.join(', ');
+                logger.warn(`[priceCache] Using fallback rates for: ${fallbackPairs}`);
+            }
+
+            // Final rate summary for common pairs
+            logger.info(`[priceCache] Final exchange rates - EUR/USD: ${exchangeRates.EUR.USD.toFixed(4)}, EUR/PLN: ${exchangeRates.EUR.PLN.toFixed(4)}, EUR/BRL: ${exchangeRates.EUR.BRL.toFixed(4)}`);
+            logger.info(`[priceCache] Calculated USD rates - USD/PLN: ${exchangeRates.USD.PLN.toFixed(4)}, USD/BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
 
             return exchangeRates;
         } catch (error) {
