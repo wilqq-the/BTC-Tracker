@@ -1,0 +1,37 @@
+changelog:
+  exclude:
+    labels:
+      - ignore-for-release
+  categories:
+    - title: 🚀 Major Features
+      labels:
+        - major-feature
+        - enhancement
+        - feature
+    - title: ✨ Enhancements
+      labels:
+        - improvement
+        - enhancement
+        - ui/ux
+    - title: 🐛 Bug Fixes
+      labels:
+        - bug
+        - bugfix
+        - fix
+    - title: 📚 Documentation
+      labels:
+        - documentation
+        - docs
+    - title: 🧪 Testing
+      labels:
+        - testing
+        - tests
+    - title: 🔧 Maintenance
+      labels:
+        - maintenance
+        - chore
+        - dependencies
+        - ci
+    - title: Other Changes
+      labels:
+        - "*" 
