@@ -2,6 +2,7 @@ const axios = require('axios');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const credentialManager = require('../services/credential-manager');
+const Logger = require('../utils/logger');
 
 class CoinbaseAdapter {
     constructor() {
@@ -9,6 +10,7 @@ class CoinbaseAdapter {
         this.id = 'coinbase';
         this.baseUrl = 'https://api.coinbase.com';
         this.credentials = null;
+        this.logger = Logger.create('COINBASE');
     }
 
     getRequiredCredentials() {
@@ -31,7 +33,7 @@ class CoinbaseAdapter {
     async testConnection(credentials) {
         try {
             if (!credentials.apiKey || !credentials.privateKey) {
-                console.error('Missing required credentials for Coinbase connection test');
+                this.logger.error('Missing required credentials for Coinbase connection test');
                 return false;
             }
 
@@ -43,7 +45,7 @@ class CoinbaseAdapter {
             
             // Ensure it has the standard EC private key format
             if (!cleanPrivateKey.includes('-----BEGIN EC PRIVATE KEY-----')) {
-                console.error('Invalid private key format: EC private key required');
+                this.logger.error('Invalid private key format: EC private key required');
                 return false;
             }
             
@@ -58,7 +60,7 @@ class CoinbaseAdapter {
                 }
             }
             
-            console.log('Private key format being used:', 
+            this.logger.debug('Private key format being used:', 
                         cleanPrivateKey.substring(0, 30) + '...' + cleanPrivateKey.substring(cleanPrivateKey.length - 30));
 
             // Store credentials temporarily for the test with clean private key
@@ -67,7 +69,7 @@ class CoinbaseAdapter {
                 privateKey: cleanPrivateKey
             };
 
-            console.log('Testing Coinbase connection...');
+            this.logger.info('Testing Coinbase connection...');
             
             // Try to get accounts as a connection test
             const response = await this.makeRequest('GET', '/api/v3/brokerage/accounts');
@@ -76,14 +78,13 @@ class CoinbaseAdapter {
             this.credentials = null;
 
             const success = response.data && Array.isArray(response.data.accounts);
-            console.log(`Coinbase connection test ${success ? 'successful' : 'failed'}`);
+            this.logger.info(`Coinbase connection test ${success ? 'successful' : 'failed'}`);
             
             return success;
         } catch (error) {
-            console.error('Coinbase connection test failed:', error.message);
-            console.error('Stack trace:', error.stack);
+            this.logger.error('Coinbase connection test failed:', error.message);
             if (error.response) {
-                console.error('Error response:', JSON.stringify(error.response.data, null, 2));
+                this.logger.error('Error response:', JSON.stringify(error.response.data, null, 2));
             }
             this.credentials = null;
             return false;
@@ -100,17 +101,17 @@ class CoinbaseAdapter {
             const accountsResponse = await this.makeRequest('GET', '/api/v3/brokerage/accounts');
             
             if (!accountsResponse.data || !accountsResponse.data.accounts || !accountsResponse.data.accounts.length) {
-                console.log('No accounts found on Coinbase');
+                this.logger.warn('No accounts found on Coinbase');
                 return [];
             }
             
             const btcAccount = accountsResponse.data.accounts.find(acc => acc.currency === 'BTC');
             if (!btcAccount) {
-                console.log('No BTC account found on Coinbase');
+                this.logger.warn('No BTC account found on Coinbase');
                 return [];
             }
             
-            console.log(`Found Coinbase BTC account with balance: ${btcAccount.available_balance.value}`);
+            this.logger.info(`Found Coinbase BTC account with balance: ${btcAccount.available_balance.value}`);
             
             // Handle date parameters safely
             let formattedStartDate;
@@ -124,7 +125,7 @@ class CoinbaseAdapter {
                     // Make sure the date is valid
                     formattedStartDate = new Date(startDate);
                     if (isNaN(formattedStartDate.getTime())) {
-                        console.warn('Invalid start date provided, using account creation date instead');
+                        this.logger.warn('Invalid start date provided, using account creation date instead');
                         formattedStartDate = btcAccount.created_at ? 
                             new Date(btcAccount.created_at).toISOString() : 
                             new Date(0).toISOString(); // fallback to epoch start
@@ -142,14 +143,14 @@ class CoinbaseAdapter {
                 } else {
                     formattedEndDate = new Date(endDate);
                     if (isNaN(formattedEndDate.getTime())) {
-                        console.warn('Invalid end date provided, using current date instead');
+                        this.logger.warn('Invalid end date provided, using current date instead');
                         formattedEndDate = new Date().toISOString();
                     } else {
                         formattedEndDate = formattedEndDate.toISOString();
                     }
                 }
             } catch (dateError) {
-                console.error('Error parsing dates:', dateError);
+                this.logger.error('Error parsing dates:', dateError);
                 // Use safe defaults
                 formattedStartDate = btcAccount.created_at ? 
                     new Date(btcAccount.created_at).toISOString() : 
@@ -157,7 +158,7 @@ class CoinbaseAdapter {
                 formattedEndDate = new Date().toISOString();
             }
             
-            console.log(`Fetching Coinbase transactions from ${formattedStartDate} to ${formattedEndDate}`);
+            this.logger.info(`Fetching Coinbase transactions from ${formattedStartDate} to ${formattedEndDate}`);
             
             // Get order fills - these contain the most complete transaction information including fees
             const fillsResponse = await this.makeRequest('GET', '/api/v3/brokerage/orders/historical/fills', {
@@ -167,11 +168,11 @@ class CoinbaseAdapter {
             });
             
             if (!fillsResponse.data?.fills?.length) {
-                console.log('No transaction fills found on Coinbase for the specified date range');
+                this.logger.info('No transaction fills found on Coinbase for the specified date range');
                 return [];
             }
             
-            console.log(`Found ${fillsResponse.data.fills.length} transaction fills on Coinbase`);
+            this.logger.info(`Found ${fillsResponse.data.fills.length} transaction fills on Coinbase`);
             
             // Format transactions from fills
             const transactions = fillsResponse.data.fills.map(fill => {
@@ -181,7 +182,6 @@ class CoinbaseAdapter {
                     
                     // Skip sell orders - only include buy transactions
                     if (!isBuy) {
-                        console.log(`Skipping sell order: ${fill.order_id}`);
                         return null;
                     }
                     
@@ -218,13 +218,13 @@ class CoinbaseAdapter {
                 }
             }).filter(tx => tx !== null); // Remove any failed items
             
-            console.log(`Returning ${transactions.length} buy transactions from Coinbase`);
+            this.logger.info(`Returning ${transactions.length} buy transactions from Coinbase`);
             
             return transactions;
         } catch (error) {
-            console.error('Error fetching Coinbase transactions:', error.message);
+            this.logger.error('Error fetching Coinbase transactions:', error.message);
             if (error.response) {
-                console.error('Error response:', JSON.stringify(error.response.data, null, 2));
+                this.logger.error('Error response:', JSON.stringify(error.response.data, null, 2));
             }
             throw new Error(`Failed to fetch Coinbase transactions: ${error.message}`);
         }
@@ -272,7 +272,7 @@ class CoinbaseAdapter {
                 nonce: uuidv4() // Generate a unique nonce for each request
             };
 
-            console.log('Attempting to sign JWT with key format:', 
+            this.logger.debug('Attempting to sign JWT with key format:', 
                          privateKey.substring(0, 30) + '...' + privateKey.substring(privateKey.length - 30));
 
             const token = jwt.sign(payload, privateKey, { 
@@ -285,8 +285,7 @@ class CoinbaseAdapter {
             });
             return token;
         } catch (error) {
-            console.error("Error generating JWT:", error.message);
-            console.error("Stack trace:", error.stack);
+            this.logger.error("Error generating JWT:", error.message);
             throw error;
         }
     }
@@ -322,8 +321,8 @@ class CoinbaseAdapter {
             // Enhanced error reporting
             if (error.response) {
                 errorMessage += ` (Status: ${error.response.status})`;
-                console.error('API Response Status:', error.response.status);
-                console.error('API Response Data:', JSON.stringify(error.response.data, null, 2));
+                this.logger.error('API Response Status:', error.response.status);
+                this.logger.error('API Response Data:', JSON.stringify(error.response.data, null, 2));
                 
                 // Try to extract a more specific error message if available
                 if (error.response.data && error.response.data.message) {
@@ -331,10 +330,10 @@ class CoinbaseAdapter {
                 }
             } else if (error.request) {
                 errorMessage += ' - No response received from server';
-                console.error('No response received:', error.request);
+                this.logger.error('No response received:', error.request);
             }
             
-            console.error(errorMessage);
+            this.logger.error(errorMessage);
             throw new Error(errorMessage);
         }
     }

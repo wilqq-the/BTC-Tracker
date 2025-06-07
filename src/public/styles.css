@@ -343,7 +343,7 @@ nav a.active {
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         max-height: 0;
         transition: max-height 0.3s ease;
-        z-index: 100;
+        z-index: 200;
     }
     
     .nav-dropdown.active {
@@ -489,9 +489,12 @@ nav a.active {
 /* Ensure mobile display when below 768px */
 @media (max-width: 768px) {
     /* Override to show mobile elements */
-    .mobile-dropdown-nav,
-    .mobile-flex-row .theme-logout-container {
+    .mobile-dropdown-nav {
         display: block;
+    }
+    
+    .mobile-flex-row .theme-logout-container {
+        display: flex;
     }
 }
 

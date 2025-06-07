@@ -177,7 +177,7 @@ class ExchangeService {
       }
       
       // Save credentials
-      const saved = credentialManager.saveCredentials(exchangeId, credentials);
+      const saved = await credentialManager.saveCredentials(exchangeId, credentials);
       
       if (!saved) {
         throw new Error(`Failed to save credentials for exchange: ${exchangeId}`);

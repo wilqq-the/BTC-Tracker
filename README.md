@@ -2,12 +2,24 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
-## GH Pages
+## 🆕 What's New in v0.5.0
 
-Our [GitHub Pages documentation site](https://wilqq-the.github.io/BTC-Tracker/index.html) provides comprehensive information about BTC Tracker:
-- **🚀 Getting Started**: Detailed installation and setup instructions
-- **📸 Screenshots**: See the application interface and features in action
-- **⭐ Features**: Complete overview of all BTC Tracker capabilities
+### 🚀 **Major Enhancements**
+- **📊 Interactive Charts**: Time slider, comparison ticker, and Yahoo Finance integration
+- **🇧🇷 Brazilian Real (BRL)**: Full currency support with enhanced converter
+- **📱 Mobile Improvements**: Better transaction interactions and responsive design
+- **🧪 Enhanced Testing**: 50+ new tests with improved reliability
+- **🤖 Automated Updates**: Dependabot integration for security
+
+[**📋 View Full Changelog**](CHANGELOG.md) | [**🚀 Release Notes**](.github/RELEASE_TEMPLATE.md)
+
+## Documentation & Resources
+
+- **📋 [Changelog](CHANGELOG.md)**: Detailed version history and release notes
+- **🚀 [GitHub Pages](https://wilqq-the.github.io/BTC-Tracker/index.html)**: Comprehensive documentation with:
+  - **Getting Started**: Detailed installation and setup instructions
+  - **Screenshots**: See the application interface and features in action
+  - **Features**: Complete overview of all BTC Tracker capabilities
 
 ## Why BTC Tracker?
 
@@ -19,18 +31,45 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 
 ## Features
 
+### 📊 **Data & Analytics**
 - **Investment Tracking**: Record and manage your Bitcoin transactions
-- **Multi-Currency Support**: Track investments in EUR, USD, PLN, GBP, JPY, CHF
+- **Enhanced Charts**: Interactive time slider, comparison ticker, and bottom timeline navigation
+- **Yahoo Finance Integration**: Reliable data source for accurate price information
 - **Performance Analysis**: Calculate P&L and ROI for your portfolio
-- **Historical Data**: View Bitcoin price trends over time
-- **Responsive Design**: Works on desktop and mobile devices
-- **CSV Import/Export**: Easy data migration
+- **Historical Data**: View Bitcoin price trends over time with enhanced visualization
+
+### 💱 **Currency Support**
+- **Multi-Currency Support**: Track investments in EUR, USD, PLN, GBP, JPY, CHF, **BRL (Brazilian Real)**
+- **Advanced Currency Converter**: Enhanced exchange rate functionality with comprehensive testing
+- **Smart Rate Caching**: Intelligent caching system for reliable currency conversion
+
+### 🎨 **User Interface**
+- **Responsive Design**: Enhanced mobile support with improved transaction interactions
+- **Interactive Charts**: Advanced charting with time controls and comparison features
 - **Dark/Light Theme**: Choose your preferred visual style
+- **Mobile-First Design**: Optimized mobile transaction management and navigation
+
+### 🔐 **Security & Authentication**
 - **Secure Authentication**: User authentication with password protection and session management
+- **Enhanced Session Management**: Improved startup and session handling
+- **PIN Authentication**: Quick access with 4-digit PIN support
+
+### 🔄 **Data Management**
+- **CSV Import/Export**: Easy data migration with enhanced UI
+- **Backup & Restore**: Comprehensive data backup solutions
+- **Transaction Validation**: Bitcoin precision validation (satoshi-level accuracy)
+
+### 🚀 **Integration & Deployment**
 - **CoinGecko API Integration**: Optional API key support for higher rate limits
 - **Containerized**: Runs in Docker or Podman with minimal setup
 - **Exchange Integration**: Automatic sync of BTC buy transactions with major exchanges (Binance, Coinbase, Kraken, Strike) using READ-ONLY API keys
 - **Windows Desktop App**: Native Windows application with system tray support and automatic updates
+- **Automated Dependencies**: Dependabot integration for automated security updates
+
+### 🧪 **Development & Testing**
+- **Comprehensive Testing**: Enhanced E2E tests with improved reliability
+- **Currency Testing**: Full test coverage for currency conversion functionality
+- **Enhanced Logging**: Detailed logging across all modules for better debugging
 
 ## Quick Start (Easiest Method) 🚀
 
