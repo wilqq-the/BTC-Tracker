@@ -25,7 +25,7 @@
     "connect-flash": "^0.1.1",
     "cors": "^2.8.5",
     "csv-parse": "^5.5.3",
-    "express": "^4.18.2",
+    "express": "^5.1.0",
     "express-fileupload": "^1.5.1",
     "express-session": "^1.18.1",
     "jsonwebtoken": "^9.0.2",
