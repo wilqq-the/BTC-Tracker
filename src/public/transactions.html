@@ -196,6 +196,12 @@
             color: #000000;
         }
 
+        /* Spinner animation for auth loading */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Ensure sort icon is visible on sorted column */
         #transactionsTable th.sorted-column .sort-icon {
             opacity: 1;
@@ -251,7 +257,7 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             position: relative;
-            z-index: 100;
+            z-index: 50;
             overflow: visible;
         }
         
@@ -822,22 +828,119 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Subtle authentication loading indicator -->
+    <div id="authLoadingOverlay" style="
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        border-radius: 12px;
+        padding: 15px 20px;
+        z-index: 9999;
+        color: var(--text-color, #fff);
+        font-family: 'JetBrains Mono', monospace;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.9rem;
+    ">
+        <div style="
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--accent-color, #f7931a);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        "></div>
+        <span style="color: var(--accent-color, #f7931a);">
+            <i class="fas fa-shield-alt" style="margin-right: 6px;"></i>Verifying access...
+        </span>
+    </div>
+
     <script src="/js/ticker.js"></script>
     <script src="js/electron-integration.js"></script>
     <script>
+        // Check authentication before loading anything
+        async function checkAuthAndInitialize() {
+            const authOverlay = document.getElementById('authLoadingOverlay');
+            let overlayTimeout;
+            
+            try {
+                // Show loading indicator after a short delay (only for slow connections)
+                overlayTimeout = setTimeout(() => {
+                    if (authOverlay) {
+                        authOverlay.style.opacity = '1';
+                        authOverlay.style.transform = 'translateY(0)';
+                    }
+                }, 150); // Show after 150ms if still loading
+                
+                // Make a simple authenticated request to check if we're logged in
+                const response = await fetch('/api/settings', {
+                    credentials: 'include',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                // Clear the timeout since we got a response
+                clearTimeout(overlayTimeout);
+                
+                // If we get HTML response instead of JSON, we're being redirected to login
+                const contentType = response.headers.get('content-type');
+                if (!response.ok || (contentType && contentType.includes('text/html'))) {
+                    console.log('Not authenticated, redirecting to login...');
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                // If we get here, we're authenticated - proceed with normal initialization
+                console.log('Authentication verified, loading transactions page...');
+                
+                // Hide the authentication loading overlay smoothly
+                if (authOverlay) {
+                    authOverlay.style.opacity = '0';
+                    authOverlay.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        authOverlay.style.display = 'none';
+                    }, 300);
+                }
+                
+                // Initialize the page
+                initializePage();
+                
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                clearTimeout(overlayTimeout);
+                // On any error, redirect to login to be safe
+                window.location.href = '/login';
+            }
+        }
+
         // Dropdown navigation functionality
-        document.addEventListener('DOMContentLoaded', () => {
+        function initializePage() {
             const currentPageBtn = document.getElementById('currentPageBtn');
             const navDropdown = document.getElementById('navDropdown');
             
             // Toggle dropdown
-            currentPageBtn.addEventListener('click', () => {
+            currentPageBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 currentPageBtn.classList.toggle('active');
                 navDropdown.classList.toggle('active');
             });
             
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
+                // Don't close dropdown if clicking on a transaction card
+                if (e.target.closest('.transaction-card')) {
+                    return;
+                }
+                
                 if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
                     currentPageBtn.classList.remove('active');
                     navDropdown.classList.remove('active');
@@ -881,6 +984,11 @@
             
             // Add pull-to-refresh for both mobile and desktop views
             setupPullToRefresh();
+        }
+
+        // Initialize page after authentication check
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndInitialize();
         });
         
         // Set current year in footer
@@ -895,7 +1003,8 @@
             const mobileFilterDropdown = document.getElementById('mobileFilterDropdown');
             
             // Toggle sort dropdown
-            mobileSortBtn.addEventListener('click', () => {
+            mobileSortBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileSortBtn.classList.toggle('active');
                 mobileSortDropdown.classList.toggle('show');
                 // Close filter dropdown if open
@@ -904,7 +1013,8 @@
             });
             
             // Toggle filter dropdown
-            mobileFilterBtn.addEventListener('click', () => {
+            mobileFilterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileFilterBtn.classList.toggle('active');
                 mobileFilterDropdown.classList.toggle('show');
                 // Close sort dropdown if open
@@ -915,7 +1025,8 @@
             // Handle sort option selection
             const sortOptions = document.querySelectorAll('.mobile-sort-option');
             sortOptions.forEach(option => {
-                option.addEventListener('click', () => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const sortColumn = option.getAttribute('data-sort');
                     const sortDirection = option.getAttribute('data-direction');
                     
@@ -943,7 +1054,8 @@
             // Handle filter option selection
             const filterOptions = document.querySelectorAll('.mobile-filter-option');
             filterOptions.forEach(option => {
-                option.addEventListener('click', () => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const filterValue = option.getAttribute('data-filter');
                     
                     // Update visual state
@@ -965,7 +1077,8 @@
             });
             
             // Mobile refresh
-            mobileRefreshBtn.addEventListener('click', () => {
+            mobileRefreshBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileRefreshBtn.classList.add('refreshing');
                 const icon = mobileRefreshBtn.querySelector('i');
                 icon.style.animation = 'spin 1s linear infinite';
@@ -980,6 +1093,11 @@
             
             // Close dropdowns when clicking outside
             document.addEventListener('click', (e) => {
+                // Don't close dropdowns if clicking on a transaction card
+                if (e.target.closest('.transaction-card')) {
+                    return;
+                }
+                
                 if (!mobileSortBtn.contains(e.target) && !mobileSortDropdown.contains(e.target)) {
                     mobileSortBtn.classList.remove('active');
                     mobileSortDropdown.classList.remove('show');
@@ -1348,7 +1466,9 @@
                 `;
                 
                 // Add click event listener for expand/collapse
-                card.addEventListener('click', function() {
+                card.addEventListener('click', function(e) {
+                    // Prevent event bubbling to avoid conflicts with global listeners
+                    e.stopPropagation();
                     this.classList.toggle('expanded');
                 });
                 
@@ -1628,12 +1748,14 @@
             // Update the global transactions array
             transactions = filteredTransactions;
             
-            // Re-apply current sort
-            if (currentSortColumn) {
-                sortTransactions(currentSortColumn, currentSortDirection);
-            } else {
-                updateTransactionsTable();
-            }
+            // Re-apply current sort with a small delay to prevent timing conflicts
+            setTimeout(() => {
+                if (currentSortColumn) {
+                    sortTransactions(currentSortColumn, currentSortDirection);
+                } else {
+                    updateTransactionsTable();
+                }
+            }, 50);
         }
     </script>
 </body>

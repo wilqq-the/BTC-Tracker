@@ -122,19 +122,44 @@ describe('BTC Tracker End-to-End Tests', () => {
     });
     
     afterAll(async () => {
-        // Cleanup
+        // Cleanup browser
         if (browser) {
-            await browser.close();
+            try {
+                console.log('Closing browser...');
+                await browser.close();
+            } catch (error) {
+                console.log('Error closing browser:', error.message);
+            }
         }
         
         // Terminate the server
-        if (serverProcess) {
+        if (serverProcess && !serverProcess.killed) {
             console.log('Stopping application server...');
-            serverProcess.kill();
-            
-            // Give time for the server to shut down cleanly
-            await new Promise(resolve => setTimeout(resolve, 3000));
+            try {
+                serverProcess.kill('SIGTERM');
+                
+                // Wait for graceful shutdown, then force kill if needed
+                await new Promise(resolve => {
+                    const timeout = setTimeout(() => {
+                        if (!serverProcess.killed) {
+                            console.log('Force killing server process...');
+                            serverProcess.kill('SIGKILL');
+                        }
+                        resolve();
+                    }, 5000);
+                    
+                    serverProcess.on('exit', () => {
+                        clearTimeout(timeout);
+                        resolve();
+                    });
+                });
+                
+            } catch (error) {
+                console.log('Error stopping server:', error.message);
+            }
         }
+        
+        console.log('Cleanup complete');
     });
     
     test('1. Application launches successfully', async () => {

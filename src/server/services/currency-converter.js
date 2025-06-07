@@ -1,5 +1,8 @@
-const axios = require('axios');
 const priceCache = require('../priceCache');
+const Logger = require('../utils/logger');
+
+// Initialize logger
+const logger = Logger.create('CURRENCY-CONVERTER');
 
 class CurrencyConverter {
     constructor() {
@@ -19,7 +22,7 @@ class CurrencyConverter {
      */
     initialize() {
         // No need to initialize rates as we'll use priceCache
-        console.log('CurrencyConverter initialized, using priceCache for rates');
+        logger.debug('CurrencyConverter initialized, using priceCache for rates');
     }
 
     /**
@@ -102,40 +105,19 @@ class CurrencyConverter {
     }
 
     /**
-     * Update exchange rates from external source
+     * Update exchange rates from Yahoo Finance
      * @returns {Promise<void>}
      */
     async updateRates() {
         try {
-            console.log('Fetching fresh exchange rates...');
+            logger.debug('Fetching fresh exchange rates from Yahoo Finance...');
             
-            // Get EUR-based rates
-            const eurResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/EUR');
-            const eurRates = eurResponse.data.rates;
+            // Let priceCache handle the Yahoo Finance fetching
+            await priceCache.updatePrices();
             
-            // Get USD-based rates
-            const usdResponse = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-            const usdRates = usdResponse.data.rates;
-            
-            // Format rates for our supported currencies
-            const formattedEurRates = {};
-            const formattedUsdRates = {};
-            
-            this.supportedCurrencies.forEach(currency => {
-                if (eurRates[currency]) {
-                    formattedEurRates[currency] = eurRates[currency];
-                }
-                if (usdRates[currency]) {
-                    formattedUsdRates[currency] = usdRates[currency];
-                }
-            });
-            
-            // Update priceCache with new rates
-            await priceCache.updateExchangeRates(formattedEurRates, formattedUsdRates);
-            
-            console.log('Exchange rates updated successfully');
+            logger.debug('Exchange rates updated successfully from Yahoo Finance');
         } catch (error) {
-            console.error('Error updating exchange rates:', error);
+            logger.error('Error updating exchange rates from Yahoo Finance:', error);
             throw error;
         }
     }

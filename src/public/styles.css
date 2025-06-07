@@ -343,7 +343,7 @@ nav a.active {
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
         max-height: 0;
         transition: max-height 0.3s ease;
-        z-index: 100;
+        z-index: 200;
     }
     
     .nav-dropdown.active {

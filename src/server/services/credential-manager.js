@@ -1,6 +1,10 @@
 const fs = require('fs').promises;
 const pathManager = require('../utils/path-manager');
 const crypto = require('crypto');
+const Logger = require('../utils/logger');
+
+// Initialize logger
+const logger = Logger.create('CREDENTIAL-MANAGER');
 
 // Constants
 const DATA_DIR = pathManager.getDataDirectory();
@@ -34,7 +38,7 @@ class CredentialManager {
         await fs.writeFile(CREDS_FILE, JSON.stringify({}, null, 2));
       }
     } catch (error) {
-      console.error('Error initializing storage:', error);
+      logger.error('Error initializing storage:', error);
     }
   }
 
@@ -89,7 +93,7 @@ class CredentialManager {
       decrypted += decipher.final('utf8');
       return decrypted;
     } catch (error) {
-      console.error('Error decrypting credential:', error.message);
+      logger.error('Error decrypting credential:', error.message);
       // Return the original text if decryption fails
       return text;
     }
@@ -109,7 +113,7 @@ class CredentialManager {
         const data = await fs.readFile(CREDS_FILE, 'utf8');
         allCredentials = JSON.parse(data);
       } catch (error) {
-        console.log('No existing credentials file or invalid JSON, creating new one');
+        logger.debug('No existing credentials file or invalid JSON, creating new one');
       }
       
       // Encrypt each credential value
@@ -125,9 +129,9 @@ class CredentialManager {
       allCredentials[exchangeId] = encryptedCreds;
       
       // Add more detailed logging
-      console.log(`Writing credentials to file: ${CREDS_FILE}`);
-      console.log(`Saving credentials for exchange: ${exchangeId}`);
-      console.log(`Credential keys being saved: ${Object.keys(encryptedCreds).join(', ')}`);
+      logger.debug(`Writing credentials to file: ${CREDS_FILE}`);
+      logger.debug(`Saving credentials for exchange: ${exchangeId}`);
+      logger.debug(`Credential keys being saved: ${Object.keys(encryptedCreds).join(', ')}`);
       
       await fs.writeFile(CREDS_FILE, JSON.stringify(allCredentials, null, 2));
       
@@ -138,15 +142,15 @@ class CredentialManager {
         if (!verifyJson[exchangeId]) {
           throw new Error('Credentials were not properly saved');
         }
-        console.log('Successfully verified credentials were saved');
+        logger.debug('Successfully verified credentials were saved');
       } catch (verifyError) {
-        console.error('Failed to verify saved credentials:', verifyError);
+        logger.error('Failed to verify saved credentials:', verifyError);
         return false;
       }
       
       return true;
     } catch (error) {
-      console.error('Error saving credentials:', error);
+      logger.error('Error saving credentials:', error);
       return false;
     }
   }
@@ -164,22 +168,22 @@ class CredentialManager {
         const data = await fs.readFile(CREDS_FILE, 'utf8');
         allCredentials = JSON.parse(data);
       } catch (error) {
-        console.error('Error reading credentials file:', error.message);
+        logger.error('Error reading credentials file:', error.message);
         
         // Fall back to using require() for backward compatibility
         try {
           const path = require('path');
           const oldCredentialsPath = path.join(__dirname, '..', '..', 'data', 'exchange-credentials.json');
           allCredentials = require(oldCredentialsPath);
-          console.log('Successfully loaded credentials from legacy path');
+          logger.debug('Successfully loaded credentials from legacy path');
         } catch (fallbackError) {
-          console.error('Could not load credentials from legacy path either:', fallbackError.message);
+          logger.error('Could not load credentials from legacy path either:', fallbackError.message);
           return null;
         }
       }
       
       if (!allCredentials[exchangeId]) {
-        console.error(`No credentials found for exchange: ${exchangeId}`);
+        logger.error(`No credentials found for exchange: ${exchangeId}`);
         return null;
       }
       
@@ -195,7 +199,7 @@ class CredentialManager {
       
       return credentials;
     } catch (error) {
-      console.error('Error getting credentials:', error);
+      logger.error('Error getting credentials:', error);
       return null;
     }
   }
@@ -213,7 +217,7 @@ class CredentialManager {
         const data = await fs.readFile(CREDS_FILE, 'utf8');
         allCredentials = JSON.parse(data);
       } catch (error) {
-        console.error('Error reading credentials file:', error);
+        logger.error('Error reading credentials file:', error);
         return false;
       }
       
@@ -224,7 +228,7 @@ class CredentialManager {
       
       return true;
     } catch (error) {
-      console.error('Error deleting credentials:', error);
+      logger.error('Error deleting credentials:', error);
       return false;
     }
   }
@@ -241,23 +245,23 @@ class CredentialManager {
         const data = await fs.readFile(CREDS_FILE, 'utf8');
         allCredentials = JSON.parse(data);
       } catch (error) {
-        console.error('Error reading credentials file:', error);
+        logger.error('Error reading credentials file:', error);
         
         // Fall back to using require() for backward compatibility
         try {
           const path = require('path');
           const oldCredentialsPath = path.join(__dirname, '..', '..', 'data', 'exchange-credentials.json');
           allCredentials = require(oldCredentialsPath);
-          console.log('Successfully loaded credentials from legacy path for listing exchanges');
+          logger.debug('Successfully loaded credentials from legacy path for listing exchanges');
         } catch (fallbackError) {
-          console.error('Could not load credentials from legacy path either:', fallbackError.message);
+          logger.error('Could not load credentials from legacy path either:', fallbackError.message);
           return [];
         }
       }
       
       return Object.keys(allCredentials);
     } catch (error) {
-      console.error('Error listing exchanges:', error);
+      logger.error('Error listing exchanges:', error);
       return [];
     }
   }
