@@ -2,14 +2,14 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
-## 🆕 What's New in v0.5.0
+## 🆕 What's New in v0.5.2
 
 ### 🚀 **Major Enhancements**
-- **📊 Interactive Charts**: Time slider, comparison ticker, and Yahoo Finance integration
-- **🇧🇷 Brazilian Real (BRL)**: Full currency support with enhanced converter
-- **📱 Mobile Improvements**: Better transaction interactions and responsive design
-- **🧪 Enhanced Testing**: 50+ new tests with improved reliability
-- **🤖 Automated Updates**: Dependabot integration for security
+- **💱 Currency System Fixes**: Comprehensive patches for exchange rate handling and multi-currency support
+- **🐛 Critical Bug Fixes**: Resolved dropdown display issues and modal styling inconsistencies
+- **🎨 UI/UX Polish**: Improved transaction form styling and quick-add functionality
+- **🎉 Easter Eggs**: Fun Bitcoin-themed validation for impossible transaction amounts
+- **📊 Enhanced Stability**: Better error handling and currency conversion reliability
 
 [**📋 View Full Changelog**](CHANGELOG.md) | [**🚀 Release Notes**](.github/RELEASE_TEMPLATE.md)
 

@@ -5,6 +5,72 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2025-06-07
+
+### 🚀 Major Fixes & Enhancements
+
+#### 💱 **Currency System Overhaul**
+- **Fixed critical exchange rate handling** issues affecting multi-currency conversions
+- **Enhanced currency validation** with better error handling and fallback mechanisms
+- **Improved server-side currency caching** with immediate cache refresh on settings changes
+- **Resolved currency pairing issues** that caused "Missing USD/PLN" errors
+- **Added comprehensive currency debugging** tools for administrators
+
+#### 🎨 **UI/UX Critical Fixes**
+- **Fixed dropdown display issues** in transaction forms (Type and Currency dropdowns)
+- **Standardized modal styling** by copying working admin.html modal CSS to index.html
+- **Improved quick-add transaction form** with proper spacing and visibility
+- **Enhanced form field width** and layout for better usability
+- **Fixed modal width and padding** for optimal dropdown display
+
+#### 🎉 **Fun Features**
+- **Added Bitcoin easter egg** - humorous validation messages when trying to add more than 21M BTC
+- **Enhanced user experience** with witty messages for impossible transaction amounts
+- **Automatic amount capping** to Bitcoin's maximum supply with educational feedback
+
+### ✨ Features Enhanced
+
+#### 🔄 **System Reliability**
+- **Improved error handling** across currency conversion modules
+- **Enhanced logging** for better debugging of exchange rate issues
+- **Better cache invalidation** when currency settings change
+- **Strengthened API fallback** mechanisms for currency data sources
+
+#### 🛠️ **Developer Experience**
+- **Enhanced debugging capabilities** for currency-related issues
+- **Improved error messages** with more actionable feedback
+- **Better system monitoring** for exchange rate fetch operations
+
+### 🐛 Bug Fixes
+
+- **Resolved dropdown text cutoff** in transaction forms
+- **Fixed modal styling inconsistencies** between different pages
+- **Corrected currency exchange rate** fetching and caching logic
+- **Improved server startup** reliability with currency data initialization
+- **Enhanced form validation** to prevent UI/UX issues
+
+### 🔄 Technical Improvements
+
+#### **Currency System**
+- **Refactored exchange rate handling** with improved Yahoo Finance integration
+- **Enhanced rate caching strategy** with intelligent cache refresh
+- **Better error propagation** from server to client for currency issues
+- **Improved rate validation** and compatibility checking
+
+#### **UI Framework**
+- **Standardized modal CSS** across all application pages
+- **Improved responsive design** for transaction forms
+- **Enhanced form field styling** with consistent appearance
+- **Better dropdown functionality** with proper text display
+
+### 📋 Migration Notes
+
+- **Currency cache rebuild**: Existing exchange rate cache will be automatically refreshed
+- **Modal styling**: Quick-add transaction form now uses improved admin panel styling
+- **No data migration required**: All existing transactions and settings remain compatible
+
+---
+
 ## [0.5.0] - 2025-06-07
 
 ### 🚀 Major Features Added
