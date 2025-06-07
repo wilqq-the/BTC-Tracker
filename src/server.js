@@ -1024,11 +1024,24 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
             }, 0);
     
             const cachedPrices = priceCache.getCachedPrices();
+            logger.debug(`[server.js] Cached prices retrieved for summary:`, {
+                priceEUR: cachedPrices.priceEUR,
+                priceUSD: cachedPrices.priceUSD,
+                eurUsd: cachedPrices.eurUsd,
+                eurPln: cachedPrices.eurPln,
+                eurBrl: cachedPrices.eurBrl,
+                eurGbp: cachedPrices.eurGbp,
+                eurJpy: cachedPrices.eurJpy,
+                eurChf: cachedPrices.eurChf,
+                timestamp: cachedPrices.timestamp
+            });
+            
             const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
             
             let secondaryRate = 1.0;
             if (mainCurrency !== secondaryCurrency) {
                  secondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
+                 logger.debug(`[server.js] Exchange rate ${mainCurrency}/${secondaryCurrency}: ${secondaryRate}`);
             }
             secondaryRate = Number(secondaryRate) || 1.0; 
     
@@ -1141,7 +1154,17 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
             summary.historicalBTCData = historicalBTCData;
         }
 
-        logger.debug('Sending summary to client');
+        if (priceOnly) {
+            logger.info('[server.js] Sending price-only summary to client with ALL exchange rates:');
+            logger.info(`[server.js] EUR rates - USD: ${summary.eurUsd}, PLN: ${summary.eurPln}, GBP: ${summary.eurGbp}, JPY: ${summary.eurJpy}, CHF: ${summary.eurChf}, BRL: ${summary.eurBrl}`);
+            logger.info(`[server.js] BTC prices - EUR: ${summary.priceEUR}, USD: ${summary.priceUSD}`);
+            logger.info(`[server.js] Timestamp: ${summary.timestamp}`);
+            if (summary.exchangeRates && summary.exchangeRates.USD) {
+                logger.info(`[server.js] USD rates - EUR: ${summary.exchangeRates.USD.EUR}, PLN: ${summary.exchangeRates.USD.PLN}, GBP: ${summary.exchangeRates.USD.GBP}, JPY: ${summary.exchangeRates.USD.JPY}, CHF: ${summary.exchangeRates.USD.CHF}, BRL: ${summary.exchangeRates.USD.BRL}`);
+            }
+        } else {
+            logger.debug('Sending full summary to client');
+        }
         res.json(summary);
     } catch (error) {
         logger.error('Error getting summary:', error);

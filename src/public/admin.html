@@ -7,12 +7,12 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>BTC Tracker - Admin Panel</title>
-    <link rel="stylesheet" href="styles.css?v=0.4.2">
+    <link rel="stylesheet" href="styles.css?v=0.5.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
-    <link rel="shortcut icon" href="images/favicon.ico?v=0.4.2" type="image/x-icon">
-    <link rel="manifest" href="/manifest.json?v=0.4.2">
+    <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
+    <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
+    <link rel="manifest" href="/manifest.json?v=0.5.2">
     <style>
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
@@ -2353,6 +2353,87 @@
                 refreshBtn.disabled = false;
             }
         }
+        
+        // Enhanced debugging function for currency rates
+        window.debugCurrencyRates = async function() {
+            console.log('=== BTC Tracker Currency Rate Debug ===');
+            
+            try {
+                console.log('1. Fetching fresh exchange rate data from server...');
+                const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('2. Raw server response:', data);
+                
+                console.log('3. Exchange rates breakdown:');
+                console.log('   EUR/USD:', data.eurUsd, typeof data.eurUsd, data.eurUsd > 0 ? '✓' : '✗');
+                console.log('   EUR/PLN:', data.eurPln, typeof data.eurPln, data.eurPln > 0 ? '✓' : '✗');
+                console.log('   EUR/BRL:', data.eurBrl, typeof data.eurBrl, data.eurBrl > 0 ? '✓' : '✗');
+                console.log('   EUR/GBP:', data.eurGbp, typeof data.eurGbp, data.eurGbp > 0 ? '✓' : '✗');
+                console.log('   EUR/JPY:', data.eurJpy, typeof data.eurJpy, data.eurJpy > 0 ? '✓' : '✗');
+                console.log('   EUR/CHF:', data.eurChf, typeof data.eurChf, data.eurChf > 0 ? '✓' : '✗');
+                
+                console.log('4. Calculated USD rates:');
+                if (data.eurUsd && data.eurUsd > 0) {
+                    console.log('   USD/EUR:', (1 / data.eurUsd).toFixed(4));
+                    if (data.eurPln && data.eurPln > 0) {
+                        console.log('   USD/PLN:', (data.eurPln / data.eurUsd).toFixed(4), '✓');
+                    } else {
+                        console.log('   USD/PLN: Cannot calculate - missing EUR/PLN', '✗');
+                    }
+                    if (data.eurBrl && data.eurBrl > 0) {
+                        console.log('   USD/BRL:', (data.eurBrl / data.eurUsd).toFixed(4), '✓');
+                    } else {
+                        console.log('   USD/BRL: Cannot calculate - missing EUR/BRL', '✗');
+                    }
+                } else {
+                    console.log('   Cannot calculate USD rates - missing EUR/USD', '✗');
+                }
+                
+                console.log('5. Current currency settings:');
+                const mainCurrency = document.getElementById('mainCurrency')?.value || 'N/A';
+                const secondaryCurrency = document.getElementById('secondaryCurrency')?.value || 'N/A';
+                console.log('   Main:', mainCurrency);
+                console.log('   Secondary:', secondaryCurrency);
+                console.log('   Required rate:', `${mainCurrency}/${secondaryCurrency}`);
+                
+                console.log('6. Rate calculation test:');
+                const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
+                console.log('   Result:', rateInfo);
+                
+                console.log('7. Last update timestamps:');
+                console.log('   Data timestamp:', data.timestamp ? new Date(data.timestamp).toLocaleString() : 'N/A');
+                console.log('   Cache info:', data.cacheInfo || 'N/A');
+                
+                console.log('8. Recommendations:');
+                if (!data.eurPln || data.eurPln <= 0) {
+                    console.log('   - EUR/PLN rate is missing or invalid');
+                    console.log('   - Check Yahoo Finance availability for EURPLN=X');
+                    console.log('   - Try the "Force" refresh button');
+                }
+                if (!data.eurUsd || data.eurUsd <= 0) {
+                    console.log('   - EUR/USD rate is missing or invalid');
+                    console.log('   - This is critical as it affects all USD calculations');
+                }
+                
+                return data;
+                
+            } catch (error) {
+                console.error('Debug function error:', error);
+                console.log('Check network connectivity and server logs');
+                return null;
+            }
+        };
         
         // Function to clear cached rates (useful for debugging)
         function clearCachedRates() {

@@ -531,9 +531,9 @@ class PriceCache {
                 logger.warn(`[priceCache] Using fallback rates for: ${fallbackPairs}`);
             }
 
-            // Final rate summary for common pairs
-            logger.info(`[priceCache] Final exchange rates - EUR/USD: ${exchangeRates.EUR.USD.toFixed(4)}, EUR/PLN: ${exchangeRates.EUR.PLN.toFixed(4)}, EUR/BRL: ${exchangeRates.EUR.BRL.toFixed(4)}`);
-            logger.info(`[priceCache] Calculated USD rates - USD/PLN: ${exchangeRates.USD.PLN.toFixed(4)}, USD/BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
+            // Final rate summary for ALL pairs
+            logger.info(`[priceCache] Final EUR exchange rates - USD: ${exchangeRates.EUR.USD.toFixed(4)}, PLN: ${exchangeRates.EUR.PLN.toFixed(4)}, GBP: ${exchangeRates.EUR.GBP.toFixed(4)}, JPY: ${exchangeRates.EUR.JPY.toFixed(2)}, CHF: ${exchangeRates.EUR.CHF.toFixed(4)}, BRL: ${exchangeRates.EUR.BRL.toFixed(4)}`);
+            logger.info(`[priceCache] Final USD exchange rates - EUR: ${exchangeRates.USD.EUR.toFixed(4)}, PLN: ${exchangeRates.USD.PLN.toFixed(4)}, GBP: ${exchangeRates.USD.GBP.toFixed(4)}, JPY: ${exchangeRates.USD.JPY.toFixed(2)}, CHF: ${exchangeRates.USD.CHF.toFixed(4)}, BRL: ${exchangeRates.USD.BRL.toFixed(4)}`);
 
             return exchangeRates;
         } catch (error) {
