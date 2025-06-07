@@ -257,7 +257,7 @@
             margin-bottom: 1rem;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             position: relative;
-            z-index: 100;
+            z-index: 50;
             overflow: visible;
         }
         
@@ -928,13 +928,19 @@
             const navDropdown = document.getElementById('navDropdown');
             
             // Toggle dropdown
-            currentPageBtn.addEventListener('click', () => {
+            currentPageBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 currentPageBtn.classList.toggle('active');
                 navDropdown.classList.toggle('active');
             });
             
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {
+                // Don't close dropdown if clicking on a transaction card
+                if (e.target.closest('.transaction-card')) {
+                    return;
+                }
+                
                 if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
                     currentPageBtn.classList.remove('active');
                     navDropdown.classList.remove('active');
@@ -997,7 +1003,8 @@
             const mobileFilterDropdown = document.getElementById('mobileFilterDropdown');
             
             // Toggle sort dropdown
-            mobileSortBtn.addEventListener('click', () => {
+            mobileSortBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileSortBtn.classList.toggle('active');
                 mobileSortDropdown.classList.toggle('show');
                 // Close filter dropdown if open
@@ -1006,7 +1013,8 @@
             });
             
             // Toggle filter dropdown
-            mobileFilterBtn.addEventListener('click', () => {
+            mobileFilterBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileFilterBtn.classList.toggle('active');
                 mobileFilterDropdown.classList.toggle('show');
                 // Close sort dropdown if open
@@ -1017,7 +1025,8 @@
             // Handle sort option selection
             const sortOptions = document.querySelectorAll('.mobile-sort-option');
             sortOptions.forEach(option => {
-                option.addEventListener('click', () => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const sortColumn = option.getAttribute('data-sort');
                     const sortDirection = option.getAttribute('data-direction');
                     
@@ -1045,7 +1054,8 @@
             // Handle filter option selection
             const filterOptions = document.querySelectorAll('.mobile-filter-option');
             filterOptions.forEach(option => {
-                option.addEventListener('click', () => {
+                option.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const filterValue = option.getAttribute('data-filter');
                     
                     // Update visual state
@@ -1067,7 +1077,8 @@
             });
             
             // Mobile refresh
-            mobileRefreshBtn.addEventListener('click', () => {
+            mobileRefreshBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 mobileRefreshBtn.classList.add('refreshing');
                 const icon = mobileRefreshBtn.querySelector('i');
                 icon.style.animation = 'spin 1s linear infinite';
@@ -1082,6 +1093,11 @@
             
             // Close dropdowns when clicking outside
             document.addEventListener('click', (e) => {
+                // Don't close dropdowns if clicking on a transaction card
+                if (e.target.closest('.transaction-card')) {
+                    return;
+                }
+                
                 if (!mobileSortBtn.contains(e.target) && !mobileSortDropdown.contains(e.target)) {
                     mobileSortBtn.classList.remove('active');
                     mobileSortDropdown.classList.remove('show');
@@ -1450,7 +1466,9 @@
                 `;
                 
                 // Add click event listener for expand/collapse
-                card.addEventListener('click', function() {
+                card.addEventListener('click', function(e) {
+                    // Prevent event bubbling to avoid conflicts with global listeners
+                    e.stopPropagation();
                     this.classList.toggle('expanded');
                 });
                 
@@ -1730,12 +1748,14 @@
             // Update the global transactions array
             transactions = filteredTransactions;
             
-            // Re-apply current sort
-            if (currentSortColumn) {
-                sortTransactions(currentSortColumn, currentSortDirection);
-            } else {
-                updateTransactionsTable();
-            }
+            // Re-apply current sort with a small delay to prevent timing conflicts
+            setTimeout(() => {
+                if (currentSortColumn) {
+                    sortTransactions(currentSortColumn, currentSortDirection);
+                } else {
+                    updateTransactionsTable();
+                }
+            }, 50);
         }
     </script>
 </body>
