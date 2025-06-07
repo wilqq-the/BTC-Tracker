@@ -1155,17 +1155,13 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
         }
 
         if (priceOnly) {
-            logger.debug('[server.js] Sending price-only summary to client with exchange rates:', {
-                eurUsd: summary.eurUsd,
-                eurPln: summary.eurPln,
-                eurBrl: summary.eurBrl,
-                eurGbp: summary.eurGbp,
-                eurJpy: summary.eurJpy,
-                eurChf: summary.eurChf,
-                priceEUR: summary.priceEUR,
-                priceUSD: summary.priceUSD,
-                timestamp: summary.timestamp
-            });
+            logger.info('[server.js] Sending price-only summary to client with ALL exchange rates:');
+            logger.info(`[server.js] EUR rates - USD: ${summary.eurUsd}, PLN: ${summary.eurPln}, GBP: ${summary.eurGbp}, JPY: ${summary.eurJpy}, CHF: ${summary.eurChf}, BRL: ${summary.eurBrl}`);
+            logger.info(`[server.js] BTC prices - EUR: ${summary.priceEUR}, USD: ${summary.priceUSD}`);
+            logger.info(`[server.js] Timestamp: ${summary.timestamp}`);
+            if (summary.exchangeRates && summary.exchangeRates.USD) {
+                logger.info(`[server.js] USD rates - EUR: ${summary.exchangeRates.USD.EUR}, PLN: ${summary.exchangeRates.USD.PLN}, GBP: ${summary.exchangeRates.USD.GBP}, JPY: ${summary.exchangeRates.USD.JPY}, CHF: ${summary.exchangeRates.USD.CHF}, BRL: ${summary.exchangeRates.USD.BRL}`);
+            }
         } else {
             logger.debug('Sending full summary to client');
         }
