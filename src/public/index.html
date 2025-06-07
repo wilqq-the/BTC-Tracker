@@ -439,6 +439,54 @@
             }
         }
 
+        /* Desktop price summary */
+        .desktop-price-summary {
+            margin-top: 1rem;
+            background: var(--card-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .price-summary-stats {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .price-stat-item {
+            text-align: center;
+            flex: 1;
+        }
+
+        .price-stat-label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--muted-text-color);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .price-stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .price-stat-item.high .price-stat-value {
+            color: #48bb78;
+        }
+
+        .price-stat-item.low .price-stat-value {
+            color: #ff4757;
+        }
+
+        .price-stat-item.range .price-stat-value {
+            color: var(--accent-color);
+        }
+
         /* Desktop navigation - shown by default */
         nav {
             display: flex;
@@ -1295,9 +1343,10 @@
                 overflow: hidden;
             }
 
-            /* Show mobile portfolio header and time buttons only on mobile */
+            /* Show mobile portfolio header, time buttons, and price summary only on mobile */
             .mobile-portfolio-header,
-            .mobile-time-buttons {
+            .mobile-time-buttons,
+            .mobile-price-summary {
                 display: block !important;
             }
 
@@ -1336,6 +1385,21 @@
                 color: var(--muted-text-color);
                 font-weight: 500;
                 margin-left: 0.3rem;
+            }
+
+            .mobile-portfolio-secondary {
+                font-size: 0.9rem;
+                color: var(--muted-text-color);
+                margin-top: 0.2rem;
+                opacity: 0.8;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.3rem;
+            }
+
+            .mobile-portfolio-secondary-currency {
+                font-weight: 500;
             }
 
             .mobile-portfolio-change {
@@ -1436,7 +1500,8 @@
 
             /* Hide complex chart elements on mobile */
             .chart-container .timeline-section,
-            .chart-container .price-update {
+            .chart-container .price-update,
+            .desktop-price-summary {
                 display: none;
             }
 
@@ -1469,11 +1534,53 @@
                 display: none;
             }
 
+            /* Mobile price summary */
+            .mobile-price-summary {
+                display: flex !important;
+                justify-content: space-between;
+                padding: 1rem;
+                background: var(--card-bg-color);
+                border-top: 1px solid var(--border-color);
+                margin: 0;
+            }
+
+            .price-summary-item {
+                flex: 1;
+                text-align: center;
+                padding: 0 0.5rem;
+            }
+
+            .price-summary-label {
+                font-size: 0.8rem;
+                color: var(--muted-text-color);
+                margin-bottom: 0.25rem;
+                font-weight: 500;
+            }
+
+            .price-summary-value {
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-color);
+            }
+
+            .price-summary-item.high .price-summary-value {
+                color: #48bb78;
+            }
+
+            .price-summary-item.low .price-summary-value {
+                color: #ff4757;
+            }
+
+            .price-summary-item.range .price-summary-value {
+                color: var(--accent-color);
+            }
+
             /* Clean timeline section */
             .timeline-wrapper {
                 padding: 1.5rem;
                 background: var(--card-bg-color);
                 margin-top: 1rem;
+                margin-bottom: 2rem;
                 border-radius: 12px;
                 border: 1px solid var(--border-color);
             }
@@ -1752,6 +1859,10 @@
                         <span id="mobileCurrentValue">Loading...</span>
                         <span class="mobile-portfolio-currency" id="mobileCurrency">EUR</span>
                     </div>
+                    <div class="mobile-portfolio-secondary">
+                        <span id="mobileSecondaryValue">Loading...</span>
+                        <span class="mobile-portfolio-secondary-currency" id="mobileSecondaryCurrency">USD</span>
+                    </div>
                     <div class="mobile-portfolio-change" id="mobileChange">
                         <span id="mobilePnLAmount">Loading...</span>
                         <span id="mobilePnLPercent">Loading...</span>
@@ -1812,6 +1923,22 @@
                         </div>
                     </div>
                     
+                    <!-- Mobile Price Summary (only visible on mobile) -->
+                    <div class="mobile-price-summary" id="mobilePriceSummary" style="display: none;">
+                        <div class="price-summary-item high">
+                            <div class="price-summary-label">📈 High</div>
+                            <div class="price-summary-value" id="mobileHighPrice">Loading...</div>
+                        </div>
+                        <div class="price-summary-item low">
+                            <div class="price-summary-label">📉 Low</div>
+                            <div class="price-summary-value" id="mobileLowPrice">Loading...</div>
+                        </div>
+                        <div class="price-summary-item range">
+                            <div class="price-summary-label">📊 Range</div>
+                            <div class="price-summary-value" id="mobilePriceRange">Loading...</div>
+                        </div>
+                    </div>
+                    
                     <!-- Transaction Timeline - Integrated into chart container -->
                     <div class="timeline-section" id="timelineContainer">
                         <div class="timeline-header">
@@ -1846,6 +1973,24 @@
                     </div>
                     
                     <div class="price-update" id="priceUpdate">Last updated: <span id="lastUpdate">-</span></div>
+                    
+                    <!-- Desktop Price Summary -->
+                    <div class="desktop-price-summary" id="desktopPriceSummary">
+                        <div class="price-summary-stats">
+                            <div class="price-stat-item high">
+                                <span class="price-stat-label">📈 High</span>
+                                <span class="price-stat-value" id="desktopHighPrice">Loading...</span>
+                            </div>
+                            <div class="price-stat-item low">
+                                <span class="price-stat-label">📉 Low</span>
+                                <span class="price-stat-value" id="desktopLowPrice">Loading...</span>
+                            </div>
+                            <div class="price-stat-item range">
+                                <span class="price-stat-label">📊 Range</span>
+                                <span class="price-stat-value" id="desktopPriceRange">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </main>
         </div>
@@ -2281,8 +2426,8 @@
             // Add mobile styling classes for performance metrics
             addMobilePerformanceClasses(pnlMain, pnlPercentage);
 
-            // Update mobile portfolio header
-            updateMobilePortfolioHeader(priceData);
+                            // Update mobile portfolio header
+                updateMobilePortfolioHeader(priceData).catch(console.error);
             
             // Average Price - use correct currency based on main currency setting
             let averagePriceMain, averagePriceSecondary;
@@ -2388,13 +2533,26 @@
         }
 
         // Helper function to update modern mobile portfolio header
-        function updateMobilePortfolioHeader(priceData) {
+        async function updateMobilePortfolioHeader(priceData) {
+            // Fetch ticker data to ensure we use the same calculation
+            let tickerData = null;
+            try {
+                const tickerResponse = await fetch('/api/current-price');
+                if (tickerResponse.ok) {
+                    tickerData = await tickerResponse.json();
+                }
+            } catch (error) {
+                console.log('Could not fetch ticker data for mobile header:', error);
+            }
             const isNested = priceData.averagePrice && typeof priceData.averagePrice === 'object';
             const mainCurrency = window.currentMainCurrency || 'EUR';
+            const secondaryCurrency = window.currentSecondaryCurrency || 'USD';
             const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
+            const secondaryCurrencySymbol = getCurrencySymbol(secondaryCurrency);
             
             // Get current value in the correct currency
             let currentValueMain;
+            let currentValueSecondary;
             if (mainCurrency === 'EUR') {
                 currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
             } else if (mainCurrency === 'USD') {
@@ -2403,36 +2561,96 @@
                 currentValueMain = isNested ? priceData.currentValue?.eur : priceData.currentValue;
             }
             
+            // Get secondary value
+            if (secondaryCurrency === 'EUR') {
+                currentValueSecondary = isNested ? priceData.currentValue?.eur : priceData.currentValue;
+            } else if (secondaryCurrency === 'USD') {
+                currentValueSecondary = isNested ? priceData.currentValue?.usd : (priceData.currentValueUSD || priceData.currentValue);
+            } else {
+                // Calculate secondary value using exchange rates
+                const secondaryRate = priceData.secondaryRate || 1.0;
+                currentValueSecondary = currentValueMain * secondaryRate;
+            }
+            
             // Update portfolio value (large display)
             const formattedValue = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
             }).format(currentValueMain || 0);
             
+            const formattedSecondaryValue = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(currentValueSecondary || 0);
+            
             document.getElementById('mobileCurrentValue').textContent = formattedValue;
             document.getElementById('mobileCurrency').textContent = mainCurrencySymbol;
+            document.getElementById('mobileSecondaryValue').textContent = formattedSecondaryValue;
+            document.getElementById('mobileSecondaryCurrency').textContent = secondaryCurrencySymbol;
 
-            // Get P&L in the correct currency
-            let pnlMain;
+            // Calculate portfolio change using ticker data when available
+            const totalBTC = priceData.totalBTC || 0;
+            const dataToUse = tickerData || priceData; // Prefer ticker data
+            
+            // Get current BTC price in main currency 
+            let currentBTCPrice = 0;
+            const basePriceEUR = dataToUse.priceEUR || dataToUse.price || 0;
+            
             if (mainCurrency === 'EUR') {
-                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+                currentBTCPrice = basePriceEUR;
             } else if (mainCurrency === 'USD') {
-                pnlMain = isNested ? priceData.pnl?.usd : (priceData.pnlUSD || priceData.pnl);
+                currentBTCPrice = dataToUse.priceUSD || (basePriceEUR && dataToUse.eurUsd ? basePriceEUR * dataToUse.eurUsd : 0);
             } else {
-                pnlMain = isNested ? priceData.pnl?.eur : priceData.pnl;
+                // Convert from EUR to other supported currencies
+                const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                if (basePriceEUR && dataToUse[rateKey]) {
+                    currentBTCPrice = basePriceEUR * dataToUse[rateKey];
+                }
             }
             
-            // Update P&L change (like +4 800,28 +2.91%)
-            const pnlPercentage = priceData.pnlPercentage || 0;
+            // Get historical BTC price using ticker logic
+            let historicalBTCPriceInMainCurrency = currentBTCPrice; // fallback
+            const historicalPriceEUR = dataToUse.previousWeekPrice || dataToUse.previousDayPrice || 0;
             
-            const formattedPnL = new Intl.NumberFormat('en-US', {
+            if (historicalPriceEUR > 0) {
+                if (mainCurrency === 'EUR') {
+                    historicalBTCPriceInMainCurrency = historicalPriceEUR;
+                } else if (mainCurrency === 'USD' && dataToUse.eurUsd) {
+                    historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse.eurUsd;
+                } else {
+                    // Convert from EUR to other supported currencies
+                    const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                    if (dataToUse[rateKey]) {
+                        historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse[rateKey];
+                    }
+                }
+            }
+            
+            // Calculate BTC price change percentage
+            const btcPriceChange = currentBTCPrice - historicalBTCPriceInMainCurrency;
+            const btcPercentageChange = historicalBTCPriceInMainCurrency > 0 ? (btcPriceChange / historicalBTCPriceInMainCurrency) * 100 : 0;
+            
+            // Apply same percentage to portfolio value
+            const currentPortfolioValue = totalBTC * currentBTCPrice;
+            const dailyChange = currentPortfolioValue * (btcPercentageChange / 100);
+            const dailyPercentage = btcPercentageChange;
+            
+            // Format daily change
+            const formattedDailyChange = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(Math.abs(pnlMain || 0));
+            }).format(Math.abs(dailyChange || 0));
             
-            const sign = (pnlMain >= 0) ? '+' : '-';
-            document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedPnL}`;
-            document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(pnlPercentage).toFixed(2)}%`;
+            const sign = (dailyChange >= 0) ? '+' : '-';
+            
+            // Temporary debug display
+            if (Math.abs(dailyPercentage) < 0.001) {
+                document.getElementById('mobilePnLAmount').textContent = `Debug: ${historicalPriceEUR ? 'has hist' : 'no hist'}`;
+                document.getElementById('mobilePnLPercent').textContent = `${currentBTCPrice.toFixed(0)}/${historicalBTCPriceInMainCurrency.toFixed(0)}`;
+            } else {
+                document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedDailyChange}`;
+                document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(dailyPercentage).toFixed(2)}%`;
+            }
             
             // Update holdings info
             document.getElementById('mobileHoldings').textContent = `${(priceData.totalBTC || 0).toFixed(6)} BTC`;
@@ -2440,7 +2658,7 @@
             // Add appropriate styling classes
             const changeElement = document.getElementById('mobileChange');
             changeElement.classList.remove('positive', 'negative');
-            if (pnlMain >= 0) {
+            if (dailyChange >= 0) {
                 changeElement.classList.add('positive');
             } else {
                 changeElement.classList.add('negative');
@@ -2552,11 +2770,34 @@
                 return itemDate >= cutoffDate && itemDate <= now;
             });
 
-            // Simple price data for mobile chart
-            const priceData = filteredData.map(item => ({
-                x: new Date(item.timestamp),
-                y: parseFloat(item.price)
-            }));
+            // Use the correct price field based on main currency
+            const mainCurrency = window.currentMainCurrency || 'EUR';
+            const priceData = filteredData.map(item => {
+                let price;
+                
+                if (mainCurrency === 'USD') {
+                    price = item.priceUSD || item.price; // Use USD price directly
+                } else if (mainCurrency === 'EUR') {
+                    price = item.priceEUR || item.price; // Use EUR price directly
+                } else {
+                    // For other currencies, convert from EUR (since historical data likely only has EUR/USD)
+                    const basePriceEUR = item.priceEUR || item.price;
+                    const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                    price = basePriceEUR * (data[rateKey] || 1.0);
+                }
+                
+                return {
+                    x: new Date(item.timestamp),
+                    y: parseFloat(price)
+                };
+            });
+
+            // Find min and max prices in the current range
+            const prices = priceData.map(p => p.y);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            const minPricePoint = priceData.find(p => p.y === minPrice);
+            const maxPricePoint = priceData.find(p => p.y === maxPrice);
 
             // Destroy existing mobile chart if it exists
             if (window.mobileChart && typeof window.mobileChart.destroy === 'function') {
@@ -2573,7 +2814,7 @@
                 type: 'line',
                 data: {
                     datasets: [{
-                        label: 'Portfolio Value',
+                        label: 'BTC Price',
                         data: priceData,
                         borderColor: '#f7931a',
                         backgroundColor: gradient,
@@ -2581,7 +2822,30 @@
                         pointRadius: 0,
                         pointHoverRadius: 6,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        order: 1
+                    }, {
+                        label: 'High',
+                        data: [maxPricePoint],
+                        borderColor: 'rgba(72, 187, 120, 0.7)',
+                        backgroundColor: 'rgba(72, 187, 120, 0.2)',
+                        pointRadius: 4,
+                        pointHoverRadius: 8,
+                        pointBorderWidth: 2,
+                        pointBorderColor: 'rgba(72, 187, 120, 0.9)',
+                        showLine: false,
+                        order: 0
+                    }, {
+                        label: 'Low',
+                        data: [minPricePoint],
+                        borderColor: 'rgba(255, 71, 87, 0.7)',
+                        backgroundColor: 'rgba(255, 71, 87, 0.2)',
+                        pointRadius: 4,
+                        pointHoverRadius: 8,
+                        pointBorderWidth: 2,
+                        pointBorderColor: 'rgba(255, 71, 87, 0.9)',
+                        showLine: false,
+                        order: 0
                     }]
                 },
                 options: {
@@ -2602,7 +2866,7 @@
                             borderColor: '#f7931a',
                             borderWidth: 2,
                             cornerRadius: 8,
-                            displayColors: false,
+                            displayColors: true,
                             callbacks: {
                                 title: function(context) {
                                     return new Date(context[0].parsed.x).toLocaleDateString();
@@ -2611,7 +2875,15 @@
                                     const price = context.parsed.y;
                                     const currency = window.currentMainCurrency || 'EUR';
                                     const symbol = getCurrencySymbol(currency);
-                                    return `${price.toFixed(2)} ${symbol}`;
+                                    const dataset = context.dataset;
+                                    
+                                    if (dataset.label === 'High') {
+                                        return `📈 Highest: ${price.toFixed(2)} ${symbol}`;
+                                    } else if (dataset.label === 'Low') {
+                                        return `📉 Lowest: ${price.toFixed(2)} ${symbol}`;
+                                    } else {
+                                        return `${price.toFixed(2)} ${symbol}`;
+                                    }
                                 }
                             }
                         }
@@ -2650,6 +2922,16 @@
                     }
                 }
             });
+
+            // Update mobile price summary
+            const currency = window.currentMainCurrency || 'EUR';
+            const symbol = getCurrencySymbol(currency);
+            const range = maxPrice - minPrice;
+            const rangePercent = minPrice > 0 ? ((range / minPrice) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('mobileHighPrice').textContent = `${maxPrice.toFixed(2)} ${symbol}`;
+            document.getElementById('mobileLowPrice').textContent = `${minPrice.toFixed(2)} ${symbol}`;
+            document.getElementById('mobilePriceRange').textContent = `${rangePercent}%`;
         }
 
         // Function to create the initial chart
@@ -2700,12 +2982,30 @@
 
             // BTC price dataset - use global currency settings
             const mainCurrency = window.currentMainCurrency || 'EUR';
-            const btcPrices = filteredHistoricalData.map(item => ({
-                x: new Date(item.timestamp),
-                y: mainCurrency === 'EUR' ? 
-                    (item.priceEUR || item.price) : 
-                    (item.priceUSD || (item.priceEUR * (data.eurUsd || 1)))
-            }));
+            const btcPrices = filteredHistoricalData.map(item => {
+                let price;
+                if (mainCurrency === 'USD') {
+                    price = item.priceUSD || item.price;
+                } else if (mainCurrency === 'EUR') {
+                    price = item.priceEUR || item.price;
+                } else {
+                    // For other currencies, convert from EUR
+                    const basePriceEUR = item.priceEUR || item.price;
+                    const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                    price = basePriceEUR * (data[rateKey] || 1.0);
+                }
+                return {
+                    x: new Date(item.timestamp),
+                    y: parseFloat(price)
+                };
+            });
+
+            // Find min and max prices in the current range for desktop chart
+            const prices = btcPrices.map(p => p.y);
+            const minPrice = Math.min(...prices);
+            const maxPrice = Math.max(...prices);
+            const minPricePoint = btcPrices.find(p => p.y === minPrice);
+            const maxPricePoint = btcPrices.find(p => p.y === maxPrice);
 
             // Calculate moving average (30-day window)
             const movingAverageWindow = Math.min(30, Math.max(5, Math.floor(btcPrices.length / 20))); // Adaptive window size
@@ -2827,6 +3127,35 @@
                 });
             }
 
+            // Add min/max price indicators for desktop chart
+            datasets.push({
+                label: 'High',
+                data: [maxPricePoint],
+                borderColor: 'rgba(72, 187, 120, 0.8)',
+                backgroundColor: 'rgba(72, 187, 120, 0.3)',
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBorderWidth: 2,
+                pointBorderColor: 'rgba(72, 187, 120, 0.9)',
+                showLine: false,
+                order: 0,
+                z: 10
+            });
+
+            datasets.push({
+                label: 'Low',
+                data: [minPricePoint],
+                borderColor: 'rgba(255, 71, 87, 0.8)',
+                backgroundColor: 'rgba(255, 71, 87, 0.3)',
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBorderWidth: 2,
+                pointBorderColor: 'rgba(255, 71, 87, 0.9)',
+                showLine: false,
+                order: 0,
+                z: 10
+            });
+
             const ctx = document.getElementById('combinedChart').getContext('2d');
             if (combinedChart) {
                 combinedChart.destroy();
@@ -2905,10 +3234,22 @@
                                     const label = context.dataset.label || '';
                                     const value = context.parsed.y;
                                     
-                                    return `${label}: ${value.toLocaleString(undefined, { 
-                                        minimumFractionDigits: 0, 
-                                        maximumFractionDigits: 0 
-                                    })} ${mainCurrency}`;
+                                    if (label === 'High') {
+                                        return `📈 Period High: ${value.toLocaleString(undefined, { 
+                                            minimumFractionDigits: 2, 
+                                            maximumFractionDigits: 2 
+                                        })} ${mainCurrency}`;
+                                    } else if (label === 'Low') {
+                                        return `📉 Period Low: ${value.toLocaleString(undefined, { 
+                                            minimumFractionDigits: 2, 
+                                            maximumFractionDigits: 2 
+                                        })} ${mainCurrency}`;
+                                    } else {
+                                        return `${label}: ${value.toLocaleString(undefined, { 
+                                            minimumFractionDigits: 0, 
+                                            maximumFractionDigits: 0 
+                                        })} ${mainCurrency}`;
+                                    }
                                 }
                             }
                         },
@@ -3029,6 +3370,16 @@
             
             // Store chart data for theme switching
             window.combinedChartData = data;
+
+            // Update desktop price summary
+            const currency = window.currentMainCurrency || 'EUR';
+            const symbol = getCurrencySymbol(currency);
+            const range = maxPrice - minPrice;
+            const rangePercent = minPrice > 0 ? ((range / minPrice) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('desktopHighPrice').textContent = `${maxPrice.toFixed(2)} ${symbol}`;
+            document.getElementById('desktopLowPrice').textContent = `${minPrice.toFixed(2)} ${symbol}`;
+            document.getElementById('desktopPriceRange').textContent = `${rangePercent}%`;
 
             // Transactions are now handled by the timeline component below the chart
             // No longer adding transaction bubbles to the chart for cleaner visualization
@@ -3401,6 +3752,7 @@
                 
                 // Update mobile portfolio header error state
                 document.getElementById('mobileCurrentValue').textContent = 'Error';
+                document.getElementById('mobileSecondaryValue').textContent = 'Error';
                 document.getElementById('mobilePnLAmount').textContent = 'Error';
                 document.getElementById('mobilePnLPercent').textContent = 'Error';
                 document.getElementById('mobileHoldings').textContent = 'Error BTC';

@@ -1290,9 +1290,13 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
                 priceUSD: priceData.priceUSD,
                 timestamp: new Date(),
                 eurUsd: cachedPrices.eurUsd || priceData.priceUSD / priceData.priceEUR,
-                eurPln: cachedPrices.eurPln || 4.5, // Default if no cached value
-                previousDayPrice: cachedPrices.previousDayPrice,
-                previousWeekPrice: weeklyPrice,
+                eurPln: cachedPrices.eurPln || 4.5,
+                eurGbp: cachedPrices.eurGbp || 0.85,
+                eurJpy: cachedPrices.eurJpy || 160,
+                eurChf: cachedPrices.eurChf || 0.95,
+                eurBrl: cachedPrices.eurBrl || 6.34,
+                previousDayPrice: cachedPrices.previousDayPrice, // Always in EUR
+                previousWeekPrice: weeklyPrice, // Always in EUR
                 mainCurrency: settings.mainCurrency || 'EUR',
                 weeklyPriceDate: closestDate,
                 source: 'Yahoo Finance'
@@ -1310,9 +1314,13 @@ app.get('/api/current-price', isAuthenticated, async (req, res) => {
                 timestamp: cachedPrices.timestamp,
                 eurUsd: cachedPrices.eurUsd,
                 eurPln: cachedPrices.eurPln,
+                eurGbp: cachedPrices.eurGbp,
+                eurJpy: cachedPrices.eurJpy,
+                eurChf: cachedPrices.eurChf,
+                eurBrl: cachedPrices.eurBrl,
                 age: cachedPrices.age,
-                previousDayPrice: cachedPrices.previousDayPrice,
-                previousWeekPrice: weeklyPrice,
+                previousDayPrice: cachedPrices.previousDayPrice, // Always in EUR
+                previousWeekPrice: weeklyPrice, // Always in EUR
                 mainCurrency: settings.mainCurrency || 'EUR',
                 weeklyPriceDate: closestDate,
                 source: 'Yahoo Finance (cached)'
