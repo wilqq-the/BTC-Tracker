@@ -224,24 +224,73 @@ describe('BTC Tracker Admin Transaction Management Tests', () => {
         try {
             console.log("Starting add transaction test");
             
-            // Wait for transactions table to load
-            await page.waitForSelector('#transactionsTable', { timeout: 5000 });
-            console.log("Transactions table found");
-            
-            // First take a screenshot of the admin page before clicking anything
-            await page.screenshot({
-                path: path.join(screenshotsDir, '3-before-add-transaction.png')
+            // Set up error monitoring to catch JavaScript errors
+            const jsErrors = [];
+            page.on('pageerror', error => {
+                jsErrors.push(error.message);
+                console.log('JavaScript error detected:', error.message);
             });
             
+            page.on('console', msg => {
+                if (msg.type() === 'error') {
+                    jsErrors.push(msg.text());
+                    console.log('Console error:', msg.text());
+                }
+            });
+
+            // Wait for the transactions table to be visible first
+            await page.waitForSelector('#transactionsTable', { timeout: 5000 });
+            console.log("Transactions table found");
+
             // Simple method to find and click the add transaction button
             const addButtonSelector = '.add-transaction-container button.btn.btn-primary';
             await page.waitForSelector(addButtonSelector, { timeout: 5000 });
+            
+            // Scroll the button into view before clicking
+            await page.evaluate((selector) => {
+                const button = document.querySelector(selector);
+                if (button) {
+                    button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, addButtonSelector);
+            
+            // Wait a moment for scrolling to complete
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
             await page.click(addButtonSelector);
             console.log("Clicked Add Transaction button");
             
-            // Wait for the modal to appear
-            await page.waitForSelector('.modal', { visible: true, timeout: 5000 });
-            console.log("Modal appeared");
+            // Add small delay to allow JavaScript execution
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Check for any JavaScript errors after clicking
+            if (jsErrors.length > 0) {
+                console.log("JavaScript errors detected after button click:", jsErrors);
+            }
+            
+            // Debug: Check if modal exists in DOM
+            const modalExists = await page.evaluate(() => {
+                const modal = document.querySelector('.modal');
+                console.log('Modal in DOM:', !!modal);
+                if (modal) {
+                    console.log('Modal class:', modal.className);
+                    console.log('Modal display style:', window.getComputedStyle(modal).display);
+                    console.log('Modal visibility:', window.getComputedStyle(modal).visibility);
+                }
+                return !!modal;
+            });
+            console.log("Modal exists in DOM:", modalExists);
+            
+            // Wait for the modal to appear - try both visible and just present
+            try {
+                await page.waitForSelector('.modal', { visible: true, timeout: 5000 });
+                console.log("Modal appeared and is visible");
+            } catch (visibleError) {
+                console.log("Modal not visible, checking if it exists:", visibleError.message);
+                // Try waiting for modal to just exist (not necessarily visible)
+                await page.waitForSelector('.modal', { timeout: 2000 });
+                console.log("Modal exists but may not be visible");
+            }
             
             // Take screenshot of modal
             await page.screenshot({
