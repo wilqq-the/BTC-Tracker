@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="styles.css?v=0.5.2">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="manifest" href="/manifest.json?v=0.5.2">
@@ -1446,7 +1445,7 @@
                 row.innerHTML = `
                     <td class="date-col" title="${date.toLocaleString()}">${formattedDate}</td>
                     <td class="type-col">${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
-                    <td class="amount-col" title="${formatBtcDisplayText(tx.amount)}">${formatBtcDisplay(tx.amount)}</td>
+                    <td class="amount-col" title="${tx.amount.toFixed(8)}">${tx.amount.toFixed(8)}</td>
                     <td class="price-col" title="Original: ${origPrice.toFixed(2)} ${origCurrencySymbol}">${priceDisplay}</td>
                     <td class="cost-col" title="Original: ${origCost.toFixed(2)} ${origCurrencySymbol}">${costDisplay}</td>
                     <td class="pnl-col ${tx.pnl > 0 ? 'positive' : tx.pnl < 0 ? 'negative' : ''}" 
@@ -1467,7 +1466,7 @@
                 const typeClass = tx.type.toLowerCase() === 'buy' ? 'buy' : 'sell';
                 
                 // Create preview text (amount for collapsed state)
-                const previewText = formatBtcDisplay(tx.amount);
+                const previewText = `${tx.amount.toFixed(4)} BTC`;
                 
                 // Build the mobile card HTML with collapsible structure
                 card.innerHTML = `
@@ -1483,7 +1482,7 @@
                     <div class="transaction-card-body">
                         <div class="transaction-card-detail">
                             <div class="transaction-card-label">Amount:</div>
-                            <div class="transaction-card-value">${formatBtcDisplay(tx.amount)}</div>
+                            <div class="transaction-card-value">${tx.amount.toFixed(8)}</div>
                         </div>
                         <div class="transaction-card-detail">
                             <div class="transaction-card-label">Price:</div>
@@ -1942,17 +1941,6 @@
                 }
             }, 50);
         }
-
-        // Listen for BTC unit changes
-        window.addEventListener('btcUnitChanged', function(event) {
-            console.log('BTC unit changed in transactions page, refreshing data');
-            
-            // Refresh transactions if the function exists
-            if (typeof loadTransactions === 'function') {
-                loadTransactions();
-            }
-        });
     </script>
-    <script src="js/btc-utils.js"></script>
 </body>
 </html> 

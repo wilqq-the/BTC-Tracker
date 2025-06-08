@@ -5,13 +5,6 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.4] - 2025-01-21
-
-### 🚀 New Features
-- **Satoshi Unit Support** - Added full support for displaying Bitcoin amounts in Satoshis alongside traditional BTC units
-- **Satoshi Symbol Integration** - Implemented proper Satoshi symbol (⚡) from satsymbol.com. Special thanks to @satsymbol for creating and freely sharing this symbol to help drive Bitcoin adoption!
-- **Unit Toggle System** - Added BTC/Satoshi display unit selector in admin panel with real-time switching across all views
-
 ## [0.5.3] - 2025-06-07
 
 - **Lightning Network donation support** - Dual payment system with Lightning Network as default option for instant, low-fee donations alongside traditional on-chain Bitcoin payments
