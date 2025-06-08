@@ -1829,52 +1829,78 @@ app.put('/api/settings', isAuthenticated, async (req, res) => {
     }
 });
 
-// Test Yahoo Finance API connectivity (replacing CoinGecko test)
-app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) => {
+// Yahoo Finance API test endpoint for admin panel
+app.post('/api/admin/test-yahoo-api', isAuthenticated, async (req, res) => {
     try {
-        // Note: This function is kept for backwards compatibility with the frontend
-        // but no longer tests CoinGecko API key since we now use Yahoo Finance
-
-        logger.debug('[server.js] Testing Yahoo Finance API connectivity');
+        logger.debug('[server.js] Testing Yahoo Finance API connectivity from admin panel');
         
         // Calculate current date timestamps (today only)
         const endDate = Math.floor(Date.now() / 1000);
         const startDate = endDate - (24 * 60 * 60); // 1 day ago
         
-        // Test Yahoo Finance connection for BTC price
-        const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
+        let btcPrice = null;
+        let exchangeRatesCount = 0;
+        const exchangeRates = {};
         
-        if (!btcUsdData || Object.keys(btcUsdData).length === 0) {
-            return res.json({ 
+        // Test BTC price fetching
+        try {
+            const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
+            if (btcUsdData && Object.keys(btcUsdData).length > 0) {
+                const dates = Object.keys(btcUsdData).sort();
+                if (dates.length > 0) {
+                    const latestDate = dates[dates.length - 1];
+                    btcPrice = btcUsdData[latestDate].close;
+                }
+            }
+        } catch (error) {
+            logger.warn('[server.js] BTC price test failed:', error.message);
+        }
+        
+        // Test exchange rates fetching
+        const testCurrencyPairs = ['EURUSD=X', 'EURPLN=X', 'EURGBP=X'];
+        
+        for (const pair of testCurrencyPairs) {
+            try {
+                const data = await fetchYahooFinanceData(pair, startDate, endDate);
+                if (data && Object.keys(data).length > 0) {
+                    const dates = Object.keys(data).sort();
+                    if (dates.length > 0) {
+                        const latestDate = dates[dates.length - 1];
+                        exchangeRates[pair] = data[latestDate].close;
+                        exchangeRatesCount++;
+                    }
+                }
+            } catch (error) {
+                logger.warn(`[server.js] Exchange rate test failed for ${pair}:`, error.message);
+            }
+        }
+        
+        // Determine overall success
+        const hasAnyData = btcPrice !== null || exchangeRatesCount > 0;
+        
+        if (hasAnyData) {
+            res.json({ 
+                success: true, 
+                message: 'Yahoo Finance API is working',
+                btcPrice: btcPrice ? btcPrice.toFixed(2) : null,
+                exchangeRatesCount: exchangeRatesCount,
+                exchangeRates: exchangeRates,
+                details: {
+                    btcPriceAvailable: btcPrice !== null,
+                    exchangeRatesAvailable: exchangeRatesCount > 0
+                }
+            });
+        } else {
+            res.json({ 
                 success: false, 
-                message: 'Could not connect to Yahoo Finance API'
+                message: 'Could not fetch any data from Yahoo Finance API'
             });
         }
-        
-        // Get the most recent price
-        const dates = Object.keys(btcUsdData).sort();
-        if (dates.length === 0) {
-            return res.json({
-                success: false,
-                message: 'No data returned from Yahoo Finance'
-            });
-        }
-        
-        const latestDate = dates[dates.length - 1];
-        const currentPrice = btcUsdData[latestDate].close;
-        
-        res.json({ 
-            success: true, 
-            message: 'Connection to Yahoo Finance API successful!',
-            currentPrice: currentPrice,
-            source: 'Yahoo Finance'
-        });
     } catch (error) {
-        logger.error('[server.js] Yahoo Finance API error:', error);
-            
+        logger.error('[server.js] Yahoo Finance API test error:', error);
         res.json({ 
             success: false, 
-            message: 'Error connecting to Yahoo Finance API: ' + error.message
+            message: 'Error testing Yahoo Finance API: ' + error.message
         });
     }
 });
