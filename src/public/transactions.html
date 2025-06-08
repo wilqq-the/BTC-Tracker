@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>BTC Tracker - Transactions</title>
     <link rel="stylesheet" href="styles.css?v=0.5.2">
+    <link rel="stylesheet" href="css/mobile.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
@@ -770,25 +771,25 @@
             background-color: #c82333;
         }
 
-        /* Sidebar Styles */
-        .sidebar {
+        /* Import/Export Sidebar Styles */
+        .import-export-sidebar {
             position: fixed;
             top: 0;
             right: -400px;
             width: 400px;
             height: 100vh;
-            background: var(--bg-color, #0f0f0f);
+            background: var(--background-color, #0f0f0f);
             border-left: 1px solid rgba(255, 255, 255, 0.1);
             z-index: 1001;
             transition: right 0.3s ease;
             overflow-y: auto;
         }
 
-        .sidebar.open {
+        .import-export-sidebar.open {
             right: 0;
         }
 
-        .sidebar-overlay {
+        .import-export-sidebar-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -801,12 +802,12 @@
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
 
-        .sidebar-overlay.active {
+        .import-export-sidebar-overlay.active {
             opacity: 1;
             visibility: visible;
         }
 
-        .sidebar-header {
+        .import-export-sidebar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -815,13 +816,13 @@
             background: rgba(247, 147, 26, 0.05);
         }
 
-        .sidebar-header h3 {
+        .import-export-sidebar-header h3 {
             margin: 0;
             color: var(--accent-color, #f7931a);
             font-size: 1.2rem;
         }
 
-        .sidebar-close {
+        .import-export-sidebar-close {
             background: none;
             border: none;
             color: var(--text-color, #ffffff);
@@ -832,25 +833,25 @@
             transition: background 0.2s ease;
         }
 
-        .sidebar-close:hover {
+        .import-export-sidebar-close:hover {
             background: rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar-content {
+        .import-export-sidebar-content {
             padding: 20px;
         }
 
-        .sidebar-section {
+        .import-export-sidebar-section {
             margin-bottom: 30px;
             padding-bottom: 20px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .sidebar-section:last-child {
+        .import-export-sidebar-section:last-child {
             border-bottom: none;
         }
 
-        .sidebar-section h4 {
+        .import-export-sidebar-section h4 {
             margin: 0 0 10px 0;
             color: var(--accent-color, #f7931a);
             font-size: 1rem;
@@ -865,13 +866,13 @@
             margin-bottom: 15px;
         }
 
-        .sidebar-form {
+        .import-export-sidebar-form {
             display: flex;
             flex-direction: column;
             gap: 15px;
         }
 
-        .sidebar-buttons {
+        .import-export-sidebar-buttons {
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -940,9 +941,9 @@
             color: var(--accent-color, #f7931a);
         }
 
-        /* Mobile Sidebar */
+        /* Mobile Import/Export Sidebar */
         @media (max-width: 768px) {
-            .sidebar {
+            .import-export-sidebar {
                 width: 100%;
                 right: -100%;
             }
@@ -1046,21 +1047,12 @@
 <body>
     <div class="container">
         <header>
-            <div class="mobile-flex-row">
-                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
-                <div class="theme-logout-container">
-                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
-                        <i class="fas fa-moon"></i>
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <a href="/logout" class="mobile-logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Original Navigation (hidden on mobile) -->
+            <!-- Original Navigation -->
             <nav>
+                <div class="nav-brand">
+                    <img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> 
+                    <span class="brand-text">BTC Tracker</span>
+                </div>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
@@ -1071,23 +1063,6 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
-            
-            <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav">
-                <button class="current-page-btn" id="currentPageBtn">
-                    <div class="current-page-text">
-                        <i class="fas fa-list-ul page-icon"></i>
-                        <span>Transactions</span>
-                    </div>
-                    <i class="fas fa-chevron-down dropdown-icon"></i>
-                </button>
-                <div class="nav-dropdown" id="navDropdown">
-                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
-                    <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
-                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
-                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
-                </div>
-            </div>
         </header>
 
         <div class="transactions-section">
@@ -1111,7 +1086,7 @@
                             <i class="fas fa-file-import"></i> Import/Export
                         </button>
                         <button class="btn btn-primary" id="addTransactionBtn">
-                            <i class="fas fa-plus"></i> Add Transaction
+                            Add Transaction
                         </button>
                         <!-- Desktop Filter Controls -->
                         <div class="desktop-filter-controls">
@@ -1380,22 +1355,22 @@
     </div>
 
     <!-- Import/Export Sidebar -->
-    <div class="sidebar" id="importExportSidebar">
-        <div class="sidebar-header">
+    <div class="import-export-sidebar" id="importExportSidebar">
+        <div class="import-export-sidebar-header">
             <h3><i class="fas fa-file-import"></i> Import/Export</h3>
-            <button class="sidebar-close" id="closeSidebar">
+            <button class="import-export-sidebar-close" id="closeSidebar">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="sidebar-content">
-            <div class="sidebar-section">
+        <div class="import-export-sidebar-content">
+            <div class="import-export-sidebar-section">
                 <h4><i class="fas fa-upload"></i> Import Data</h4>
                 <p class="sidebar-desc">Upload CSV file with transaction data</p>
-                <form id="importForm" class="sidebar-form" enctype="multipart/form-data">
+                <form id="importForm" class="import-export-sidebar-form" enctype="multipart/form-data">
                     <div class="form-group">
                         <input type="file" id="csvFile" name="file" accept=".csv" required>
                     </div>
-                    <div class="sidebar-buttons">
+                    <div class="import-export-sidebar-buttons">
                         <button type="submit" class="btn btn-primary btn-full">
                             <i class="fas fa-upload"></i> Import
                         </button>
@@ -1406,10 +1381,10 @@
                 </form>
             </div>
             
-            <div class="sidebar-section">
+            <div class="import-export-sidebar-section">
                 <h4><i class="fas fa-download"></i> Export Data</h4>
                 <p class="sidebar-desc">Download your transaction data</p>
-                <div class="sidebar-buttons">
+                <div class="import-export-sidebar-buttons">
                     <button type="button" class="btn btn-secondary btn-full" onclick="exportTransactionsCSV()">
                         <i class="fas fa-download"></i> Export All
                     </button>
@@ -1419,7 +1394,7 @@
                 </div>
             </div>
             
-            <div class="sidebar-section">
+            <div class="import-export-sidebar-section">
                 <details class="csv-help">
                     <summary><i class="fas fa-info-circle"></i> CSV Format Help</summary>
                     <div class="format-help-content">
@@ -1446,10 +1421,11 @@
             </div>
         </div>
     </div>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="import-export-sidebar-overlay" id="sidebarOverlay"></div>
 
     <script src="/js/ticker.js"></script>
     <script src="js/electron-integration.js"></script>
+    <script src="js/mobile-nav.js"></script>
     <script>
         // Check authentication before loading anything
         async function checkAuthAndInitialize() {
@@ -1507,39 +1483,7 @@
             }
         }
 
-        // Dropdown navigation functionality
         function initializePage() {
-            const currentPageBtn = document.getElementById('currentPageBtn');
-            const navDropdown = document.getElementById('navDropdown');
-            
-            // Toggle dropdown
-            currentPageBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                currentPageBtn.classList.toggle('active');
-                navDropdown.classList.toggle('active');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                // Don't close dropdown if clicking on a transaction card
-                if (e.target.closest('.transaction-card')) {
-                    return;
-                }
-                
-                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
-                    currentPageBtn.classList.remove('active');
-                    navDropdown.classList.remove('active');
-                }
-            });
-            
-            // Handle theme toggle for mobile
-            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
-            const regularThemeToggle = document.getElementById('themeToggle');
-            
-            mobileThemeToggle.addEventListener('click', () => {
-                // Trigger the original theme toggle functionality
-                regularThemeToggle.click();
-            });
             
             setupThemeToggle();
             loadSettings().then(() => {

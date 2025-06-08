@@ -202,6 +202,21 @@ nav a.active {
     color: var(--background-color);
 }
 
+/* Navigation brand styling */
+.nav-brand {
+    display: flex;
+    align-items: center;
+    margin-right: 1rem;
+    padding: 0.5rem 0;
+}
+
+.brand-text {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    text-decoration: none;
+}
+
 /* Mobile navigation */
 @media (max-width: 768px) {
     nav {
@@ -271,6 +286,11 @@ nav a.active {
     
     /* Hide desktop nav */
     nav {
+        display: none;
+    }
+    
+    /* Hide desktop brand on mobile */
+    .nav-brand {
         display: none;
     }
     

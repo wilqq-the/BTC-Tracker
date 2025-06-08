@@ -492,20 +492,56 @@ if (!document.querySelector('#transaction-modal-styles')) {
             height: 100% !important;
             z-index: 1000 !important;
             pointer-events: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            outline: none !important;
+            font-family: 'JetBrains Mono', monospace !important;
+        }
+
+        .transaction-modal * {
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+
+        .transaction-modal h1, .transaction-modal h2, .transaction-modal h3, 
+        .transaction-modal h4, .transaction-modal h5, .transaction-modal h6 {
+            font-family: 'JetBrains Mono', monospace !important;
+            line-height: 1.2 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+        }
+
+        .transaction-modal button {
+            font-family: 'JetBrains Mono', monospace !important;
+            margin: 0 !important;
+            padding: 6px !important;
+        }
+
+        .transaction-modal div, .transaction-modal span, .transaction-modal p {
+            margin: 0 !important;
+            text-align: left !important;
         }
 
         .transaction-modal .transaction-sidebar {
             position: fixed !important;
             top: 0 !important;
-            right: -450px !important;
-            width: 450px !important;
+            right: -420px !important;
+            width: 420px !important;
+            max-width: 420px !important;
+            min-width: 420px !important;
             height: 100vh !important;
-            background: var(--bg-color, #0f0f0f) !important;
+            background: var(--background-color, #0f0f0f) !important;
             border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
             z-index: 1001 !important;
             transition: right 0.3s ease !important;
             overflow-y: auto !important;
             pointer-events: all !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
         .transaction-modal .transaction-sidebar.open {
@@ -536,18 +572,42 @@ if (!document.querySelector('#transaction-modal-styles')) {
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
+            flex-wrap: nowrap !important;
+            flex-direction: row !important;
             padding: 15px 18px !important;
+            margin: 0 !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
             background: rgba(247, 147, 26, 0.05) !important;
+            min-height: 50px !important;
+            max-height: 50px !important;
+            height: 50px !important;
+            box-sizing: border-box !important;
+            text-align: left !important;
+            overflow: hidden !important;
+            position: relative !important;
+            width: 100% !important;
         }
 
         .transaction-modal .sidebar-header h3 {
             margin: 0 !important;
+            padding: 0 !important;
             color: var(--accent-color, #f7931a) !important;
-            font-size: 1.2rem !important;
-            display: flex !important;
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+            display: inline-flex !important;
             align-items: center !important;
+            justify-content: flex-start !important;
             gap: 8px !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            max-width: calc(100% - 50px) !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            text-align: left !important;
+            line-height: 1.2 !important;
+            vertical-align: middle !important;
+            position: relative !important;
         }
 
         .transaction-modal .sidebar-close {
@@ -557,8 +617,23 @@ if (!document.querySelector('#transaction-modal-styles')) {
             font-size: 1.1rem !important;
             cursor: pointer !important;
             padding: 6px !important;
+            margin: 0 !important;
             border-radius: 4px !important;
             transition: background 0.2s ease !important;
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            position: relative !important;
+            vertical-align: middle !important;
+            line-height: 1 !important;
         }
 
         .transaction-modal .sidebar-close:hover {
@@ -566,12 +641,12 @@ if (!document.querySelector('#transaction-modal-styles')) {
         }
 
         .transaction-modal .sidebar-content {
-            padding: 16px !important;
+            padding: 15px 18px !important;
         }
 
         .transaction-modal .sidebar-section {
-            margin-bottom: 18px !important;
-            padding-bottom: 15px !important;
+            margin-bottom: 15px !important;
+            padding-bottom: 12px !important;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
         }
 
@@ -581,7 +656,7 @@ if (!document.querySelector('#transaction-modal-styles')) {
         }
 
         .transaction-modal .sidebar-section h4 {
-            margin: 0 0 12px 0 !important;
+            margin: 0 0 8px 0 !important;
             color: var(--accent-color, #f7931a) !important;
             font-size: 0.95rem !important;
             display: flex !important;
@@ -595,12 +670,12 @@ if (!document.querySelector('#transaction-modal-styles')) {
         }
 
         .transaction-modal .form-group {
-            margin-bottom: 12px !important;
+            margin-bottom: 10px !important;
         }
 
         .transaction-modal .form-group label {
             display: block !important;
-            margin-bottom: 6px !important;
+            margin-bottom: 4px !important;
             font-weight: 600 !important;
             color: var(--text-color, #ffffff) !important;
             font-size: 0.85rem !important;
@@ -615,7 +690,7 @@ if (!document.querySelector('#transaction-modal-styles')) {
             padding: 10px !important;
             border: 1px solid var(--border-color, #333) !important;
             border-radius: 6px !important;
-            background-color: var(--input-background, #222) !important;
+            background-color: var(--card-background, #222) !important;
             color: var(--text-color, #eee) !important;
             font-family: 'JetBrains Mono', monospace !important;
             box-sizing: border-box !important;
@@ -646,8 +721,9 @@ if (!document.querySelector('#transaction-modal-styles')) {
         .transaction-modal .sidebar-desc {
             font-size: 0.75rem !important;
             color: var(--text-secondary-color, #cccccc) !important;
-            margin-top: 4px !important;
+            margin-top: 3px !important;
             margin-bottom: 0 !important;
+            padding: 0 !important;
             line-height: 1.2 !important;
         }
 
@@ -667,7 +743,7 @@ if (!document.querySelector('#transaction-modal-styles')) {
             display: flex !important;
             flex-direction: column !important;
             gap: 8px !important;
-            margin-top: 16px !important;
+            margin-top: 12px !important;
         }
 
         .transaction-modal .btn {
@@ -702,12 +778,12 @@ if (!document.querySelector('#transaction-modal-styles')) {
         }
 
         .transaction-modal .btn-secondary {
-            background-color: var(--button-secondary-bg, #333) !important;
-            color: var(--button-secondary-color, #eee) !important;
+            background-color: var(--card-background, #333) !important;
+            color: var(--text-color, #eee) !important;
         }
 
         .transaction-modal .btn-secondary:hover {
-            background-color: var(--button-secondary-hover, #444) !important;
+            background-color: var(--hover-color, #444) !important;
         }
 
         /* Mobile Responsive */
