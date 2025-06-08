@@ -2,13 +2,14 @@
 
 A simple, powerful application to track your Bitcoin investments and monitor their performance over time.
 
-## 🆕 What's New in v0.5.4
+## 🆕 What's New in v0.5.2
 
 ### 🚀 **Major Enhancements**
-- **⚡ Satoshi Unit Support**: Full support for displaying Bitcoin amounts in Satoshis with proper symbol integration
-- **💱 Enhanced Display Options**: BTC/Satoshi unit toggle with real-time switching across all views
-- **🎨 Improved User Experience**: Dynamic labels and smart input validation based on selected unit
-- **🐛 Critical Bug Fixes**: Resolved HTML encoding issues and improved settings synchronization
+- **💱 Currency System Fixes**: Comprehensive patches for exchange rate handling and multi-currency support
+- **🐛 Critical Bug Fixes**: Resolved dropdown display issues and modal styling inconsistencies
+- **🎨 UI/UX Polish**: Improved transaction form styling and quick-add functionality
+- **🎉 Easter Eggs**: Fun Bitcoin-themed validation for impossible transaction amounts
+- **📊 Enhanced Stability**: Better error handling and currency conversion reliability
 
 [**📋 View Full Changelog**](CHANGELOG.md) | [**🚀 Release Notes**](.github/RELEASE_TEMPLATE.md)
 
@@ -39,7 +40,6 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 
 ### 💱 **Currency Support**
 - **Multi-Currency Support**: Track investments in EUR, USD, PLN, GBP, JPY, CHF, **BRL (Brazilian Real)**
-- **Bitcoin Unit Display**: Switch between BTC (decimal) and **Satoshis (whole numbers)** with proper ⚡ symbol
 - **Advanced Currency Converter**: Enhanced exchange rate functionality with comprehensive testing
 - **Smart Rate Caching**: Intelligent caching system for reliable currency conversion
 

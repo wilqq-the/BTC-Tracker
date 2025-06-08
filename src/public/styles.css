@@ -2606,11 +2606,4 @@ footer {
     .donation-content {
         padding: 15px;
     }
-}
-
-/* Satoshi symbol styling */
-.fak.fa-satoshisymbol-solid {
-    color: var(--primary-color);
-    font-size: 1em;
-    vertical-align: baseline;
-}
+} 

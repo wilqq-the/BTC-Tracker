@@ -1,6 +1,6 @@
 {
   "name": "btc-tracker",
-  "version": "0.5.4",
+  "version": "0.5.3",
   "description": "Bitcoin transaction tracker",
   "main": "src/electron-main.js",
   "electronMain": "src/electron-main.js",
