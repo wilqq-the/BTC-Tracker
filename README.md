@@ -229,9 +229,6 @@ The Dashboard provides an overview of:
 
 1. Navigate to the Admin Panel
 2. Select your preferred currency settings
-3. (Optional) Add your CoinGecko API key for better rate limits and reliability
-   - Get a free API key at [CoinGecko](https://www.coingecko.com/en/api/pricing)
-   - This allows up to 10,000 calls per month instead of the default 10-30 calls per minute
 
 ## Data Storage
 
@@ -254,7 +251,7 @@ The Windows application stores data in:
 - Bcrypt for secure password hashing
 - Express Session for session management
 - External APIs:
-  - CoinGecko API for BTC prices
+  - Yahoo Finance for BTC prices
   - ExchangeRate API for currency conversion
 - Electron for running desktop version
 
@@ -293,7 +290,7 @@ wilqq-the
 ## Acknowledgements
 
 - Bitcoin logo from the Bitcoin project
-- CoinGecko for cryptocurrency price data
+- Yahoo Finance for cryptocurrency price data
 - ExchangeRate API for currency conversions
 
 ### Yahoo Finance Integration

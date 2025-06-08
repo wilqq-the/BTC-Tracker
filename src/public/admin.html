@@ -910,6 +910,65 @@
                 width: 100%;
             }
         }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            max-width: 400px;
+        }
+
+        .toast {
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            color: #fff;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+            word-wrap: break-word;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: #28a745;
+            background: rgba(40, 167, 69, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .toast.error {
+            border-left-color: #dc3545;
+            background: rgba(220, 53, 69, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .toast.info {
+            border-left-color: #17a2b8;
+            background: rgba(23, 162, 184, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(23, 162, 184, 0.3);
+            color: #17a2b8;
+        }
+
+        .toast i {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
@@ -947,6 +1006,9 @@
             <i class="fas fa-shield-alt" style="margin-right: 6px;"></i>Verifying access...
         </span>
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <div class="container">
         <header>
@@ -1165,15 +1227,13 @@
                             </div>
                             
                             <div class="form-group">
-                                <label for="coingeckoApiKey"><i class="fas fa-key"></i> CoinGecko API Key (optional):</label>
+                                <label><i class="fas fa-chart-line"></i> Yahoo Finance API Test:</label>
                                 <div class="api-key-container">
-                                    <input type="text" id="coingeckoApiKey" name="coingeckoApiKey" placeholder="Enter your CoinGecko API key">
-                                    <button type="button" id="testApiKeyBtn" class="btn btn-secondary">
-                                        <i class="fas fa-vial"></i> Test Key
+                                    <button type="button" id="testYahooApiBtn" class="btn btn-secondary">
+                                        <i class="fas fa-vial"></i> Test Yahoo API
                                     </button>
                                 </div>
-                                <p id="apiKeyStatus" class="api-status" style="display: none;"></p>
-                                <p class="help-text">Get a free API key at <a href="https://www.coingecko.com/en/api/pricing" target="_blank">CoinGecko</a> for higher rate limits.</p>
+                                <p class="help-text">Test connectivity to Yahoo Finance API for exchange rates and BTC price data.</p>
                             </div>
                             
                             <div class="form-buttons">
@@ -1887,10 +1947,7 @@
                 document.getElementById('historicalDataYears').value = settings.historicalDataYears || '1';
                 document.getElementById('historicalDataRefreshHours').value = settings.historicalDataRefreshHours || '24';
                 
-                // Populate API key if available
-                if (settings.coingeckoApiKey) {
-                    document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
-                }
+                // No API key needed for Yahoo Finance
                 
                 // Trigger exchange rates update based on main currency
                 loadExchangeRates();
@@ -1909,7 +1966,6 @@
                 const secondaryCurrency = document.getElementById('secondaryCurrency').value;
                 const mainCurrency = document.getElementById('mainCurrency').value;
                 const btcUnit = document.getElementById('btcUnit').checked ? 'satoshi' : 'btc';
-                const coingeckoApiKey = document.getElementById('coingeckoApiKey').value;
                 const historicalDataYears = document.getElementById('historicalDataYears').value;
                 const historicalDataRefreshHours = document.getElementById('historicalDataRefreshHours').value;
                 
@@ -1936,11 +1992,6 @@
                     historicalDataYears,
                     historicalDataRefreshHours
                 };
-                
-                // Only include API key if it's provided
-                if (coingeckoApiKey.trim()) {
-                    settings.coingeckoApiKey = coingeckoApiKey.trim();
-                }
                 
                 console.log('Saving settings:', settings);
                 
@@ -2793,6 +2844,32 @@
             });
         }
 
+        // Toast notification function
+        function showToast(type, message, duration = 5000) {
+            const toastContainer = document.getElementById('toastContainer');
+            
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            
+            toastContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, duration);
+        }
+
         // Check authentication before loading anything
         async function checkAuthAndInitialize() {
             const authOverlay = document.getElementById('authLoadingOverlay');
@@ -2855,28 +2932,20 @@
             checkAuthAndInitialize();
         });
 
-        // Update the testApiKeyBtn click handler with auth handling
-        document.getElementById('testApiKeyBtn').addEventListener('click', async function() {
-            const apiKeyInput = document.getElementById('coingeckoApiKey');
-            const apiKey = apiKeyInput.value.trim();
-            
-            if (!apiKey) {
-                alert('Please enter an API key to test');
-                return;
-            }
-            
+        // Add Yahoo Finance API test button handler
+        document.getElementById('testYahooApiBtn').addEventListener('click', async function() {
             const testBtn = this;
             const originalText = testBtn.innerHTML;
+            
             testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
             testBtn.disabled = true;
             
             try {
-                const response = await fetch('/api/settings/test-coingecko-key', {
+                const response = await fetch('/api/admin/test-yahoo-api', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ apiKey })
+                    }
                 });
                 
                 if (!response.ok) {
@@ -2886,23 +2955,24 @@
                         window.location.href = '/login';
                         return;
                     }
-                    throw new Error('API test failed');
+                    throw new Error('Yahoo API test failed');
                 }
                 
                 const result = await response.json();
                 
                 if (result.success) {
-                    // Show success message
-                    alert(`API key is valid! Current BTC price: $${result.currentPrice}`);
+                    // Show success toast
+                    showToast('success', `<i class="fas fa-check-circle"></i> Yahoo API is working! BTC: $${result.btcPrice || 'N/A'} | Rates: ${result.exchangeRatesCount || 0} available`);
                 } else {
-                    // Show error message
-                    alert(`API key test failed: ${result.message}`);
+                    // Show error toast
+                    showToast('error', `<i class="fas fa-times-circle"></i> Yahoo API test failed: ${result.message || 'Unknown error'}`);
                 }
             } catch (error) {
-                console.error('Error testing API key:', error);
+                console.error('Error testing Yahoo API:', error);
                 if (handleAuthError(error)) return;
                 
-                alert('Error testing API key: ' + error.message);
+                // Show error toast
+                showToast('error', `<i class="fas fa-exclamation-triangle"></i> Error testing Yahoo API: ${error.message}`);
             } finally {
                 testBtn.innerHTML = originalText;
                 testBtn.disabled = false;
@@ -2950,10 +3020,7 @@
                 document.getElementById('btcUnit').checked = (settings.btcUnit === 'satoshi');
                 updateUnitDescription();
                 
-                // Update CoinGecko API key field
-                if (settings.coingeckoApiKey) {
-                    document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
-                }
+                // No API key configuration needed for Yahoo Finance
                 
                 // Update last fetched time
                 const lastUpdated = document.getElementById('settingsLastUpdated');

@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Satoshi Symbol Integration** - Implemented proper Satoshi symbol (⚡) from satsymbol.com. Special thanks to @satsymbol for creating and freely sharing this symbol to help drive Bitcoin adoption!
 - **Unit Toggle System** - Added BTC/Satoshi display unit selector in admin panel with real-time switching across all views
 
+### Changes
+
+- **Remove Coingecko remains** - Removed all legacy code, configuration and references related to the deprecated Coingecko API integration, cleaning up the codebase
+
 ## [0.5.3] - 2025-06-07
 
 - **Lightning Network donation support** - Dual payment system with Lightning Network as default option for instant, low-fee donations alongside traditional on-chain Bitcoin payments
