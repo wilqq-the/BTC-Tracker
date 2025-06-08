@@ -9,6 +9,7 @@
     <title>BTC Tracker - Admin Panel</title>
     <link rel="stylesheet" href="styles.css?v=0.5.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
@@ -741,6 +742,137 @@
             border-left: 3px solid var(--accent-color);
         }
         
+        /* Compact Symbol Toggle Switch for BTC Unit */
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 0.5rem;
+        }
+
+        .symbol-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .symbol-toggle-switch input[type="checkbox"] {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .symbol-toggle-slider {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .symbol-toggle-button {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+
+        /* Symbol positioning */
+        .symbol-toggle-slider::before,
+        .symbol-toggle-slider::after {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        /* BTC symbol (left side) */
+        .symbol-toggle-slider::before {
+            content: "₿";
+            left: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Satoshi symbol (right side) - placeholder for now, will be replaced with actual symbol */
+        .symbol-toggle-slider::after {
+            content: "S";
+            font-family: inherit;
+            font-weight: bold;
+            right: 8px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Checked state - Satoshi mode (Lightning purple) */
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider {
+            background: #7c1cf4;
+            border-color: #7c1cf4;
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider .symbol-toggle-button {
+            transform: translateX(28px);
+            background: #fff;
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider::before {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider::after {
+            color: #fff;
+        }
+
+        /* Unchecked state - BTC mode (Bitcoin orange) */
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider {
+            background: rgba(247, 147, 26, 0.2);
+            border-color: rgba(247, 147, 26, 0.3);
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider .symbol-toggle-button {
+            background: #f7931a;
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider::before {
+            color: #fff;
+        }
+
+        /* Hover effects */
+        .symbol-toggle-slider:hover {
+            box-shadow: 0 0 0 3px rgba(124, 28, 244, 0.2);
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider:hover {
+            box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
+        }
+
+        /* Unit description below switch */
+        .unit-description {
+            text-align: left;
+            margin-top: 0.5rem;
+            margin-left: 0;
+            font-size: 0.75rem;
+            color: var(--text-secondary-color, #aaa);
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+
+        /* Remove active color change - description should stay normal color */
+        
         /* Compact Danger Zone */
         .danger-zone-compact {
             margin-top: 20px;
@@ -953,7 +1085,7 @@
                             <tr>
                                 <th><i class="fas fa-calendar"></i> Date</th>
                                 <th><i class="fas fa-exchange-alt"></i> Type</th>
-                                <th><i class="fab fa-bitcoin"></i> BTC Amount</th>
+                                <th id="transactionTableAmountHeader"><i class="fab fa-bitcoin"></i> BTC Amount</th>
                                 <th><i class="fas fa-money-bill"></i> Price</th>
                                 <th><i class="fas fa-money-bill-wave"></i> Cost</th>
                                 <th><i class="fas fa-cogs"></i> Actions</th>
@@ -991,6 +1123,22 @@
                                     <option value="EUR">Euro (EUR)</option>
                                 </select>
                                 <p class="help-text">Show P&L in this currency alongside the main currency</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="btcUnit"><i class="fab fa-bitcoin"></i> Bitcoin Display Unit</label>
+                                <div class="toggle-switch-container">
+                                    <div class="symbol-toggle-switch">
+                                        <input type="checkbox" id="btcUnit" name="btcUnit">
+                                        <label for="btcUnit" class="symbol-toggle-slider">
+                                            <span class="symbol-toggle-button"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="unit-description" id="unitDescription">
+                                    Display in BTC (decimal format)
+                                </div>
+                                <p class="help-text">Toggle between BTC (₿) with up to 8 decimal places or Satoshis (<i class="fak fa-satoshisymbol-solid"></i>) as whole numbers. 1 BTC = 100,000,000 Satoshis</p>
                             </div>
                             
                             <div class="form-group">
@@ -1279,7 +1427,7 @@
                 row.innerHTML = `
                     <td>${new Date(tx.date).toLocaleDateString()}</td>
                     <td>${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
-                    <td>${amount.toFixed(8)} ₿</td>
+                    <td>${formatBtcDisplay(amount)}</td>
                     <td>${price.toFixed(2)} ${currencySymbol}</td>
                     <td>${cost.toFixed(2)} ${currencySymbol}</td>
                     <td>
@@ -1345,9 +1493,9 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="addAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
-                            <input type="number" id="addAmount" step="0.00000001" placeholder="0.12345678" required>
-                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
+                            <label for="addAmount" id="addAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
+                            <input type="number" id="addAmount" step="${getBtcInputStep()}" placeholder="${getBtcInputPlaceholder()}" required>
+                            <p class="help-text">${getBtcInputHelpText()}</p>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -1400,7 +1548,7 @@
             
             const updateCalculatedCost = () => {
                 const price = parseFloat(priceInput.value) || 0;
-                const amount = parseFloat(amountInput.value) || 0;
+                const amount = parseUserBtcInput(amountInput.value) || 0;
                 const cost = price * amount;
                 costDisplay.textContent = cost.toFixed(2);
             };
@@ -1410,23 +1558,26 @@
             
             // Add Bitcoin precision validation to add form
             amountInput.addEventListener('blur', function() {
-                const value = parseFloat(this.value);
-                if (!isNaN(value)) {
-                    // Round to 8 decimal places (satoshi precision)
-                    const rounded = Math.round(value * 100000000) / 100000000;
-                    if (rounded !== value) {
-                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
-                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
-                        updateCalculatedCost(); // Recalculate cost with rounded amount
-                    }
+                const validation = validateBtcInput(this.value);
+                if (!validation.valid) {
+                    alert(validation.error);
+                    this.focus();
+                    return;
                 }
+                
+                // Convert input to BTC for storage (if in satoshis)
+                const btcAmount = parseUserBtcInput(this.value);
+                
+                // Update display with properly formatted value
+                this.value = btcToDisplayInput(btcAmount);
+                updateCalculatedCost();
             });
 
             const form = modal.querySelector('#addTransactionForm');
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 try {
-                    const rawAmount = parseFloat(document.getElementById('addAmount').value);
+                    const rawAmount = parseUserBtcInput(document.getElementById('addAmount').value);
                     const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
                     
                     const newTransaction = {
@@ -1497,9 +1648,9 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="editAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
-                            <input type="number" id="editAmount" step="0.00000001" value="${tx.amount || 0}" required>
-                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
+                            <label for="editAmount" id="editAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
+                            <input type="number" id="editAmount" step="${getBtcInputStep()}" value="${btcToDisplayInput(tx.amount || 0)}" required>
+                            <p class="help-text">${getBtcInputHelpText()}</p>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
@@ -1540,15 +1691,18 @@
             // Add Bitcoin precision validation to edit form
             const editAmountInput = document.getElementById('editAmount');
             editAmountInput.addEventListener('blur', function() {
-                const value = parseFloat(this.value);
-                if (!isNaN(value)) {
-                    // Round to 8 decimal places (satoshi precision)
-                    const rounded = Math.round(value * 100000000) / 100000000;
-                    if (rounded !== value) {
-                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
-                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
-                    }
+                const validation = validateBtcInput(this.value);
+                if (!validation.valid) {
+                    alert(validation.error);
+                    this.focus();
+                    return;
                 }
+                
+                // Convert input to BTC for storage (if in satoshis)
+                const btcAmount = parseUserBtcInput(this.value);
+                
+                // Update display with properly formatted value
+                this.value = btcToDisplayInput(btcAmount);
             });
 
             const form = modal.querySelector('#editTransactionForm');
@@ -1558,7 +1712,7 @@
                     // --- Data Sent to Server ---
                     // Send only the ID (in URL) and the editable fields.
                     // Server will recalculate cost and base values.
-                    const rawAmount = parseFloat(document.getElementById('editAmount').value);
+                    const rawAmount = parseUserBtcInput(document.getElementById('editAmount').value);
                     const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
                     
                     const dataToSend = {
@@ -1727,6 +1881,7 @@
                 // Populate form fields
                 document.getElementById('secondaryCurrency').value = settings.secondaryCurrency || 'PLN';
                 document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
+                document.getElementById('btcUnit').checked = (settings.btcUnit === 'satoshi');
                 
                 // Populate historical data settings
                 document.getElementById('historicalDataYears').value = settings.historicalDataYears || '1';
@@ -1753,6 +1908,7 @@
                 // Get form values
                 const secondaryCurrency = document.getElementById('secondaryCurrency').value;
                 const mainCurrency = document.getElementById('mainCurrency').value;
+                const btcUnit = document.getElementById('btcUnit').checked ? 'satoshi' : 'btc';
                 const coingeckoApiKey = document.getElementById('coingeckoApiKey').value;
                 const historicalDataYears = document.getElementById('historicalDataYears').value;
                 const historicalDataRefreshHours = document.getElementById('historicalDataRefreshHours').value;
@@ -1776,6 +1932,7 @@
                 const settings = {
                     secondaryCurrency,
                     mainCurrency,
+                    btcUnit,
                     historicalDataYears,
                     historicalDataRefreshHours
                 };
@@ -2789,6 +2946,10 @@
                 // Update main currency field
                 document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
                 
+                // Update BTC unit field
+                document.getElementById('btcUnit').checked = (settings.btcUnit === 'satoshi');
+                updateUnitDescription();
+                
                 // Update CoinGecko API key field
                 if (settings.coingeckoApiKey) {
                     document.getElementById('coingeckoApiKey').value = settings.coingeckoApiKey;
@@ -2916,7 +3077,7 @@
             })
             .catch(error => {
                 console.error('Failed to fetch version:', error);
-                document.getElementById('app-version').textContent = '0.5.3';
+                document.getElementById('app-version').textContent = '0.5.4';
             });
 
         function generateQRCode() {
@@ -3359,6 +3520,43 @@
                 button.disabled = false;
             }
         });
+
+        // Function to update unit description
+        function updateUnitDescription() {
+            const unitDescription = document.getElementById('unitDescription');
+            const btcUnitCheckbox = document.getElementById('btcUnit');
+            
+            if (btcUnitCheckbox.checked) {
+                unitDescription.innerHTML = 'Display in Satoshis <i class="fak fa-satoshisymbol-solid"></i> (whole numbers)';
+            } else {
+                unitDescription.innerHTML = 'Display in BTC ₿ (decimal format)';
+            }
+        }
+
+        // Add event listener for BTC unit switch
+        document.addEventListener('DOMContentLoaded', function() {
+            const btcUnitCheckbox = document.getElementById('btcUnit');
+            if (btcUnitCheckbox) {
+                btcUnitCheckbox.addEventListener('change', function() {
+                    updateUnitDescription();
+                    // Update form labels immediately when switch is toggled
+                    if (typeof updateFormLabels === 'function') {
+                        updateFormLabels();
+                    }
+                });
+            }
+        });
+
+        // Listen for BTC unit changes
+        window.addEventListener('btcUnitChanged', function(event) {
+            console.log('BTC unit changed in admin panel, refreshing data');
+            
+            // Refresh transactions table if it exists
+            if (typeof loadTransactions === 'function') {
+                loadTransactions();
+            }
+        });
     </script>
+    <script src="js/btc-utils.js"></script>
 </body>
 </html> 
