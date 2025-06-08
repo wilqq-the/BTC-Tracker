@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="styles.css?v=0.5.2">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
@@ -198,6 +199,13 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
+        }
+        
+        /* Satoshi symbol styling */
+        .fak.fa-satoshisymbol-solid {
+            color: var(--accent-color);
+            font-size: 1em;
+            vertical-align: baseline;
         }
 
         .refresh-btn:hover {
@@ -1264,10 +1272,11 @@
         }
 
         .value-secondary {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: var(--muted-text-color);
             font-weight: 500;
             font-family: 'JetBrains Mono', monospace;
+            opacity: 0.8;
         }
 
         /* P&L specific styling */
@@ -1980,7 +1989,7 @@
                             <span>Holdings</span>
                         </div>
                         <div class="metric-row">
-                            <span class="label">Total BTC</span>
+                            <span class="label" id="totalBtcLabel">Total BTC</span>
                             <span class="value" id="totalBtc">Loading...</span>
                         </div>
                         <div class="metric-row">
@@ -2073,7 +2082,7 @@
                         <span id="mobilePnLPercent">Loading...</span>
                     </div>
                     <div class="mobile-holdings-info" id="mobileHoldings">
-                        Loading... BTC
+                        Loading...
                     </div>
                 </div>
 
@@ -2590,8 +2599,8 @@
             });
 
             // Update total BTC (always available)
-            document.getElementById('totalBtc').textContent = 
-                (priceData.totalBTC || 0).toFixed(8);
+            document.getElementById('totalBtc').innerHTML = 
+                formatBtcDisplay(priceData.totalBTC || 0);
 
             // --- Update Cards --- 
 
@@ -2903,7 +2912,7 @@
             }
             
             // Update holdings info
-            document.getElementById('mobileHoldings').textContent = `${(priceData.totalBTC || 0).toFixed(6)} BTC`;
+            document.getElementById('mobileHoldings').innerHTML = formatBtcDisplay(priceData.totalBTC || 0);
             
             // Add appropriate styling classes
             const changeElement = document.getElementById('mobileChange');
@@ -4002,7 +4011,7 @@
                 document.getElementById('mobileSecondaryValue').textContent = 'Error';
                 document.getElementById('mobilePnLAmount').textContent = 'Error';
                 document.getElementById('mobilePnLPercent').textContent = 'Error';
-                document.getElementById('mobileHoldings').textContent = 'Error BTC';
+                document.getElementById('mobileHoldings').textContent = 'Error';
                 
                 // Show error message to user
                 const errorMessage = document.createElement('div');
@@ -4050,9 +4059,9 @@
                              </select>
                          </div>
                         <div class="form-group">
-                            <label for="quickAddAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
-                            <input type="number" id="quickAddAmount" step="0.00000001" placeholder="0.12345678" required>
-                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
+                            <label for="quickAddAmount" id="quickAddAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
+                            <input type="number" id="quickAddAmount" step="${getBtcInputStep()}" placeholder="${getBtcInputPlaceholder()}" required>
+                            <p class="help-text" id="quickAddAmountHelp">${getBtcInputHelpText()}</p>
                         </div>
                                                 <div class="form-row">
                             <div class="form-group">
@@ -4105,7 +4114,7 @@
             
             const updateCalculatedCost = () => {
                 const price = parseFloat(priceInput.value) || 0;
-                const amount = parseFloat(amountInput.value) || 0;
+                const amount = parseUserBtcInput(amountInput.value) || 0;
                 const cost = price * amount;
                 costDisplay.textContent = cost.toFixed(2);
             };
@@ -4115,40 +4124,43 @@
             
             // Add Bitcoin precision validation and easter egg
             amountInput.addEventListener('blur', function() {
-                const value = parseFloat(this.value);
-                if (!isNaN(value)) {
-                    // Easter egg: Check if trying to add more than 21 million BTC
-                    if (value > 21000000) {
-                        const funnyMessages = [
-                            "🤔 Wait a minute... There are only 21 million Bitcoin in existence! Are you Satoshi Nakamoto? 👨‍💻",
-                            "🚀 Whoa there, time traveler! Did you mine all the Bitcoin from the future? ⏰",
-                            "😂 21 million BTC? That's more Bitcoin than exists! Maybe try buying the entire world first? 🌍",
-                            "🎩 Found the secret Bitcoin printer, eh? The Federal Reserve wants to know your location! 🏦",
-                            "🤑 21M+ BTC? At that point you'd own more Bitcoin than Bitcoin itself! That's some next-level HODLing! 💎🙌",
-                            "🧙‍♂️ Ah yes, the legendary Bitcoin whale who owns more Bitcoin than mathematically possible! 🐋",
-                            "🎪 Step right up! See the person who broke the laws of Bitcoin economics! 🎭"
-                        ];
-                        
-                        const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
-                        
-                        // Show the funny message
-                        showNotification(randomMessage, 'error');
-                        
-                        // Reset to a reasonable amount
-                        this.value = "21000000";
-                        console.log("🎉 Easter egg triggered! Someone tried to add more than 21M BTC!");
-                        updateCalculatedCost();
-                        return;
-                    }
-                    
-                    // Round to 8 decimal places (satoshi precision)
-                    const rounded = Math.round(value * 100000000) / 100000000;
-                    if (rounded !== value) {
-                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
-                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
-                        updateCalculatedCost(); // Recalculate cost with rounded amount
-                    }
+                const validation = validateBtcInput(this.value);
+                if (!validation.valid) {
+                    showNotification(validation.error, 'error');
+                    this.focus();
+                    return;
                 }
+                
+                // Convert input to BTC for storage (if in satoshis)
+                const btcAmount = parseUserBtcInput(this.value);
+                
+                // Easter egg: Check if trying to add more than 21 million BTC
+                if (btcAmount > 21000000) {
+                    const funnyMessages = [
+                        "🤔 Wait a minute... There are only 21 million Bitcoin in existence! Are you Satoshi Nakamoto? 👨‍💻",
+                        "🚀 Whoa there, time traveler! Did you mine all the Bitcoin from the future? ⏰",
+                        "😂 21 million BTC? That's more Bitcoin than exists! Maybe try buying the entire world first? 🌍",
+                        "🎩 Found the secret Bitcoin printer, eh? The Federal Reserve wants to know your location! 🏦",
+                        "🤑 21M+ BTC? At that point you'd own more Bitcoin than Bitcoin itself! That's some next-level HODLing! 💎🙌",
+                        "🧙‍♂️ Ah yes, the legendary Bitcoin whale who owns more Bitcoin than mathematically possible! 🐋",
+                        "🎪 Step right up! See the person who broke the laws of Bitcoin economics! 🎭"
+                    ];
+                    
+                    const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
+                    
+                    // Show the funny message
+                    showNotification(randomMessage, 'error');
+                    
+                    // Reset to a reasonable amount in current display unit
+                    this.value = btcToDisplayInput(21000000);
+                    console.log("🎉 Easter egg triggered! Someone tried to add more than 21M BTC!");
+                    updateCalculatedCost();
+                    return;
+                }
+                
+                // Update display with properly formatted value
+                this.value = btcToDisplayInput(btcAmount);
+                updateCalculatedCost();
             });
 
             // Close modal when clicking outside
@@ -4169,7 +4181,7 @@
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
                     submitBtn.disabled = true;
                     
-                    const rawAmount = parseFloat(document.getElementById('quickAddAmount').value);
+                    const rawAmount = parseUserBtcInput(document.getElementById('quickAddAmount').value);
                     const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
                     
                     const newTransaction = {
@@ -5191,7 +5203,7 @@
                     <div class="tooltip-header">${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} Transaction</div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Amount:</span>
-                        <span class="tooltip-value">${tx.amount.toFixed(4)} BTC</span>
+                        <span class="tooltip-value">${formatBtcDisplay(tx.amount)}</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Price:</span>
@@ -5235,7 +5247,7 @@
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Total Amount:</span>
-                        <span class="tooltip-value">${totalAmount.toFixed(4)} BTC</span>
+                        <span class="tooltip-value">${formatBtcDisplay(totalAmount)}</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Total Value:</span>
@@ -5287,8 +5299,52 @@
             floatingTooltip.style.top = `${y}px`;
         }
 
+        // Function to update BTC input fields based on current unit
+        function updateBtcInputFields() {
+            const btcInputs = document.querySelectorAll('input[id*="Amount"], input[id*="amount"]');
+            btcInputs.forEach(input => {
+                if (input.type === 'number' && (input.id.toLowerCase().includes('amount') || input.id.toLowerCase().includes('btc'))) {
+                    input.step = getBtcInputStep();
+                    input.placeholder = getBtcInputPlaceholder();
+                    
+                    // Update help text if it exists
+                    const helpText = input.parentElement.querySelector('.help-text');
+                    if (helpText && helpText.textContent.includes('decimal places')) {
+                        helpText.textContent = getBtcInputHelpText();
+                    }
+                }
+            });
+        }
+
+        // Function to update BTC-related labels based on current unit
+        function updateBtcLabels() {
+            const currentUnit = window.currentBtcUnit || 'btc';
+            const labelElement = document.getElementById('totalBtcLabel');
+            
+            if (labelElement) {
+                if (currentUnit === 'satoshi' || currentUnit === 'sats') {
+                    labelElement.innerHTML = 'Total <i class="fak fa-satoshisymbol-solid"></i>';
+                } else {
+                    labelElement.textContent = 'Total BTC';
+                }
+            }
+        }
+
+        // Listen for BTC unit changes
+        window.addEventListener('btcUnitChanged', function(event) {
+            console.log('BTC unit changed, updating displays');
+            updateBtcInputFields();
+            updateBtcLabels();
+            
+            // Refresh data to update all displays
+            if (typeof loadData === 'function') {
+                loadData();
+            }
+        });
+
         // Modified loadData function
     </script>
+    <script src="js/btc-utils.js"></script>
     <script src="js/electron-integration.js"></script>
 </body>
 </html> 
