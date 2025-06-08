@@ -1085,7 +1085,7 @@
                             <tr>
                                 <th><i class="fas fa-calendar"></i> Date</th>
                                 <th><i class="fas fa-exchange-alt"></i> Type</th>
-                                <th><i class="fab fa-bitcoin"></i> BTC Amount</th>
+                                <th id="transactionTableAmountHeader"><i class="fab fa-bitcoin"></i> BTC Amount</th>
                                 <th><i class="fas fa-money-bill"></i> Price</th>
                                 <th><i class="fas fa-money-bill-wave"></i> Cost</th>
                                 <th><i class="fas fa-cogs"></i> Actions</th>
@@ -1493,7 +1493,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="addAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <label for="addAmount" id="addAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
                             <input type="number" id="addAmount" step="${getBtcInputStep()}" placeholder="${getBtcInputPlaceholder()}" required>
                             <p class="help-text">${getBtcInputHelpText()}</p>
                         </div>
@@ -1648,7 +1648,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="editAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <label for="editAmount" id="editAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
                             <input type="number" id="editAmount" step="${getBtcInputStep()}" value="${btcToDisplayInput(tx.amount || 0)}" required>
                             <p class="help-text">${getBtcInputHelpText()}</p>
                         </div>
@@ -3539,6 +3539,10 @@
             if (btcUnitCheckbox) {
                 btcUnitCheckbox.addEventListener('change', function() {
                     updateUnitDescription();
+                    // Update form labels immediately when switch is toggled
+                    if (typeof updateFormLabels === 'function') {
+                        updateFormLabels();
+                    }
                 });
             }
         });

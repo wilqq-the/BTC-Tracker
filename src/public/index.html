@@ -4059,7 +4059,7 @@
                              </select>
                          </div>
                         <div class="form-group">
-                            <label for="quickAddAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
+                            <label for="quickAddAmount" id="quickAddAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
                             <input type="number" id="quickAddAmount" step="${getBtcInputStep()}" placeholder="${getBtcInputPlaceholder()}" required>
                             <p class="help-text" id="quickAddAmountHelp">${getBtcInputHelpText()}</p>
                         </div>

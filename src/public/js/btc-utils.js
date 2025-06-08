@@ -160,6 +160,14 @@ function updateBtcUnit(newUnit) {
     
     console.log(`BTC unit changed from ${oldUnit} to ${newUnit}`);
     
+    // Update form labels immediately
+    updateFormLabels();
+    
+    // Update other labels if the function exists
+    if (typeof updateBtcLabels === 'function') {
+        updateBtcLabels();
+    }
+    
     // Trigger update event for components to refresh
     const event = new CustomEvent('btcUnitChanged', {
         detail: { oldUnit, newUnit }
@@ -193,11 +201,29 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update labels after a short delay to ensure page elements are loaded
     setTimeout(() => {
+        updateFormLabels();
         if (typeof updateBtcLabels === 'function') {
             updateBtcLabels();
         }
     }, 100);
 });
+
+// Update form labels based on current BTC unit (for static elements only)
+function updateFormLabels() {
+    const currentUnit = window.currentBtcUnit || 'btc';
+    
+    // Update transaction table header (admin page - static element)
+    const tableHeader = document.getElementById('transactionTableAmountHeader');
+    if (tableHeader) {
+        if (currentUnit === 'satoshi') {
+            tableHeader.innerHTML = '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount';
+        } else {
+            tableHeader.innerHTML = '<i class="fab fa-bitcoin"></i> BTC Amount';
+        }
+    }
+    
+    // Note: All modal form labels are now handled dynamically during modal creation
+}
 
 // Fetch BTC unit setting from server
 async function fetchBtcUnitSetting() {
