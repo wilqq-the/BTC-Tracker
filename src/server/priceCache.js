@@ -188,13 +188,25 @@ class PriceCache {
     }
 
     getCachedPrices() {
+        // Ensure legacy exchange rate fields are populated from structured data
+        const legacyRates = {
+            eurUsd: this.cache.eurUsd || this.cache.exchangeRates?.EUR?.USD || 1.1,
+            eurPln: this.cache.eurPln || this.cache.exchangeRates?.EUR?.PLN || 4.5,
+            eurGbp: this.cache.eurGbp || this.cache.exchangeRates?.EUR?.GBP || 0.85,
+            eurJpy: this.cache.eurJpy || this.cache.exchangeRates?.EUR?.JPY || 160,
+            eurChf: this.cache.eurChf || this.cache.exchangeRates?.EUR?.CHF || 0.95,
+            eurBrl: this.cache.eurBrl || this.cache.exchangeRates?.EUR?.BRL || 6.34
+        };
+
         return {
             ...this.cache,
             // For backward compatibility
             price: this.cache.priceEUR || this.cache.price || 0,
-            priceUSD: this.cache.priceUSD || (this.cache.price ? this.cache.price * (this.cache.eurUsd || 1.1) : 0),
+            priceUSD: this.cache.priceUSD || (this.cache.price ? this.cache.price * legacyRates.eurUsd : 0),
             previousDayPrice: this.cache.previousDayPrice || this.cache.priceEUR || 0,
             previousWeekPrice: this.cache.previousWeekPrice || this.cache.previousDayPrice || this.cache.priceEUR || 0,
+            // Ensure legacy exchange rate fields are available
+            ...legacyRates,
             isCached: true,
             age: this.cache.timestamp ? 
                 Math.round((Date.now() - new Date(this.cache.timestamp).getTime()) / 1000) : 
