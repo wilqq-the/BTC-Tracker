@@ -1784,92 +1784,7 @@
             transform: translateY(0);
         }
 
-        /* Modal styles for transaction form */
-        /* Modal styles (copied from admin.html) */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background-color: #1a1a1a;
-            border-radius: 8px;
-            padding: 25px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-            border: 1px solid #333;
-        }
-        
-        .modal-content h2 {
-            color: #f7931a;
-            margin-top: 0;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        
-        .form-group input, 
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background-color: #222;
-            color: #eee;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            border-color: #f7931a;
-            outline: none;
-        }
-
-        .help-text {
-            font-size: 0.8rem;
-            color: var(--muted-text-color);
-            margin-top: 0.25rem;
-            margin-bottom: 0;
-        }
-        
-        .form-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
+        /* Button styles for page elements (not modal) */
         .btn {
             padding: 8px 16px;
             border: none;
@@ -1898,13 +1813,6 @@
         
         .btn-secondary:hover {
             background-color: #444;
-        }
-        
-        #calculatedCost {
-            padding: 10px;
-            background-color: #333;
-            border-radius: 4px;
-            text-align: center;
         }
 
 
@@ -2247,7 +2155,7 @@
                     <div class="qr-container">
                         <div id="lightningQrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-bolt"></i> Instant payments with minimal fees via Lightning Network</p>
+
                 </div>
                 
                 <!-- On-Chain Section -->
@@ -2264,7 +2172,7 @@
                     <div class="qr-container">
                         <div id="qrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-info-circle"></i> Standard Bitcoin transaction (slower, higher fees)</p>
+
                 </div>
             </div>
         </div>
@@ -4034,206 +3942,19 @@
             }
         }
 
-        // Quick Add Transaction functionality
+        // Quick Add Transaction functionality using shared modal component
         function showQuickAddTransaction() {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            
-            // Get current date and time in ISO format for default value
-            const now = new Date();
-            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-            
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h2><i class="fas fa-plus"></i> Add New Transaction</h2>
-                    <form id="quickAddTransactionForm">
-                        <div class="form-group">
-                            <label for="quickAddDate"><i class="fas fa-calendar"></i> Date</label>
-                            <input type="datetime-local" id="quickAddDate" value="${localISOString}" required>
-                        </div>
-                                                 <div class="form-group">
-                             <label for="quickAddType"><i class="fas fa-exchange-alt"></i> Type</label>
-                             <select id="quickAddType" required>
-                                 <option value="buy">🟢 Buy</option>
-                                 <option value="sell">🔴 Sell</option>
-                             </select>
-                         </div>
-                        <div class="form-group">
-                            <label for="quickAddAmount" id="quickAddAmountLabel">${(window.currentBtcUnit === 'satoshi') ? '<i class="fak fa-satoshisymbol-solid"></i> Satoshi Amount' : '<i class="fab fa-bitcoin"></i> BTC Amount'}</label>
-                            <input type="number" id="quickAddAmount" step="${getBtcInputStep()}" placeholder="${getBtcInputPlaceholder()}" required>
-                            <p class="help-text" id="quickAddAmountHelp">${getBtcInputHelpText()}</p>
-                        </div>
-                                                <div class="form-row">
-                            <div class="form-group">
-                                <label for="quickAddPrice"><i class="fas fa-money-bill"></i> Price</label>
-                                <input type="number" id="quickAddPrice" step="0.01" placeholder="25000.00" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="quickAddCurrency"><i class="fas fa-globe"></i> Currency</label>
-                                <select id="quickAddCurrency" required>
-                                    <option value="EUR" selected>EUR €</option>
-                                    <option value="USD">USD $</option>
-                                    <option value="PLN">PLN zł</option>
-                                    <option value="GBP">GBP £</option>
-                                    <option value="JPY">JPY ¥</option>
-                                    <option value="CHF">CHF Fr</option>
-                                    <option value="BRL">BRL R$</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="quickAddFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
-                            <input type="number" id="quickAddFee" step="0.01" placeholder="5.00" value="0">
-                            <p class="help-text">Transaction fee in the specified currency</p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div id="calculatedCost" style="margin-top: 10px; font-weight: bold;">
-                                Calculated Cost: <span>0.00</span>
-                            </div>
-                        </div>
-                        
-                        <div class="form-buttons">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Add Transaction
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-            
-            // Add event listeners for price and amount to calculate cost automatically
-            const priceInput = document.getElementById('quickAddPrice');
-            const amountInput = document.getElementById('quickAddAmount');
-            const costDisplay = document.querySelector('#calculatedCost span');
-            
-            const updateCalculatedCost = () => {
-                const price = parseFloat(priceInput.value) || 0;
-                const amount = parseUserBtcInput(amountInput.value) || 0;
-                const cost = price * amount;
-                costDisplay.textContent = cost.toFixed(2);
-            };
-            
-            priceInput.addEventListener('input', updateCalculatedCost);
-            amountInput.addEventListener('input', updateCalculatedCost);
-            
-            // Add Bitcoin precision validation and easter egg
-            amountInput.addEventListener('blur', function() {
-                const validation = validateBtcInput(this.value);
-                if (!validation.valid) {
-                    showNotification(validation.error, 'error');
-                    this.focus();
-                    return;
-                }
-                
-                // Convert input to BTC for storage (if in satoshis)
-                const btcAmount = parseUserBtcInput(this.value);
-                
-                // Easter egg: Check if trying to add more than 21 million BTC
-                if (btcAmount > 21000000) {
-                    const funnyMessages = [
-                        "🤔 Wait a minute... There are only 21 million Bitcoin in existence! Are you Satoshi Nakamoto? 👨‍💻",
-                        "🚀 Whoa there, time traveler! Did you mine all the Bitcoin from the future? ⏰",
-                        "😂 21 million BTC? That's more Bitcoin than exists! Maybe try buying the entire world first? 🌍",
-                        "🎩 Found the secret Bitcoin printer, eh? The Federal Reserve wants to know your location! 🏦",
-                        "🤑 21M+ BTC? At that point you'd own more Bitcoin than Bitcoin itself! That's some next-level HODLing! 💎🙌",
-                        "🧙‍♂️ Ah yes, the legendary Bitcoin whale who owns more Bitcoin than mathematically possible! 🐋",
-                        "🎪 Step right up! See the person who broke the laws of Bitcoin economics! 🎭"
-                    ];
-                    
-                    const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
-                    
-                    // Show the funny message
-                    showNotification(randomMessage, 'error');
-                    
-                    // Reset to a reasonable amount in current display unit
-                    this.value = btcToDisplayInput(21000000);
-                    console.log("🎉 Easter egg triggered! Someone tried to add more than 21M BTC!");
-                    updateCalculatedCost();
-                    return;
-                }
-                
-                // Update display with properly formatted value
-                this.value = btcToDisplayInput(btcAmount);
-                updateCalculatedCost();
-            });
-
-            // Close modal when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
-
-            // Handle form submission
-            const form = modal.querySelector('#quickAddTransactionForm');
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const submitBtn = form.querySelector('.btn-primary');
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-                    submitBtn.disabled = true;
-                    
-                    const rawAmount = parseUserBtcInput(document.getElementById('quickAddAmount').value);
-                    const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
-                    
-                    const newTransaction = {
-                        date: new Date(document.getElementById('quickAddDate').value).toISOString(),
-                        type: document.getElementById('quickAddType').value,
-                        amount: roundedAmount,
-                        price: parseFloat(document.getElementById('quickAddPrice').value),
-                        currency: document.getElementById('quickAddCurrency').value,
-                        fee: parseFloat(document.getElementById('quickAddFee').value) || 0
-                    };
-                    
-                    // Calculate cost
-                    newTransaction.cost = newTransaction.amount * newTransaction.price;
-                    
-                    // Add the transaction
-                    const response = await fetch('/api/admin/transactions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(newTransaction)
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to add transaction');
-                    }
-                    
-                    // Success!
-                    modal.remove();
-                    
+            window.transactionModal.showAddModal({
+                apiEndpoint: '/api/admin/transactions',
+                onSuccess: () => {
                     // Show success notification
                     showNotification('✅ Transaction added successfully!', 'success');
                     
                     // Refresh the dashboard data
                     console.log('Transaction added, refreshing dashboard...');
                     loadData(true); // Force full refresh to include new transaction
-                    
-                } catch (error) {
-                    console.error('Error adding transaction:', error);
-                    showNotification('❌ Error adding transaction: ' + error.message, 'error');
-                    
-                    // Re-enable button
-                    const submitBtn = form.querySelector('.btn-primary');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
                 }
             });
-
-            // Focus on amount field for quick entry
-            setTimeout(() => {
-                document.getElementById('quickAddAmount').focus();
-            }, 100);
         }
 
         // Show notification function
@@ -5344,6 +5065,7 @@
 
         // Modified loadData function
     </script>
+    <script src="js/transaction-modal.js"></script>
     <script src="js/btc-utils.js"></script>
     <script src="js/electron-integration.js"></script>
 </body>
