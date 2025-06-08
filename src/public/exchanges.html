@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>Exchange Integrations - BTC Tracker</title>
     <link rel="stylesheet" href="styles.css?v=0.5.2">
+    <link rel="stylesheet" href="css/mobile.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
@@ -60,168 +61,6 @@
             gap: 1rem;
             margin-top: 1rem;
         }
-        
-        /* Mobile elements - hidden by default */
-        .mobile-dropdown-nav,
-        .mobile-flex-row .theme-logout-container {
-            display: none;
-        }
-        
-        /* Mobile responsive styles */
-        @media (max-width: 768px) {
-            /* Hide original nav on mobile */
-            nav {
-                display: none;
-            }
-            
-            /* Show mobile elements */
-            .mobile-flex-row {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                gap: 15px;
-                width: 100%;
-                margin-bottom: 5px;
-            }
-            
-            .mobile-flex-row .theme-logout-container {
-                display: flex;
-                gap: 12px;
-            }
-            
-            /* Show mobile dropdown nav */
-            .mobile-dropdown-nav {
-                display: block;
-                position: relative;
-                margin-top: 10px;
-            }
-            
-            .current-page-text {
-                display: flex;
-                align-items: center;
-                flex: 1;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-text span {
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            
-            .current-page-btn {
-                width: 100%;
-                padding: 10px 15px;
-                background: var(--card-background);
-                color: var(--text-color);
-                border: 1px solid rgba(247, 147, 26, 0.2);
-                border-radius: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                font-size: 0.95rem;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            
-            .current-page-btn:hover {
-                border-color: rgba(247, 147, 26, 0.5);
-            }
-            
-            .current-page-btn i.page-icon {
-                margin-right: 10px;
-                color: var(--accent-color, #f7931a);
-                min-width: 16px;
-            }
-            
-            .current-page-btn i.dropdown-icon {
-                transition: transform 0.3s ease;
-                color: var(--accent-color, #f7931a);
-                margin-left: 12px;
-                font-size: 0.9rem;
-            }
-            
-            .current-page-btn.active i.dropdown-icon {
-                transform: rotate(180deg);
-            }
-            
-            .nav-dropdown {
-                position: absolute;
-                top: calc(100% + 5px);
-                left: 0;
-                right: 0;
-                background: var(--card-background);
-                border-radius: 8px;
-                overflow: hidden;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-                max-height: 0;
-                transition: max-height 0.3s ease;
-                z-index: 100;
-            }
-            
-            .nav-dropdown.active {
-                max-height: 300px;
-            }
-            
-            .nav-dropdown a {
-                display: flex;
-                align-items: center;
-                padding: 12px 15px;
-                text-decoration: none;
-                color: var(--text-color);
-                border-bottom: 1px solid var(--border-color);
-                transition: background 0.2s ease;
-            }
-            
-            .nav-dropdown a:last-child {
-                border-bottom: none;
-            }
-            
-            .nav-dropdown a.active {
-                background: var(--accent-color);
-                color: var(--background-color);
-            }
-            
-            .nav-dropdown a:hover:not(.active) {
-                background: var(--hover-color);
-            }
-            
-            .nav-dropdown a i {
-                margin-right: 10px;
-                width: 20px;
-                text-align: center;
-            }
-            
-            .mobile-logout-btn {
-                background-color: rgba(231, 76, 60, 0.15);
-                color: var(--text-color);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                min-width: 36px;
-                min-height: 36px;
-            }
-            
-            .mobile-theme-toggle {
-                background-color: rgba(247, 147, 26, 0.15);
-                border: none;
-                border-radius: 8px;
-                padding: 8px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                color: var(--text-color); /* Ensure icon color matches text color */
-                min-width: 36px;
-                min-height: 36px;
-            }
-        }
 
         /* Theme toggle icon visibility */
         .theme-toggle .fa-sun,
@@ -257,21 +96,12 @@
 <body>
     <div class="container">
         <header>
-            <div class="mobile-flex-row">
-                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> Exchange Integrations</h1>
-                <div class="theme-logout-container">
-                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
-                        <i class="fas fa-moon"></i>
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <a href="/logout" class="mobile-logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Original Navigation (hidden on mobile) -->
+            <!-- Original Navigation -->
             <nav>
+                <div class="nav-brand">
+                    <img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> 
+                    <span class="brand-text">BTC Tracker</span>
+                </div>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/exchanges.html" class="active"><i class="fas fa-plug"></i> Exchanges</a>
@@ -282,23 +112,6 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
-            
-            <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav" id="mobileNav">
-                <button class="current-page-btn" id="currentPageBtn">
-                    <div class="current-page-text">
-                        <i class="fas fa-plug page-icon"></i>
-                        <span>Exchanges</span>
-                    </div>
-                    <i class="fas fa-chevron-down dropdown-icon"></i>
-                </button>
-                <div class="nav-dropdown" id="navDropdown">
-                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
-                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
-                    <a href="/exchanges.html" class="active"><i class="fas fa-plug"></i> Exchanges</a>
-                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
-                </div>
-            </div>
         </header>
 
         <main>
@@ -351,7 +164,7 @@
                         <div class="qr-container">
                             <div id="lightningQrcode"></div>
                         </div>
-                        <p class="payment-info"><i class="fas fa-bolt"></i> Instant payments with minimal fees via Lightning Network</p>
+    
                     </div>
                     
                     <!-- On-Chain Section -->
@@ -368,7 +181,7 @@
                         <div class="qr-container">
                             <div id="qrcode"></div>
                         </div>
-                        <p class="payment-info"><i class="fas fa-info-circle"></i> Standard Bitcoin transaction (slower, higher fees)</p>
+    
                     </div>
                 </div>
             </div>
@@ -475,6 +288,7 @@
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="/js/ticker.js"></script>
     <script src="js/electron-integration.js"></script>
+    <script src="js/mobile-nav.js"></script>
     <script>
         // Check authentication before loading anything
         async function checkAuthAndInitialize() {
@@ -567,34 +381,7 @@
                 });
             }
             
-            // Dropdown navigation functionality
-            const currentPageBtn = document.getElementById('currentPageBtn');
-            const navDropdown = document.getElementById('navDropdown');
-            
-            if (currentPageBtn && navDropdown) {
-                // Toggle dropdown
-                currentPageBtn.addEventListener('click', () => {
-                    currentPageBtn.classList.toggle('active');
-                    navDropdown.classList.toggle('active');
-                });
-                
-                // Close dropdown when clicking outside
-                document.addEventListener('click', (e) => {
-                    if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
-                        currentPageBtn.classList.remove('active');
-                        navDropdown.classList.remove('active');
-                    }
-                });
-                
-                // Handle theme toggle for mobile
-                const mobileThemeToggle = document.getElementById('mobileThemeToggle');
-                if (mobileThemeToggle && themeToggle) {
-                    mobileThemeToggle.addEventListener('click', () => {
-                        // Trigger the original theme toggle functionality
-                        themeToggle.click();
-                    });
-                }
-            }
+
             
             // Initialize donation tooltip and payment method toggle
             const donationLink = document.getElementById('donationLink');
