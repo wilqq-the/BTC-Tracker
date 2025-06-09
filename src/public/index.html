@@ -1282,7 +1282,7 @@
         }
 
         .value {
-            font-size: 0.9rem;
+            font-size: 1.0rem;
             font-weight: 600;
             color: var(--text-color);
             text-align: right;
@@ -1298,7 +1298,7 @@
         }
 
         .value-secondary {
-            font-size: 0.65rem;
+            font-size: 0.75rem;
             color: var(--muted-text-color);
             font-weight: 500;
             font-family: 'JetBrains Mono', monospace;
@@ -1456,6 +1456,20 @@
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
                 flex: 0 0 auto;
+            }
+
+            .portfolio-title {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-color);
+                flex: 1;
+            }
+
+            .portfolio-title i {
+                color: var(--accent-color);
             }
 
             /* Mobile burger menu styles */
@@ -1841,7 +1855,7 @@
             }
 
             .price-range-value {
-                font-size: 0.7rem;
+                font-size: 0.8rem;
                 color: var(--accent-color);
                 font-weight: 600;
                 font-family: 'JetBrains Mono', monospace;
@@ -1924,12 +1938,98 @@
             .recent-transaction-item {
                 display: flex;
                 justify-content: space-between;
-                align-items: center;
-                padding: 0.5rem;
+                align-items: flex-start;
+                padding: 0.6rem;
                 background: rgba(255, 255, 255, 0.02);
                 border: 1px solid rgba(255, 255, 255, 0.05);
                 border-radius: 6px;
                 transition: all 0.2s ease;
+                min-height: 60px;
+            }
+
+            .recent-transaction-header {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .recent-transaction-type {
+                padding: 0.15rem 0.4rem;
+                border-radius: 8px;
+                font-size: 0.6rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            .recent-transaction-type.buy {
+                background-color: rgba(0, 184, 148, 0.2);
+                color: #00b894;
+                border: 1px solid rgba(0, 184, 148, 0.3);
+            }
+
+            .recent-transaction-type.sell {
+                background-color: rgba(255, 118, 117, 0.2);
+                color: #ff7675;
+                border: 1px solid rgba(255, 118, 117, 0.3);
+            }
+
+            .recent-transaction-date {
+                font-size: 0.65rem;
+                color: var(--muted-text-color);
+                font-weight: 500;
+            }
+
+            .recent-transaction-amount {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .recent-transaction-left {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .recent-transaction-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.2rem;
+                flex-shrink: 0;
+            }
+
+            .recent-transaction-cost {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .recent-transaction-pnl {
+                font-size: 0.65rem;
+                font-weight: 600;
+                font-family: 'JetBrains Mono', monospace;
+                padding: 0.1rem 0.3rem;
+                border-radius: 4px;
+                text-align: center;
+                min-width: fit-content;
+            }
+
+            .recent-transaction-pnl.positive {
+                color: #00b894;
+                background: rgba(0, 184, 148, 0.1);
+                border: 1px solid rgba(0, 184, 148, 0.2);
+            }
+
+            .recent-transaction-pnl.negative {
+                color: #ff7675;
+                background: rgba(255, 118, 117, 0.1);
+                border: 1px solid rgba(255, 118, 117, 0.2);
             }
 
             .recent-transaction-item:hover {
@@ -2177,8 +2277,8 @@
         .mobile-add-btn {
             width: 28px;
             height: 28px;
-            background: rgba(var(--accent-color-rgb), 0.2);
-            border: 1px solid rgba(var(--accent-color-rgb), 0.4);
+            background: rgba(247, 147, 26, 0.2);
+            border: 1px solid rgba(247, 147, 26, 0.4);
             border-radius: 8px;
             cursor: pointer;
             display: flex;
@@ -2192,9 +2292,9 @@
         }
 
         .mobile-add-btn:hover {
-            background: rgba(var(--accent-color-rgb), 0.3);
+            background: rgba(247, 147, 26, 0.3);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.3);
+            box-shadow: 0 2px 8px rgba(247, 147, 26, 0.3);
         }
 
         .mobile-add-btn:active {
@@ -2364,6 +2464,15 @@
             <main class="main-content">
                 <!-- Clean Mobile Portfolio Header -->
                 <div class="mobile-portfolio-header" id="mobilePortfolioHeader" style="display: none;">
+                    <div class="mobile-portfolio-header-top">
+                        <div class="portfolio-title">
+                            <i class="fas fa-wallet"></i>
+                            <span>Portfolio</span>
+                        </div>
+                        <button class="mobile-add-btn" id="mobileAddBtn" title="Add new transaction">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
                     <div class="portfolio-row">
                         <div class="portfolio-label">Portfolio Value</div>
                         <div class="portfolio-main-value">
@@ -3146,31 +3255,64 @@
                 const amount = parseFloat(tx.amount);
                 const formattedAmount = formatBtcDisplay(amount);
 
-                // Get price in main currency
-                let priceInMainCurrency = tx.price;
-                if (mainCurrency === 'USD' && tx.priceUSD) {
-                    priceInMainCurrency = tx.priceUSD;
-                } else if (mainCurrency !== 'EUR' && tx.price) {
-                    // Convert from EUR to other currencies if needed
-                    const rateKey = `eur${mainCurrency.toLowerCase()}`;
-                    priceInMainCurrency = tx.price * (data[rateKey] || 1.0);
+                // Get transaction cost in main currency
+                let costInMainCurrency = 0;
+                if (tx.base && tx.base[mainCurrency.toLowerCase()]) {
+                    costInMainCurrency = tx.base[mainCurrency.toLowerCase()].cost || 0;
+                } else if (tx.cost) {
+                    // Use original cost and convert if needed
+                    if (mainCurrency === 'USD' && data.eurUsd) {
+                        costInMainCurrency = tx.cost * data.eurUsd;
+                    } else if (mainCurrency !== 'EUR') {
+                        const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                        costInMainCurrency = tx.cost * (data[rateKey] || 1.0);
+                    } else {
+                        costInMainCurrency = tx.cost;
+                    }
                 }
 
-                const formattedPrice = new Intl.NumberFormat('en-US', {
+                const formattedCost = new Intl.NumberFormat('en-US', {
                     minimumFractionDigits: 0,
                     maximumFractionDigits: 0
-                }).format(priceInMainCurrency || 0);
+                }).format(costInMainCurrency || 0);
+
+                // Calculate and format P&L for buy transactions
+                let pnlDisplay = '';
+                if (tx.type.toLowerCase() === 'buy') {
+                    // Use server-calculated P&L directly (should already be in main currency)
+                    let pnlInMainCurrency = tx.pnl || 0;
+                    
+                    // If P&L is not available from server, calculate it manually
+                    if (pnlInMainCurrency === 0 && costInMainCurrency > 0) {
+                        const currentValue = amount * (data.currentPrice?.[mainCurrency.toLowerCase()] || data.priceEUR || 0);
+                        pnlInMainCurrency = currentValue - costInMainCurrency;
+                    }
+
+                    if (pnlInMainCurrency !== 0) {
+                        const pnlFormatted = new Intl.NumberFormat('en-US', {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        }).format(Math.abs(pnlInMainCurrency));
+
+                        const pnlSign = pnlInMainCurrency >= 0 ? '+' : '-';
+                        const pnlClass = pnlInMainCurrency >= 0 ? 'positive' : 'negative';
+                        pnlDisplay = `<div class="recent-transaction-pnl ${pnlClass}">${pnlSign}${pnlFormatted} ${mainCurrencySymbol}</div>`;
+                    }
+                }
 
                 const transactionItem = document.createElement('div');
                 transactionItem.className = 'recent-transaction-item';
                 transactionItem.innerHTML = `
                     <div class="recent-transaction-left">
-                        <div class="recent-transaction-type ${tx.type.toLowerCase()}">${tx.type}</div>
-                        <div class="recent-transaction-date">${formattedDate}</div>
+                        <div class="recent-transaction-header">
+                            <div class="recent-transaction-type ${tx.type.toLowerCase()}">${tx.type}</div>
+                            <div class="recent-transaction-date">${formattedDate}</div>
+                        </div>
+                        <div class="recent-transaction-amount">${formattedAmount}</div>
                     </div>
                     <div class="recent-transaction-right">
-                        <div class="recent-transaction-amount">${formattedAmount}</div>
-                        <div class="recent-transaction-price">${formattedPrice} ${mainCurrencySymbol}</div>
+                        <div class="recent-transaction-cost">${formattedCost} ${mainCurrencySymbol}</div>
+                        ${pnlDisplay}
                     </div>
                 `;
 
@@ -4715,7 +4857,13 @@
                 showQuickAddTransaction();
             });
             
-            // Mobile add button moved to header
+            // Setup mobile add button
+            const mobileAddBtn = document.getElementById('mobileAddBtn');
+            if (mobileAddBtn) {
+                mobileAddBtn.addEventListener('click', () => {
+                    showQuickAddTransaction();
+                });
+            }
             
             // Add debug functions to window for manual testing
             window.debugCurrency = async function() {

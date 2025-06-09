@@ -790,7 +790,74 @@ if (!document.querySelector('#transaction-modal-styles')) {
         @media (max-width: 768px) {
             .transaction-modal .transaction-sidebar {
                 width: 100% !important;
+                max-width: 100% !important;
+                min-width: 100% !important;
                 right: -100% !important;
+                height: 100vh !important;
+                height: 100dvh !important; /* Use dynamic viewport height for better mobile support */
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important; /* Smooth scrolling on iOS */
+            }
+
+            .transaction-modal .sidebar-content {
+                padding: 15px 18px 80px 18px !important; /* Extra bottom padding for mobile keyboards */
+                min-height: calc(100vh - 50px) !important; /* Ensure content fills available space */
+                min-height: calc(100dvh - 50px) !important;
+                box-sizing: border-box !important;
+            }
+
+            .transaction-modal .sidebar-buttons {
+                position: sticky !important;
+                bottom: 0 !important;
+                background: var(--background-color, #0f0f0f) !important;
+                padding: 12px 0 20px 0 !important;
+                margin: 12px -18px -80px -18px !important;
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                z-index: 10 !important;
+            }
+
+            .transaction-modal .form-group input, 
+            .transaction-modal .form-group select {
+                font-size: 16px !important; /* Prevent zoom on iOS */
+                padding: 12px !important; /* Larger touch targets */
+            }
+
+            .transaction-modal .sidebar-header {
+                position: sticky !important;
+                top: 0 !important;
+                z-index: 11 !important;
+                background: rgba(247, 147, 26, 0.05) !important;
+                backdrop-filter: blur(10px) !important;
+                -webkit-backdrop-filter: blur(10px) !important;
+            }
+
+            /* Better touch targets for mobile */
+            .transaction-modal .btn {
+                min-height: 44px !important; /* iOS recommended touch target size */
+                padding: 12px 16px !important;
+                font-size: 0.9rem !important;
+            }
+
+            .transaction-modal .sidebar-close {
+                min-width: 44px !important;
+                min-height: 44px !important;
+                width: 44px !important;
+                height: 44px !important;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .transaction-modal .sidebar-content {
+                padding: 12px 15px 80px 15px !important;
+            }
+
+            .transaction-modal .sidebar-header {
+                padding: 12px 15px !important;
+            }
+
+            .transaction-modal .sidebar-buttons {
+                margin: 12px -15px -80px -15px !important;
             }
         }
     `;
