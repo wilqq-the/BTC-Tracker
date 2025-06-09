@@ -3,13 +3,13 @@ FROM node:18-alpine
 # Create app directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
+# Copy package.json and package-lock.json first for better caching
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci --only=production && npm cache clean --force
 
-# Copy application code
+# Copy application code (now .dockerignore excludes the bloat)
 COPY . .
 
 # Create data directory with appropriate permissions

@@ -6,9 +6,41 @@ yarn-error.log
 .github
 .gitignore
 data/
+src/data/
 *.md
 !README.md
 docker-compose*
 Dockerfile*
 .dockerignore
+
+# Electron build artifacts 
+dist/
+*.exe
+*.app
+*.dmg
+*.deb
+*.rpm
+*.AppImage
+
+# Node binaries for Electron 
+node_binaries/
+node-binaries.zip
+*.zip
+
+# Development and testing
+tests/
+docs/
+scripts/
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # Don't ignore .env file for Docker Compose, but we'll configure it properly 
