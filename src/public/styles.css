@@ -943,46 +943,7 @@ tr:hover {
     border-radius: 4px;
 }
 
-/* Refresh button */
-.refresh-btn {
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 36px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.refresh-btn:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-1px);
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-}
-
-.refresh-btn:active {
-    transform: translateY(1px);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-}
-
-.refresh-btn i {
-    font-size: 0.9em;
-}
-
-@media (max-width: 768px) {
-    .refresh-btn {
-        width: 100%;
-        margin-top: 10px;
-    }
-}
+/* Refresh button styles removed for TradingView implementation */
 
 /* Add animation for Bitcoin icon */
 @keyframes rotate {
@@ -1137,10 +1098,9 @@ header h1 i.fab.fa-bitcoin {
     overflow: visible;
     position: relative;
     background: var(--card-background);
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 1rem;
-    height: 600px;
+    min-height: 350px;
+    padding-bottom: 30px; /* Add padding for X-axis labels */
+    margin-bottom: 20px;
 }
 
 .chart-wrapper canvas {
@@ -2633,4 +2593,103 @@ footer {
     color: var(--primary-color);
     font-size: 1em;
     vertical-align: baseline;
+}
+
+.tv-range-switcher {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    z-index: 100;
+}
+
+.tv-range-switcher button {
+    font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 18px;
+    padding: 4px 12px;
+    color: rgba(19, 23, 34, 0.8);
+    background-color: rgba(240, 243, 250, 0.7);
+    border-radius: 4px;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s ease;
+}
+
+.tv-range-switcher button:hover {
+    background-color: rgba(224, 227, 235, 0.9);
+}
+
+.tv-range-switcher button.active {
+    background-color: var(--accent-color);
+    color: white;
+}
+
+/* TradingView chart legend styles */
+.tv-legend {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    z-index: 100;
+    font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.85);
+    color: #131722;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.2s ease;
+    min-width: 180px;
+    pointer-events: none; /* Make sure legend doesn't interfere with mouse events */
+}
+
+.light-theme .tv-legend {
+    background-color: rgba(255, 255, 255, 0.85);
+    color: #131722;
+}
+
+body:not(.light-theme) .tv-legend {
+    background-color: rgba(39, 39, 39, 0.85);
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.tv-legend-line {
+    line-height: 1.3;
+    margin: 3px 0;
+    white-space: nowrap;
+}
+
+.tv-legend-line-title {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--muted-text-color);
+}
+
+.tv-legend-line-price {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 4px 0;
+}
+
+.tv-legend-line-date {
+    font-size: 12px;
+    color: var(--muted-text-color);
+}
+
+@media (max-width: 768px) {
+    .tv-legend {
+        left: 8px;
+        top: 8px;
+        padding: 6px 10px;
+        max-width: 65%;
+    }
+    
+    .tv-legend-line-price {
+        font-size: 16px;
+    }
 }
