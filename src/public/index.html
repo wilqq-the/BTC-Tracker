@@ -96,7 +96,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             background-color: var(--card-bg-color);
             margin-bottom: 1rem;
-            overflow: hidden;
+            /* overflow: hidden; */
             border: 1px solid var(--border-color);
         }
 
@@ -219,13 +219,13 @@
             font-size: 0.8rem;
         }
 
-        .chart-wrapper {
+        /*.chart-wrapper {
             padding: 0;
             position: relative;
             height: 450px;
             background: var(--card-bg-color);
             overflow: hidden;
-        }
+        }*/
 
         .loading {
             position: absolute;
@@ -382,6 +382,8 @@
             padding: 1rem;
             position: relative;
             height: 500px;
+            background: var(--card-bg-color);
+            /* overflow: hidden; */ /* This was the main culprit for clipping the labels. */
         }
 
         .loading {
@@ -2343,7 +2345,24 @@
             display: none;
         }
 
+        .chart-container, 
+        .chart-wrapper {
+            overflow: visible !important;
+        }
 
+        /* Force-override for TradingView chart time axis labels */
+        .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Force dark text for light theme */
+        }
+        body.light-theme .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Explicitly for light theme */
+        }
+        body:not(.light-theme) .tv-lightweight-charts table td > div {
+            color: #d1d4dc !important; /* Explicitly for dark theme */
+        }
+        .tv-lightweight-charts table tr:last-of-type {
+            height: 25px !important; /* Ensure space for the labels */
+        }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
@@ -4104,9 +4123,7 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: currentTimeRange <= 7 ? 'day' :
-                                      currentTimeRange <= 90 ? 'week' :
-                                      currentTimeRange <= 365 ? 'month' : 'year',
+                                unit: currentTimeRange <= 7 ? 'day' : 'week',
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
                                     day: 'MMM d',

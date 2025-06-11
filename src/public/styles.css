@@ -1,3 +1,38 @@
+/* BTC Tracker Styles */
+
+/* Add this at the beginning of the file so it loads first, but global styles can still be overridden by more specific selectors */
+/* TradingView Chart Axis Fixes */
+.tv-lightweight-charts table {
+    border-collapse: separate !important;
+    margin: 0 !important;
+    width: auto !important;
+}
+
+.tv-lightweight-charts table tr, 
+.tv-lightweight-charts table td {
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+}
+
+.tv-lightweight-charts table tr:hover {
+    background: transparent !important;
+}
+
+.tv-lightweight-charts table tr:last-of-type {
+    height: 25px !important;
+}
+
+.tv-lightweight-charts table td > div {
+    color: #333 !important; /* Default color for light theme */
+}
+
+body:not(.light-theme) .tv-lightweight-charts table td > div {
+    color: #d1d4dc !important; /* Light color for dark theme */
+}
+
+/* Continue with existing styles */
+
 :root {
     /* Dark theme (default) */
     --primary-color: #f7931a;
@@ -601,11 +636,18 @@ nav a.active {
     font-size: 1.4rem;
 }
 
-.chart-container canvas {
+/* Modified to exclude TradingView charts */
+.chart-container canvas:not(.tv-lightweight-charts canvas) {
     flex: 1;
     width: 100% !important;
     min-height: 0;
     margin-top: 20px;
+}
+
+/* Specific handling for TradingView canvases */
+.tv-lightweight-charts canvas {
+    width: auto !important;
+    margin-top: 0 !important;
 }
 
 /* Section styles */

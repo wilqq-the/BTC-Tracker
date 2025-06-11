@@ -118,51 +118,44 @@ function createTradingViewChart(container, data) {
             borderColor: colors.border,
             timeVisible: true,
             secondsVisible: false,
-            rightOffset: 5, // Space on the right side
-            barSpacing: 12,  // More spacing for better readability
-            fixLeftEdge: true,
-            lockVisibleTimeRangeOnResize: true,
             borderVisible: true,
-            // Make sure axis is visible with proper margins
-            visible: true,
-            ticksVisible: true,
-            borderColor: colors.border,
-            // Format the time labels on the X-axis
             tickMarkFormatter: (time) => {
                 const date = new Date(time * 1000);
-                const month = date.getMonth() + 1;
-                const day = date.getDate();
-                // Simpler date format that takes less space
-                return `${month}/${day}`;
+                return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                });
             },
-            // Ensure there's enough space for date labels
-            textColor: colors.text,
-            fontSize: 12,
-            minHeight: 35,
-            margins: {
-                bottom: 10,
-                right: 10
-            },
-            drawTicks: true, // Make sure ticks are drawn
         },
         rightPriceScale: {
             borderColor: colors.border,
             scaleMargins: {
-                top: 0.2,
-                bottom: 0.25, // Increased bottom margin for date labels
+                top: 0.1,
+                bottom: 0.1,
             },
             borderVisible: true,
             autoScale: true,
+            entireTextOnly: true,
         },
-        // Add extra bottom margin for the entire chart
         layout: {
             background: { type: 'solid', color: colors.background },
             textColor: colors.text,
             fontFamily: '-apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif',
-            fontSize: 12,
+            fontSize: 11,
         },
         handleScroll: {
-            vertTouchDrag: false, // Disable vertical drag on touch devices
+            mouseWheel: true,
+            pressedMouseMove: true,
+            horzTouchDrag: true,
+            vertTouchDrag: false,
+        },
+        handleScale: {
+            mouseWheel: true,
+            pinch: true,
+            axisPressedMouseMove: {
+                time: true,
+                price: true,
+            },
         },
         watermark: {
             visible: true,
@@ -174,43 +167,31 @@ function createTradingViewChart(container, data) {
         },
     });
 
-    // Configure time scale for X-axis dates
-    chart.timeScale().applyOptions({
-        visible: true,
-        timeVisible: true,
-        secondsVisible: false,
-        tickMarkFormatter: (time) => {
-            const date = new Date(time * 1000);
-            return date.getDate() + '/' + (date.getMonth() + 1);
+    // Add window resize handler to ensure chart stays responsive
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries.length === 0 || entries[0].target !== container) { 
+            return;
         }
+        const newRect = entries[0].contentRect;
+        chart.applyOptions({
+            width: newRect.width,
+            height: newRect.height
+        });
     });
 
+    resizeObserver.observe(container);
+    
     // Create main BTC price line series with professional styling
-    const mainSeries = chart.addLineSeries({
-        color: colors.btcLine,
+    const mainSeries = chart.addAreaSeries({
+        lineColor: colors.btcLine,
+        topColor: colors.btcLine + '50',
+        bottomColor: colors.btcLine + '10',
         lineWidth: 2,
         priceLineVisible: true,
-        lastValueVisible: true,
-        priceLineWidth: 1,
-        priceLineStyle: LightweightCharts.LineStyle.Dashed,
         crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 4,
-        // Add price line label formatting
-        priceLineSource: LightweightCharts.PriceLineSource.LastBar,
-        priceFormat: {
-            type: 'price',
-            precision: 2,
-            minMove: 0.01,
-        },
-        // Add a nice smooth area fill below the line
-        lineType: LightweightCharts.LineType.Simple,
-        // Add colored area below the line
-        lastPriceAnimation: LightweightCharts.LastPriceAnimationMode.Continuous,
-        // Add area fill below the line for better visual appearance
-        topColor: isLightTheme ? 'rgba(247, 147, 26, 0.2)' : 'rgba(247, 147, 26, 0.3)',
-        bottomColor: isLightTheme ? 'rgba(247, 147, 26, 0.0)' : 'rgba(247, 147, 26, 0.0)',
-        lineVisible: true,
-        baseLineVisible: false,
+        priceLineWidth: 1,
+        priceLineColor: colors.btcLine,
+        priceLineStyle: 2,
     });
 
     // Prepare BTC price data
@@ -662,7 +643,7 @@ function setupTimeRangeButtons(chart, priceData) {
         .tv-tx-tooltip {
             position: absolute;
             display: none;
-            background-color: ${isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(38, 43, 77, 0.95)'};
+            background-color: ${isLightTheme ? 'rgba(255, 255, 255, 0.95)' : 'rgba(27, 27, 27, 0.95)'};
             color: ${isLightTheme ? '#333' : '#fff'};
             padding: 8px 12px;
             border-radius: 4px;
