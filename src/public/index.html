@@ -17,6 +17,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="js/tradingview-chart.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="manifest" href="/manifest.json?v=0.5.2">
@@ -94,7 +96,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             background-color: var(--card-bg-color);
             margin-bottom: 1rem;
-            overflow: hidden;
+            /* overflow: hidden; */
             border: 1px solid var(--border-color);
         }
 
@@ -217,13 +219,13 @@
             font-size: 0.8rem;
         }
 
-        .chart-wrapper {
+        /*.chart-wrapper {
             padding: 0;
             position: relative;
             height: 450px;
             background: var(--card-bg-color);
             overflow: hidden;
-        }
+        }*/
 
         .loading {
             position: absolute;
@@ -380,6 +382,8 @@
             padding: 1rem;
             position: relative;
             height: 500px;
+            background: var(--card-bg-color);
+            /* overflow: hidden; */ /* This was the main culprit for clipping the labels. */
         }
 
         .loading {
@@ -2341,7 +2345,24 @@
             display: none;
         }
 
+        .chart-container, 
+        .chart-wrapper {
+            overflow: visible !important;
+        }
 
+        /* Force-override for TradingView chart time axis labels */
+        .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Force dark text for light theme */
+        }
+        body.light-theme .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Explicitly for light theme */
+        }
+        body:not(.light-theme) .tv-lightweight-charts table td > div {
+            color: #d1d4dc !important; /* Explicitly for dark theme */
+        }
+        .tv-lightweight-charts table tr:last-of-type {
+            height: 25px !important; /* Ensure space for the labels */
+        }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
@@ -2504,27 +2525,6 @@
 
                 <div class="chart-container">
                     <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
-                    <div class="chart-controls">
-                        <div class="time-range-buttons">
-                            <button class="time-range-btn" data-range="7">1W</button>
-                            <button class="time-range-btn" data-range="30">1M</button>
-                            <button class="time-range-btn" data-range="90">3M</button>
-                            <button class="time-range-btn active" data-range="180">6M</button>
-                            <button class="time-range-btn" data-range="365">1Y</button>
-                            <button class="time-range-btn" data-range="730">2Y</button>
-                            <button class="time-range-btn" data-range="1825">5Y</button>
-                            <button class="time-range-btn" data-range="3650">10Y</button>
-                            <button class="time-range-btn" data-range="0">ALL</button>
-                        </div>
-                        <div class="density-control">
-                            <label for="dataDensity">Data Density:</label>
-                            <input type="range" id="dataDensity" min="1" max="10" value="5">
-                            <span id="densityValue">Medium</span>
-                        </div>
-                        <button id="refreshBtn" class="refresh-btn">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
                     <div class="loading" id="chartLoading">
                         <div class="loading-spinner"></div>
                     </div>
@@ -2847,27 +2847,7 @@
             // Set correct time range for current layout and sync button state
             updateActiveTimeRangeButton();
             
-            // Density slider
-            const densitySlider = document.getElementById('dataDensity');
-            const densityValue = document.getElementById('densityValue');
-            
-            densitySlider.addEventListener('input', () => {
-                currentDensity = parseInt(densitySlider.value);
-                const densityLabels = [
-                    'Minimal',     // 1
-                    'Very Low',    // 2
-                    'Low',         // 3
-                    'Medium Low',  // 4
-                    'Medium',      // 5
-                    'Medium High', // 6
-                    'High',        // 7
-                    'Very High',   // 8
-                    'Ultra High',  // 9
-                    'Maximum'      // 10
-                ];
-                densityValue.textContent = densityLabels[currentDensity - 1];
-                loadData(true);
-            });
+            // Density slider removed for TradingView implementation
         });
 
         function filterAndSampleData(data, days, density) {
@@ -3779,7 +3759,21 @@
                 document.getElementById('chartLoading').textContent = 'No historical data available for chart.';
                 return;
             }
-
+            
+            // Save data for potential updates
+            window.combinedChartData = data;
+            
+            // Check if mobile (defined by window width)
+            const isMobile = window.innerWidth <= 768;
+            
+            // For desktop view, use TradingView chart
+            if (!isMobile) {
+                const chartContainer = document.querySelector('.chart-wrapper');
+                document.getElementById('chartLoading').style.display = 'none';
+                return createTradingViewChart(chartContainer, data);
+            }
+            
+            // Mobile view continues to use Chart.js
             const isLightTheme = document.body.classList.contains('light-theme');
             
             // Modern color scheme
@@ -4129,9 +4123,7 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: currentTimeRange <= 7 ? 'day' :
-                                      currentTimeRange <= 90 ? 'week' :
-                                      currentTimeRange <= 365 ? 'month' : 'year',
+                                unit: currentTimeRange <= 7 ? 'day' : 'week',
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
                                     day: 'MMM d',
@@ -4573,8 +4565,13 @@
                             timestamp: data.priceTimestamp || data.timestamp || new Date().toISOString()
                         };
                         updateMobileChartWithLatestPrice(window.mobileChart, chartPriceData);
+                    } else if (!(window.innerWidth <= 768)) {
+                        // For desktop, use TradingView chart update
+                        console.log('Updating TradingView chart with latest price:', price);
+                        // Update price using TradingView chart's update function
+                        updateTradingViewChartPrice(price);
                     } else if (combinedChart) {
-                        console.log('Updating chart with latest price:', price);
+                        console.log('Updating Chart.js with latest price:', price);
                         // updateChartWithLatestPrice needs price info, construct a specific object for it
                         const chartPriceData = {
                             price: price, // Current price in main currency
@@ -4773,52 +4770,7 @@
                 }
             });
             
-            // Setup refresh button
-            document.getElementById('refreshBtn').addEventListener('click', async () => {
-                console.log('Manual refresh triggered');
-                try {
-                    // Directly fetch fresh price
-                    const response = await fetch('/api/current-price?fresh=true');
-                    if (response.ok) {
-                        const freshPriceData = await response.json();
-                        console.log('Fetched fresh price data:', freshPriceData);
-                        
-                        // Update the UI immediately with the fresh price
-                        if (combinedChart) {
-                            const priceData = {
-                                price: freshPriceData.priceEUR,
-                                priceEUR: freshPriceData.priceEUR,
-                                priceUSD: freshPriceData.priceUSD,
-                                mainCurrency: window.currentMainCurrency || 'EUR',
-                                eurUsd: freshPriceData.eurUsd,
-                                eurPln: freshPriceData.eurPln,
-                                timestamp: freshPriceData.timestamp,
-                                isCached: false
-                            };
-                            
-                            // Update displays and chart with fresh price
-                            updatePriceDisplays(priceData);
-                            updateChartWithLatestPrice(combinedChart, priceData);
-                            
-                            // Update last update time
-                            lastUpdateTime = new Date(freshPriceData.timestamp);
-                            document.getElementById('lastUpdate').textContent = 
-                                `${lastUpdateTime.toLocaleTimeString()} (fresh)`;
-                            document.getElementById('priceUpdate').classList.add('pulsing');
-                            setTimeout(() => {
-                                document.getElementById('priceUpdate').classList.remove('pulsing');
-                            }, 1000);
-                        }
-                    } else {
-                        // If direct price fetch fails, fallback to regular refresh
-                        loadData(false);
-                    }
-                } catch (error) {
-                    console.error('Error fetching fresh price:', error);
-                    // Fallback to regular refresh
-                    loadData(false);
-                }
-            });
+            // Refresh button removed for TradingView chart implementation
             
             // Trigger refresh when returning to the page to catch any added transactions or settings changes
             document.addEventListener('visibilitychange', async () => {
@@ -4995,30 +4947,20 @@
                     // Reload data to recreate chart
                     loadData(true);
                 }
-            } else if (!isMobile && combinedChart) {
-                // For desktop chart, try update first, but recreate if gradients need updating
-                try {
-                    updateChartTheme();
-                    combinedChart.update('none'); // Update without animation for immediate change
-                    
-                    // Force a redraw to ensure gradient updates are applied
-                    setTimeout(() => {
-                        if (combinedChart) {
-                            combinedChart.update();
-                        }
-                    }, 50);
-                } catch (error) {
-                    console.log('Chart update failed, recreating chart:', error);
-                    // If update fails, recreate the chart
-                    combinedChart.destroy();
-                    combinedChart = null;
-                    
-                    // Try to recreate with stored data, otherwise reload
-                    if (window.combinedChartData) {
-                        createChart(window.combinedChartData);
-                    } else {
-                        loadData(true);
-                    }
+            } else if (!(window.innerWidth <= 768)) {
+                // For desktop with TradingView chart, we need to recreate it for theme changes
+                // Clean up existing chart
+                if (typeof cleanupTradingViewChart === 'function') {
+                    cleanupTradingViewChart();
+                }
+                
+                // Recreate chart with stored data
+                if (window.combinedChartData) {
+                    const chartContainer = document.querySelector('.chart-wrapper');
+                    createTradingViewChart(chartContainer, window.combinedChartData);
+                } else {
+                    // If no data available, do a full reload
+                    loadData(true);
                 }
             }
         }
