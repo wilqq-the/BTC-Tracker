@@ -797,6 +797,62 @@
         .toast i {
             margin-right: 8px;
         }
+
+        /* Historical Data Status Styles */
+        .historical-data-status {
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            border: 1px solid;
+        }
+
+        .historical-data-status.current {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: rgba(40, 167, 69, 0.3);
+            color: #28a745;
+        }
+
+        .historical-data-status.outdated {
+            background: rgba(255, 193, 7, 0.1);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #856404;
+        }
+
+        .historical-data-status.no-data {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: rgba(220, 53, 69, 0.3);
+            color: #dc3545;
+        }
+
+        .historical-data-status.loading {
+            background: rgba(23, 162, 184, 0.1);
+            border-color: rgba(23, 162, 184, 0.3);
+            color: #17a2b8;
+        }
+
+        .data-status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 4px 0;
+        }
+
+        .data-status-row:first-child {
+            margin-top: 0;
+        }
+
+        .data-status-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .status-label {
+            font-weight: 500;
+        }
+
+        .status-value {
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -886,6 +942,7 @@
                                     <option value="JPY">Japanese Yen (JPY)</option>
                                     <option value="CHF">Swiss Franc (CHF)</option>
                                     <option value="BRL">Brazilian Real (BRL)</option>
+                                    <option value="INR">Indian Rupee (INR)</option>
                                     <option value="EUR">Euro (EUR)</option>
                                 </select>
                                 <p class="help-text">Show P&L in this currency alongside the main currency</p>
@@ -928,6 +985,14 @@
                                     <option value="168">Weekly</option>
                                 </select>
                                 <p class="help-text">How often to check for and fetch new historical data</p>
+                            </div>
+                            
+                            <!-- Historical Data Status -->
+                            <div class="form-group">
+                                <label><i class="fas fa-database"></i> Historical Data Status:</label>
+                                <div id="historicalDataStatus" class="historical-data-status">
+                                    <p><i class="fas fa-spinner fa-spin"></i> Loading status...</p>
+                                </div>
                             </div>
                             
                             <div class="form-group">
@@ -1158,11 +1223,78 @@
                 
                 // No API key needed for Yahoo Finance
                 
+                // Load historical data status
+                loadHistoricalDataStatus();
+                
                 // Trigger exchange rates update based on main currency
                 loadExchangeRates();
             } catch (error) {
                 console.error('Error loading settings:', error);
                 showError('Failed to load settings. Please try again.');
+            }
+        }
+
+        // Load historical data status
+        async function loadHistoricalDataStatus() {
+            const statusDiv = document.getElementById('historicalDataStatus');
+            
+            try {
+                statusDiv.className = 'historical-data-status loading';
+                statusDiv.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Loading historical data status...</p>';
+                
+                const response = await fetch('/api/admin/historical-status');
+                if (!response.ok) {
+                    throw new Error('Failed to load historical data status');
+                }
+                
+                const status = await response.json();
+                
+                if (!status.hasData) {
+                    statusDiv.className = 'historical-data-status no-data';
+                    statusDiv.innerHTML = `
+                        <div class="data-status-row">
+                            <span class="status-label"><i class="fas fa-exclamation-triangle"></i> No Data Available</span>
+                        </div>
+                        <div class="data-status-row">
+                            <span>Click "Refresh Historical Data" to fetch initial data</span>
+                        </div>
+                    `;
+                } else {
+                    const statusClass = status.status === 'current' ? 'current' : 'outdated';
+                    const icon = status.status === 'current' ? 'fas fa-check-circle' : 'fas fa-clock';
+                    
+                    statusDiv.className = `historical-data-status ${statusClass}`;
+                    statusDiv.innerHTML = `
+                        <div class="data-status-row">
+                            <span class="status-label"><i class="${icon}"></i> ${status.message}</span>
+                        </div>
+                        <div class="data-status-row">
+                            <span class="status-label">Data Points:</span>
+                            <span class="status-value">${status.count} days</span>
+                        </div>
+                        <div class="data-status-row">
+                            <span class="status-label">Date Range:</span>
+                            <span class="status-value">${status.dateRange.from} to ${status.dateRange.to}</span>
+                        </div>
+                        ${status.daysSinceLastUpdate > 0 ? `
+                        <div class="data-status-row">
+                            <span class="status-label">Last Update:</span>
+                            <span class="status-value">${status.daysSinceLastUpdate} day${status.daysSinceLastUpdate !== 1 ? 's' : ''} ago</span>
+                        </div>
+                        ` : ''}
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading historical data status:', error);
+                statusDiv.className = 'historical-data-status no-data';
+                statusDiv.innerHTML = `
+                    <div class="data-status-row">
+                        <span class="status-label"><i class="fas fa-exclamation-triangle"></i> Error Loading Status</span>
+                    </div>
+                    <div class="data-status-row">
+                        <span>${error.message}</span>
+                    </div>
+                `;
             }
         }
         
@@ -1178,19 +1310,20 @@
                 const historicalDataYears = document.getElementById('historicalDataYears').value;
                 const historicalDataRefreshHours = document.getElementById('historicalDataRefreshHours').value;
                 
-                // Validate currency pair before saving
-                const validationResult = await validateCurrencyPair(mainCurrency, secondaryCurrency);
-                
-                if (!validationResult.isValid) {
-                    showError(`Currency validation failed: ${validationResult.message}`);
-                    return;
-                }
-                
-                if (validationResult.warning) {
-                    const confirmSave = confirm(`Warning: ${validationResult.warning}\n\nDo you want to continue saving these settings?`);
-                    if (!confirmSave) {
-                        return;
+                // Validate currency pair before saving (non-blocking)
+                try {
+                    const validationResult = await validateCurrencyPair(mainCurrency, secondaryCurrency);
+                    
+                    if (!validationResult.isValid) {
+                        console.warn(`Currency validation warning: ${validationResult.message}`);
+                        showWarning(`Currency validation warning: ${validationResult.message}. Settings will be saved using fallback rates.`);
+                    } else if (validationResult.warning) {
+                        console.info(`Currency validation info: ${validationResult.warning}`);
+                        showInfo(`${validationResult.warning} Settings will be saved.`);
                     }
+                } catch (validationError) {
+                    console.warn('Currency validation failed, continuing with fallback rates:', validationError);
+                    showWarning('Unable to validate exchange rates (API unavailable). Settings will be saved using fallback rates.');
                 }
                 
                 // Create settings object
@@ -1296,6 +1429,19 @@
                     refreshPrice();
                 }
                 
+                // If historical data settings changed, refresh the status display
+                const historicalSettingsChanged = result.settingsChanged && (
+                    result.settingsChanged.historicalDataYears || 
+                    result.settingsChanged.historicalDataRefreshHours
+                );
+                
+                if (historicalSettingsChanged) {
+                    console.log('Historical data settings changed, refreshing status display');
+                    setTimeout(() => {
+                        loadHistoricalDataStatus();
+                    }, 1000);
+                }
+                
                 // Trigger immediate update in other tabs via localStorage
                 localStorage.setItem('btc_tracker_settings_updated', Date.now().toString());
                 
@@ -1329,6 +1475,7 @@
                 'JPY': '¥',
                 'CHF': 'Fr',
                 'BRL': 'R$',
+                'INR': '₹',
                 'BTC': '₿'
             };
             
@@ -1554,7 +1701,8 @@
                 eurBrl: data.eurBrl,
                 eurGbp: data.eurGbp,
                 eurJpy: data.eurJpy,
-                eurChf: data.eurChf
+                eurChf: data.eurChf,
+                eurInr: data.eurInr
             });
                     
                     if (mainCurrency === 'EUR') {
@@ -1617,6 +1765,16 @@
                             statusText = 'Direct';
                         } else {
                             console.log('EUR/CHF rate missing - eurChf:', data.eurChf);
+                        }
+                                break;
+                            case 'INR':
+                        if (data.eurInr) {
+                            freshRate = data.eurInr;
+                            rate = freshRate.toFixed(2);
+                            status = 'available';
+                            statusText = 'Direct';
+                        } else {
+                            console.log('EUR/INR rate missing - eurInr:', data.eurInr);
                         }
                                 break;
                         }
@@ -1691,6 +1849,16 @@
                             console.log('USD/CHF rate missing - eurChf:', data.eurChf, 'eurUsd:', data.eurUsd);
                         }
                                 break;
+                            case 'INR':
+                        if (data.eurInr && data.eurUsd) {
+                            freshRate = data.eurInr / data.eurUsd;
+                            rate = freshRate.toFixed(2);
+                            status = 'calculated';
+                            statusText = 'Calculated';
+                        } else {
+                            console.log('USD/INR rate missing - eurInr:', data.eurInr, 'eurUsd:', data.eurUsd);
+                        }
+                                break;
                 }
             }
             
@@ -1705,7 +1873,7 @@
                 if (cachedRate) {
                     console.log(`Using cached rate for ${mainCurrency}/${secondaryCurrency}:`, cachedRate);
                     return {
-                        rate: (secondaryCurrency === 'JPY' ? parseFloat(cachedRate.rate).toFixed(2) : parseFloat(cachedRate.rate).toFixed(4)),
+                        rate: (secondaryCurrency === 'JPY' || secondaryCurrency === 'INR' ? parseFloat(cachedRate.rate).toFixed(2) : parseFloat(cachedRate.rate).toFixed(4)),
                         status: cachedRate.status,
                         statusText: cachedRate.statusText,
                         age: cachedRate.age
@@ -1846,7 +2014,8 @@
                 console.log('   EUR/BRL:', data.eurBrl, typeof data.eurBrl, data.eurBrl > 0 ? '✓' : '✗');
                 console.log('   EUR/GBP:', data.eurGbp, typeof data.eurGbp, data.eurGbp > 0 ? '✓' : '✗');
                 console.log('   EUR/JPY:', data.eurJpy, typeof data.eurJpy, data.eurJpy > 0 ? '✓' : '✗');
-                console.log('   EUR/CHF:', data.eurChf, typeof data.eurChf, data.eurChf > 0 ? '✓' : '✗');
+                                        console.log('   EUR/CHF:', data.eurChf, typeof data.eurChf, data.eurChf > 0 ? '✓' : '✗');
+                        console.log('   EUR/INR:', data.eurInr, typeof data.eurInr, data.eurInr > 0 ? '✓' : '✗');
                 
                 console.log('4. Calculated USD rates:');
                 if (data.eurUsd && data.eurUsd > 0) {
@@ -1954,17 +2123,6 @@
         // Currency pair validation function
         async function validateCurrencyPair(mainCurrency, secondaryCurrency) {
             try {
-                // Get current exchange rate data
-                const response = await fetch('/api/summary?priceOnly=true');
-                if (!response.ok) {
-                    return {
-                        isValid: false,
-                        message: 'Unable to validate currency pair - exchange rate data unavailable'
-                    };
-                }
-                
-                const data = await response.json();
-                
                 // If currencies are the same, it's always valid
                 if (mainCurrency === secondaryCurrency) {
                     return {
@@ -1972,6 +2130,15 @@
                         message: 'Currency pair is valid (same currency)'
                     };
                 }
+                
+                // Get current exchange rate data
+                const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now());
+                if (!response.ok) {
+                    console.warn('API unavailable, using fallback validation');
+                    return validateWithFallback(mainCurrency, secondaryCurrency, 'API unavailable');
+                }
+                
+                const data = await response.json();
                 
                 // Check if we have rate information for this currency pair
                 const rateInfo = getRateInfo(data, mainCurrency, secondaryCurrency);
@@ -1988,49 +2155,80 @@
                         message: 'Currency pair is supported via calculation'
                     };
                 } else {
-                    return {
-                        isValid: false,
-                        message: `Exchange rate not available for ${mainCurrency}/${secondaryCurrency}. Please choose a different currency combination or try refreshing rates.`
-                    };
+                    console.warn('Rate not available from API, using fallback validation');
+                    return validateWithFallback(mainCurrency, secondaryCurrency, 'No rate data from API');
                 }
                 
             } catch (error) {
-                console.error('Currency validation error:', error);
+                console.warn('Currency validation error, using fallback:', error);
+                return validateWithFallback(mainCurrency, secondaryCurrency, `Connection error: ${error.message}`);
+            }
+        }
+
+        // Fallback validation using supported currency list
+        function validateWithFallback(mainCurrency, secondaryCurrency, reason) {
+            const supportedCurrencies = ['EUR', 'USD', 'PLN', 'GBP', 'JPY', 'CHF', 'BRL', 'INR'];
+            const isValidPair = supportedCurrencies.includes(mainCurrency) && supportedCurrencies.includes(secondaryCurrency);
+            
+            if (isValidPair) {
+                return {
+                    isValid: true,
+                    warning: `Currency pair ${mainCurrency}/${secondaryCurrency} will use fallback rates (${reason})`,
+                    message: 'Currency pair is supported via fallback rates'
+                };
+            } else {
                 return {
                     isValid: false,
-                    message: 'Currency validation failed due to connection error'
+                    message: `Unsupported currency pair: ${mainCurrency}/${secondaryCurrency}. Supported currencies: ${supportedCurrencies.join(', ')}`
                 };
             }
         }
 
         // Show error message function
         function showError(message) {
-            const errorMessage = document.createElement('div');
-            errorMessage.className = 'error-message';
-            errorMessage.style.cssText = `
+            showMessage(message, 'error', 'fas fa-exclamation-triangle', '#dc3545', 'rgba(220, 53, 69, 0.1)', 'rgba(220, 53, 69, 0.3)');
+        }
+
+        // Show warning message function
+        function showWarning(message) {
+            showMessage(message, 'warning', 'fas fa-exclamation-triangle', '#f39c12', 'rgba(243, 156, 18, 0.1)', 'rgba(243, 156, 18, 0.3)');
+        }
+
+        // Show info message function
+        function showInfo(message) {
+            showMessage(message, 'info', 'fas fa-info-circle', '#17a2b8', 'rgba(23, 162, 184, 0.1)', 'rgba(23, 162, 184, 0.3)');
+        }
+
+        // Generic message display function
+        function showMessage(message, type, icon, color, bgColor, borderColor) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `${type}-message`;
+            messageElement.style.cssText = `
                 padding: 10px 15px;
-                background-color: rgba(220, 53, 69, 0.1);
-                border: 1px solid rgba(220, 53, 69, 0.3);
+                background-color: ${bgColor};
+                border: 1px solid ${borderColor};
                 border-radius: 4px;
-                color: #dc3545;
+                color: ${color};
                 margin-top: 10px;
                 font-weight: 500;
             `;
-            errorMessage.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+            messageElement.innerHTML = `<i class="${icon}"></i> ${message}`;
             
             const settingsForm = document.getElementById('settingsForm');
-            const existingError = settingsForm.querySelector('.error-message');
             
-            if (existingError) {
-                existingError.remove();
-            }
+            // Remove any existing messages
+            const existingMessages = settingsForm.querySelectorAll('.error-message, .warning-message, .info-message');
+            existingMessages.forEach(msg => msg.remove());
             
-            settingsForm.appendChild(errorMessage);
+            settingsForm.appendChild(messageElement);
             
-            // Auto-remove message after 6 seconds
+            // Auto-remove message after 6 seconds (8 seconds for warnings/info as they're less critical)
+            const timeout = type === 'error' ? 6000 : 8000;
             setTimeout(() => {
-                errorMessage.remove();
-            }, 6000);
+                if (messageElement.parentNode) {
+                    messageElement.remove();
+                }
+            }, timeout);
         }
 
         // Handle form submission
@@ -2041,6 +2239,19 @@
 
         // Add event listener to reload exchange rates when secondary currency changes
         document.getElementById('secondaryCurrency').addEventListener('change', loadExchangeRates);
+
+        // Add event listeners for historical data settings changes
+        document.getElementById('historicalDataYears').addEventListener('change', function() {
+            console.log('Historical data years setting changed, refreshing status in 500ms');
+            setTimeout(() => {
+                loadHistoricalDataStatus();
+            }, 500);
+        });
+
+        document.getElementById('historicalDataRefreshHours').addEventListener('change', function() {
+            console.log('Historical data refresh hours setting changed');
+            // Just log this change - status doesn't need to be refreshed for interval changes
+        });
 
         // Add event listener for refresh rates button
         document.getElementById('refreshRatesBtn').addEventListener('click', refreshExchangeRates);
@@ -2742,10 +2953,11 @@
 
         // Add event listener for the refresh historical data button
         document.getElementById('refreshHistoricalDataBtn').addEventListener('click', async function() {
+            // Define button outside try block to avoid scope issues
+            const button = this;
+            
             try {
-                // Show loading state
-                const button = this;
-                const originalText = button.innerHTML;
+                // Show loading state on button only
                 button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
                 button.disabled = true;
                 
@@ -2767,17 +2979,42 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(`Historical data refreshed successfully! ${result.count || 0} days of data updated.`);
+                    // Show success message with details
+                    let message = 'Historical data refreshed successfully!';
+                    if (result.newDaysAdded > 0) {
+                        message += `\n\n• Added ${result.newDaysAdded} new days of data`;
+                    }
+                    if (result.after && result.after.count > 0) {
+                        message += `\n• Total data points: ${result.after.count} days`;
+                        message += `\n• Date range: ${result.dateRange.from} to ${result.dateRange.to}`;
+                    }
+                    
+                    // Show enhanced success toast instead of alert
+                    showToast('success', `
+                        <i class="fas fa-check-circle"></i> Historical Data Updated!<br>
+                        <small>
+                            ${result.newDaysAdded > 0 ? `Added ${result.newDaysAdded} new days • ` : ''}
+                            Total: ${result.after.count} days
+                        </small>
+                    `, 6000);
+                    
+                    // Refresh the status display
+                    setTimeout(() => {
+                        loadHistoricalDataStatus();
+                    }, 1000);
+                    
                 } else {
-                    alert(`Failed to refresh data: ${result.error || 'Unknown error'}`);
+                    throw new Error(result.error || 'Unknown error occurred during refresh');
                 }
             } catch (error) {
                 console.error('Error refreshing historical data:', error);
                 if (handleAuthError(error)) return;
-                alert('Error: ' + error.message);
+                
+                // Show error toast
+                showToast('error', `<i class="fas fa-exclamation-triangle"></i> Refresh Failed: ${error.message}`);
             } finally {
-                // Restore button state
-                button.innerHTML = originalText;
+                // Restore button state with explicit text
+                button.innerHTML = '<i class="fas fa-sync"></i> Refresh Historical Data';
                 button.disabled = false;
             }
         });

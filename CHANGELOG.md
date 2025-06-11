@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Satoshi Unit Support** - Added full support for displaying Bitcoin amounts in Satoshis alongside traditional BTC units
 - **Satoshi Symbol Integration** - Implemented proper Satoshi symbol (⚡) from satsymbol.com. Special thanks to @satsymbol for creating and freely sharing this symbol to help drive Bitcoin adoption!
 - **Unit Toggle System** - Added BTC/Satoshi display unit selector in admin panel with real-time switching across all views
+- **Indian Rupee Support** - Added comprehensive support for Indian Rupee (INR) with proper formatting and exchange rate integration
+- **Historical Data Refactor** - Optimized historical Bitcoin price data loading with improved caching and sequential fetching to prevent rate limiting
 
 ### Changes
 
