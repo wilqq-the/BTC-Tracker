@@ -14,7 +14,7 @@ jest.setTimeout(30000); // 30 seconds timeout
 
 describe('Currency Converter and Exchange Rate Tests', () => {
     let testDataDir;
-    const supportedCurrencies = ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'PLN', 'BRL'];
+    const supportedCurrencies = ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'PLN', 'BRL', 'INR'];
     const baseCurrencies = ['EUR', 'USD'];
     
     beforeAll(async () => {
