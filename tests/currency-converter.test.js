@@ -243,8 +243,42 @@ describe('Currency Converter and Exchange Rate Tests', () => {
     });
 
     describe('Price Cache Integration for All Currencies', () => {
+        beforeEach(() => {
+            // Initialize price cache with test data
+            priceCache.cache = {
+                priceEUR: 50000,
+                priceUSD: 55000,
+                exchangeRates: {
+                    EUR: {
+                        USD: 1.1,
+                        PLN: 4.5,
+                        GBP: 0.85,
+                        JPY: 160,
+                        CHF: 0.95,
+                        BRL: 6.34,
+                        INR: 89.23
+                    },
+                    USD: {
+                        EUR: 1 / 1.1,
+                        PLN: 4.5 / 1.1,
+                        GBP: 0.85 / 1.1,
+                        JPY: 160 / 1.1,
+                        CHF: 0.95 / 1.1,
+                        BRL: 6.34 / 1.1,
+                        INR: 89.23 / 1.1
+                    }
+                },
+                timestamp: new Date().toISOString()
+            };
+        });
+
         test('should retrieve all currency exchange rates from price cache', () => {
             const cachedPrices = priceCache.getCachedPrices();
+            
+            console.log('Cached Prices:', {
+                exchangeRates: cachedPrices.exchangeRates,
+                timestamp: cachedPrices.timestamp
+            });
             
             expect(cachedPrices.exchangeRates).toBeDefined();
             expect(cachedPrices.exchangeRates.EUR).toBeDefined();
@@ -252,7 +286,13 @@ describe('Currency Converter and Exchange Rate Tests', () => {
             
             // Check that all supported currencies (except base currencies) have rates
             const otherCurrencies = supportedCurrencies.filter(c => !baseCurrencies.includes(c));
+            console.log('Testing exchange rates for currencies:', otherCurrencies);
+            
             otherCurrencies.forEach(currency => {
+                console.log(`Checking rates for ${currency}:`, {
+                    'EUR->currency': cachedPrices.exchangeRates.EUR?.[currency],
+                    'USD->currency': cachedPrices.exchangeRates.USD?.[currency]
+                });
                 expect(cachedPrices.exchangeRates.EUR[currency]).toBeGreaterThan(0);
                 expect(cachedPrices.exchangeRates.USD[currency]).toBeGreaterThan(0);
             });
@@ -262,8 +302,22 @@ describe('Currency Converter and Exchange Rate Tests', () => {
             const testBtcPriceEur = 50000;
             priceCache.cache.priceEUR = testBtcPriceEur;
             
+            console.log('Initial test setup:', {
+                testBtcPriceEur,
+                cachedEurPrice: priceCache.cache.priceEUR,
+                exchangeRates: priceCache.cache.exchangeRates
+            });
+            
             supportedCurrencies.forEach(currency => {
                 const btcPrice = priceCache.getBTCPrice(currency);
+                const rate = priceCache.getExchangeRate('EUR', currency);
+                
+                console.log(`Testing ${currency}:`, {
+                    btcPrice,
+                    rate,
+                    expectedMax: currency === 'JPY' ? testBtcPriceEur * 300 : testBtcPriceEur * 20,
+                    expectedMin: testBtcPriceEur * 0.1
+                });
                 
                 if (currency === 'EUR') {
                     expect(btcPrice).toBe(testBtcPriceEur);
@@ -276,15 +330,24 @@ describe('Currency Converter and Exchange Rate Tests', () => {
                     // Different currencies should have different values, but within reasonable bounds
                     if (currency === 'USD') {
                         // USD should be somewhat close to EUR (within 0.5x to 2.5x range)
-                        // Allowing for higher rates as the system might be using different rate sources
                         expect(btcPrice).toBeGreaterThan(testBtcPriceEur * 0.5);
                         expect(btcPrice).toBeLessThan(testBtcPriceEur * 2.5);
                     } else if (currency === 'JPY') {
                         // JPY should be much higher due to smaller unit value
                         expect(btcPrice).toBeGreaterThan(testBtcPriceEur * 50);
                         expect(btcPrice).toBeLessThan(testBtcPriceEur * 300);
+                    } else if (currency === 'INR') {
+                        // INR also tends to have higher numerical values
+                        expect(btcPrice).toBeGreaterThan(testBtcPriceEur * 0.1);
+                        expect(btcPrice).toBeLessThan(testBtcPriceEur * 100);
                     } else {
                         // Other currencies should be within reasonable bounds
+                        console.log(`Testing bounds for ${currency}:`, {
+                            btcPrice,
+                            minAllowed: testBtcPriceEur * 0.1,
+                            maxAllowed: testBtcPriceEur * 20,
+                            ratio: btcPrice / testBtcPriceEur
+                        });
                         expect(btcPrice).toBeGreaterThan(testBtcPriceEur * 0.1);
                         expect(btcPrice).toBeLessThan(testBtcPriceEur * 20);
                     }

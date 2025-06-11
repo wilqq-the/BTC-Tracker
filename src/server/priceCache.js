@@ -30,12 +30,15 @@ class PriceCache {
             const dataDir = path.dirname(this.cacheFilePath);
             await fs.mkdir(dataDir, { recursive: true });
 
+            logger.debug('[priceCache] Starting initialization...');
+            
             // Try to load cached data from disk
             await this.loadFromDisk();
             
             // Initial price fetch if cache is empty or old
             if (!this.cache.timestamp || 
                 Date.now() - new Date(this.cache.timestamp).getTime() > this.updateInterval) {
+                logger.debug('[priceCache] Cache empty or old, performing initial update');
                 await this.updatePrices();
             }
             
@@ -50,7 +53,12 @@ class PriceCache {
             // Set up periodic updates
             setInterval(() => this.updatePrices(), this.updateInterval);
             
-            logger.debug('[priceCache] Initialized with data:', this.cache);
+            logger.debug('[priceCache] Initialization complete. Cache state:', {
+                priceEUR: this.cache.priceEUR,
+                priceUSD: this.cache.priceUSD,
+                exchangeRates: this.cache.exchangeRates,
+                timestamp: this.cache.timestamp
+            });
         } catch (error) {
             logger.error('[priceCache] Initialization error:', error);
             // If initialization fails, still try to set up updates
@@ -179,8 +187,24 @@ class PriceCache {
                     eurBrl: 6.34,
                     eurInr: 89.23,
                     exchangeRates: {
-                        EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34, INR: 89.23 },
-                        USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76, INR: 78.23 }
+                        EUR: { 
+                            USD: 1.1, 
+                            PLN: 4.5, 
+                            GBP: 0.85, 
+                            JPY: 160, 
+                            CHF: 0.95, 
+                            BRL: 6.34, 
+                            INR: 89.23 
+                        },
+                        USD: { 
+                            EUR: 1 / 1.1,
+                            PLN: 4.5 / 1.1,
+                            GBP: 0.85 / 1.1,
+                            JPY: 160 / 1.1,
+                            CHF: 0.95 / 1.1,
+                            BRL: 6.34 / 1.1,
+                            INR: 89.23 / 1.1
+                        }
                     },
                     timestamp: new Date().toISOString()
                 };
@@ -206,11 +230,11 @@ class PriceCache {
                             INR: this.cache.eurInr || 89.23
                         },
                         USD: { 
-                            EUR: 1 / (this.cache.eurUsd || 1.1), 
-                            PLN: (this.cache.eurPln || 4.5) / (this.cache.eurUsd || 1.1), 
-                            GBP: (this.cache.eurGbp || 0.85) / (this.cache.eurUsd || 1.1), 
-                            JPY: (this.cache.eurJpy || 160) / (this.cache.eurUsd || 1.1), 
-                            CHF: (this.cache.eurChf || 0.95) / (this.cache.eurUsd || 1.1), 
+                            EUR: 1 / (this.cache.eurUsd || 1.1),
+                            PLN: (this.cache.eurPln || 4.5) / (this.cache.eurUsd || 1.1),
+                            GBP: (this.cache.eurGbp || 0.85) / (this.cache.eurUsd || 1.1),
+                            JPY: (this.cache.eurJpy || 160) / (this.cache.eurUsd || 1.1),
+                            CHF: (this.cache.eurChf || 0.95) / (this.cache.eurUsd || 1.1),
                             BRL: (this.cache.eurBrl || 6.34) / (this.cache.eurUsd || 1.1),
                             INR: (this.cache.eurInr || 89.23) / (this.cache.eurUsd || 1.1)
                         }
@@ -300,57 +324,39 @@ class PriceCache {
         if (fromCurrency === toCurrency) return 1;
         
         try {
+            logger.debug(`[priceCache] Getting exchange rate from ${fromCurrency} to ${toCurrency}`);
+            
             // Direct rate if available
             if (this.cache.exchangeRates?.[fromCurrency]?.[toCurrency]) {
                 const rate = this.cache.exchangeRates[fromCurrency][toCurrency];
+                logger.debug(`[priceCache] Found direct rate: ${rate}`);
                 return rate;
             }
             
             // Handle legacy format
             if (fromCurrency === 'EUR' && toCurrency === 'USD' && this.cache.eurUsd) {
+                logger.debug(`[priceCache] Using legacy EUR/USD rate: ${this.cache.eurUsd}`);
                 return this.cache.eurUsd;
-            } else if (fromCurrency === 'EUR' && toCurrency === 'PLN' && this.cache.eurPln) {
-                return this.cache.eurPln;
-            } else if (fromCurrency === 'EUR' && toCurrency === 'BRL' && this.cache.eurBrl) {
-                return this.cache.eurBrl;
-            } else if (fromCurrency === 'EUR' && toCurrency === 'INR' && this.cache.eurInr) {
-                return this.cache.eurInr;
-            } else if (fromCurrency === 'USD' && toCurrency === 'EUR' && this.cache.eurUsd) {
-                return 1 / this.cache.eurUsd;
-            } else if (fromCurrency === 'PLN' && toCurrency === 'EUR' && this.cache.eurPln) {
-                return 1 / this.cache.eurPln;
-            } else if (fromCurrency === 'BRL' && toCurrency === 'EUR' && this.cache.eurBrl) {
-                return 1 / this.cache.eurBrl;
-            } else if (fromCurrency === 'INR' && toCurrency === 'EUR' && this.cache.eurInr) {
-                return 1 / this.cache.eurInr;
             }
             
             // Conversion through EUR as base
             if (fromCurrency === 'EUR' && this.cache.exchangeRates?.EUR?.[toCurrency]) {
-                return this.cache.exchangeRates.EUR[toCurrency];
+                const rate = this.cache.exchangeRates.EUR[toCurrency];
+                logger.debug(`[priceCache] Using EUR base rate: ${rate}`);
+                return rate;
             } else if (toCurrency === 'EUR' && this.cache.exchangeRates?.EUR?.[fromCurrency]) {
-                return 1 / this.cache.exchangeRates.EUR[fromCurrency];
-            }
-            
-            // Conversion through USD as base
-            if (fromCurrency === 'USD' && this.cache.exchangeRates?.USD?.[toCurrency]) {
-                return this.cache.exchangeRates.USD[toCurrency];
-            } else if (toCurrency === 'USD' && this.cache.exchangeRates?.[fromCurrency]?.USD) {
-                return 1 / this.cache.exchangeRates[fromCurrency].USD;
+                const rate = 1 / this.cache.exchangeRates.EUR[fromCurrency];
+                logger.debug(`[priceCache] Using inverse EUR base rate: ${rate}`);
+                return rate;
             }
             
             // Cross-currency conversion via EUR
             if (this.cache.exchangeRates?.EUR?.[fromCurrency] && this.cache.exchangeRates?.EUR?.[toCurrency]) {
                 const fromToEUR = 1 / this.cache.exchangeRates.EUR[fromCurrency];
                 const eurToTarget = this.cache.exchangeRates.EUR[toCurrency];
-                return fromToEUR * eurToTarget;
-            }
-            
-            // Cross-currency conversion via USD
-            if (this.cache.exchangeRates?.USD?.[fromCurrency] && this.cache.exchangeRates?.USD?.[toCurrency]) {
-                const fromToUSD = 1 / this.cache.exchangeRates.USD[fromCurrency];
-                const usdToTarget = this.cache.exchangeRates.USD[toCurrency];
-                return fromToUSD * usdToTarget;
+                const rate = fromToEUR * eurToTarget;
+                logger.debug(`[priceCache] Using cross rate via EUR: ${rate} (${fromToEUR} * ${eurToTarget})`);
+                return rate;
             }
             
             // Fallback
@@ -364,14 +370,47 @@ class PriceCache {
     
     // Get BTC price in any currency
     getBTCPrice(currency = 'EUR') {
-        if (currency === 'EUR') {
-            return this.cache.priceEUR || this.cache.price || 0;
-        } else if (currency === 'USD') {
-            return this.cache.priceUSD || (this.cache.priceEUR * this.getExchangeRate('EUR', 'USD')) || 0;
-        } else {
-            // Convert from EUR to target currency
-            const eurPrice = this.cache.priceEUR || this.cache.price || 0;
-            return eurPrice * this.getExchangeRate('EUR', currency);
+        try {
+            logger.debug(`[priceCache] Getting BTC price in ${currency}`);
+            
+            if (currency === 'EUR') {
+                const price = this.cache.priceEUR || this.cache.price || 0;
+                logger.debug(`[priceCache] Using direct EUR price: ${price}`);
+                return price;
+            } else if (currency === 'USD') {
+                const price = this.cache.priceUSD || (this.cache.priceEUR * this.getExchangeRate('EUR', 'USD')) || 0;
+                logger.debug(`[priceCache] Using USD price: ${price}`);
+                return price;
+            } else {
+                // Convert from EUR to target currency
+                const eurPrice = this.cache.priceEUR || this.cache.price || 0;
+                const rate = this.getExchangeRate('EUR', currency);
+                
+                logger.debug(`[priceCache] Converting EUR price to ${currency}:`, {
+                    eurPrice,
+                    rate,
+                    result: eurPrice * rate
+                });
+                
+                // Validate the rate to prevent unreasonable conversions
+                if (!rate || rate <= 0 || !isFinite(rate)) {
+                    logger.error(`[priceCache] Invalid exchange rate for ${currency}: ${rate}`);
+                    return 0;
+                }
+                
+                const convertedPrice = eurPrice * rate;
+                
+                // Validate the result
+                if (!isFinite(convertedPrice) || convertedPrice < 0) {
+                    logger.error(`[priceCache] Invalid converted price for ${currency}: ${convertedPrice}`);
+                    return 0;
+                }
+                
+                return convertedPrice;
+            }
+        } catch (error) {
+            logger.error(`[priceCache] Error getting BTC price in ${currency}:`, error);
+            return 0;
         }
     }
     
