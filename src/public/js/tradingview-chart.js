@@ -34,6 +34,41 @@ function getCurrencySymbol(currency) {
     return symbols[currency] || currency;
 }
 
+// Function to group transactions by time proximity
+function groupTransactionsByProximity(transactions, groupingHours = 24) {
+    if (!transactions || transactions.length === 0) return [];
+    
+    // Sort transactions by date
+    const sorted = [...transactions].sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    const groups = [];
+    let currentGroup = [sorted[0]];
+    const groupingMs = groupingHours * 60 * 60 * 1000; // Convert hours to milliseconds
+    
+    for (let i = 1; i < sorted.length; i++) {
+        const prevTime = new Date(sorted[i - 1].date).getTime();
+        const currTime = new Date(sorted[i].date).getTime();
+        
+        // If transactions are within the grouping window, add to current group
+        if (currTime - prevTime <= groupingMs) {
+            currentGroup.push(sorted[i]);
+        } else {
+            // Otherwise, save current group and start a new one
+            groups.push(currentGroup);
+            currentGroup = [sorted[i]];
+        }
+    }
+    
+    // Don't forget the last group
+    if (currentGroup.length > 0) {
+        groups.push(currentGroup);
+    }
+    
+    return groups;
+}
+
 // Create and render the TradingView chart
 function createTradingViewChart(container, data) {
     if (!data || !data.historicalBTCData || !data.historicalBTCData.length) {
@@ -427,129 +462,257 @@ function createTradingViewChart(container, data) {
         }
     }
     
-    // Mark transactions on the chart
+    // Mark transactions on the chart with grouping
     if (data.transactions && data.transactions.length > 0) {
+        // Group transactions that occur within 24 hours of each other
+        const transactionGroups = groupTransactionsByProximity(data.transactions, 24);
+        
         const txMarkers = [];
-        const txData = []; // Store transaction data for tooltips
+        const txGroupData = []; // Store group data for tooltips
         
         // Create tooltip element
         const tooltip = document.createElement('div');
         tooltip.className = 'tv-tx-tooltip';
         container.appendChild(tooltip);
         
-        data.transactions.forEach(tx => {
-            const txTime = new Date(tx.date).getTime() / 1000;
+        transactionGroups.forEach((group, groupIndex) => {
+            // Calculate aggregate data for the group
+            const groupTime = new Date(group[0].date).getTime() / 1000; // Use first transaction time
+            const buyCount = group.filter(tx => tx.type === 'buy').length;
+            const sellCount = group.filter(tx => tx.type === 'sell').length;
+            const totalAmount = group.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+            
             // Skip if outside of our data range
-            if (txTime < priceData[0].time || txTime > priceData[priceData.length - 1].time) {
+            if (groupTime < priceData[0].time || groupTime > priceData[priceData.length - 1].time) {
                 return;
             }
             
-            // Find the price at this time by finding the closest data point
+            // Find the price at this time
             const closestPoint = priceData.reduce((prev, curr) => 
-                Math.abs(curr.time - txTime) < Math.abs(prev.time - txTime) ? curr : prev
+                Math.abs(curr.time - groupTime) < Math.abs(prev.time - groupTime) ? curr : prev
             );
             
-            // Calculate current P&L if it's a buy transaction
-            const currentPrice = priceData[priceData.length - 1].value;
-            const txPrice = tx.price || closestPoint.value;
-            let pnl = 0;
-            let pnlPercent = 0;
+            // Calculate total value and average price for the group
+            let totalValue = 0;
+            let avgPrice = 0;
             
-            if (tx.type === 'buy' && txPrice > 0) {
-                pnl = currentPrice - txPrice;
-                pnlPercent = (pnl / txPrice) * 100;
+            group.forEach(tx => {
+                const txPrice = tx.base?.[mainCurrency.toLowerCase()]?.price || tx.price || closestPoint.value;
+                totalValue += (tx.amount || 0) * txPrice;
+                avgPrice += txPrice;
+            });
+            avgPrice = avgPrice / group.length;
+            
+            // Determine primary type and marker properties
+            const primaryType = buyCount >= sellCount ? 'buy' : 'sell';
+            const isMixed = buyCount > 0 && sellCount > 0;
+            
+            // Calculate marker size based on total value
+            let markerSize = 1;
+            if (totalValue > 50000) {
+                markerSize = 2;
+            } else if (totalValue > 20000) {
+                markerSize = 1.5;
+            } else if (totalValue > 10000) {
+                markerSize = 1.2;
             }
             
-            // Store transaction data for tooltip
-            txData.push({
-                id: txData.length,
-                time: txTime,
-                price: txPrice,
-                type: tx.type,
-                amount: tx.amount || 0,
-                currentPrice: currentPrice,
-                pnl: pnl,
-                pnlPercent: pnlPercent,
-                date: new Date(tx.date)
+            // Store group data for tooltip
+            txGroupData.push({
+                id: groupIndex,
+                time: groupTime,
+                transactions: group,
+                buyCount: buyCount,
+                sellCount: sellCount,
+                totalAmount: totalAmount,
+                totalValue: totalValue,
+                avgPrice: avgPrice,
+                primaryType: primaryType,
+                isMixed: isMixed,
+                currentPrice: priceData[priceData.length - 1].value
             });
             
-            // Create marker with size property to make it smaller
+            // Create marker text based on group size
+            let markerText = '';
+            if (group.length === 1) {
+                markerText = primaryType === 'buy' ? 'BUY' : 'SELL';
+            } else if (isMixed) {
+                markerText = `${buyCount}B/${sellCount}S`;
+            } else {
+                markerText = `${group.length} ${primaryType.toUpperCase()}S`;
+            }
+            
+            // Create marker with appropriate styling
             txMarkers.push({
-                time: txTime,
-                position: tx.type === 'buy' ? 'belowBar' : 'aboveBar',
-                color: tx.type === 'buy' ? colors.upColor : colors.downColor,
-                shape: 'circle',
-                text: tx.type === 'buy' ? 'BUY' : 'SELL',
-                size: 0.8, // Make markers smaller (default is 1)
-                id: txData.length - 1 // Store index to txData
+                time: groupTime,
+                position: primaryType === 'buy' ? 'belowBar' : 'aboveBar',
+                color: isMixed ? '#9b59b6' : (primaryType === 'buy' ? colors.upColor : colors.downColor),
+                shape: isMixed ? 'square' : 'circle',
+                text: markerText,
+                size: markerSize,
+                id: groupIndex // Store index to txGroupData
             });
         });
         
         // Add markers to the chart
         mainSeries.setMarkers(txMarkers);
         
-        // Setup event listener for markers to show tooltip
+        // Enhanced tooltip functionality for grouped transactions
         chart.subscribeCrosshairMove(param => {
             if (!param || !param.time || !param.point) {
                 tooltip.style.display = 'none';
                 return;
             }
             
-            // Find if we're hovering near a transaction marker
+            // Find if we're hovering near a transaction group
             const hoverTime = param.time;
-            const closeTx = txData.find(tx => {
-                // Consider transactions within 12 hours (in seconds) to be close enough for tooltip
-                return Math.abs(tx.time - hoverTime) < 43200;
+            const closeGroup = txGroupData.find(group => {
+                // Consider groups within 24 hours to be close enough for tooltip
+                return Math.abs(group.time - hoverTime) < 86400;
             });
             
-            if (!closeTx) {
+            if (!closeGroup) {
                 tooltip.style.display = 'none';
                 return;
             }
             
-            // Format values for tooltip
-            const txDate = formatDate(closeTx.time);
-            const txPrice = formatPrice(closeTx.price);
-            const currentPrice = formatPrice(closeTx.currentPrice);
-            const pnlFormatted = closeTx.pnl.toFixed(2);
-            const pnlPercentFormatted = closeTx.pnlPercent.toFixed(2);
-            const pnlClass = closeTx.pnl >= 0 ? 'tv-tx-tooltip-profit' : 'tv-tx-tooltip-loss';
+            // Build tooltip content for the group
+            let tooltipContent = '';
             
-            // Use a highlight color that matches the theme
-            const titleColor = closeTx.type === 'buy' ? colors.upColor : colors.downColor;
+            if (closeGroup.transactions.length === 1) {
+                // Single transaction
+                const tx = closeGroup.transactions[0];
+                const txDate = formatDate(closeGroup.time);
+                const txPrice = formatPrice(closeGroup.avgPrice);
+                const currentPrice = formatPrice(closeGroup.currentPrice);
+                const pnl = closeGroup.currentPrice - closeGroup.avgPrice;
+                const pnlPercent = (pnl / closeGroup.avgPrice) * 100;
+                const pnlClass = pnl >= 0 ? 'tv-tx-tooltip-profit' : 'tv-tx-tooltip-loss';
+                
+                tooltipContent = `
+                    <div class="tv-tx-tooltip-title" style="color: ${closeGroup.primaryType === 'buy' ? colors.upColor : colors.downColor}">
+                        ${closeGroup.primaryType.toUpperCase()} Transaction
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Date:</span>
+                        <span class="tv-tx-tooltip-value">${txDate}</span>
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Amount:</span>
+                        <span class="tv-tx-tooltip-value">${closeGroup.totalAmount.toFixed(8)} BTC</span>
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Price:</span>
+                        <span class="tv-tx-tooltip-value">${txPrice}</span>
+                    </div>
+                    ${closeGroup.primaryType === 'buy' ? `
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Current:</span>
+                        <span class="tv-tx-tooltip-value">${currentPrice}</span>
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">P&L:</span>
+                        <span class="tv-tx-tooltip-value ${pnlClass}">
+                            ${getCurrencySymbol(mainCurrency)}${Math.abs(pnl).toFixed(2)} (${pnlPercent.toFixed(2)}%)
+                        </span>
+                    </div>` : ''}
+                `;
+            } else {
+                // Multiple transactions grouped
+                const groupDate = formatDate(closeGroup.time);
+                const avgPrice = formatPrice(closeGroup.avgPrice);
+                const totalValue = formatPrice(closeGroup.totalValue);
+                
+                // Build transaction breakdown
+                let txBreakdown = '';
+                if (closeGroup.isMixed) {
+                    txBreakdown = `
+                        <div class="tv-tx-tooltip-row">
+                            <span class="tv-tx-tooltip-label">Buys:</span>
+                            <span class="tv-tx-tooltip-value" style="color: ${colors.upColor}">${closeGroup.buyCount}</span>
+                        </div>
+                        <div class="tv-tx-tooltip-row">
+                            <span class="tv-tx-tooltip-label">Sells:</span>
+                            <span class="tv-tx-tooltip-value" style="color: ${colors.downColor}">${closeGroup.sellCount}</span>
+                        </div>
+                    `;
+                }
+                
+                tooltipContent = `
+                    <div class="tv-tx-tooltip-title" style="color: ${closeGroup.isMixed ? '#9b59b6' : (closeGroup.primaryType === 'buy' ? colors.upColor : colors.downColor)}">
+                        ${closeGroup.transactions.length} Grouped Transactions
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Date:</span>
+                        <span class="tv-tx-tooltip-value">${groupDate}</span>
+                    </div>
+                    ${txBreakdown}
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Total Amount:</span>
+                        <span class="tv-tx-tooltip-value">${closeGroup.totalAmount.toFixed(8)} BTC</span>
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Avg Price:</span>
+                        <span class="tv-tx-tooltip-value">${avgPrice}</span>
+                    </div>
+                    <div class="tv-tx-tooltip-row">
+                        <span class="tv-tx-tooltip-label">Total Value:</span>
+                        <span class="tv-tx-tooltip-value">${totalValue}</span>
+                    </div>
+                `;
+                
+                // Add individual transaction details in a compact format
+                tooltipContent += `
+                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'}">
+                        <div style="font-size: 11px; opacity: 0.7; margin-bottom: 4px;">Individual transactions:</div>
+                `;
+                
+                closeGroup.transactions.forEach(tx => {
+                    const txAmount = (tx.amount || 0).toFixed(8);
+                    const txType = tx.type === 'buy' ? 'B' : 'S';
+                    const txColor = tx.type === 'buy' ? colors.upColor : colors.downColor;
+                    tooltipContent += `
+                        <div style="font-size: 11px; margin: 2px 0;">
+                            <span style="color: ${txColor}; font-weight: bold;">${txType}</span>
+                            <span style="opacity: 0.8;">${txAmount} BTC</span>
+                        </div>
+                    `;
+                });
+                
+                tooltipContent += '</div>';
+            }
             
-            // Update tooltip content
-            tooltip.innerHTML = `
-                <div class="tv-tx-tooltip-title" style="color: ${titleColor}">${closeTx.type.toUpperCase()} Transaction</div>
-                <div class="tv-tx-tooltip-row">
-                    <span class="tv-tx-tooltip-label">Date:</span>
-                    <span class="tv-tx-tooltip-value">${txDate}</span>
-                </div>
-                <div class="tv-tx-tooltip-row">
-                    <span class="tv-tx-tooltip-label">Price:</span>
-                    <span class="tv-tx-tooltip-value">${txPrice}</span>
-                </div>
-                ${closeTx.amount ? `
-                <div class="tv-tx-tooltip-row">
-                    <span class="tv-tx-tooltip-label">Amount:</span>
-                    <span class="tv-tx-tooltip-value">${closeTx.amount} BTC</span>
-                </div>` : ''}
-                ${closeTx.type === 'buy' ? `
-                <div class="tv-tx-tooltip-row">
-                    <span class="tv-tx-tooltip-label">Current:</span>
-                    <span class="tv-tx-tooltip-value">${currentPrice}</span>
-                </div>
-                <div class="tv-tx-tooltip-row">
-                    <span class="tv-tx-tooltip-label">P&L:</span>
-                    <span class="tv-tx-tooltip-value ${pnlClass}">${pnlFormatted} (${pnlPercentFormatted}%)</span>
-                </div>` : ''}
-            `;
+            // Update tooltip
+            tooltip.innerHTML = tooltipContent;
             
-            // Position tooltip near mouse pointer
+            // Position tooltip
             const x = param.point.x;
             const y = param.point.y;
-            tooltip.style.left = (x + 15) + 'px';
-            tooltip.style.top = (y - 20) + 'px';
+            
+            // Adjust position to avoid going off-screen
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            let tooltipX = x + 15;
+            let tooltipY = y - 20;
+            
+            // Check right boundary
+            if (tooltipX + tooltipRect.width > containerRect.width) {
+                tooltipX = x - tooltipRect.width - 15;
+            }
+            
+            // Check bottom boundary
+            if (tooltipY + tooltipRect.height > containerRect.height) {
+                tooltipY = y - tooltipRect.height - 20;
+            }
+            
+            // Check top boundary
+            if (tooltipY < 0) {
+                tooltipY = y + 20;
+            }
+            
+            tooltip.style.left = tooltipX + 'px';
+            tooltip.style.top = tooltipY + 'px';
             tooltip.style.display = 'block';
         });
     }
@@ -654,7 +817,8 @@ function setupTimeRangeButtons(chart, priceData) {
             white-space: nowrap;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
             border: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
-            max-width: 300px;
+            max-width: 350px !important;
+            min-width: 250px;
         }
         .tv-tx-tooltip-title {
             font-weight: bold;
@@ -679,6 +843,22 @@ function setupTimeRangeButtons(chart, priceData) {
         }
         .tv-tx-tooltip-loss {
             color: ${colors.downColor};
+        }
+        .tv-tx-tooltip-mixed {
+            color: #9b59b6;
+        }
+        .tv-tx-tooltip-group-header {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-top: 6px;
+            margin-bottom: 4px;
+            padding-top: 6px;
+            border-top: 1px solid ${isLightTheme ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)'};
+        }
+        .tv-tx-tooltip-compact {
+            font-size: 11px;
+            line-height: 1.3;
+            opacity: 0.9;
         }
     `;
     
@@ -737,15 +917,6 @@ function setupTimeRangeButtons(chart, priceData) {
             if (resetZoomBtn) {
                 resetZoomBtn.style.display = 'none';
             }
-            
-            // We don't need to update old buttons anymore since they were removed
-            // But keeping the code commented for reference
-            /*
-            const oldBtn = document.querySelector(`.time-range-btn[data-range="${days}"]`);
-            if (oldBtn) {
-                oldBtn.click();
-            }
-            */
         });
         
         // Set active class on the default range (90 days / 3M)
@@ -764,7 +935,6 @@ function setupTimeRangeButtons(chart, priceData) {
     }
     
     // Keep the old button functionality for compatibility
-    // Note: The old time-range-btn elements may not exist anymore
     const oldButtons = document.querySelectorAll('.time-range-btn');
     if (oldButtons.length > 0) {
         oldButtons.forEach(btn => {
@@ -786,8 +956,6 @@ function setupTimeRangeButtons(chart, priceData) {
     
     // Ensure default range is properly set by triggering the 3M button
     if (buttonsContainer.querySelector('button[data-range="90"]')) {
-        // No need to trigger click since we now set the range directly in createTradingViewChart
-        // Just make sure the 3M button is visually active
         buttonsContainer.querySelector('button[data-range="90"]').classList.add('active');
     }
 }
@@ -996,4 +1164,4 @@ function cleanupTradingViewChart() {
 // Export functions for use in main script
 window.createTradingViewChart = createTradingViewChart;
 window.updateTradingViewChartPrice = updateTradingViewChartPrice;
-window.cleanupTradingViewChart = cleanupTradingViewChart; 
+window.cleanupTradingViewChart = cleanupTradingViewChart;
