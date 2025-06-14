@@ -167,6 +167,45 @@ class PriceCache {
             };
             
             await this.saveToDisk();
+
+            // Update the latest entry in historical_btc.json
+            try {
+                const historicalFilePath = path.join(pathManager.getDataDirectory(), 'historical_btc.json');
+                const historicalData = JSON.parse(await fs.readFile(historicalFilePath, 'utf8'));
+                
+                // Get today's date in YYYY-MM-DD format
+                const today = new Date().toISOString().split('T')[0];
+                
+                // Create new entry for today
+                const newEntry = {
+                    date: today,
+                    priceEUR: btcPriceEUR,
+                    timestamp: Date.now(),
+                    priceUSD: btcPriceUSD,
+                    price: btcPriceEUR
+                };
+
+                // Find if today's entry already exists
+                const todayIndex = historicalData.findIndex(entry => entry.date === today);
+                
+                if (todayIndex !== -1) {
+                    // Update existing entry
+                    historicalData[todayIndex] = newEntry;
+                } else {
+                    // Add new entry
+                    historicalData.push(newEntry);
+                }
+
+                // Sort data by date to ensure chronological order
+                historicalData.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                // Save updated historical data
+                await fs.writeFile(historicalFilePath, JSON.stringify(historicalData, null, 2), 'utf8');
+                logger.debug(`[priceCache] Updated historical_btc.json with latest price for ${today}`);
+            } catch (error) {
+                logger.error('[priceCache] Error updating historical_btc.json:', error);
+            }
+
             logger.debug(`[priceCache] BTC prices from Yahoo Finance: ${btcPriceEUR} EUR / ${btcPriceUSD} USD, updated at ${this.cache.timestamp}`);
         } catch (error) {
             logger.error('[priceCache] Error updating prices from Yahoo Finance:', error.message);

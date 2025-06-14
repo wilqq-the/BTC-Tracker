@@ -979,10 +979,12 @@
                             <div class="form-group">
                                 <label for="historicalDataRefreshHours"><i class="fas fa-sync-alt"></i> Data Refresh Interval:</label>
                                 <select id="historicalDataRefreshHours" name="historicalDataRefreshHours">
+                                    <option value="0.016666667">1 Minute</option>
+                                    <option value="0.083333333">5 Minutes</option>
+                                    <option value="1">1 Hour</option>
+                                    <option value="6">6 Hours</option>
                                     <option value="12">12 Hours</option>
                                     <option value="24">24 Hours</option>
-                                    <option value="48">48 Hours</option>
-                                    <option value="168">Weekly</option>
                                 </select>
                                 <p class="help-text">How often to check for and fetch new historical data</p>
                             </div>

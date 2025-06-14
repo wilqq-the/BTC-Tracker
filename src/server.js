@@ -800,7 +800,7 @@ setInterval(() => {
 function setupHistoricalDataRefresh() {
     try {
         const settings = loadSettings();
-        const refreshHours = parseInt(settings.historicalDataRefreshHours || '24');
+        const refreshHours = parseFloat(settings.historicalDataRefreshHours || '24');
         
         logger.info(`Setting up historical data refresh interval: ${refreshHours} hours`);
         
