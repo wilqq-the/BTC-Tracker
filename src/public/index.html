@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.7/dist/lightweight-charts.standalone.production.js"></script>
     <script src="js/tradingview-chart.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
@@ -4450,6 +4450,8 @@
                     // Update all displays with the full data object received from the server
                     updatePriceDisplays(data);
                     
+                    // Note: Ticker updates are now handled automatically by ticker.js
+                    
                     // Create/update chart with historical data
                     if (window.innerWidth <= 768) {
                         createMobileChart(data);
@@ -4545,6 +4547,8 @@
                     
                     // Update displays with the new price data (pass the full data object)
                     updatePriceDisplays(data);
+                    
+                    // Note: Ticker updates are now handled automatically by ticker.js
                     
                     // Update timeline if transactions have changed
                     if (transactionCountChanged) {
@@ -4707,6 +4711,8 @@
         // Initial load and setup intervals
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Page loaded, initializing...');
+            
+            // Note: Ticker updates are now handled automatically by ticker.js
             
             // CRITICAL: Load currency settings FIRST before any data operations
             console.log('📋 Loading currency settings...');

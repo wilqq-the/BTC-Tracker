@@ -118,12 +118,18 @@ function updateTicker(data) {
     });
 }
 
-// Function to fetch price data
-async function fetchPriceData() {
-    console.log('Starting price data fetch...');
+// Function to fetch price data from unified summary endpoint
+async function fetchTickerData() {
+    console.log('Starting ticker data fetch from summary endpoint...');
     try {
-        console.log('Sending request to /api/current-price');
-        const response = await fetch('/api/current-price');
+        console.log('Sending request to /api/summary?priceOnly=true');
+        const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache'
+            }
+        });
         
         if (!response.ok) {
             console.error('API request failed:', {
@@ -135,7 +141,7 @@ async function fetchPriceData() {
         
         console.log('Response received, parsing JSON...');
         const data = await response.json();
-        console.log('Parsed price data:', data);
+        console.log('Parsed ticker data from summary:', data);
         
         if (!data || (typeof data.priceEUR === 'undefined' && typeof data.price === 'undefined')) {
             console.error('Invalid price data received:', data);
@@ -143,9 +149,9 @@ async function fetchPriceData() {
         }
         
         updateTicker(data);
-        console.log('Price update completed successfully');
+        console.log('Ticker update completed successfully');
     } catch (error) {
-        console.error('Error fetching price data:', {
+        console.error('Error fetching ticker data:', {
             name: error.name,
             message: error.message,
             stack: error.stack
@@ -153,12 +159,15 @@ async function fetchPriceData() {
     }
 }
 
-// Initialize ticker
+// Initialize ticker with unified approach
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing ticker...');
-    // Initial fetch
-    fetchPriceData();
+    console.log('Initializing unified ticker...');
     
-    // Update every 5 minutes (reduced from 1 minute to avoid rate limits)
-    setInterval(fetchPriceData, 5 * 60 * 1000);
+    // Initial fetch
+    fetchTickerData();
+    
+    // Update every 5 minutes for all pages
+    setInterval(fetchTickerData, 5 * 60 * 1000);
+    
+    console.log('Ticker initialized with 5-minute updates using /api/summary endpoint');
 }); 

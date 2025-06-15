@@ -111,6 +111,15 @@ function createTradingViewChart(container, data) {
         return null;
     }
     
+    // Check if series types are available (v5.0 requirement)
+    if (!LightweightCharts.AreaSeries || !LightweightCharts.LineSeries) {
+        console.error('TradingView Lightweight Charts series types not available!', LightweightCharts);
+        return null;
+    }
+    
+    // Log available functions for debugging
+    console.log('Available LightweightCharts functions:', Object.keys(LightweightCharts));
+    
     // Make sure the container has enough height for the time scale
     if (container.clientHeight < 300) {
         container.style.minHeight = '300px';
@@ -192,14 +201,6 @@ function createTradingViewChart(container, data) {
                 price: true,
             },
         },
-        watermark: {
-            visible: true,
-            fontSize: 36,
-            horzAlign: 'center',
-            vertAlign: 'center',
-            color: isLightTheme ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.05)',
-            text: 'BTC/USD',
-        },
     });
 
     // Add window resize handler to ensure chart stays responsive
@@ -216,8 +217,22 @@ function createTradingViewChart(container, data) {
 
     resizeObserver.observe(container);
     
-    // Create main BTC price line series with professional styling
-    const mainSeries = chart.addAreaSeries({
+    // Add watermark using v5.0 plugin API
+    if (LightweightCharts.createTextWatermark) {
+        const firstPane = chart.panes()[0];
+        LightweightCharts.createTextWatermark(firstPane, {
+            horzAlign: 'center',
+            vertAlign: 'center',
+            lines: [{
+                text: 'BTC/USD',
+                color: isLightTheme ? 'rgba(0, 0, 0, 0.02)' : 'rgba(255, 255, 255, 0.05)',
+                fontSize: 36,
+            }],
+        });
+    }
+    
+    // Create main BTC price line series with professional styling using v5.0 API
+    const mainSeries = chart.addSeries(LightweightCharts.AreaSeries, {
         lineColor: colors.btcLine,
         topColor: colors.btcLine + '50',
         bottomColor: colors.btcLine + '10',
@@ -226,8 +241,11 @@ function createTradingViewChart(container, data) {
         crosshairMarkerVisible: true,
         priceLineWidth: 1,
         priceLineColor: colors.btcLine,
-        priceLineStyle: 2,
+        priceLineStyle: LightweightCharts.LineStyle.Dashed,
     });
+
+    // Store the main series reference globally for updates
+    window.tvMainSeries = mainSeries;
 
     // Prepare BTC price data
     const mainCurrency = window.currentMainCurrency || 'EUR';
@@ -417,7 +435,7 @@ function createTradingViewChart(container, data) {
             });
         }
         
-        const maSeries = chart.addLineSeries({
+        const maSeries = chart.addSeries(LightweightCharts.LineSeries, {
             color: colors.avgLine,
             lineWidth: 1.5,
             lineStyle: LightweightCharts.LineStyle.Dashed,
@@ -442,7 +460,7 @@ function createTradingViewChart(container, data) {
         
         // Add a horizontal line for average buy price
         if (avgPrice > 0) {
-            const avgLine = chart.addLineSeries({
+            const avgLine = chart.addSeries(LightweightCharts.LineSeries, {
                 color: colors.buyingAvgLine,
                 lineWidth: 1.5,
                 lineStyle: LightweightCharts.LineStyle.Dashed,
@@ -554,8 +572,13 @@ function createTradingViewChart(container, data) {
             });
         });
         
-        // Add markers to the chart
-        mainSeries.setMarkers(txMarkers);
+        // Add markers to the chart using v5.0 API
+        if (LightweightCharts.createSeriesMarkers) {
+            const seriesMarkers = LightweightCharts.createSeriesMarkers(mainSeries, txMarkers);
+        } else {
+            // Fallback for older versions or if createSeriesMarkers is not available
+            console.warn('createSeriesMarkers not available, markers will not be displayed');
+        }
         
         // Enhanced tooltip functionality for grouped transactions
         chart.subscribeCrosshairMove(param => {
@@ -599,7 +622,7 @@ function createTradingViewChart(container, data) {
                     </div>
                     <div class="tv-tx-tooltip-row">
                         <span class="tv-tx-tooltip-label">Amount:</span>
-                        <span class="tv-tx-tooltip-value">${closeGroup.totalAmount.toFixed(8)} BTC</span>
+                        <span class="tv-tx-tooltip-value">${formatBtcDisplay ? formatBtcDisplay(closeGroup.totalAmount) : closeGroup.totalAmount.toFixed(8) + ' BTC'}</span>
                     </div>
                     <div class="tv-tx-tooltip-row">
                         <span class="tv-tx-tooltip-label">Price:</span>
@@ -649,7 +672,7 @@ function createTradingViewChart(container, data) {
                     ${txBreakdown}
                     <div class="tv-tx-tooltip-row">
                         <span class="tv-tx-tooltip-label">Total Amount:</span>
-                        <span class="tv-tx-tooltip-value">${closeGroup.totalAmount.toFixed(8)} BTC</span>
+                        <span class="tv-tx-tooltip-value">${formatBtcDisplay ? formatBtcDisplay(closeGroup.totalAmount) : closeGroup.totalAmount.toFixed(8) + ' BTC'}</span>
                     </div>
                     <div class="tv-tx-tooltip-row">
                         <span class="tv-tx-tooltip-label">Avg Price:</span>
@@ -668,13 +691,14 @@ function createTradingViewChart(container, data) {
                 `;
                 
                 closeGroup.transactions.forEach(tx => {
-                    const txAmount = (tx.amount || 0).toFixed(8);
+                    const txAmount = tx.amount || 0;
+                    const txAmountFormatted = formatBtcDisplay ? formatBtcDisplay(txAmount) : txAmount.toFixed(8) + ' BTC';
                     const txType = tx.type === 'buy' ? 'B' : 'S';
                     const txColor = tx.type === 'buy' ? colors.upColor : colors.downColor;
                     tooltipContent += `
                         <div style="font-size: 11px; margin: 2px 0;">
                             <span style="color: ${txColor}; font-weight: bold;">${txType}</span>
-                            <span style="opacity: 0.8;">${txAmount} BTC</span>
+                            <span style="opacity: 0.8;">${txAmountFormatted}</span>
                         </div>
                     `;
                 });
@@ -1110,30 +1134,18 @@ function setupResetZoomButton(chart, priceData) {
 function updateTradingViewChartPrice(latestPrice) {
     if (!tvChart) return;
     
-    // Get the main series - in v3.8 we need to get the specific series
-    const mainSeries = tvChart.getSeries();
-    if (!mainSeries) return;
+    // In v5.0, we need to store a reference to the main series
+    // This function will be called after the chart is created, so we need to modify
+    // the createTradingViewChart function to store the mainSeries reference
+    if (!window.tvMainSeries) return;
     
-    // Get the current data
-    const data = mainSeries.data();
-    if (!data || !data.length) return;
-    
-    // Get the last data point
-    const lastPoint = data[data.length - 1];
     const time = Math.floor(Date.now() / 1000);
     
-    // Add new point if time has changed, otherwise update last point
-    if (time > lastPoint.time) {
-        mainSeries.update({
-            time: time,
-            value: latestPrice
-        });
-    } else {
-        mainSeries.update({
-            time: lastPoint.time,
-            value: latestPrice
-        });
-    }
+    // Simply update with new data point
+    window.tvMainSeries.update({
+        time: time,
+        value: latestPrice
+    });
 }
 
 // For loading more data when needed (e.g., on scroll to earlier dates)
@@ -1149,6 +1161,9 @@ function cleanupTradingViewChart() {
         tvChart = null;
     }
     
+    // Clear the main series reference
+    window.tvMainSeries = null;
+    
     if (chartContainer && chartContainer._chartResizeObserver) {
         chartContainer._chartResizeObserver.disconnect();
         chartContainer._chartResizeObserver = null;
@@ -1160,6 +1175,12 @@ function cleanupTradingViewChart() {
         rangeSwitcher.remove();
     }
 }
+
+// Listen for BTC unit changes to refresh chart tooltips
+window.addEventListener('btcUnitChanged', function(event) {
+    console.log('BTC unit changed in TradingView chart, tooltips will update on next hover');
+    // Note: Tooltips will automatically use the new unit on next hover since they call formatBtcDisplay dynamically
+});
 
 // Export functions for use in main script
 window.createTradingViewChart = createTradingViewChart;

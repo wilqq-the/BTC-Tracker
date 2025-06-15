@@ -530,6 +530,8 @@ footer {
     padding: 8px 12px;
     border-radius: 6px;
     transition: all 0.2s ease;
+    cursor: pointer;
+    position: relative;
 }
 
 .donation-link:hover {
@@ -537,10 +539,10 @@ footer {
 }
 
 .donation-tooltip {
-    position: absolute;
-    bottom: 100%;
+    position: fixed;
+    bottom: 60px;
     left: 50%;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateX(-50%);
     background: var(--card-background);
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -551,15 +553,13 @@ footer {
     visibility: hidden;
     transition: all 0.3s ease;
     max-width: 400px;
-    width: max-content;
-    margin-bottom: 10px;
+    width: 90%;
     min-width: 320px;
 }
 
 .donation-tooltip.show {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
 }
 
 .donation-tooltip::after {
@@ -568,46 +568,9 @@ footer {
     bottom: -10px;
     left: 50%;
     transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid var(--card-background);
-}
-
-.donation-tooltip::before {
-    content: '';
-    position: absolute;
-    bottom: -11px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 11px solid transparent;
-    border-right: 11px solid transparent;
-    border-top: 11px solid var(--border-color);
-}
-
-@media (max-width: 768px) {
-    .donation-tooltip {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        margin-bottom: 0;
-        width: 90%;
-        max-width: 350px;
-        min-width: unset;
-    }
-    
-    .donation-tooltip.show {
-        transform: translateX(-50%) translateY(0);
-    }
-    
-    .donation-tooltip::after,
-    .donation-tooltip::before {
-        display: none;
-    }
+    border-width: 10px 10px 0 10px;
+    border-style: solid;
+    border-color: var(--card-background) transparent transparent transparent;
 }
 
 .donation-content h3 {
@@ -727,6 +690,69 @@ footer {
     color: var(--text-color);
 }
 
+.payment-info {
+    margin-top: 15px;
+    padding: 10px;
+    background: var(--hover-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.payment-info i {
+    color: var(--primary-color);
+    opacity: 0.7;
+}
+
+/* Lightning-specific styling */
+#lightningSection .method-btn.active {
+    background: #f7931a;
+    color: #000000;
+}
+
+#lightningSection .payment-info {
+    border-left: 3px solid #f7931a;
+}
+
+/* Dark theme QR code adjustments */
+body:not(.light-theme) .qr-container {
+    background: #000000;
+}
+
+/* Mobile adjustments for tooltip */
+@media (max-width: 768px) {
+    .donation-tooltip {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 0;
+        width: 90%;
+        max-width: 350px;
+        min-width: unset;
+    }
+    
+    /* Hide arrows on mobile */
+    .donation-tooltip::after {
+        display: none;
+    }
+    
+    .method-btn {
+        padding: 10px 12px;
+        font-size: 0.8rem;
+        gap: 6px;
+    }
+    
+    .payment-info {
+        font-size: 0.8rem;
+        padding: 8px;
+    }
+}
+
 /* Footer Links */
 .footer-links {
     display: flex;
@@ -749,9 +775,4 @@ footer {
 
 .footer-links a:hover {
     background: var(--hover-color);
-}
-
-/* Dark theme QR code adjustments */
-body:not(.light-theme) .qr-container {
-    background: #000000;
 } 

@@ -1160,6 +1160,33 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 timestamp: cachedPrices.timestamp
             });
             
+            // Calculate weekly price date for ticker (similar to /api/current-price)
+            let weeklyPriceDate = 'previous period';
+            if (Array.isArray(historicalBTCData) && historicalBTCData.length > 0) {
+                const today = new Date();
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 7);
+                const targetTimestamp = sevenDaysAgo.getTime();
+                
+                let smallestDiff = Infinity;
+                for (const dataPoint of historicalBTCData) {
+                    if (!dataPoint.date) continue;
+                    
+                    const dataDate = new Date(dataPoint.date);
+                    const diff = Math.abs(dataDate.getTime() - targetTimestamp);
+                    
+                    if (diff < smallestDiff) {
+                        smallestDiff = diff;
+                        weeklyPriceDate = dataPoint.date;
+                        
+                        // If we find an exact match or very close, break early
+                        if (diff < 24 * 60 * 60 * 1000) { // Within 1 day
+                            break;
+                        }
+                    }
+                }
+            }
+            
             const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
             
             let secondaryRate = 1.0;
@@ -1241,6 +1268,11 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 priceUSD: cachedPrices.priceUSD || 0,
                 timestamp: cachedPrices.timestamp,
                 exchangeRates: cachedPrices.exchangeRates || {},
+                
+                // Add historical price data for ticker calculations
+                previousDayPrice: cachedPrices.previousDayPrice || 0,
+                previousWeekPrice: cachedPrices.previousWeekPrice || 0,
+                weeklyPriceDate: weeklyPriceDate,
                 cacheInfo: {
                     priceLastUpdated: priceCache.getPriceLastUpdated(),
                     ratesLastUpdated: priceCache.getRatesLastUpdated(),
