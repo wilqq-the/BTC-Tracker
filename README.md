@@ -4,11 +4,12 @@ A simple, powerful application to track your Bitcoin investments and monitor the
 
 ## 🆕 What's New in v0.5.4
 
-### 🚀 **Major Enhancements**
 - **⚡ Satoshi Unit Support**: Full support for displaying Bitcoin amounts in Satoshis with proper symbol integration
 - **💱 Enhanced Display Options**: BTC/Satoshi unit toggle with real-time switching across all views
 - **🎨 Improved User Experience**: Dynamic labels and smart input validation based on selected unit
 - **🐛 Critical Bug Fixes**: Resolved HTML encoding issues and improved settings synchronization
+- **📈 Chart Library Update**: Switched to a more [** TradingVeiw lightweight **](https://github.com/tradingview/lightweight-charts)  charting library for better performance 
+- **🌍 New Currencies**: Added support for Indian Rupee (INR) and Brazilian Real (BRL) with proper formatting and exchange rates
 
 [**📋 View Full Changelog**](CHANGELOG.md) | [**🚀 Release Notes**](.github/RELEASE_TEMPLATE.md)
 
@@ -63,15 +64,27 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 - **Yahoo Finance Integration**: Reliable real-time price data with built-in rate limiting
 - **Containerized**: Runs in Docker or Podman with minimal setup
 - **Exchange Integration**: Automatic sync of BTC buy transactions with major exchanges (Binance, Coinbase, Kraken, Strike) using READ-ONLY API keys
-- **Windows Desktop App**: Native Windows application with system tray support and automatic updates
+- **Windows Desktop App**: Native Windows application with system tray support
 - **Automated Dependencies**: Dependabot integration for automated security updates
 
-### 🧪 **Development & Testing**
-- **Comprehensive Testing**: Enhanced E2E tests with improved reliability
-- **Currency Testing**: Full test coverage for currency conversion functionality
-- **Enhanced Logging**: Detailed logging across all modules for better debugging
+## Windows Installation (Electron App)
 
-## Quick Start (Easiest Method) 🚀
+### Installing from Executable
+
+1. Download the latest `BTC-Tracker-Setup.exe` from the [Releases](https://github.com/wilqq-the/BTC-tracker/releases) page
+2. Run the installer and follow the installation wizard
+3. Launch BTC Tracker from your Start Menu or Desktop shortcut
+
+**Note:** On first launch, the application will unpack Node.js binaries using Command Prompt or PowerShell. This is a one-time process and may take a few moments. A command window will briefly appear and close automatically once complete.
+
+The application data is stored in:
+- `%APPDATA%\BTC-Tracker` (User settings and data)
+- `%LOCALAPPDATA%\BTC-Tracker` (Application files)
+
+
+Your data persists between application updates and can be backed up by copying the above directories.
+
+## Quick Start 🚀
 
 1. Clone the repository:
    ```
@@ -128,23 +141,6 @@ IMAGE_TAG=dev
 CONTAINER_NAME=btc-tracker-dev
 ```
 
-## Windows Installation (Electron App)
-
-### Installing from Executable
-
-1. Download the latest `BTC-Tracker-Setup.exe` from the [Releases](https://github.com/wilqq-the/BTC-tracker/releases) page
-2. Run the installer and follow the installation wizard
-3. Launch BTC Tracker from your Start Menu or Desktop shortcut
-
-**Note:** On first launch, the application will unpack Node.js binaries using Command Prompt or PowerShell. This is a one-time process and may take a few moments. A command window will briefly appear and close automatically once complete.
-
-The application data is stored in:
-- `%APPDATA%\BTC-Tracker` (User settings and data)
-- `%LOCALAPPDATA%\BTC-Tracker` (Application files)
-
-
-Your data persists between application updates and can be backed up by copying the above directories.
-
 ## Using Docker Hub Image Directly
 
 You can also run BTC Tracker directly from Docker Hub without cloning the repository:
@@ -158,16 +154,6 @@ docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/data:/app/src/data" doc
 
 # Access the application at http://localhost:3000
 ```
-
-To update to the latest version:
-
-```bash
-docker pull docker.io/thewilqq/btc-tracker:latest
-docker stop btc-tracker
-docker rm btc-tracker
-docker run -d --name btc-tracker -p 3000:3000 -v "$(pwd)/data:/app/src/data" docker.io/thewilqq/btc-tracker:latest
-```
-
 ## Alternative Installation Methods
 
 ### Standard Installation
@@ -240,8 +226,6 @@ The Windows application stores data in:
 %APPDATA%\btc-tracker\extracted     # Extracted server files
 %APPDATA%\btc-tracker\btc-tracker.log     # Log file
 ```
-
-
 ## Technologies Used
 
 - Node.js and Express for the backend
@@ -254,8 +238,6 @@ The Windows application stores data in:
   - Yahoo Finance for BTC prices
   - ExchangeRate API for currency conversion
 - Electron for running desktop version
-
-## Development
 
 ### Project Structure
 
@@ -282,6 +264,7 @@ MIT
 - **[GitHub Repository](https://github.com/wilqq-the/BTC-tracker)**: Source code and project files
 - **[Documentation](https://wilqq-the.github.io/BTC-tracker/)**: Comprehensive guides and screenshots
 - **[Docker Hub](https://hub.docker.com/r/thewilqq/btc-tracker)**: Pre-built Docker images
+- **[Umbrel App Store](https://apps.umbrel.com/app/btctracker)**: One-click installation on Umbrel OS (thanks to [@dennysubke](https://github.com/dennysubke))
 
 ## Author
 
@@ -290,8 +273,7 @@ wilqq-the
 ## Acknowledgements
 
 - Bitcoin logo from the Bitcoin project
-- Yahoo Finance for cryptocurrency price data
-- ExchangeRate API for currency conversions
+- Yahoo Finance for cryptocurrency price data and currency exchange rates
 
 ### Yahoo Finance Integration
 
@@ -311,4 +293,3 @@ The application uses Yahoo Finance to fetch Bitcoin price data. This provides re
 - Built-in rate limiting prevents service disruptions
 - Smart caching reduces API calls while maintaining accuracy
 - Automatic retry logic handles temporary outages
-- For exchanges use **READONLY** API keys for security reasons

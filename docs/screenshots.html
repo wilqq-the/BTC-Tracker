@@ -250,12 +250,64 @@
 
         <footer>
             <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <div class="footer-links">
+                <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+            </div>
+            <div class="donation-tooltip" id="donationTooltip">
+                <div class="donation-content">
+                    <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                    
+                    <!-- Payment Method Toggle -->
+                    <div class="payment-method-toggle">
+                        <button class="method-btn" data-method="onchain" id="onchainBtn">
+                            <i class="fab fa-bitcoin"></i> On-Chain
+                        </button>
+                        <button class="method-btn active" data-method="lightning" id="lightningBtn">
+                            <i class="fas fa-bolt"></i> Lightning
+                        </button>
+                    </div>
+                    
+                    <!-- Lightning Section (Default) -->
+                    <div class="donation-section" id="lightningSection">
+                        <div class="donation-address">
+                            <p><i class="fas fa-bolt"></i> Lightning Address:</p>
+                            <div class="address-container">
+                                <code id="lightningAddress">szymon_@strike.me</code>
+                                <button onclick="copyAddress('lightning')" title="Copy Lightning address">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="qr-container">
+                            <div id="lightningQrcode"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- On-Chain Section -->
+                    <div class="donation-section" id="onchainSection" style="display: none;">
+                        <div class="donation-address">
+                            <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
+                            <div class="address-container">
+                                <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                                <button onclick="copyAddress('btc')" title="Copy address">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="qr-container">
+                            <div id="qrcode"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
         </footer>
     </div>
 
     <!-- Splide.js -->
     <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize the thumbnail carousel
@@ -308,7 +360,153 @@
                     behavior: 'smooth'
                 });
             });
+
+            // Handle donation tooltip and payment method toggle
+            const donationLink = document.getElementById('donationLink');
+            const donationTooltip = document.getElementById('donationTooltip');
+            const onchainBtn = document.getElementById('onchainBtn');
+            const lightningBtn = document.getElementById('lightningBtn');
+            const onchainSection = document.getElementById('onchainSection');
+            const lightningSection = document.getElementById('lightningSection');
+
+            // Generate QR codes when page loads
+            generateQRCode();
+            generateLightningQRCode();
+
+            // Payment method toggle functionality
+            onchainBtn.addEventListener('click', () => {
+                onchainBtn.classList.add('active');
+                lightningBtn.classList.remove('active');
+                onchainSection.style.display = 'block';
+                lightningSection.style.display = 'none';
+            });
+
+            lightningBtn.addEventListener('click', () => {
+                lightningBtn.classList.add('active');
+                onchainBtn.classList.remove('active');
+                lightningSection.style.display = 'block';
+                onchainSection.style.display = 'none';
+            });
+
+            let tooltipTimeout;
+
+            donationLink.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationLink.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
+
+            donationTooltip.addEventListener('mouseenter', () => {
+                clearTimeout(tooltipTimeout);
+                donationTooltip.classList.add('show');
+            });
+
+            donationTooltip.addEventListener('mouseleave', () => {
+                tooltipTimeout = setTimeout(() => {
+                    donationTooltip.classList.remove('show');
+                }, 200);
+            });
         });
+
+        function generateQRCode() {
+            const address = document.getElementById('btcAddress').textContent;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            qrcodeDiv.innerHTML = '';
+            
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function generateLightningQRCode() {
+            const address = document.getElementById('lightningAddress').textContent;
+            const qrcodeDiv = document.getElementById('lightningQrcode');
+            
+            qrcodeDiv.innerHTML = '';
+            
+            const canvas = document.createElement('canvas');
+            qrcodeDiv.appendChild(canvas);
+            
+            const isLightTheme = document.body.classList.contains('light-theme');
+            
+            QRCode.toCanvas(canvas, address, {
+                width: 150,
+                margin: 1,
+                color: {
+                    dark: isLightTheme ? '#000000' : '#ffffff',
+                    light: isLightTheme ? '#ffffff' : '#000000'
+                }
+            }, function (error) {
+                if (error) {
+                    console.error('Error generating QR code:', error);
+                    qrcodeDiv.innerHTML = '<p style="color: var(--error-color, red);">Failed to generate QR code</p>';
+                }
+            });
+        }
+
+        function copyAddress(type) {
+            const address = type === 'lightning' 
+                ? document.getElementById('lightningAddress').textContent
+                : document.getElementById('btcAddress').textContent;
+            
+            navigator.clipboard.writeText(address).then(() => {
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy address:', err);
+                const button = event.currentTarget;
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-times"></i>';
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                }, 2000);
+                
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background: #ff4444;
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    font-family: 'JetBrains Mono', monospace;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                `;
+                toast.textContent = 'Copy failed. Please select and copy manually.';
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    document.body.removeChild(toast);
+                }, 3000);
+            });
+        }
     </script>
 </body>
 </html> 

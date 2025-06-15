@@ -513,4 +513,189 @@ footer {
     .action-columns {
         grid-template-columns: 1fr;
     }
+}
+
+/* Donation Styles */
+.donation-link {
+    color: var(--text-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.donation-link:hover {
+    background: var(--hover-color);
+}
+
+.donation-tooltip {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    max-width: 400px;
+    width: 90%;
+}
+
+.donation-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.donation-content h3 {
+    margin: 0 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-color);
+}
+
+.donation-address {
+    margin-bottom: 20px;
+}
+
+.address-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--hover-color);
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.address-container code {
+    flex: 1;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--text-color);
+    word-break: break-all;
+}
+
+.address-container button {
+    background: none;
+    border: none;
+    color: var(--text-secondary-color);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.address-container button:hover {
+    color: var(--text-color);
+    background: var(--card-background);
+}
+
+.qr-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+}
+
+.qr-container canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+.payment-method-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.method-btn {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--card-background);
+    border: none;
+    color: var(--text-secondary-color);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-right: 1px solid var(--border-color);
+}
+
+.method-btn:last-child {
+    border-right: none;
+}
+
+.method-btn:hover {
+    background: var(--hover-color);
+    color: var(--text-color);
+}
+
+.method-btn.active {
+    background: var(--primary-color);
+    color: #000000;
+    font-weight: 600;
+}
+
+.method-btn.active:hover {
+    background: var(--secondary-color);
+}
+
+.donation-section {
+    transition: opacity 0.3s ease, height 0.3s ease;
+}
+
+.donation-section .donation-address p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Footer Links */
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.footer-links a {
+    color: var(--text-color);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.footer-links a:hover {
+    background: var(--hover-color);
+}
+
+/* Dark theme QR code adjustments */
+body:not(.light-theme) .qr-container {
+    background: #000000;
 } 
