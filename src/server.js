@@ -1121,6 +1121,11 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
         const forceFresh = req.query.fresh === 'true';
         const priceOnly = req.query.priceOnly === 'true';
         
+        // Get settings and currencies at the main scope so they can be used throughout
+        const settings = loadSettings();
+        const mainCurrency = settings.mainCurrency || 'EUR';
+        const secondaryCurrency = settings.secondaryCurrency || 'USD';
+        
         // Get current transaction stats for cache validation
         const transactionStats = {
             count: transactions.length,
@@ -1132,9 +1137,6 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
         
         // Function to calculate summary data
         const calculateSummary = async () => {
-            const settings = loadSettings();
-            const mainCurrency = settings.mainCurrency || 'EUR';
-            const secondaryCurrency = settings.secondaryCurrency || 'USD';
             
             logger.debug(`Using currencies: Main=${mainCurrency}, Secondary=${secondaryCurrency}`);
     

@@ -145,7 +145,7 @@ class PriceCache {
                 if (yesterdayData && yesterdayData.priceEUR) {
                     previousDayPrice = yesterdayData.priceEUR;
                     logger.debug(`[priceCache] Found previous day price from historical data: ${previousDayPrice} EUR (${yesterdayStr})`);
-                } else {
+            } else {
                     // Fallback: find closest date to yesterday
                     let closestDayData = null;
                     let smallestDiff = Infinity;
@@ -174,7 +174,7 @@ class PriceCache {
                 if (weekAgoData && weekAgoData.priceEUR) {
                     previousWeekPrice = weekAgoData.priceEUR;
                     logger.debug(`[priceCache] Found previous week price from historical data: ${previousWeekPrice} EUR (${weekAgoStr})`);
-                } else {
+            } else {
                     // Fallback: find closest date to week ago
                     let closestWeekData = null;
                     let smallestDiff = Infinity;

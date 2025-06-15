@@ -1143,9 +1143,9 @@ function updateTradingViewChartPrice(latestPrice) {
     
     // Simply update with new data point
     window.tvMainSeries.update({
-        time: time,
-        value: latestPrice
-    });
+            time: time,
+            value: latestPrice
+        });
 }
 
 // For loading more data when needed (e.g., on scroll to earlier dates)
