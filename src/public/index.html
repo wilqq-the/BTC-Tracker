@@ -17,7 +17,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.7/dist/lightweight-charts.standalone.production.js"></script>
     <script src="js/tradingview-chart.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
@@ -3167,6 +3167,14 @@
             return symbols[currency] || currency;
         }
 
+        // Format currency with proper symbol (same as transactions table)
+        function formatCurrency(amount, currency) {
+            const symbol = getCurrencySymbol(currency);
+            // Ensure amount is a number
+            const numAmount = Number(amount) || 0;
+            return `${numAmount >= 0 ? '+' : ''}${numAmount.toFixed(2)} ${symbol}`;
+        }
+
         // Helper function to add mobile styling classes for performance metrics
         function addMobilePerformanceClasses(pnlEUR, pnlPercentage) {
             // Add mobile-specific classes to performance metric rows
@@ -3195,12 +3203,24 @@
         }
 
         // Helper function to update mobile recent transactions
-        function updateMobileRecentTransactions(data) {
+        async function updateMobileRecentTransactions(data) {
             const recentTransactionsList = document.getElementById('recentTransactionsList');
             if (!recentTransactionsList) return;
 
+            // Fetch transactions from the same endpoint as transactions table to ensure consistency
+            let transactions = [];
+            try {
+                const response = await fetch('/api/transactions');
+                if (response.ok) {
+                    transactions = await response.json();
+                }
+            } catch (error) {
+                console.error('Error fetching transactions for Recent Activity:', error);
+                // Fallback to data.transactions if API call fails
+                transactions = data.transactions || [];
+            }
+
             // Get recent transactions (latest 5)
-            const transactions = data.transactions || [];
             const recentTransactions = transactions
                 .sort((a, b) => new Date(b.date) - new Date(a.date))
                 .slice(0, 5);
@@ -3256,28 +3276,13 @@
                     maximumFractionDigits: 0
                 }).format(costInMainCurrency || 0);
 
-                // Calculate and format P&L for buy transactions
+                // Calculate and format P&L for buy transactions (using same logic as transactions table)
                 let pnlDisplay = '';
                 if (tx.type.toLowerCase() === 'buy') {
-                    // Use server-calculated P&L directly (should already be in main currency)
-                    let pnlInMainCurrency = tx.pnl || 0;
-                    
-                    // If P&L is not available from server, calculate it manually
-                    if (pnlInMainCurrency === 0 && costInMainCurrency > 0) {
-                        const currentValue = amount * (data.currentPrice?.[mainCurrency.toLowerCase()] || data.priceEUR || 0);
-                        pnlInMainCurrency = currentValue - costInMainCurrency;
-                    }
-
-                    if (pnlInMainCurrency !== 0) {
-                        const pnlFormatted = new Intl.NumberFormat('en-US', {
-                            minimumFractionDigits: 0,
-                            maximumFractionDigits: 0
-                        }).format(Math.abs(pnlInMainCurrency));
-
-                        const pnlSign = pnlInMainCurrency >= 0 ? '+' : '-';
-                        const pnlClass = pnlInMainCurrency >= 0 ? 'positive' : 'negative';
-                        pnlDisplay = `<div class="recent-transaction-pnl ${pnlClass}">${pnlSign}${pnlFormatted} ${mainCurrencySymbol}</div>`;
-                    }
+                    // Use the same formatCurrency function as transactions table
+                    const formattedPnL = formatCurrency(tx.pnl || 0, mainCurrency);
+                    const pnlClass = (tx.pnl || 0) >= 0 ? 'positive' : 'negative';
+                    pnlDisplay = `<div class="recent-transaction-pnl ${pnlClass}">${formattedPnL}</div>`;
                 }
 
                 const transactionItem = document.createElement('div');
@@ -3302,12 +3307,19 @@
 
         // Helper function to update modern mobile portfolio header
         async function updateMobilePortfolioHeader(priceData) {
-            // Fetch ticker data to ensure we use the same calculation
+            // Fetch the same data as ticker to ensure consistency
             let tickerData = null;
             try {
-                const tickerResponse = await fetch('/api/current-price');
+                const tickerResponse = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 if (tickerResponse.ok) {
                     tickerData = await tickerResponse.json();
+                    console.log('Mobile header fetched same data as ticker:', tickerData);
                 }
             } catch (error) {
                 console.log('Could not fetch ticker data for mobile header:', error);
@@ -3356,69 +3368,83 @@
             // Secondary value removed from mobile view
             // Secondary currency removed from mobile view
 
-            // Calculate portfolio change using ticker data when available
-            const totalBTC = priceData.totalBTC || 0;
+            // Use exact same logic as ticker for daily change calculation
             const dataToUse = tickerData || priceData; // Prefer ticker data
             
-            // Get current BTC price in main currency 
-            let currentBTCPrice = 0;
+            // Get current BTC price in main currency (same as ticker)
+            let currentPrice = 0;
             const basePriceEUR = dataToUse.priceEUR || dataToUse.price || 0;
             
             if (mainCurrency === 'EUR') {
-                currentBTCPrice = basePriceEUR;
+                currentPrice = basePriceEUR;
             } else if (mainCurrency === 'USD') {
-                currentBTCPrice = dataToUse.priceUSD || (basePriceEUR && dataToUse.eurUsd ? basePriceEUR * dataToUse.eurUsd : 0);
+                currentPrice = dataToUse.priceUSD || (basePriceEUR && dataToUse.eurUsd ? basePriceEUR * dataToUse.eurUsd : 0);
             } else {
                 // Convert from EUR to other supported currencies
                 const rateKey = `eur${mainCurrency.toLowerCase()}`;
                 if (basePriceEUR && dataToUse[rateKey]) {
-                    currentBTCPrice = basePriceEUR * dataToUse[rateKey];
+                    currentPrice = basePriceEUR * dataToUse[rateKey];
                 }
             }
             
-            // Get historical BTC price using ticker logic
-            let historicalBTCPriceInMainCurrency = currentBTCPrice; // fallback
-            const historicalPriceEUR = dataToUse.previousWeekPrice || dataToUse.previousDayPrice || 0;
+            // Convert historical prices from EUR to main currency (same as ticker)
+            let dailyPriceInMainCurrency = currentPrice; // fallback
             
+            // Get historical price (always stored in EUR) and convert to main currency
+            // Prioritize daily change over weekly for display
+            const historicalPriceEUR = dataToUse.previousDayPrice || dataToUse.previousWeekPrice || 0;
             if (historicalPriceEUR > 0) {
                 if (mainCurrency === 'EUR') {
-                    historicalBTCPriceInMainCurrency = historicalPriceEUR;
+                    dailyPriceInMainCurrency = historicalPriceEUR;
                 } else if (mainCurrency === 'USD' && dataToUse.eurUsd) {
-                    historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse.eurUsd;
+                    dailyPriceInMainCurrency = historicalPriceEUR * dataToUse.eurUsd;
                 } else {
                     // Convert from EUR to other supported currencies
                     const rateKey = `eur${mainCurrency.toLowerCase()}`;
                     if (dataToUse[rateKey]) {
-                        historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse[rateKey];
+                        dailyPriceInMainCurrency = historicalPriceEUR * dataToUse[rateKey];
                     }
                 }
             }
             
-            // Calculate BTC price change percentage
-            const btcPriceChange = currentBTCPrice - historicalBTCPriceInMainCurrency;
-            const btcPercentageChange = historicalBTCPriceInMainCurrency > 0 ? (btcPriceChange / historicalBTCPriceInMainCurrency) * 100 : 0;
+            // Calculate daily change (same as ticker)
+            const change = currentPrice - dailyPriceInMainCurrency;
+            const percentChange = dailyPriceInMainCurrency > 0 ? (change / dailyPriceInMainCurrency) * 100 : 0;
             
-            // Apply same percentage to portfolio value
-            const currentPortfolioValue = totalBTC * currentBTCPrice;
-            const dailyChange = currentPortfolioValue * (btcPercentageChange / 100);
-            const dailyPercentage = btcPercentageChange;
+            // Debug logging to compare with ticker
+            console.log('Mobile header calculation (should match ticker):', {
+                mainCurrency,
+                priceEUR: dataToUse.priceEUR,
+                priceUSD: dataToUse.priceUSD,
+                previousDayPrice: dataToUse.previousDayPrice,
+                previousWeekPrice: dataToUse.previousWeekPrice,
+                historicalPriceEUR,
+                currentPrice,
+                dailyPriceInMainCurrency,
+                change,
+                percentChange,
+                calculation: `${currentPrice} - ${dailyPriceInMainCurrency} = ${change}`
+            });
             
-            // Format daily change
-            const formattedDailyChange = new Intl.NumberFormat('en-US', {
+            // Format values with appropriate currency (same as ticker)
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: mainCurrency,
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(Math.abs(dailyChange || 0));
+            });
             
-            const sign = (dailyChange >= 0) ? '+' : '-';
+            const formattedChange = formatter.format(change);
+            const formattedPercent = percentChange.toFixed(2) + '%';
             
-            // Temporary debug display
-            if (Math.abs(dailyPercentage) < 0.001) {
-                document.getElementById('mobilePnLAmount').textContent = `Debug: ${historicalPriceEUR ? 'has hist' : 'no hist'}`;
-                document.getElementById('mobilePnLPercent').textContent = `${currentBTCPrice.toFixed(0)}/${historicalBTCPriceInMainCurrency.toFixed(0)}`;
-            } else {
-                document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedDailyChange} ${mainCurrencySymbol}`;
-                document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(dailyPercentage).toFixed(2)}%`;
-            }
+            console.log('Mobile header formatted values:', {
+                formattedChange,
+                formattedPercent
+            });
+            
+            // Update mobile daily change display
+            document.getElementById('mobilePnLAmount').textContent = formattedChange;
+            document.getElementById('mobilePnLPercent').textContent = formattedPercent;
             
             // Update holdings info
             document.getElementById('mobileHoldings').innerHTML = formatBtcDisplay(priceData.totalBTC || 0);
@@ -3427,16 +3453,15 @@
             const formattedBTCPrice = new Intl.NumberFormat('en-US', {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 0
-            }).format(currentBTCPrice || 0);
+            }).format(currentPrice || 0);
             document.getElementById('mobileCurrentBTCPrice').textContent = `${formattedBTCPrice} ${mainCurrencySymbol}`;
             
-            // Add appropriate styling classes
+            // Add appropriate styling classes (same as ticker)
             const changeElement = document.getElementById('mobileChange');
             changeElement.classList.remove('positive', 'negative');
-            if (dailyChange >= 0) {
-                changeElement.classList.add('positive');
-            } else {
-                changeElement.classList.add('negative');
+            const changeClass = change === 0 ? '' : (change > 0 ? 'positive' : 'negative');
+            if (changeClass) {
+                changeElement.classList.add(changeClass);
             }
         }
 
@@ -4450,10 +4475,12 @@
                     // Update all displays with the full data object received from the server
                     updatePriceDisplays(data);
                     
+                    // Note: Ticker updates are now handled automatically by ticker.js
+                    
                     // Create/update chart with historical data
                     if (window.innerWidth <= 768) {
                         createMobileChart(data);
-                        updateMobileRecentTransactions(data);
+                        updateMobileRecentTransactions(data).catch(console.error);
                     } else {
                         createChart(data);
                     }
@@ -4546,6 +4573,8 @@
                     // Update displays with the new price data (pass the full data object)
                     updatePriceDisplays(data);
                     
+                    // Note: Ticker updates are now handled automatically by ticker.js
+                    
                     // Update timeline if transactions have changed
                     if (transactionCountChanged) {
                         createTimeline(data);
@@ -4588,7 +4617,7 @@
                         console.log('Chart not found during price update, creating new chart');
                         if (window.innerWidth <= 768) {
                             createMobileChart(data);
-                            updateMobileRecentTransactions(data);
+                            updateMobileRecentTransactions(data).catch(console.error);
                         } else {
                             createChart(data);
                         }
@@ -4707,6 +4736,8 @@
         // Initial load and setup intervals
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Page loaded, initializing...');
+            
+            // Note: Ticker updates are now handled automatically by ticker.js
             
             // CRITICAL: Load currency settings FIRST before any data operations
             console.log('📋 Loading currency settings...');

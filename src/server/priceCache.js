@@ -20,8 +20,6 @@ class PriceCache {
         this.updateInterval = 10 * 60 * 1000; // 10 minutes (increased from 5 to reduce Yahoo Finance requests)
         this.isUpdating = false;
         this.cacheFilePath = pathManager.getPriceCachePath();
-        this.lastDayUpdate = null;
-        this.lastWeekUpdate = null;
     }
 
     async initialize() {
@@ -124,31 +122,90 @@ class PriceCache {
             
             const now = new Date();
             
-            // Check if we need to update the previous day price
-            if (!this.lastDayUpdate || now.getDate() !== this.lastDayUpdate.getDate()) {
-                const oldPrice = this.cache.previousDayPrice;
-                this.cache.previousDayPrice = this.cache.priceEUR || btcPriceEUR;
-                this.lastDayUpdate = now;
-                logger.debug(`[priceCache] Updated previous day price: ${oldPrice} -> ${this.cache.previousDayPrice}`);
-            } else {
-                logger.debug(`[priceCache] Keeping previous day price: ${this.cache.previousDayPrice}`);
+            // Get historical prices from historical_btc.json for accurate daily/weekly changes
+            let previousDayPrice = this.cache.previousDayPrice || 0;
+            let previousWeekPrice = this.cache.previousWeekPrice || 0;
+            
+            try {
+                const historicalFilePath = path.join(pathManager.getDataDirectory(), 'historical_btc.json');
+                const historicalData = JSON.parse(await fs.readFile(historicalFilePath, 'utf8'));
+                
+                // Get yesterday's date
+                const yesterday = new Date(now);
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = yesterday.toISOString().split('T')[0];
+                
+                // Get date from 7 days ago
+                const weekAgo = new Date(now);
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                const weekAgoStr = weekAgo.toISOString().split('T')[0];
+                
+                // Find yesterday's price
+                const yesterdayData = historicalData.find(entry => entry.date === yesterdayStr);
+                if (yesterdayData && yesterdayData.priceEUR) {
+                    previousDayPrice = yesterdayData.priceEUR;
+                    logger.debug(`[priceCache] Found previous day price from historical data: ${previousDayPrice} EUR (${yesterdayStr})`);
+                } else {
+                    // Fallback: find closest date to yesterday
+                    let closestDayData = null;
+                    let smallestDiff = Infinity;
+                    const targetTime = yesterday.getTime();
+                    
+                    for (const entry of historicalData) {
+                        if (!entry.date || !entry.priceEUR) continue;
+                        const entryTime = new Date(entry.date).getTime();
+                        const diff = Math.abs(entryTime - targetTime);
+                        if (diff < smallestDiff && diff < 3 * 24 * 60 * 60 * 1000) { // Within 3 days
+                            smallestDiff = diff;
+                            closestDayData = entry;
+                        }
+                    }
+                    
+                    if (closestDayData) {
+                        previousDayPrice = closestDayData.priceEUR;
+                        logger.debug(`[priceCache] Using closest historical price for daily change: ${previousDayPrice} EUR (${closestDayData.date})`);
+                    } else {
+                        logger.debug(`[priceCache] No suitable historical data for daily change, keeping cached: ${previousDayPrice} EUR`);
+                    }
+                }
+                
+                // Find week ago price
+                const weekAgoData = historicalData.find(entry => entry.date === weekAgoStr);
+                if (weekAgoData && weekAgoData.priceEUR) {
+                    previousWeekPrice = weekAgoData.priceEUR;
+                    logger.debug(`[priceCache] Found previous week price from historical data: ${previousWeekPrice} EUR (${weekAgoStr})`);
+                } else {
+                    // Fallback: find closest date to week ago
+                    let closestWeekData = null;
+                    let smallestDiff = Infinity;
+                    const targetTime = weekAgo.getTime();
+                    
+                    for (const entry of historicalData) {
+                        if (!entry.date || !entry.priceEUR) continue;
+                        const entryTime = new Date(entry.date).getTime();
+                        const diff = Math.abs(entryTime - targetTime);
+                        if (diff < smallestDiff && diff < 10 * 24 * 60 * 60 * 1000) { // Within 10 days
+                            smallestDiff = diff;
+                            closestWeekData = entry;
+                        }
+                    }
+                    
+                    if (closestWeekData) {
+                        previousWeekPrice = closestWeekData.priceEUR;
+                        logger.debug(`[priceCache] Using closest historical price for weekly change: ${previousWeekPrice} EUR (${closestWeekData.date})`);
+                    } else {
+                        logger.debug(`[priceCache] No suitable historical data for weekly change, keeping cached: ${previousWeekPrice} EUR`);
+                    }
+                }
+                
+            } catch (error) {
+                logger.error('[priceCache] Error reading historical data for daily/weekly prices:', error);
+                logger.debug(`[priceCache] Using cached previous prices: day=${previousDayPrice}, week=${previousWeekPrice}`);
             }
             
-            // Check if we need to update the previous week price
-            const daysSinceLastUpdate = this.lastWeekUpdate ? 
-                Math.floor((now - this.lastWeekUpdate) / (24 * 60 * 60 * 1000)) : 
-                8; // Force update if never updated
-                
-            if (!this.lastWeekUpdate || 
-                (now.getDay() === 1 && this.lastWeekUpdate.getDay() !== 1) ||
-                daysSinceLastUpdate >= 7) {
-                const oldWeeklyPrice = this.cache.previousWeekPrice;
-                this.cache.previousWeekPrice = this.cache.priceEUR || btcPriceEUR;
-                this.lastWeekUpdate = now;
-                logger.debug(`[priceCache] Updated previous week price: ${oldWeeklyPrice} -> ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
-            } else {
-                logger.debug(`[priceCache] Keeping previous week price: ${this.cache.previousWeekPrice} (Days since last update: ${daysSinceLastUpdate})`);
-            }
+            // Update cache with historical-based prices
+            this.cache.previousDayPrice = previousDayPrice;
+            this.cache.previousWeekPrice = previousWeekPrice;
             
             this.cache = {
                 ...this.cache,

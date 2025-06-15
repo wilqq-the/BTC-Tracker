@@ -99,10 +99,65 @@
 
         <footer>
             <p>BTC Tracker is an open-source project released under the MIT License</p>
+            <div class="footer-links">
+                <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
+                <div class="donation-container">
+                    <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
+                    <div class="donation-tooltip" id="donationTooltip">
+                        <div class="donation-content">
+                            <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                            
+                            <!-- Payment Method Toggle -->
+                            <div class="payment-method-toggle">
+                                <button class="method-btn" data-method="onchain" id="onchainBtn">
+                                    <i class="fab fa-bitcoin"></i> On-Chain
+                                </button>
+                                <button class="method-btn active" data-method="lightning" id="lightningBtn">
+                                    <i class="fas fa-bolt"></i> Lightning
+                                </button>
+                            </div>
+                            
+                            <!-- Lightning Section (Default) -->
+                            <div class="donation-section" id="lightningSection">
+                                <div class="donation-address">
+                                    <p><i class="fas fa-bolt"></i> Lightning Address:</p>
+                                    <div class="address-container">
+                                        <code id="lightningAddress">szymon_@strike.me</code>
+                                        <button onclick="copyAddress('lightning')" title="Copy Lightning address">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="qr-container">
+                                    <div id="lightningQrcode"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- On-Chain Section -->
+                            <div class="donation-section" id="onchainSection" style="display: none;">
+                                <div class="donation-address">
+                                    <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
+                                    <div class="address-container">
+                                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                                        <button onclick="copyAddress('btc')" title="Copy address">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="qr-container">
+                                    <div id="qrcode"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
         </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="js/donation-tooltip.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Back to top button functionality
