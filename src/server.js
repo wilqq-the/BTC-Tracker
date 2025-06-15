@@ -1307,7 +1307,36 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
 
         // Add transactions and historical data only when sending to client (not in cache)
         if (!priceOnly) {
-            summary.transactions = transactions;
+            // Process transactions with correct P&L for current main currency
+            const processedTransactions = transactions.map(tx => {
+                if (tx.type !== 'buy') return tx;
+                
+                const amount = Number(tx.amount) || 0;
+                const currentBTCPriceMain = priceCache.getBTCPrice(mainCurrency) || 0;
+                const mainToSecondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
+                
+                const currentValueMain = amount * currentBTCPriceMain;
+                const currentValueSecondary = currentValueMain * mainToSecondaryRate;
+                
+                const costMain = tx.base?.[mainCurrency.toLowerCase()]?.cost || 0;
+                const costSecondary = tx.base?.[secondaryCurrency.toLowerCase()]?.cost || (costMain * mainToSecondaryRate);
+
+                const pnlMain = currentValueMain - costMain;
+                const pnlSecondaryCalculated = currentValueSecondary - costSecondary;
+                
+                const pnlPercentageMain = costMain > 0 ? (pnlMain / costMain) * 100 : 0;
+                const pnlPercentageSecondary = costSecondary > 0 ? (pnlSecondaryCalculated / costSecondary) * 100 : 0;
+                
+                return {
+                    ...tx,
+                    pnl: pnlMain, 
+                    pnlPercentage: pnlPercentageMain,
+                    pnlSecondary: pnlSecondaryCalculated,
+                    pnlPercentageSecondary: pnlPercentageSecondary
+                };
+            });
+            
+            summary.transactions = processedTransactions;
             summary.historicalBTCData = historicalBTCData;
         }
 
