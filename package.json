@@ -2,6 +2,7 @@
   "name": "btc-tracker",
   "version": "0.5.4",
   "description": "Bitcoin transaction tracker",
+  "author": "wilqq",
   "main": "src/electron-main.js",
   "electronMain": "src/electron-main.js",
   "scripts": {
@@ -16,9 +17,10 @@
     "test:coverage": "jest --coverage",
     "electron": "npx electron src/electron-main.js",
     "electron:headless": "npx electron src/electron-main.js --headless",
-    "setup-node-binaries": "node setup-node-binaries.js",
-    "electron:build": "electron-builder build --win --publish never",
-    "electron:publish": "electron-builder build --win --publish always",
+    "prebuild": "npm install",
+    "postbuild": "npm install --omit=dev",
+    "electron:build": "npm run prebuild && npx electron-builder build --win --publish never && npm run postbuild",
+    "electron:publish": "npm run prebuild && npx electron-builder build --win --publish always && npm run postbuild",
     "electron:dev": "npx electron-builder && npx electron dist/electron-main.js"
   },
   "dependencies": {
@@ -41,8 +43,8 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "electron": "^28.1.0",
-    "electron-builder": "^24.9.1",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "nodemon": "^2.0.22",
@@ -71,7 +73,18 @@
       "src/**/*",
       "node_modules/**/*",
       "package.json",
-      "node_binaries/node-v22.14.0-win-x64.zip"
+      "!src/**/*.test.js",
+      "!src/**/test/**/*",
+      "!node_modules/**/test/**/*",
+      "!node_modules/**/*.test.js",
+      "!node_modules/**/tests/**/*",
+      "!node_modules/**/.nyc_output/**/*",
+      "!node_modules/**/coverage/**/*",
+      "!node_modules/**/.bin/**/*",
+      "!node_modules/**/README.md",
+      "!node_modules/**/CHANGELOG.md",
+      "!node_modules/**/*.d.ts",
+      "!node_modules/**/*.map"
     ],
     "directories": {
       "buildResources": "src/public/images",
@@ -80,7 +93,10 @@
     "win": {
       "target": "nsis",
       "icon": "src/public/images/icon-512x512.png",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "sign": false,
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,
@@ -88,12 +104,16 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "artifactName": "${productName}-Setup-${version}.${ext}",
-      "include": "installer.nsh"
+      "include": "installer.nsh",
+      "runAfterFinish": false
     },
     "publish": {
       "provider": "github",
       "releaseType": "release"
-    }
+    },
+    "forceCodeSigning": false,
+    "compression": "store",
+    "removePackageScripts": true
   },
   "repository": {
     "type": "git",
