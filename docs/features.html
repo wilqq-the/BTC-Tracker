@@ -8,106 +8,345 @@
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
-            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
-        </header>
-
-        <nav class="app-nav">
-            <a href="index.html"><i class="fas fa-home"></i> Home</a>
-            <a href="getting-started.html"><i class="fas fa-rocket"></i> Getting Started</a>
-            <a href="features.html" class="active"><i class="fas fa-list-check"></i> Features</a>
-            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
-            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        <nav class="modern-nav-wide">
+            <div class="nav-brand">
+                <img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">
+                <h1>BTC Tracker</h1>
+            </div>
+            <div class="nav-links">
+                <a href="index.html" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    <span>Home</span>
+                </a>
+                <a href="getting-started.html" class="nav-item">
+                    <i class="fas fa-rocket"></i>
+                    <span>Getting Started</span>
+                </a>
+                <a href="features.html" class="nav-item active">
+                    <i class="fas fa-list-check"></i>
+                    <span>Features</span>
+                </a>
+                <a href="https://github.com/wilqq-the/btc-tracker/releases/latest" class="nav-item download-link" target="_blank">
+                    <i class="fas fa-download"></i>
+                    <span>Download</span>
+                </a>
+                <a href="https://github.com/wilqq-the/btc-tracker" class="nav-item github-link">
+                    <i class="fab fa-github"></i>
+                    <span>GitHub</span>
+                </a>
+            </div>
         </nav>
 
-        <main class="features-page">
-            <section>
-                <h2><i class="fas fa-star"></i> BTC Tracker Features</h2>
-                <p>
-                    BTC Tracker is packed with powerful features designed to help you monitor and manage your Bitcoin investments. Here's a comprehensive overview of what you can do with our application.
-                </p>
+        <main class="features-modern">
+            <div class="page-header">
+                <h2>Powerful Features</h2>
+                <p>BTC Tracker is packed with everything you need to monitor and manage your Bitcoin investments with complete privacy and control.</p>
+            </div>
+
+            <section class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exchange-alt"></i>
+                    </div>
+                    <h3>Transaction Management</h3>
+                    <p>Add, edit, and organize your Bitcoin transactions with support for multiple currencies and exchange integrations. Track buys, sells, and transfers with detailed information.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Multiple currencies</span>
+                        <span class="highlight">Exchange integration</span>
+                        <span class="highlight">Transaction categories</span>
+                    </div>
+                </div>
                 
-                <div class="features">
-                    <div class="feature">
-                        <h3><i class="fas fa-exchange-alt"></i> Transaction Management</h3>
-                        <p>Add, edit, and delete Bitcoin transactions with support for multiple currencies. Track buys, sells, and other transaction types with detailed information.</p>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-sync-alt"></i> Real-time Price Updates</h3>
-                        <p>Get up-to-date Bitcoin prices in EUR and USD from CoinGecko. Price information is automatically refreshed to ensure your portfolio value is always current.</p>
+                    <h3>Performance Analytics</h3>
+                    <p>Track your investment performance with real-time P&L calculations, ROI analysis, and interactive charts. Monitor your portfolio's growth over time.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Real-time P&L</span>
+                        <span class="highlight">ROI tracking</span>
+                        <span class="highlight">Interactive charts</span>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-chart-line"></i> Performance Tracking</h3>
-                        <p>Monitor your investment performance with profit/loss calculations and percentages. See how your Bitcoin holdings are performing at a glance.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fak fa-satoshisymbol-solid"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-history"></i> Historical Data</h3>
-                        <p>View historical Bitcoin price data to analyze market trends. Track how your investments have performed over time and make informed decisions.</p>
+                    <h3>Satoshi Support</h3>
+                    <p>Display amounts in both BTC and Satoshis with the official <i class="fak fa-satoshisymbol-solid"></i> symbol for precise tracking. Perfect for small transactions and DCA strategies.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight"><i class="fak fa-satoshisymbol-solid"></i> Symbol</span>
+                        <span class="highlight">Precise tracking</span>
+                        <span class="highlight">DCA friendly</span>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-file-csv"></i> CSV Import/Export</h3>
-                        <p>Import transactions from CSV files or export your data for backup or analysis. Makes it easy to migrate from other tracking solutions or create backups.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-globe"></i> Multi-currency Support</h3>
-                        <p>Support for multiple currencies with automatic exchange rate conversion. View your portfolio value in your preferred currency.</p>
+                    <h3>Privacy First</h3>
+                    <p>All data stays on your device. No external servers, no data sharing, complete privacy and control over your financial information.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Self-hosted</span>
+                        <span class="highlight">No tracking</span>
+                        <span class="highlight">Local storage</span>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-lock"></i> Secure Authentication</h3>
-                        <p>Protect your financial data with secure user authentication. Your investment information remains private and accessible only to you.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-csv"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-server"></i> Self-Hosted</h3>
-                        <p>Run BTC Tracker on your own infrastructure for complete control and privacy. Your data never leaves your server and isn't shared with third parties.</p>
+                    <h3>CSV Import/Export</h3>
+                    <p>Import transactions from CSV files or export your data for backup and analysis. Easy migration from other tracking solutions.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Easy migration</span>
+                        <span class="highlight">Data backup</span>
+                        <span class="highlight">Analysis ready</span>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-moon"></i> Dark Mode</h3>
-                        <p>Built-in dark mode support for comfortable viewing in low-light environments. Easy on the eyes and looks great on any device.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-globe"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-mobile-alt"></i> Responsive Design</h3>
-                        <p>Access BTC Tracker from any device with a responsive design that adapts to your screen size. Works well on desktop, tablet, and mobile devices.</p>
+                    <h3>Multi-Currency Support</h3>
+                    <p>Support for multiple fiat currencies including USD, EUR, INR, and BRL with automatic exchange rate conversion.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">USD, EUR, INR, BRL</span>
+                        <span class="highlight">Auto conversion</span>
+                        <span class="highlight">Real-time rates</span>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fas fa-database"></i> Local Data Storage</h3>
-                        <p>All data is stored locally in JSON files for simplicity and portability. Easy to backup, move, or restore your transaction history.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
                     </div>
-                    
-                    <div class="feature">
-                        <h3><i class="fab fa-docker"></i> Docker Support</h3>
-                        <p>Easy deployment using Docker and Docker Compose. Get up and running in minutes with minimal configuration.</p>
+                    <h3>Mobile Optimized</h3>
+                    <p>Responsive design that works perfectly on desktop, tablet, and mobile devices. Access your portfolio anywhere.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Responsive design</span>
+                        <span class="highlight">Touch friendly</span>
+                        <span class="highlight">Cross-platform</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                    <h3>Dark & Light Themes</h3>
+                    <p>Choose between dark and light themes for comfortable viewing in any environment. Easy on the eyes, day or night.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Dark mode</span>
+                        <span class="highlight">Light mode</span>
+                        <span class="highlight">Eye-friendly</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fab fa-yahoo"></i>
+                    </div>
+                    <h3>Yahoo Finance Integration</h3>
+                    <p>Real-time Bitcoin prices and market data from Yahoo Finance with support for multiple currencies and reliable data feeds.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Real-time prices</span>
+                        <span class="highlight">Market data</span>
+                        <span class="highlight">Reliable feeds</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-area"></i>
+                    </div>
+                    <h3>TradingView Charts</h3>
+                    <p>Interactive lightweight charts powered by TradingView for advanced price analysis and market visualization.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Interactive charts</span>
+                        <span class="highlight">TradingView powered</span>
+                        <span class="highlight">Advanced analysis</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fab fa-docker"></i>
+                    </div>
+                    <h3>Easy Deployment</h3>
+                    <p>Multiple deployment options including Docker, Umbrel App Store, Windows desktop, and manual installation for maximum flexibility.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Docker ready</span>
+                        <span class="highlight">Umbrel support</span>
+                        <span class="highlight">Cross-platform</span>
+                    </div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <h3>Synchronized Logic</h3>
+                    <p>Consistent price calculations and display logic across all views ensuring accurate and reliable portfolio tracking.</p>
+                    <div class="feature-highlights">
+                        <span class="highlight">Consistent data</span>
+                        <span class="highlight">Accurate calculations</span>
+                        <span class="highlight">Reliable tracking</span>
                     </div>
                 </div>
             </section>
 
-            <div class="cta">
-                <a href="getting-started.html" class="button"><i class="fas fa-rocket"></i> Get Started Now</a>
+            <section class="feature-categories">
+                <h2>Feature Categories</h2>
+                <div class="categories-grid">
+                    <div class="category-card">
+                        <div class="category-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Portfolio Management</h3>
+                        <ul>
+                            <li>Transaction tracking</li>
+                            <li>Performance analytics</li>
+                            <li>P&L calculations</li>
+                            <li>Portfolio overview</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="category-card">
+                        <div class="category-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Privacy & Security</h3>
+                        <ul>
+                            <li>Self-hosted solution</li>
+                            <li>Local data storage</li>
+                            <li>No external tracking</li>
+                            <li>Secure authentication</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="category-card">
+                        <div class="category-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3>Technical Features</h3>
+                        <ul>
+                            <li>Docker deployment</li>
+                            <li>Responsive design</li>
+                            <li>CSV import/export</li>
+                            <li>Multi-currency support</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cta-modern">
+                <div class="cta-content">
+                    <h2>Ready to Start Tracking?</h2>
+                    <p>Experience all these powerful features and take control of your Bitcoin investments</p>
+                    <div class="cta-buttons">
+                        <a href="getting-started.html" class="btn-primary large">
+                            <i class="fas fa-rocket"></i>
+                            Get Started Now
+                        </a>
+                        <a href="https://github.com/wilqq-the/btc-tracker" class="btn-secondary large">
+                            <i class="fab fa-github"></i>
+                            View on GitHub
+                        </a>
+                    </div>
+                </div>
             </div>
         </main>
 
         <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
-        <footer>
-            <p>BTC Tracker is an open-source project released under the MIT License</p>
-            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+        <footer class="modern-footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>BTC Tracker</h4>
+                    <p>Privacy-focused Bitcoin investment tracking</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="https://github.com/wilqq-the/btc-tracker">GitHub Repository</a>
+                    <a href="https://apps.umbrel.com/app/btctracker">Umbrel App Store</a>
+                    <a href="https://hub.docker.com/r/thewilqq/btc-tracker">Docker Hub</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <div class="donation-container">
+                        <a href="#" class="donation-link" id="donationLink">
+                            <i class="fab fa-bitcoin"></i> Donate Bitcoin
+                        </a>
+                        <div class="donation-tooltip" id="donationTooltip">
+                            <div class="donation-content">
+                                <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                                
+                                <!-- Payment Method Toggle -->
+                                <div class="payment-method-toggle">
+                                    <button class="method-btn" data-method="onchain" id="onchainBtn">
+                                        <i class="fab fa-bitcoin"></i> On-Chain
+                                    </button>
+                                    <button class="method-btn active" data-method="lightning" id="lightningBtn">
+                                        <i class="fas fa-bolt"></i> Lightning
+                                    </button>
+                                </div>
+                                
+                                <!-- Lightning Section (Default) -->
+                                <div class="donation-section" id="lightningSection">
+                                    <div class="donation-address">
+                                        <p><i class="fas fa-bolt"></i> Lightning Address:</p>
+                                        <div class="address-container">
+                                            <code id="lightningAddress">szymon_@strike.me</code>
+                                            <button onclick="copyAddress('lightning')" title="Copy Lightning address">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="qr-container">
+                                        <div id="lightningQrcode"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- On-Chain Section -->
+                                <div class="donation-section" id="onchainSection" style="display: none;">
+                                    <div class="donation-address">
+                                        <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
+                                        <div class="address-container">
+                                            <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                                            <button onclick="copyAddress('btc')" title="Copy address">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="qr-container">
+                                        <div id="qrcode"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Open-source project released under the MIT License</p>
+                <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+            </div>
         </footer>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <script src="js/donation-tooltip.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Back to top button functionality
@@ -126,6 +365,39 @@
                     top: 0,
                     behavior: 'smooth'
                 });
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+
+            // Add scroll animations
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animate-in');
+                    }
+                });
+            }, observerOptions);
+
+            // Observe elements for animation
+            document.querySelectorAll('.feature-card, .category-card').forEach(el => {
+                observer.observe(el);
             });
         });
     </script>

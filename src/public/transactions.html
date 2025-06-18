@@ -8,6 +8,7 @@
     <meta http-equiv="Expires" content="0">
     <title>BTC Tracker - Transactions</title>
     <link rel="stylesheet" href="styles.css?v=0.5.2">
+    <link rel="stylesheet" href="css/mobile.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
@@ -463,6 +464,71 @@
             align-items: center;
             position: relative;
         }
+        
+        .transaction-card-header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .transaction-card-actions {
+            display: flex;
+            gap: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .transaction-card:hover .transaction-card-actions {
+            opacity: 1;
+        }
+        
+        .card-action-btn {
+            padding: 0.25rem;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--text-secondary-color, #cccccc);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.7rem;
+            min-width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .card-action-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-color, #ffffff);
+        }
+        
+        .card-action-btn-edit:hover {
+            background-color: rgba(0, 184, 148, 0.1);
+            border-color: rgba(0, 184, 148, 0.3);
+            color: #00b894;
+        }
+        
+        .card-action-btn-delete:hover {
+            background-color: rgba(255, 118, 117, 0.1);
+            border-color: rgba(255, 118, 117, 0.3);
+            color: #ff7675;
+        }
+        
+        /* Mobile touch support - always show actions on mobile */
+        @media (max-width: 768px) {
+            .transaction-card-actions {
+                opacity: 1;
+            }
+            
+            .card-action-btn {
+                padding: 0.3rem;
+                min-width: 28px;
+                height: 28px;
+                font-size: 0.75rem;
+            }
+        }
 
         /* Collapsed header layout */
         .transaction-card:not(.expanded) .transaction-card-header {
@@ -571,8 +637,440 @@
             gap: 0.4rem;
         }
         
+        /* Card header layout */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+        }
+
+        .header-left h2 {
+            margin: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Desktop Filter Controls */
+        .desktop-filter-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border-color, #333);
+            border-radius: 4px;
+            background-color: var(--input-background, #222);
+            color: var(--text-color, #eee);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        .filter-select:focus {
+            border-color: #f7931a;
+            outline: none;
+        }
+
+        /* Bulk Actions */
+        .bulk-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 8px;
+            background-color: rgba(247, 147, 26, 0.05);
+            border: 1px solid rgba(247, 147, 26, 0.2);
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        .selected-count {
+            font-weight: 500;
+            color: #f7931a;
+            font-size: 0.75rem;
+        }
+
+        .btn-small {
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            min-height: auto;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+
+        /* Table column adjustments */
+        .select-col { 
+            width: 40px; 
+            min-width: 40px; 
+            text-align: center;
+        }
+        
+        .actions-col { 
+            width: 100px; 
+            min-width: 100px; 
+            text-align: center;
+        }
+
+        /* Checkbox styling */
+        .select-col input[type="checkbox"] {
+            transform: scale(1.2);
+            accent-color: #f7931a;
+        }
+
+        /* Action buttons */
+        .action-btn {
+            padding: 4px 8px;
+            margin: 0 2px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.7rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn-edit {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .action-btn-edit:hover {
+            background-color: #218838;
+        }
+
+        .action-btn-delete {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .action-btn-delete:hover {
+            background-color: #c82333;
+        }
+
+        /* Import/Export Sidebar Styles */
+        .import-export-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: var(--background-color, #0f0f0f);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 1001;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .import-export-sidebar.open {
+            right: 0;
+        }
+
+        .import-export-sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .import-export-sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .import-export-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(247, 147, 26, 0.05);
+        }
+
+        .import-export-sidebar-header h3 {
+            margin: 0;
+            color: var(--accent-color, #f7931a);
+            font-size: 1.2rem;
+        }
+
+        .import-export-sidebar-close {
+            background: none;
+            border: none;
+            color: var(--text-color, #ffffff);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .import-export-sidebar-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .import-export-sidebar-content {
+            padding: 20px;
+        }
+
+        .import-export-sidebar-section {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .import-export-sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .import-export-sidebar-section h4 {
+            margin: 0 0 10px 0;
+            color: var(--accent-color, #f7931a);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .sidebar-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary-color, #cccccc);
+            margin-bottom: 15px;
+        }
+
+        .import-export-sidebar-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .import-export-sidebar-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-info {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+
+        .btn-info:hover {
+            background-color: #138496;
+        }
+
+        /* CSV Help */
+        .csv-help {
+            margin: 0;
+        }
+
+        .csv-help summary {
+            padding: 10px 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--accent-color, #f7931a);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .format-help-content {
+            padding-top: 15px;
+        }
+
+        .help-section {
+            margin-bottom: 15px;
+        }
+
+        .help-section strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent-color, #f7931a);
+            font-size: 0.9rem;
+        }
+
+        .help-section ul {
+            margin: 0;
+            padding-left: 15px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+
+        .help-section li {
+            margin-bottom: 4px;
+        }
+
+        .help-section code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            color: var(--accent-color, #f7931a);
+        }
+
+        /* Mobile Import/Export Sidebar */
+        @media (max-width: 768px) {
+            .import-export-sidebar {
+                width: 100%;
+                right: -100%;
+                height: 100vh;
+                height: 100dvh; /* Use dynamic viewport height for better mobile support */
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            }
+
+            .import-export-sidebar-content {
+                padding: 20px 20px 80px 20px; /* Extra bottom padding for mobile keyboards */
+                min-height: calc(100vh - 60px); /* Ensure content fills available space */
+                min-height: calc(100dvh - 60px);
+                box-sizing: border-box;
+            }
+
+            .import-export-sidebar-buttons {
+                position: sticky;
+                bottom: 0;
+                background: var(--background-color, #0f0f0f);
+                padding: 15px 0 25px 0;
+                margin: 15px -20px -80px -20px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                z-index: 10;
+            }
+
+            .import-export-sidebar-header {
+                position: sticky;
+                top: 0;
+                z-index: 11;
+                background: rgba(247, 147, 26, 0.05);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+            }
+
+            /* Better touch targets for mobile */
+            .btn {
+                min-height: 44px; /* iOS recommended touch target size */
+                padding: 12px 16px;
+                font-size: 0.9rem;
+            }
+
+            .import-export-sidebar-close {
+                min-width: 44px;
+                min-height: 44px;
+                padding: 10px;
+            }
+        }
+
+        /* Extra small mobile devices */
+        @media (max-width: 480px) {
+            .import-export-sidebar-content {
+                padding: 15px 15px 80px 15px;
+            }
+
+            .import-export-sidebar-header {
+                padding: 15px;
+            }
+
+            .import-export-sidebar-buttons {
+                margin: 15px -15px -80px -15px;
+            }
+        }
+
+        /* Button styles for page elements (not modal) */
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background-color: #f7931a;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background-color: #e67e00;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background-color: #333;
+            color: #eee;
+        }
+
+        .btn-secondary:hover {
+            background-color: #444;
+        }
+
         /* Mobile responsive styles */
         @media (max-width: 768px) {
+            .card-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+
+            .header-left {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .header-left h2 {
+                text-align: center;
+            }
+
+            .header-right {
+                justify-content: center;
+            }
+
+            .desktop-filter-controls {
+                display: none;
+            }
+
+            .bulk-actions {
+                justify-content: center;
+                font-size: 0.8rem;
+                align-self: center;
+            }
+
             .table-container {
                 display: none;
             }
@@ -606,21 +1104,12 @@
 <body>
     <div class="container">
         <header>
-            <div class="mobile-flex-row">
-                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
-                <div class="theme-logout-container">
-                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
-                        <i class="fas fa-moon"></i>
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <a href="/logout" class="mobile-logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Original Navigation (hidden on mobile) -->
+            <!-- Original Navigation -->
             <nav>
+                <div class="nav-brand">
+                    <img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> 
+                    <span class="brand-text">BTC Tracker</span>
+                </div>
                 <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
@@ -631,28 +1120,44 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
-            
-            <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav">
-                <button class="current-page-btn" id="currentPageBtn">
-                    <div class="current-page-text">
-                        <i class="fas fa-list-ul page-icon"></i>
-                        <span>Transactions</span>
-                    </div>
-                    <i class="fas fa-chevron-down dropdown-icon"></i>
-                </button>
-                <div class="nav-dropdown" id="navDropdown">
-                    <a href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
-                    <a href="/transactions.html" class="active"><i class="fas fa-list-ul"></i> Transactions</a>
-                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
-                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
-                </div>
-            </div>
         </header>
 
         <div class="transactions-section">
             <div class="card">
-                <h2><i class="fas fa-list-ul"></i> Transaction History</h2>
+                <div class="card-header">
+                    <div class="header-left">
+                        <h2><i class="fas fa-list-ul"></i> Transaction History</h2>
+                        <!-- Bulk Actions -->
+                        <div class="bulk-actions" id="bulkActions" style="display: none;">
+                            <span class="selected-count" id="selectedCount">0 selected</span>
+                            <button class="btn btn-danger btn-small" id="bulkDeleteBtn">
+                                <i class="fas fa-trash"></i> Delete Selected
+                            </button>
+                            <button class="btn btn-secondary btn-small" id="clearSelectionBtn">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="header-right">
+                        <button class="btn btn-secondary" id="importExportBtn">
+                            <i class="fas fa-file-import"></i> Import/Export
+                        </button>
+                        <button class="btn btn-primary" id="addTransactionBtn">
+                            Add Transaction
+                        </button>
+                        <!-- Desktop Filter Controls -->
+                        <div class="desktop-filter-controls">
+                            <select id="desktopFilterSelect" class="filter-select">
+                                <option value="all">All Transactions</option>
+                                <option value="buy">Buy Only</option>
+                                <option value="sell">Sell Only</option>
+                                <option value="profitable">Profitable Only</option>
+                                <option value="loss">Loss Only</option>
+                                <option value="recent">Last 30 Days</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- Mobile Controls -->
                 <div class="mobile-controls">
@@ -735,6 +1240,9 @@
                     <table id="transactionsTable">
                         <thead>
                             <tr>
+                                <th class="select-col">
+                                    <input type="checkbox" id="selectAllCheckbox" title="Select all">
+                                </th>
                                 <th class="date-col sortable" data-sort="date">
                                     <i class="fas fa-calendar"></i> Date
                                     <i class="fas fa-sort sort-icon"></i>
@@ -767,6 +1275,9 @@
                                     <i class="fas fa-dollar-sign"></i> P&L (USD)
                                     <i class="fas fa-sort sort-icon"></i>
                                 </th>
+                                <th class="actions-col">
+                                    <i class="fas fa-cog"></i> Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -777,8 +1288,12 @@
                     <!-- Will be populated by JavaScript -->
                 </div>
             </div>
+
+
         </div>
     </div>
+
+
 
     <footer>
         <div class="footer-links">
@@ -815,7 +1330,7 @@
                     <div class="qr-container">
                         <div id="lightningQrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-bolt"></i> Instant payments with minimal fees via Lightning Network</p>
+
                 </div>
                 
                 <!-- On-Chain Section -->
@@ -832,7 +1347,7 @@
                     <div class="qr-container">
                         <div id="qrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-info-circle"></i> Standard Bitcoin transaction (slower, higher fees)</p>
+
                 </div>
             </div>
         </div>
@@ -859,6 +1374,7 @@
         </div>
     </div>
 
+    <script src="js/transaction-modal.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <!-- Subtle authentication loading indicator -->
     <div id="authLoadingOverlay" style="
@@ -895,8 +1411,78 @@
         </span>
     </div>
 
+    <!-- Import/Export Sidebar -->
+    <div class="import-export-sidebar" id="importExportSidebar">
+        <div class="import-export-sidebar-header">
+            <h3><i class="fas fa-file-import"></i> Import/Export</h3>
+            <button class="import-export-sidebar-close" id="closeSidebar">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="import-export-sidebar-content">
+            <div class="import-export-sidebar-section">
+                <h4><i class="fas fa-upload"></i> Import Data</h4>
+                <p class="sidebar-desc">Upload CSV file with transaction data</p>
+                <form id="importForm" class="import-export-sidebar-form" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <input type="file" id="csvFile" name="file" accept=".csv" required>
+                    </div>
+                    <div class="import-export-sidebar-buttons">
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <button type="button" class="btn btn-info btn-full" onclick="downloadCSVTemplate()">
+                            <i class="fas fa-file-download"></i> Download Template
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="import-export-sidebar-section">
+                <h4><i class="fas fa-download"></i> Export Data</h4>
+                <p class="sidebar-desc">Download your transaction data</p>
+                <div class="import-export-sidebar-buttons">
+                    <button type="button" class="btn btn-secondary btn-full" onclick="exportTransactionsCSV()">
+                        <i class="fas fa-download"></i> Export All
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-full" onclick="exportFilteredTransactions()" id="exportFilteredBtn" style="display: none;">
+                        <i class="fas fa-filter"></i> Export Filtered
+                    </button>
+                </div>
+            </div>
+            
+            <div class="import-export-sidebar-section">
+                <details class="csv-help">
+                    <summary><i class="fas fa-info-circle"></i> CSV Format Help</summary>
+                    <div class="format-help-content">
+                        <div class="help-section">
+                            <strong>Required Columns:</strong>
+                            <ul>
+                                <li><code>Date</code>: YYYY-MM-DD format</li>
+                                <li><code>Type</code>: "buy" or "sell"</li>
+                                <li><code>Amount (BTC)</code>: BTC amount</li>
+                                <li><code>Exchange</code>: Exchange or "manual"</li>
+                            </ul>
+                        </div>
+                        <div class="help-section">
+                            <strong>Financial Data:</strong>
+                            <ul>
+                                <li><code>Original Currency</code>: EUR, USD, PLN, etc.</li>
+                                <li><code>Original Price</code>: Price per BTC</li>
+                                <li><code>Original Cost</code>: Total transaction cost</li>
+                                <li><code>Original Fee</code>: Transaction fee</li>
+                            </ul>
+                        </div>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </div>
+    <div class="import-export-sidebar-overlay" id="sidebarOverlay"></div>
+
     <script src="/js/ticker.js"></script>
     <script src="js/electron-integration.js"></script>
+    <script src="js/mobile-nav.js"></script>
     <script>
         // Check authentication before loading anything
         async function checkAuthAndInitialize() {
@@ -954,40 +1540,7 @@
             }
         }
 
-        // Dropdown navigation functionality
         function initializePage() {
-            const currentPageBtn = document.getElementById('currentPageBtn');
-            const navDropdown = document.getElementById('navDropdown');
-            
-            // Toggle dropdown
-            currentPageBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                currentPageBtn.classList.toggle('active');
-                navDropdown.classList.toggle('active');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                // Don't close dropdown if clicking on a transaction card
-                if (e.target.closest('.transaction-card')) {
-                    return;
-                }
-                
-                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
-                    currentPageBtn.classList.remove('active');
-                    navDropdown.classList.remove('active');
-                }
-            });
-            
-            // Handle theme toggle for mobile
-            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
-            const regularThemeToggle = document.getElementById('themeToggle');
-            
-            mobileThemeToggle.addEventListener('click', () => {
-                // Trigger the original theme toggle functionality
-                regularThemeToggle.click();
-            });
-            
             setupThemeToggle();
             loadSettings().then(() => {
                 loadTransactions();
@@ -1010,9 +1563,29 @@
                     header.classList.add('sorted-column');
                 }
             });
+
+            // Add transaction button functionality
+            const addTransactionBtn = document.getElementById('addTransactionBtn');
+            if (addTransactionBtn) {
+                addTransactionBtn.addEventListener('click', () => {
+                    window.transactionModal.showAddModal({
+                        apiEndpoint: '/api/admin/transactions',
+                        onSuccess: loadTransactions
+                    });
+                });
+            }
+
+            // Setup desktop filter functionality
+            setupDesktopFilter();
+            
+            // Setup bulk selection functionality
+            setupBulkSelection();
             
             // Setup mobile controls
             setupMobileControls();
+            
+            // Setup sidebar functionality
+            setupSidebar();
             
             // Add pull-to-refresh for both mobile and desktop views
             setupPullToRefresh();
@@ -1112,6 +1685,12 @@
                     // Update filter state and apply filter
                     currentFilter = filterValue;
                     applyFilter(filterValue);
+                    
+                    // Also update desktop filter to match
+                    const desktopFilterSelect = document.getElementById('desktopFilterSelect');
+                    if (desktopFilterSelect) {
+                        desktopFilterSelect.value = filterValue;
+                    }
                     
                     // Close dropdown
                     mobileFilterBtn.classList.remove('active');
@@ -1378,7 +1957,7 @@
 
             if (!transactions || transactions.length === 0) {
                 const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="9" class="no-data" style="text-align: center; padding: 20px;">No transactions found</td>';
+                row.innerHTML = '<td colspan="11" class="no-data" style="text-align: center; padding: 20px;">No transactions found</td>';
                 tbody.appendChild(row);
                 
                 // Also show no transactions message on mobile
@@ -1443,6 +2022,9 @@
                 
                 // Existing table row HTML
                 row.innerHTML = `
+                    <td class="select-col">
+                        <input type="checkbox" class="transaction-checkbox" data-transaction-id="${tx.id}" data-date="${tx.date}">
+                    </td>
                     <td class="date-col" title="${date.toLocaleString()}">${formattedDate}</td>
                     <td class="type-col">${tx.type === 'buy' ? '🔵 Buy' : '🔴 Sell'}</td>
                     <td class="amount-col" title="${tx.amount.toFixed(8)}">${tx.amount.toFixed(8)}</td>
@@ -1454,6 +2036,14 @@
                         title="P&L percentage">${pnlPercentageDisplay}</td>
                     <td class="pnl-secondary-col ${tx.pnlSecondary > 0 ? 'positive' : tx.pnlSecondary < 0 ? 'negative' : ''}" 
                         title="P&L in ${secondaryCurrency}">${secondaryPnlDisplay}</td>
+                    <td class="actions-col">
+                        <button class="action-btn action-btn-edit" onclick="editTransaction('${tx.id}', '${tx.date}')" title="Edit transaction">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn action-btn-delete" onclick="deleteTransaction('${tx.id}', '${tx.date}')" title="Delete transaction">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
                 `;
                 tbody.appendChild(row);
                 
@@ -1476,7 +2066,17 @@
                         <div class="transaction-card-type ${typeClass}">${tx.type === 'buy' ? 'Buy' : 'Sell'}</div>
                             <div class="transaction-card-preview">${previewText}</div>
                     </div>
-                        <i class="fas fa-chevron-down transaction-card-expand-icon"></i>
+                        <div class="transaction-card-header-right">
+                            <div class="transaction-card-actions">
+                                <button class="card-action-btn card-action-btn-edit" onclick="editTransaction('${tx.id}', '${tx.date}')" title="Edit transaction">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="card-action-btn card-action-btn-delete" onclick="deleteTransaction('${tx.id}', '${tx.date}')" title="Delete transaction">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <i class="fas fa-chevron-down transaction-card-expand-icon"></i>
+                        </div>
                     </div>
                     <div class="transaction-card-details">
                     <div class="transaction-card-body">
@@ -1510,6 +2110,10 @@
                 
                 // Add click event listener for expand/collapse
                 card.addEventListener('click', function(e) {
+                    // Don't toggle if clicking on action buttons
+                    if (e.target.closest('.transaction-card-actions')) {
+                        return;
+                    }
                     // Prevent event bubbling to avoid conflicts with global listeners
                     e.stopPropagation();
                     this.classList.toggle('expanded');
@@ -1529,7 +2133,8 @@
                 'PLN': 'zł',
                 'GBP': '£',
                 'JPY': '¥',
-                'CHF': 'Fr'
+                'CHF': 'Fr',
+                'INR': '₹'
             };
             
             return symbols[currency] || currency;
@@ -1629,26 +2234,7 @@
             });
         }
 
-        // Add this function to fetch settings
-        async function loadSettings() {
-            try {
-                const response = await fetch('/api/settings');
-                const settings = await response.json();
-                mainCurrency = settings.mainCurrency || 'EUR';
-                secondaryCurrency = settings.secondaryCurrency || 'USD';
-                
-                // Update the secondary currency column header
-                const header = document.querySelector('th.pnl-secondary-col');
-                if (header) {
-                    header.innerHTML = `
-                        <i class="fas fa-money-bill-wave"></i> P&L (${secondaryCurrency})
-                        <i class="fas fa-sort sort-icon"></i>
-                    `;
-                }
-            } catch (error) {
-                console.error('Error loading settings:', error);
-            }
-        }
+
 
         function generateQRCode() {
             const address = document.getElementById('btcAddress').textContent;
@@ -1932,6 +2518,16 @@
             // Update the global transactions array
             transactions = filteredTransactions;
             
+            // Show/hide export filtered button
+            const exportFilteredBtn = document.getElementById('exportFilteredBtn');
+            if (exportFilteredBtn) {
+                if (filterType !== 'all' && filteredTransactions.length > 0) {
+                    exportFilteredBtn.style.display = 'block';
+                } else {
+                    exportFilteredBtn.style.display = 'none';
+                }
+            }
+            
             // Re-apply current sort with a small delay to prevent timing conflicts
             setTimeout(() => {
                 if (currentSortColumn) {
@@ -1940,6 +2536,408 @@
                     updateTransactionsTable();
                 }
             }, 50);
+        }
+
+        // Listen for BTC unit changes
+        window.addEventListener('btcUnitChanged', function(event) {
+            console.log('BTC unit changed in transactions page, refreshing data');
+            
+            // Refresh transactions if the function exists
+            if (typeof loadTransactions === 'function') {
+                loadTransactions();
+            }
+        });
+
+        // Load settings including main currency for the transaction modal
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+                mainCurrency = settings.mainCurrency || 'EUR';
+                window.mainCurrency = mainCurrency; // For transaction modal
+                secondaryCurrency = settings.secondaryCurrency || 'USD';
+                
+                // Update the secondary currency column header
+                const header = document.querySelector('th.pnl-secondary-col');
+                if (header) {
+                    header.innerHTML = `
+                        <i class="fas fa-money-bill-wave"></i> P&L (${secondaryCurrency})
+                        <i class="fas fa-sort sort-icon"></i>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        // Setup desktop filter functionality
+        function setupDesktopFilter() {
+            const desktopFilterSelect = document.getElementById('desktopFilterSelect');
+            
+            desktopFilterSelect.addEventListener('change', (e) => {
+                const filterValue = e.target.value;
+                currentFilter = filterValue;
+                applyFilter(filterValue);
+                
+                // Also update mobile filter to match
+                const mobileFilterOptions = document.querySelectorAll('.mobile-filter-option');
+                mobileFilterOptions.forEach(opt => {
+                    opt.classList.remove('active');
+                    opt.querySelector('.fa-check').style.opacity = '0';
+                    if (opt.getAttribute('data-filter') === filterValue) {
+                        opt.classList.add('active');
+                        opt.querySelector('.fa-check').style.opacity = '1';
+                    }
+                });
+            });
+        }
+
+        // Setup bulk selection functionality
+        function setupBulkSelection() {
+            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+            const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+            const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+            // Select all functionality
+            selectAllCheckbox.addEventListener('change', (e) => {
+                const checkboxes = document.querySelectorAll('.transaction-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = e.target.checked;
+                });
+                updateBulkActionsVisibility();
+            });
+
+            // Individual checkbox change handler (delegated event)
+            document.addEventListener('change', (e) => {
+                if (e.target.classList.contains('transaction-checkbox')) {
+                    updateBulkActionsVisibility();
+                    
+                    // Update select all checkbox state
+                    const checkboxes = document.querySelectorAll('.transaction-checkbox');
+                    const checkedBoxes = document.querySelectorAll('.transaction-checkbox:checked');
+                    selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
+                    selectAllCheckbox.checked = checkedBoxes.length === checkboxes.length && checkboxes.length > 0;
+                }
+            });
+
+            // Bulk delete functionality
+            bulkDeleteBtn.addEventListener('click', async () => {
+                const checkedBoxes = document.querySelectorAll('.transaction-checkbox:checked');
+                if (checkedBoxes.length === 0) return;
+
+                const count = checkedBoxes.length;
+                const confirmMessage = `Are you sure you want to delete ${count} transaction${count > 1 ? 's' : ''}? This action cannot be undone.`;
+                
+                if (!confirm(confirmMessage)) return;
+
+                const transactionIds = Array.from(checkedBoxes).map(cb => ({
+                    id: cb.getAttribute('data-transaction-id'),
+                    date: cb.getAttribute('data-date')
+                }));
+
+                try {
+                    bulkDeleteBtn.disabled = true;
+                    bulkDeleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+
+                    for (const transaction of transactionIds) {
+                        await deleteTransactionAPI(transaction.id, transaction.date);
+                    }
+
+                    showSuccessMessage(`Successfully deleted ${count} transaction${count > 1 ? 's' : ''}`);
+                    loadTransactions(); // Reload the table
+                } catch (error) {
+                    console.error('Error during bulk delete:', error);
+                    showErrorMessage(`Failed to delete transactions: ${error.message}`);
+                } finally {
+                    bulkDeleteBtn.disabled = false;
+                    bulkDeleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete Selected';
+                }
+            });
+
+            // Clear selection functionality
+            clearSelectionBtn.addEventListener('click', () => {
+                const checkboxes = document.querySelectorAll('.transaction-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+                updateBulkActionsVisibility();
+            });
+        }
+
+        // Update bulk actions visibility
+        function updateBulkActionsVisibility() {
+            const checkedBoxes = document.querySelectorAll('.transaction-checkbox:checked');
+            const bulkActions = document.getElementById('bulkActions');
+            const selectedCount = document.getElementById('selectedCount');
+
+            if (checkedBoxes.length > 0) {
+                bulkActions.style.display = 'flex';
+                selectedCount.textContent = `${checkedBoxes.length} selected`;
+            } else {
+                bulkActions.style.display = 'none';
+            }
+        }
+
+        // Edit transaction function
+        function editTransaction(transactionId, transactionDate) {
+            // Find the transaction in our array
+            const transaction = transactions.find(tx => 
+                tx.id === transactionId && tx.date === transactionDate
+            );
+            
+            if (!transaction) {
+                showErrorMessage('Transaction not found');
+                return;
+            }
+
+            window.transactionModal.showEditModal(transaction, {
+                apiEndpoint: '/api/admin/transactions',
+                onSuccess: loadTransactions
+            });
+        }
+
+        // Delete single transaction function
+        async function deleteTransaction(transactionId, transactionDate) {
+            const confirmMessage = 'Are you sure you want to delete this transaction? This action cannot be undone.';
+            
+            if (!confirm(confirmMessage)) return;
+
+            try {
+                await deleteTransactionAPI(transactionId, transactionDate);
+                showSuccessMessage('Transaction deleted successfully');
+                loadTransactions(); // Reload the table
+            } catch (error) {
+                console.error('Error deleting transaction:', error);
+                showErrorMessage(`Failed to delete transaction: ${error.message}`);
+            }
+        }
+
+        // API function to delete a transaction
+        async function deleteTransactionAPI(transactionId, transactionDate) {
+            const response = await fetch(`/api/admin/transactions/${transactionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Transaction-Date': transactionDate
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `HTTP ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        // Success message function
+        function showSuccessMessage(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #28a745;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 10000;
+                font-family: 'JetBrains Mono', monospace;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            });
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Error message function
+        function showErrorMessage(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #dc3545;
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 10000;
+                font-family: 'JetBrains Mono', monospace;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                opacity: 0;
+                transform: translateX(100%);
+                transition: all 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Animate in
+            requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            });
+
+            // Remove after 5 seconds (longer for errors)
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        document.body.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Setup sidebar functionality
+        function setupSidebar() {
+            const importExportBtn = document.getElementById('importExportBtn');
+            const sidebar = document.getElementById('importExportSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const closeSidebar = document.getElementById('closeSidebar');
+
+            // Open sidebar
+            importExportBtn.addEventListener('click', () => {
+                sidebar.classList.add('open');
+                overlay.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+
+            // Close sidebar
+            const closeSidebarFn = () => {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('active');
+                document.body.style.overflow = '';
+            };
+
+            closeSidebar.addEventListener('click', closeSidebarFn);
+            overlay.addEventListener('click', closeSidebarFn);
+
+            // Close on escape key
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+                    closeSidebarFn();
+                }
+            });
+
+            // Setup import form
+            const importForm = document.getElementById('importForm');
+            if (importForm) {
+                importForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const fileInput = document.getElementById('csvFile');
+                    const file = fileInput.files[0];
+
+                    if (!file) {
+                        alert('Please select a file');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        const response = await fetch('/api/admin/import', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Failed to import transactions');
+                        }
+
+                        showSuccessMessage('Transactions imported successfully');
+                        fileInput.value = ''; // Clear the file input
+                        loadTransactions(); // Refresh the data
+                        
+                        // Close sidebar after successful import
+                        closeSidebarFn();
+                    } catch (error) {
+                        console.error('Error importing transactions:', error);
+                        showErrorMessage('Error importing transactions. Please try again.');
+                    }
+                });
+            }
+        }
+
+        // Export/Import Functions
+        function exportTransactionsCSV() {
+            if (!allTransactions || allTransactions.length === 0) {
+                showErrorMessage('No transactions to export.');
+                return;
+            }
+            
+            // Open export endpoint in a new window
+            window.open('/api/transactions/export-csv', '_blank');
+            showSuccessMessage('Export started - check your downloads folder');
+        }
+
+        function downloadCSVTemplate() {
+            // Open template download endpoint in a new window
+            window.open('/api/transactions/template-csv', '_blank');
+            showSuccessMessage('Template download started');
+        }
+
+        function exportFilteredTransactions() {
+            if (!transactions || transactions.length === 0) {
+                showErrorMessage('No filtered transactions to export.');
+                return;
+            }
+            
+            // Create filtered CSV data
+            const headers = ['Date', 'Type', 'Amount (BTC)', 'Original Price', 'Original Currency', 'Original Cost', 'Original Fee', 'Exchange'];
+            const csvData = [headers.join(',')];
+            
+            transactions.forEach(tx => {
+                const original = tx.original || {};
+                const row = [
+                    tx.date,
+                    tx.type,
+                    tx.amount,
+                    original.price || '',
+                    original.currency || '',
+                    original.cost || '',
+                    original.fee || '',
+                    tx.exchange || 'manual'
+                ];
+                csvData.push(row.join(','));
+            });
+            
+            // Download the CSV
+            const csvContent = csvData.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `filtered_transactions_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showSuccessMessage(`Exported ${transactions.length} filtered transactions`);
         }
     </script>
 </body>

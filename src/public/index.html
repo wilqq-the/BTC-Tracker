@@ -7,6 +7,7 @@
     <meta http-equiv="Expires" content="0">
     <title>BTC Tracker</title>
     <link rel="stylesheet" href="styles.css?v=0.5.2">
+    <link rel="stylesheet" href="css/mobile.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -15,6 +16,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-crosshair@1.2.0/dist/chartjs-plugin-crosshair.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.7/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="js/tradingview-chart.js"></script>
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="manifest" href="/manifest.json?v=0.5.2">
@@ -92,7 +95,7 @@
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             background-color: var(--card-bg-color);
             margin-bottom: 1rem;
-            overflow: hidden;
+            /* overflow: hidden; */
             border: 1px solid var(--border-color);
         }
 
@@ -208,13 +211,13 @@
             font-size: 0.8rem;
         }
 
-        .chart-wrapper {
+        /*.chart-wrapper {
             padding: 0;
             position: relative;
             height: 450px;
             background: var(--card-bg-color);
             overflow: hidden;
-        }
+        }*/
 
         .loading {
             position: absolute;
@@ -371,6 +374,8 @@
             padding: 1rem;
             position: relative;
             height: 500px;
+            background: var(--card-bg-color);
+            /* overflow: hidden; */ /* This was the main culprit for clipping the labels. */
         }
 
         .loading {
@@ -485,6 +490,31 @@
 
         .price-stat-item.range .price-stat-value {
             color: var(--accent-color);
+        }
+
+        /* Desktop range bar */
+        .desktop-range-bar {
+            height: 4px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .desktop-range-progress {
+            height: 100%;
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+        
+        .desktop-range-progress.positive {
+            background: #00b894;
+        }
+        
+        .desktop-range-progress.negative {
+            background: #ff7675;
         }
 
         /* Desktop navigation - shown by default */
@@ -1248,7 +1278,7 @@
         }
 
         .value {
-            font-size: 0.9rem;
+            font-size: 1.0rem;
             font-weight: 600;
             color: var(--text-color);
             text-align: right;
@@ -1320,11 +1350,19 @@
         }
 
         @media (max-width: 768px) {
-            /* Main layout changes for mobile */
+            /* Android-style full-width mobile layout */
+            .container {
+                padding: 0;
+                max-width: 100%;
+                margin: 0;
+            }
+            
             .main-layout {
                 flex-direction: column;
                 gap: 0;
-                margin-bottom: 0;
+                margin: 0;
+                padding: 0;
+                padding-bottom: 80px; /* Space for bottom navigation */
             }
 
             /* Hide the full portfolio sidebar on mobile */
@@ -1335,103 +1373,258 @@
             .main-content {
                 order: 1;
                 width: 100%;
-                background: var(--card-bg-color);
-                border-radius: 16px;
+                background: var(--bg-color);
+                border-radius: 0;
                 box-shadow: none;
                 border: none;
-                margin: 0.5rem 0 0 0; /* Only top margin, no horizontal margins */
-                overflow: hidden;
+                margin: 0;
+                padding: 0;
+                overflow: visible;
+            }
+            
+            /* Hide top navigation and ticker on mobile */
+            header nav {
+                display: none;
+            }
+            
+            .mobile-dropdown-nav {
+                display: none;
+            }
+            
+            .ticker-container {
+                display: none !important;
+            }
+            
+            /* Compact mobile header */
+            header {
+                background: var(--bg-color);
+                padding: 0.5rem 1rem;
+                margin: 0;
+                border-bottom: 1px solid var(--border-color);
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            }
+            
+            .mobile-flex-row h1 {
+                font-size: 1.1rem;
+            }
+            
+            .bitcoin-logo {
+                width: 20px;
+                height: 20px;
             }
 
-            /* Show mobile portfolio header, time buttons, and price summary only on mobile */
+            /* Show mobile portfolio header, time buttons, price summary, and recent transactions only on mobile */
             .mobile-portfolio-header,
             .mobile-time-buttons,
-            .mobile-price-summary {
+            .mobile-price-summary,
+            .mobile-recent-transactions {
                 display: block !important;
             }
 
-            /* Modern mobile portfolio header - like reference app */
+            /* Clean mobile portfolio header */
             .mobile-portfolio-header {
-                background: var(--card-bg-color);
+                background: var(--bg-color);
                 color: var(--text-color);
-                padding: 1.5rem 1rem 1rem 1rem;
-                border-radius: 16px 16px 0 0;
+                padding: 1rem;
+                border-radius: 0;
                 margin: 0;
                 font-family: system-ui, -apple-system, sans-serif;
-                text-align: center;
-                border-bottom: none;
+                border-bottom: 1px solid var(--border-color);
+                display: flex;
+                flex-direction: column;
+                gap: 0.6rem;
             }
 
-            .mobile-portfolio-title {
-                font-size: 0.85rem;
+            .portfolio-row {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                min-height: 24px;
+            }
+
+            .portfolio-label {
+                font-size: 0.7rem;
                 color: var(--muted-text-color);
-                margin-bottom: 0.5rem;
                 font-weight: 500;
                 text-transform: uppercase;
                 letter-spacing: 0.5px;
+                flex: 0 0 auto;
             }
 
-            .mobile-portfolio-value {
-                font-size: 2.2rem;
+            .portfolio-title {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-color);
+                flex: 1;
+            }
+
+            .portfolio-title i {
+                color: var(--accent-color);
+            }
+
+            /* Mobile burger menu styles */
+            .mobile-header-actions {
+                position: absolute;
+                top: 0.75rem;
+                right: 1rem;
+                z-index: 10;
+            }
+            
+            .mobile-burger-btn {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                color: var(--text-color);
+                cursor: pointer;
+                padding: 0.5rem;
+                font-size: 1rem;
+                transition: all 0.2s ease;
+            }
+            
+            .mobile-burger-btn:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+            
+            .mobile-burger-menu {
+                position: absolute;
+                top: 100%;
+                right: 0;
+                background: var(--bg-color);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                margin-top: 0.5rem;
+                min-width: 180px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                opacity: 0;
+                visibility: hidden;
+                transform: translateY(-10px);
+                transition: all 0.2s ease;
+                backdrop-filter: blur(10px);
+                z-index: 1000;
+            }
+            
+            .mobile-burger-menu.active {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+            
+            .burger-menu-item {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 0.75rem 1rem;
+                background: transparent;
+                border: none;
+                color: var(--text-color);
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 0.85rem;
+                font-weight: 500;
+                width: 100%;
+                text-align: left;
+                border-radius: 0;
+            }
+            
+            .burger-menu-item:first-child {
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .burger-menu-item:last-child {
+                border-radius: 0 0 8px 8px;
+            }
+            
+            .burger-menu-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+            
+            .burger-menu-item.primary {
+                color: var(--accent-color);
+                font-weight: 600;
+            }
+            
+            .burger-menu-item.primary:hover {
+                background: rgba(var(--accent-color-rgb), 0.1);
+            }
+            
+            .burger-menu-item i {
+                font-size: 0.9rem;
+                width: 16px;
+            }
+            
+            .portfolio-main-value {
+                font-size: 1.5rem;
                 font-weight: 700;
                 color: var(--text-color);
-                margin-bottom: 0.5rem;
-                line-height: 1.1;
-                font-family: system-ui, -apple-system, sans-serif;
+                font-family: 'JetBrains Mono', monospace;
+                text-align: right;
             }
 
-            .mobile-portfolio-currency {
-                font-size: 1rem;
+            .currency-symbol {
+                font-size: 0.9rem;
                 color: var(--muted-text-color);
                 font-weight: 500;
                 margin-left: 0.3rem;
             }
 
-            .mobile-portfolio-secondary {
-                font-size: 0.9rem;
-                color: var(--muted-text-color);
-                margin-top: 0.2rem;
-                opacity: 0.8;
+            .portfolio-change {
                 display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 0.3rem;
-            }
-
-            .mobile-portfolio-secondary-currency {
-                font-weight: 500;
-            }
-
-            .mobile-portfolio-change {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                gap: 0.5rem;
-                font-size: 1rem;
+                gap: 0.4rem;
+                font-size: 0.8rem;
                 font-weight: 600;
-                margin-bottom: 1rem;
+                text-align: right;
             }
 
-            .mobile-portfolio-change.positive {
+            .portfolio-change.positive {
                 color: #f7931a;
             }
 
-            .mobile-portfolio-change.negative {
+            .portfolio-change.negative {
                 color: #ff4757;
             }
 
-            .mobile-holdings-info {
+            .portfolio-value {
                 font-size: 0.8rem;
-                color: var(--muted-text-color);
-                font-weight: 500;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+                text-align: right;
             }
 
-            /* Clean chart container for mobile */
+            .portfolio-divider {
+                height: 1px;
+                background: var(--border-color);
+                margin: 0.4rem 0;
+                opacity: 0.5;
+            }
+
+            #mobileHoldings {
+                font-size: 0.8rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+                text-align: right;
+            }
+            
+            .current-price-value {
+                font-size: 0.8rem;
+                color: var(--accent-color);
+                font-weight: 600;
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            /* Android-style chart container for mobile */
             .chart-container {
                 margin: 0;
                 border-radius: 0;
                 overflow: hidden;
-                background: var(--card-bg-color);
+                background: var(--bg-color);
                 border: none;
                 box-shadow: none;
             }
@@ -1445,52 +1638,59 @@
                 display: none;
             }
 
-            /* Mobile time range buttons container - appears after chart */
+            /* Android-style mobile time range buttons */
             .mobile-time-buttons {
                 display: block;
-                background: var(--card-bg-color);
-                padding: 0.5rem 1rem 1.5rem 1rem;
+                background: var(--bg-color);
+                padding: 0.5rem 1rem;
                 margin: 0;
-                border-top: none;
-                border-radius: 0 0 16px 16px;
+                border-top: 1px solid var(--border-color);
+                border-bottom: 1px solid var(--border-color);
+                border-radius: 0;
             }
 
-            /* Modern mobile time range buttons */
+            /* Enhanced mobile time range buttons */
             .mobile-time-buttons .time-range-buttons {
                 display: flex;
                 justify-content: center;
-                gap: 0;
+                gap: 0.25rem;
                 width: 100%;
-                background: rgba(var(--muted-text-color), 0.1);
-                border-radius: 20px;
-                padding: 0.25rem;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 16px;
+                padding: 0.4rem;
                 margin: 0;
+                border: 1px solid rgba(255, 255, 255, 0.1);
             }
 
             /* Mobile time range button styling */
             .mobile-time-buttons .time-range-btn {
                 flex: 1;
-                padding: 0.5rem 0.75rem;
+                padding: 0.6rem 0.5rem;
                 background: transparent;
                 color: var(--muted-text-color);
                 border: none;
-                border-radius: 16px;
-                font-family: system-ui, -apple-system, sans-serif;
-                font-size: 0.85rem;
+                border-radius: 12px;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 0.8rem;
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.2s ease;
+                min-height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
 
             .mobile-time-buttons .time-range-btn:hover {
+                background: rgba(255, 255, 255, 0.05);
                 color: var(--text-color);
             }
 
             .mobile-time-buttons .time-range-btn.active {
-                background: var(--text-color);
-                color: var(--bg-color);
+                background: var(--accent-color);
+                color: #000;
                 font-weight: 600;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                box-shadow: 0 2px 8px rgba(247, 147, 26, 0.3);
             }
 
             /* Hide density control on mobile for simplicity */
@@ -1501,8 +1701,9 @@
             /* Hide complex chart elements on mobile */
             .chart-container .timeline-section,
             .chart-container .price-update,
-            .desktop-price-summary {
-                display: none;
+            .desktop-price-summary,
+            .timeline-section {
+                display: none !important;
             }
 
             /* Ensure seamless mobile container */
@@ -1510,18 +1711,37 @@
                 background: var(--card-bg-color);
                 border: none;
                 box-shadow: none;
-                padding: 0;
-                margin: 0;
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 100%;
+                overflow: hidden;
             }
 
-            /* Modern mobile chart wrapper */
+            /* Android-style mobile chart wrapper (edge-to-edge) */
             .mobile-simple-chart {
                 display: block !important;
-                height: 320px;
-                padding: 0 1rem;
-                background: var(--card-bg-color);
+                height: 280px;
+                padding: 0;
+                background: var(--bg-color);
                 border-radius: 0;
                 margin: 0;
+                overflow: hidden;
+                width: 100vw;
+                position: relative;
+                left: 50%;
+                right: 50%;
+                margin-left: -50vw;
+                margin-right: -50vw;
+            }
+
+            /* Make mobile chart canvas truly edge-to-edge */
+            #mobileChart {
+                display: block;
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
             }
 
             /* Hide desktop chart wrapper on mobile */
@@ -1534,30 +1754,331 @@
                 display: none;
             }
 
-            /* Mobile price summary */
+            /* Compact mobile price summary */
             .mobile-price-summary {
                 display: flex !important;
+                flex-direction: row;
+                gap: 0.4rem;
+                padding: 0.6rem 1rem;
+                background: var(--bg-color);
+                border-top: 1px solid var(--border-color);
+                margin: 0;
+                align-items: stretch;
                 justify-content: space-between;
+            }
+
+            .price-summary-grid {
+                display: flex;
+                gap: 0.4rem;
+                flex: 2;
+            }
+
+            .price-summary-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.15rem;
+                padding: 0.4rem 0.3rem;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                flex: 1;
+                transition: all 0.2s ease;
+                min-height: 50px;
+            }
+
+            .price-summary-card:hover {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .price-card-content {
+                text-align: center;
+                flex: 1;
+                width: 100%;
+            }
+
+            .price-card-label {
+                font-size: 0.6rem;
+                color: var(--muted-text-color);
+                margin-bottom: 0.1rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                line-height: 1;
+            }
+
+            .price-card-value {
+                font-size: 0.7rem;
+                color: var(--text-color);
+                font-weight: 600;
+                font-family: 'JetBrains Mono', monospace;
+                line-height: 1;
+            }
+
+            .price-summary-card.high .price-card-value {
+                color: #00b894;
+            }
+
+            .price-summary-card.low .price-card-value {
+                color: #ff7675;
+            }
+
+            .price-range-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.15rem;
+                padding: 0.4rem 0.3rem;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+                flex: 1;
+                min-height: 50px;
+            }
+
+            .price-range-label {
+                font-size: 0.6rem;
+                color: var(--muted-text-color);
+                margin-bottom: 0.1rem;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+                line-height: 1;
+            }
+
+            .price-range-value {
+                font-size: 0.8rem;
+                color: var(--accent-color);
+                font-weight: 600;
+                font-family: 'JetBrains Mono', monospace;
+                line-height: 1;
+                margin-bottom: 0.2rem;
+            }
+
+            .price-range-bar {
+                height: 4px;
+                width: 100%;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 2px;
+                overflow: hidden;
+                margin-top: 0.2rem;
+            }
+
+            .price-range-progress {
+                height: 100%;
+                border-radius: 2px;
+                width: 0%;
+                transition: width 0.3s ease, background-color 0.3s ease;
+            }
+            
+            .price-range-progress.positive {
+                background: #00b894;
+            }
+            
+            .price-range-progress.negative {
+                background: #ff7675;
+            }
+
+            /* Recent transactions preview */
+            .mobile-recent-transactions {
+                display: flex !important;
+                flex-direction: column;
+                gap: 0.5rem;
                 padding: 1rem;
-                background: var(--card-bg-color);
+                background: var(--bg-color);
                 border-top: 1px solid var(--border-color);
                 margin: 0;
             }
 
-            .price-summary-item {
-                flex: 1;
-                text-align: center;
-                padding: 0 0.5rem;
+            .recent-transactions-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 0.5rem;
             }
 
-            .price-summary-label {
-                font-size: 0.8rem;
+            .recent-transactions-header h4 {
+                margin: 0;
+                font-size: 0.9rem;
+                font-weight: 600;
+                color: var(--text-color);
+            }
+
+            .view-all-link {
+                font-size: 0.7rem;
+                color: var(--accent-color);
+                text-decoration: none;
+                font-weight: 500;
+                padding: 0.2rem 0.5rem;
+                border-radius: 4px;
+                background: rgba(247, 147, 26, 0.1);
+                border: 1px solid rgba(247, 147, 26, 0.2);
+                transition: all 0.2s ease;
+            }
+
+            .view-all-link:hover {
+                background: rgba(247, 147, 26, 0.2);
+                border-color: rgba(247, 147, 26, 0.4);
+            }
+
+            .recent-transactions-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+            }
+
+            .recent-transaction-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                padding: 0.6rem;
+                background: rgba(255, 255, 255, 0.02);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                min-height: 60px;
+            }
+
+            .recent-transaction-header {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .recent-transaction-type {
+                padding: 0.15rem 0.4rem;
+                border-radius: 8px;
+                font-size: 0.6rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                white-space: nowrap;
+            }
+
+            .recent-transaction-type.buy {
+                background-color: rgba(0, 184, 148, 0.2);
+                color: #00b894;
+                border: 1px solid rgba(0, 184, 148, 0.3);
+            }
+
+            .recent-transaction-type.sell {
+                background-color: rgba(255, 118, 117, 0.2);
+                color: #ff7675;
+                border: 1px solid rgba(255, 118, 117, 0.3);
+            }
+
+            .recent-transaction-date {
+                font-size: 0.65rem;
                 color: var(--muted-text-color);
-                margin-bottom: 0.25rem;
                 font-weight: 500;
             }
 
-            .price-summary-value {
+            .recent-transaction-amount {
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .recent-transaction-left {
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                min-width: 0;
+            }
+
+            .recent-transaction-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.2rem;
+                flex-shrink: 0;
+            }
+
+            .recent-transaction-cost {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .recent-transaction-pnl {
+                font-size: 0.65rem;
+                font-weight: 600;
+                font-family: 'JetBrains Mono', monospace;
+                padding: 0.1rem 0.3rem;
+                border-radius: 4px;
+                text-align: center;
+                min-width: fit-content;
+            }
+
+            .recent-transaction-pnl.positive {
+                color: #00b894;
+                background: rgba(0, 184, 148, 0.1);
+                border: 1px solid rgba(0, 184, 148, 0.2);
+            }
+
+            .recent-transaction-pnl.negative {
+                color: #ff7675;
+                background: rgba(255, 118, 117, 0.1);
+                border: 1px solid rgba(255, 118, 117, 0.2);
+            }
+
+            .recent-transaction-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+                border-color: rgba(255, 255, 255, 0.1);
+            }
+
+            .recent-transaction-left {
+                display: flex;
+                flex-direction: column;
+                gap: 0.1rem;
+            }
+
+            .recent-transaction-type {
+                font-size: 0.7rem;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+            }
+
+            .recent-transaction-type.buy {
+                color: #00b894;
+            }
+
+            .recent-transaction-type.sell {
+                color: #ff7675;
+            }
+
+            .recent-transaction-date {
+                font-size: 0.6rem;
+                color: var(--muted-text-color);
+            }
+
+            .recent-transaction-right {
+                display: flex;
+                flex-direction: column;
+                align-items: flex-end;
+                gap: 0.1rem;
+            }
+
+            .recent-transaction-amount {
+                font-size: 0.7rem;
+                font-weight: 600;
+                color: var(--text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .recent-transaction-price {
+                font-size: 0.6rem;
+                color: var(--muted-text-color);
+                font-family: 'JetBrains Mono', monospace;
+            }
+
+            .price-summary-item {
                 font-size: 0.9rem;
                 font-weight: 600;
                 color: var(--text-color);
@@ -1751,8 +2272,8 @@
         .mobile-add-btn {
             width: 28px;
             height: 28px;
-            background: rgba(var(--accent-color-rgb), 0.2);
-            border: 1px solid rgba(var(--accent-color-rgb), 0.4);
+            background: rgba(247, 147, 26, 0.2);
+            border: 1px solid rgba(247, 147, 26, 0.4);
             border-radius: 8px;
             cursor: pointer;
             display: flex;
@@ -1766,101 +2287,16 @@
         }
 
         .mobile-add-btn:hover {
-            background: rgba(var(--accent-color-rgb), 0.3);
+            background: rgba(247, 147, 26, 0.3);
             transform: translateY(-1px);
-            box-shadow: 0 2px 8px rgba(var(--accent-color-rgb), 0.3);
+            box-shadow: 0 2px 8px rgba(247, 147, 26, 0.3);
         }
 
         .mobile-add-btn:active {
             transform: translateY(0);
         }
 
-        /* Modal styles for transaction form */
-        /* Modal styles (copied from admin.html) */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            background-color: #1a1a1a;
-            border-radius: 8px;
-            padding: 25px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
-            border: 1px solid #333;
-        }
-        
-        .modal-content h2 {
-            color: #f7931a;
-            margin-top: 0;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .form-row {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .form-row .form-group {
-            flex: 1;
-        }
-        
-        .form-group {
-            margin-bottom: 15px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        
-        .form-group input, 
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #333;
-            border-radius: 4px;
-            background-color: #222;
-            color: #eee;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .form-group input:focus,
-        .form-group select:focus {
-            border-color: #f7931a;
-            outline: none;
-        }
-
-        .help-text {
-            font-size: 0.8rem;
-            color: var(--muted-text-color);
-            margin-top: 0.25rem;
-            margin-bottom: 0;
-        }
-        
-        .form-buttons {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
+        /* Button styles for page elements (not modal) */
         .btn {
             padding: 8px 16px;
             border: none;
@@ -1890,13 +2326,6 @@
         .btn-secondary:hover {
             background-color: #444;
         }
-        
-        #calculatedCost {
-            padding: 10px;
-            background-color: #333;
-            border-radius: 4px;
-            text-align: center;
-        }
 
 
 
@@ -1906,27 +2335,37 @@
         .mobile-time-buttons {
             display: none;
         }
+
+        .chart-container, 
+        .chart-wrapper {
+            overflow: visible !important;
+        }
+
+        /* Force-override for TradingView chart time axis labels */
+        .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Force dark text for light theme */
+        }
+        body.light-theme .tv-lightweight-charts table td > div {
+            color: #333 !important; /* Explicitly for light theme */
+        }
+        body:not(.light-theme) .tv-lightweight-charts table td > div {
+            color: #d1d4dc !important; /* Explicitly for dark theme */
+        }
+        .tv-lightweight-charts table tr:last-of-type {
+            height: 25px !important; /* Ensure space for the labels */
+        }
     </style>
     <!-- Mobile navigation CSS has been moved to styles.css -->
 </head>
 <body>
     <div class="container">
         <header>
-            <div class="mobile-flex-row">
-                <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> BTC Tracker</h1>
-                <div class="theme-logout-container">
-                    <button id="mobileThemeToggle" class="mobile-theme-toggle">
-                        <i class="fas fa-moon"></i>
-                        <i class="fas fa-sun"></i>
-                    </button>
-                    <a href="/logout" class="mobile-logout-btn">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Original Navigation (hidden on mobile) -->
+            <!-- Original Navigation -->
             <nav>
+                <div class="nav-brand">
+                    <img src="images/bitcoin-icon.svg" alt="Bitcoin" class="bitcoin-logo"> 
+                    <span class="brand-text">BTC Tracker</span>
+                </div>
                 <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
                 <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
                 <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
@@ -1937,23 +2376,6 @@
                     <i class="fas fa-sun"></i>
                 </button>
             </nav>
-            
-            <!-- Mobile Dropdown Navigation -->
-            <div class="mobile-dropdown-nav" id="mobileNav">
-                <button class="current-page-btn" id="currentPageBtn">
-                    <div class="current-page-text">
-                        <i class="fas fa-chart-line page-icon"></i>
-                        <span>Dashboard</span>
-                    </div>
-                    <i class="fas fa-chevron-down dropdown-icon"></i>
-                </button>
-                <div class="nav-dropdown" id="navDropdown">
-                    <a href="/" class="active"><i class="fas fa-chart-line"></i> Dashboard</a>
-                    <a href="/transactions.html"><i class="fas fa-list-ul"></i> Transactions</a>
-                    <a href="/exchanges.html"><i class="fas fa-plug"></i> Exchanges</a>
-                    <a href="/admin.html"><i class="fas fa-cog"></i> Admin Panel</a>
-                </div>
-            </div>
         </header>
 
         <div class="main-layout">
@@ -2052,54 +2474,48 @@
 
             <!-- Main Content Area -->
             <main class="main-content">
-                <!-- Modern Mobile Portfolio Header (only visible on mobile) -->
+                <!-- Clean Mobile Portfolio Header -->
                 <div class="mobile-portfolio-header" id="mobilePortfolioHeader" style="display: none;">
                     <div class="mobile-portfolio-header-top">
-                        <div class="mobile-portfolio-title">Portfolio Value</div>
+                        <div class="portfolio-title">
+                            <i class="fas fa-wallet"></i>
+                            <span>Portfolio</span>
+                        </div>
                         <button class="mobile-add-btn" id="mobileAddBtn" title="Add new transaction">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
-                    <div class="mobile-portfolio-value">
+                    <div class="portfolio-row">
+                        <div class="portfolio-label">Portfolio Value</div>
+                        <div class="portfolio-main-value">
                         <span id="mobileCurrentValue">Loading...</span>
-                        <span class="mobile-portfolio-currency" id="mobileCurrency">EUR</span>
+                            <span class="currency-symbol" id="mobileCurrency">EUR</span>
                     </div>
-                    <div class="mobile-portfolio-secondary">
-                        <span id="mobileSecondaryValue">Loading...</span>
-                        <span class="mobile-portfolio-secondary-currency" id="mobileSecondaryCurrency">USD</span>
                     </div>
-                    <div class="mobile-portfolio-change" id="mobileChange">
+                    
+                    <div class="portfolio-row">
+                        <div class="portfolio-label">P&L</div>
+                        <div class="portfolio-change" id="mobileChange">
                         <span id="mobilePnLAmount">Loading...</span>
                         <span id="mobilePnLPercent">Loading...</span>
                     </div>
-                    <div class="mobile-holdings-info" id="mobileHoldings">
-                        Loading... BTC
+                    </div>
+                    
+                    <div class="portfolio-divider"></div>
+                    
+                    <div class="portfolio-row">
+                        <div class="portfolio-label">BTC Price</div>
+                        <div class="portfolio-value" id="mobileCurrentBTCPrice">Loading...</div>
+                    </div>
+                    
+                    <div class="portfolio-row">
+                        <div class="portfolio-label">Holdings</div>
+                        <div class="portfolio-value" id="mobileHoldings">Loading...</div>
                     </div>
                 </div>
 
                 <div class="chart-container">
                     <h2><i class="fas fa-chart-line"></i> BTC Price and Transactions</h2>
-                    <div class="chart-controls">
-                        <div class="time-range-buttons">
-                            <button class="time-range-btn" data-range="7">1W</button>
-                            <button class="time-range-btn" data-range="30">1M</button>
-                            <button class="time-range-btn" data-range="90">3M</button>
-                            <button class="time-range-btn active" data-range="180">6M</button>
-                            <button class="time-range-btn" data-range="365">1Y</button>
-                            <button class="time-range-btn" data-range="730">2Y</button>
-                            <button class="time-range-btn" data-range="1825">5Y</button>
-                            <button class="time-range-btn" data-range="3650">10Y</button>
-                            <button class="time-range-btn" data-range="0">ALL</button>
-                        </div>
-                        <div class="density-control">
-                            <label for="dataDensity">Data Density:</label>
-                            <input type="range" id="dataDensity" min="1" max="10" value="5">
-                            <span id="densityValue">Medium</span>
-                        </div>
-                        <button id="refreshBtn" class="refresh-btn">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
                     <div class="loading" id="chartLoading">
                         <div class="loading-spinner"></div>
                     </div>
@@ -2128,19 +2544,41 @@
                         </div>
                     </div>
                     
-                    <!-- Mobile Price Summary (only visible on mobile) -->
+                    <!-- Enhanced Mobile Price Summary -->
                     <div class="mobile-price-summary" id="mobilePriceSummary" style="display: none;">
-                        <div class="price-summary-item high">
-                            <div class="price-summary-label">📈 High</div>
-                            <div class="price-summary-value" id="mobileHighPrice">Loading...</div>
+                        <div class="price-summary-grid">
+                            <div class="price-summary-card high">
+                                <div class="price-card-content">
+                                    <div class="price-card-label" id="mobileHighLabel">High</div>
+                                    <div class="price-card-value" id="mobileHighPrice">Loading...</div>
                         </div>
-                        <div class="price-summary-item low">
-                            <div class="price-summary-label">📉 Low</div>
-                            <div class="price-summary-value" id="mobileLowPrice">Loading...</div>
                         </div>
-                        <div class="price-summary-item range">
-                            <div class="price-summary-label">📊 Range</div>
-                            <div class="price-summary-value" id="mobilePriceRange">Loading...</div>
+                            <div class="price-summary-card low">
+                                <div class="price-card-content">
+                                    <div class="price-card-label" id="mobileLowLabel">Low</div>
+                                    <div class="price-card-value" id="mobileLowPrice">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="price-range-card">
+                            <div class="price-range-content">
+                                <div class="price-range-label" id="mobileRangeLabel">Range</div>
+                                <div class="price-range-value" id="mobilePriceRange">Loading...</div>
+                                <div class="price-range-bar">
+                                    <div class="price-range-progress" id="mobilePriceRangeProgress"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Transactions Preview (Mobile Only) -->
+                    <div class="mobile-recent-transactions" id="mobileRecentTransactions" style="display: none;">
+                        <div class="recent-transactions-header">
+                            <h4>Recent Activity</h4>
+                            <a href="/transactions.html" class="view-all-link">View All</a>
+                        </div>
+                        <div class="recent-transactions-list" id="recentTransactionsList">
+                            <!-- Will be populated by JavaScript -->
                         </div>
                     </div>
                     
@@ -2183,16 +2621,19 @@
                     <div class="desktop-price-summary" id="desktopPriceSummary">
                         <div class="price-summary-stats">
                             <div class="price-stat-item high">
-                                <span class="price-stat-label">📈 High</span>
+                                <span class="price-stat-label" id="desktopHighLabel">High</span>
                                 <span class="price-stat-value" id="desktopHighPrice">Loading...</span>
                             </div>
                             <div class="price-stat-item low">
-                                <span class="price-stat-label">📉 Low</span>
+                                <span class="price-stat-label" id="desktopLowLabel">Low</span>
                                 <span class="price-stat-value" id="desktopLowPrice">Loading...</span>
                             </div>
                             <div class="price-stat-item range">
-                                <span class="price-stat-label">📊 Range</span>
+                                <span class="price-stat-label" id="desktopRangeLabel">Range</span>
                                 <span class="price-stat-value" id="desktopPriceRange">Loading...</span>
+                                <div class="desktop-range-bar">
+                                    <div class="desktop-range-progress" id="desktopPriceRangeProgress"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2238,7 +2679,7 @@
                     <div class="qr-container">
                         <div id="lightningQrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-bolt"></i> Instant payments with minimal fees via Lightning Network</p>
+
                 </div>
                 
                 <!-- On-Chain Section -->
@@ -2255,7 +2696,7 @@
                     <div class="qr-container">
                         <div id="qrcode"></div>
                     </div>
-                    <p class="payment-info"><i class="fas fa-info-circle"></i> Standard Bitcoin transaction (slower, higher fees)</p>
+
                 </div>
             </div>
         </div>
@@ -2284,6 +2725,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="/js/ticker.js"></script>
+    <script src="js/mobile-nav.js"></script>
     <script>
         // Set current year in footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
@@ -2313,39 +2755,19 @@
 
         // Function to update active time range button based on current layout
         function updateActiveTimeRangeButton() {
-            // Update time range based on current screen size
-            const isMobile = window.innerWidth <= 768;
-            currentTimeRange = isMobile ? 7 : 180;
-            
-            // Update button states
-            const activeBtn = document.querySelector(`.time-range-btn[data-range="${currentTimeRange}"]`);
-            if (activeBtn) {
-                document.querySelectorAll('.time-range-btn').forEach(btn => btn.classList.remove('active'));
-                activeBtn.classList.add('active');
-            }
-        }
-
-        // Dropdown navigation functionality
-        document.addEventListener('DOMContentLoaded', () => {
-            const currentPageBtn = document.getElementById('currentPageBtn');
-            const navDropdown = document.getElementById('navDropdown');
-            
-            // Toggle dropdown
-            currentPageBtn.addEventListener('click', () => {
-                currentPageBtn.classList.toggle('active');
-                navDropdown.classList.toggle('active');
-            });
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!currentPageBtn.contains(e.target) && !navDropdown.contains(e.target)) {
-                    currentPageBtn.classList.remove('active');
-                    navDropdown.classList.remove('active');
+            const timeButtons = document.querySelectorAll('.time-range-btn');
+            timeButtons.forEach(btn => {
+                const btnRange = parseInt(btn.getAttribute('data-range'));
+                if (btnRange === currentTimeRange) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
                 }
             });
-            
-            // Mobile theme toggle is now handled in setupThemeToggle()
+        }
 
+        // Mobile functionality
+        document.addEventListener('DOMContentLoaded', () => {
             // Handle window resize to recreate charts when switching between mobile/desktop
             let resizeTimeout;
             window.addEventListener('resize', () => {
@@ -2378,19 +2800,20 @@
                 }, 250); // Debounce resize events
             });
             
-            // Time range button functionality (both desktop and mobile)
-            const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-            
-            timeRangeButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all buttons
-                    timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-                    
-                    // Add active class to clicked button
-                    button.classList.add('active');
+            // Time range button functionality using event delegation
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('time-range-btn')) {
+                    // Remove active class from all buttons in both desktop and mobile views
+                    document.querySelectorAll('.time-range-btn').forEach(btn => {
+                        if (btn.getAttribute('data-range') === e.target.getAttribute('data-range')) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                    });
                     
                     // Get the range value and update current time range
-                    currentTimeRange = parseInt(button.getAttribute('data-range'));
+                    currentTimeRange = parseInt(e.target.getAttribute('data-range'));
                     console.log(`Time range changed to ${currentTimeRange} days`);
                     
                     // Always force chart recreation when time range changes to ensure
@@ -2409,33 +2832,13 @@
                     
                     // Load the data with new time range
                     loadData(true);
-                });
+                }
             });
 
             // Set correct time range for current layout and sync button state
             updateActiveTimeRangeButton();
             
-            // Density slider
-            const densitySlider = document.getElementById('dataDensity');
-            const densityValue = document.getElementById('densityValue');
-            
-            densitySlider.addEventListener('input', () => {
-                currentDensity = parseInt(densitySlider.value);
-                const densityLabels = [
-                    'Minimal',     // 1
-                    'Very Low',    // 2
-                    'Low',         // 3
-                    'Medium Low',  // 4
-                    'Medium',      // 5
-                    'Medium High', // 6
-                    'High',        // 7
-                    'Very High',   // 8
-                    'Ultra High',  // 9
-                    'Maximum'      // 10
-                ];
-                densityValue.textContent = densityLabels[currentDensity - 1];
-                loadData(true);
-            });
+            // Density slider removed for TradingView implementation
         });
 
         function filterAndSampleData(data, days, density) {
@@ -2755,6 +3158,14 @@
             return symbols[currency] || currency;
         }
 
+        // Format currency with proper symbol (same as transactions table)
+        function formatCurrency(amount, currency) {
+            const symbol = getCurrencySymbol(currency);
+            // Ensure amount is a number
+            const numAmount = Number(amount) || 0;
+            return `${numAmount >= 0 ? '+' : ''}${numAmount.toFixed(2)} ${symbol}`;
+        }
+
         // Helper function to add mobile styling classes for performance metrics
         function addMobilePerformanceClasses(pnlEUR, pnlPercentage) {
             // Add mobile-specific classes to performance metric rows
@@ -2782,14 +3193,124 @@
             }
         }
 
+        // Helper function to update mobile recent transactions
+        async function updateMobileRecentTransactions(data) {
+            const recentTransactionsList = document.getElementById('recentTransactionsList');
+            if (!recentTransactionsList) return;
+
+            // Fetch transactions from the same endpoint as transactions table to ensure consistency
+            let transactions = [];
+            try {
+                const response = await fetch('/api/transactions');
+                if (response.ok) {
+                    transactions = await response.json();
+                }
+            } catch (error) {
+                console.error('Error fetching transactions for Recent Activity:', error);
+                // Fallback to data.transactions if API call fails
+                transactions = data.transactions || [];
+            }
+
+            // Get recent transactions (latest 5)
+            const recentTransactions = transactions
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, 5);
+
+            // Clear existing content
+            recentTransactionsList.innerHTML = '';
+
+            if (recentTransactions.length === 0) {
+                recentTransactionsList.innerHTML = `
+                    <div class="recent-transaction-item">
+                        <div style="text-align: center; width: 100%; color: var(--muted-text-color); font-size: 0.7rem;">
+                            No recent transactions
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Get main currency symbol for display
+            const mainCurrency = window.currentMainCurrency || 'EUR';
+            const mainCurrencySymbol = getCurrencySymbol(mainCurrency);
+
+            // Populate with recent transactions
+            recentTransactions.forEach(tx => {
+                const date = new Date(tx.date);
+                const formattedDate = date.toLocaleDateString(undefined, { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+
+                // Format amount for display
+                const amount = parseFloat(tx.amount);
+                const formattedAmount = formatBtcDisplay(amount);
+
+                // Get transaction cost in main currency
+                let costInMainCurrency = 0;
+                if (tx.base && tx.base[mainCurrency.toLowerCase()]) {
+                    costInMainCurrency = tx.base[mainCurrency.toLowerCase()].cost || 0;
+                } else if (tx.cost) {
+                    // Use original cost and convert if needed
+                    if (mainCurrency === 'USD' && data.eurUsd) {
+                        costInMainCurrency = tx.cost * data.eurUsd;
+                    } else if (mainCurrency !== 'EUR') {
+                        const rateKey = `eur${mainCurrency.toLowerCase()}`;
+                        costInMainCurrency = tx.cost * (data[rateKey] || 1.0);
+                    } else {
+                        costInMainCurrency = tx.cost;
+                    }
+                }
+
+                const formattedCost = new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                }).format(costInMainCurrency || 0);
+
+                // Calculate and format P&L for buy transactions (using same logic as transactions table)
+                let pnlDisplay = '';
+                if (tx.type.toLowerCase() === 'buy') {
+                    // Use the same formatCurrency function as transactions table
+                    const formattedPnL = formatCurrency(tx.pnl || 0, mainCurrency);
+                    const pnlClass = (tx.pnl || 0) >= 0 ? 'positive' : 'negative';
+                    pnlDisplay = `<div class="recent-transaction-pnl ${pnlClass}">${formattedPnL}</div>`;
+                }
+
+                const transactionItem = document.createElement('div');
+                transactionItem.className = 'recent-transaction-item';
+                transactionItem.innerHTML = `
+                    <div class="recent-transaction-left">
+                        <div class="recent-transaction-header">
+                            <div class="recent-transaction-type ${tx.type.toLowerCase()}">${tx.type}</div>
+                            <div class="recent-transaction-date">${formattedDate}</div>
+                        </div>
+                        <div class="recent-transaction-amount">${formattedAmount}</div>
+                    </div>
+                    <div class="recent-transaction-right">
+                        <div class="recent-transaction-cost">${formattedCost} ${mainCurrencySymbol}</div>
+                        ${pnlDisplay}
+                    </div>
+                `;
+
+                recentTransactionsList.appendChild(transactionItem);
+            });
+        }
+
         // Helper function to update modern mobile portfolio header
         async function updateMobilePortfolioHeader(priceData) {
-            // Fetch ticker data to ensure we use the same calculation
+            // Fetch the same data as ticker to ensure consistency
             let tickerData = null;
             try {
-                const tickerResponse = await fetch('/api/current-price');
+                const tickerResponse = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
+                    cache: 'no-cache',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 if (tickerResponse.ok) {
                     tickerData = await tickerResponse.json();
+                    console.log('Mobile header fetched same data as ticker:', tickerData);
                 }
             } catch (error) {
                 console.log('Could not fetch ticker data for mobile header:', error);
@@ -2835,83 +3356,103 @@
             
             document.getElementById('mobileCurrentValue').textContent = formattedValue;
             document.getElementById('mobileCurrency').textContent = mainCurrencySymbol;
-            document.getElementById('mobileSecondaryValue').textContent = formattedSecondaryValue;
-            document.getElementById('mobileSecondaryCurrency').textContent = secondaryCurrencySymbol;
+            // Secondary value removed from mobile view
+            // Secondary currency removed from mobile view
 
-            // Calculate portfolio change using ticker data when available
-            const totalBTC = priceData.totalBTC || 0;
+            // Use exact same logic as ticker for daily change calculation
             const dataToUse = tickerData || priceData; // Prefer ticker data
             
-            // Get current BTC price in main currency 
-            let currentBTCPrice = 0;
+            // Get current BTC price in main currency (same as ticker)
+            let currentPrice = 0;
             const basePriceEUR = dataToUse.priceEUR || dataToUse.price || 0;
             
             if (mainCurrency === 'EUR') {
-                currentBTCPrice = basePriceEUR;
+                currentPrice = basePriceEUR;
             } else if (mainCurrency === 'USD') {
-                currentBTCPrice = dataToUse.priceUSD || (basePriceEUR && dataToUse.eurUsd ? basePriceEUR * dataToUse.eurUsd : 0);
+                currentPrice = dataToUse.priceUSD || (basePriceEUR && dataToUse.eurUsd ? basePriceEUR * dataToUse.eurUsd : 0);
             } else {
                 // Convert from EUR to other supported currencies
                 const rateKey = `eur${mainCurrency.toLowerCase()}`;
                 if (basePriceEUR && dataToUse[rateKey]) {
-                    currentBTCPrice = basePriceEUR * dataToUse[rateKey];
+                    currentPrice = basePriceEUR * dataToUse[rateKey];
                 }
             }
             
-            // Get historical BTC price using ticker logic
-            let historicalBTCPriceInMainCurrency = currentBTCPrice; // fallback
-            const historicalPriceEUR = dataToUse.previousWeekPrice || dataToUse.previousDayPrice || 0;
+            // Convert historical prices from EUR to main currency (same as ticker)
+            let dailyPriceInMainCurrency = currentPrice; // fallback
             
+            // Get historical price (always stored in EUR) and convert to main currency
+            // Prioritize daily change over weekly for display
+            const historicalPriceEUR = dataToUse.previousDayPrice || dataToUse.previousWeekPrice || 0;
             if (historicalPriceEUR > 0) {
                 if (mainCurrency === 'EUR') {
-                    historicalBTCPriceInMainCurrency = historicalPriceEUR;
+                    dailyPriceInMainCurrency = historicalPriceEUR;
                 } else if (mainCurrency === 'USD' && dataToUse.eurUsd) {
-                    historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse.eurUsd;
+                    dailyPriceInMainCurrency = historicalPriceEUR * dataToUse.eurUsd;
                 } else {
                     // Convert from EUR to other supported currencies
                     const rateKey = `eur${mainCurrency.toLowerCase()}`;
                     if (dataToUse[rateKey]) {
-                        historicalBTCPriceInMainCurrency = historicalPriceEUR * dataToUse[rateKey];
+                        dailyPriceInMainCurrency = historicalPriceEUR * dataToUse[rateKey];
                     }
                 }
             }
             
-            // Calculate BTC price change percentage
-            const btcPriceChange = currentBTCPrice - historicalBTCPriceInMainCurrency;
-            const btcPercentageChange = historicalBTCPriceInMainCurrency > 0 ? (btcPriceChange / historicalBTCPriceInMainCurrency) * 100 : 0;
+            // Calculate daily change (same as ticker)
+            const change = currentPrice - dailyPriceInMainCurrency;
+            const percentChange = dailyPriceInMainCurrency > 0 ? (change / dailyPriceInMainCurrency) * 100 : 0;
             
-            // Apply same percentage to portfolio value
-            const currentPortfolioValue = totalBTC * currentBTCPrice;
-            const dailyChange = currentPortfolioValue * (btcPercentageChange / 100);
-            const dailyPercentage = btcPercentageChange;
+            // Debug logging to compare with ticker
+            console.log('Mobile header calculation (should match ticker):', {
+                mainCurrency,
+                priceEUR: dataToUse.priceEUR,
+                priceUSD: dataToUse.priceUSD,
+                previousDayPrice: dataToUse.previousDayPrice,
+                previousWeekPrice: dataToUse.previousWeekPrice,
+                historicalPriceEUR,
+                currentPrice,
+                dailyPriceInMainCurrency,
+                change,
+                percentChange,
+                calculation: `${currentPrice} - ${dailyPriceInMainCurrency} = ${change}`
+            });
             
-            // Format daily change
-            const formattedDailyChange = new Intl.NumberFormat('en-US', {
+            // Format values with appropriate currency (same as ticker)
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: mainCurrency,
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(Math.abs(dailyChange || 0));
+            });
             
-            const sign = (dailyChange >= 0) ? '+' : '-';
+            const formattedChange = formatter.format(change);
+            const formattedPercent = percentChange.toFixed(2) + '%';
             
-            // Temporary debug display
-            if (Math.abs(dailyPercentage) < 0.001) {
-                document.getElementById('mobilePnLAmount').textContent = `Debug: ${historicalPriceEUR ? 'has hist' : 'no hist'}`;
-                document.getElementById('mobilePnLPercent').textContent = `${currentBTCPrice.toFixed(0)}/${historicalBTCPriceInMainCurrency.toFixed(0)}`;
-            } else {
-                document.getElementById('mobilePnLAmount').textContent = `${sign}${formattedDailyChange}`;
-                document.getElementById('mobilePnLPercent').textContent = `${sign}${Math.abs(dailyPercentage).toFixed(2)}%`;
-            }
+            console.log('Mobile header formatted values:', {
+                formattedChange,
+                formattedPercent
+            });
+            
+            // Update mobile daily change display
+            document.getElementById('mobilePnLAmount').textContent = formattedChange;
+            document.getElementById('mobilePnLPercent').textContent = formattedPercent;
             
             // Update holdings info
             document.getElementById('mobileHoldings').textContent = `${(priceData.totalBTC || 0).toFixed(6)} BTC`;
             
-            // Add appropriate styling classes
+            // Update current BTC price display
+            const formattedBTCPrice = new Intl.NumberFormat('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(currentPrice || 0);
+            document.getElementById('mobileCurrentBTCPrice').textContent = `${formattedBTCPrice} ${mainCurrencySymbol}`;
+            
+            // Add appropriate styling classes (same as ticker)
             const changeElement = document.getElementById('mobileChange');
             changeElement.classList.remove('positive', 'negative');
-            if (dailyChange >= 0) {
-                changeElement.classList.add('positive');
-            } else {
-                changeElement.classList.add('negative');
+            const changeClass = change === 0 ? '' : (change > 0 ? 'positive' : 'negative');
+            if (changeClass) {
+                changeElement.classList.add(changeClass);
             }
         }
 
@@ -3101,6 +3642,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: 0
+                    },
                     interaction: {
                         intersect: false,
                         mode: 'index'
@@ -3173,15 +3717,55 @@
                 }
             });
 
-            // Update mobile price summary
+            // Update mobile price summary with correct time range labels
             const currency = window.currentMainCurrency || 'EUR';
             const symbol = getCurrencySymbol(currency);
             const range = maxPrice - minPrice;
             const rangePercent = minPrice > 0 ? ((range / minPrice) * 100).toFixed(1) : '0.0';
 
+            // Update labels based on current time range
+            let timeRangeLabel = '';
+            if (currentTimeRange === 7) {
+                timeRangeLabel = '1W';
+            } else if (currentTimeRange === 30) {
+                timeRangeLabel = '1M';
+            } else if (currentTimeRange === 180) {
+                timeRangeLabel = '6M';
+            } else if (currentTimeRange === 365) {
+                timeRangeLabel = '1Y';
+            } else if (currentTimeRange === 0) {
+                timeRangeLabel = 'ALL';
+            } else {
+                timeRangeLabel = `${currentTimeRange}D`;
+            }
+
+            document.getElementById('mobileHighLabel').textContent = `${timeRangeLabel} High`;
+            document.getElementById('mobileLowLabel').textContent = `${timeRangeLabel} Low`;
+            document.getElementById('mobileRangeLabel').textContent = `${timeRangeLabel} Range`;
+
             document.getElementById('mobileHighPrice').textContent = `${maxPrice.toFixed(2)} ${symbol}`;
             document.getElementById('mobileLowPrice').textContent = `${minPrice.toFixed(2)} ${symbol}`;
             document.getElementById('mobilePriceRange').textContent = `${rangePercent}%`;
+            
+            // Update price range progress bar with conditional colors and percentage fill
+            const progressBar = document.getElementById('mobilePriceRangeProgress');
+            if (progressBar) {
+                // Remove existing classes
+                progressBar.classList.remove('positive', 'negative');
+                
+                const rangePercentNum = parseFloat(rangePercent);
+                
+                // Set width based on range percentage (cap at 100%)
+                const fillWidth = Math.min(Math.abs(rangePercentNum), 100);
+                progressBar.style.width = `${fillWidth}%`;
+                
+                // Set color based on whether range is positive or negative
+                if (rangePercentNum > 0) {
+                    progressBar.classList.add('positive');
+                } else {
+                    progressBar.classList.add('negative');
+                }
+            }
         }
 
         // Function to create the initial chart
@@ -3191,7 +3775,21 @@
                 document.getElementById('chartLoading').textContent = 'No historical data available for chart.';
                 return;
             }
-
+            
+            // Save data for potential updates
+            window.combinedChartData = data;
+            
+            // Check if mobile (defined by window width)
+            const isMobile = window.innerWidth <= 768;
+            
+            // For desktop view, use TradingView chart
+            if (!isMobile) {
+                const chartContainer = document.querySelector('.chart-wrapper');
+                document.getElementById('chartLoading').style.display = 'none';
+                return createTradingViewChart(chartContainer, data);
+            }
+            
+            // Mobile view continues to use Chart.js
             const isLightTheme = document.body.classList.contains('light-theme');
             
             // Modern color scheme
@@ -3541,9 +4139,7 @@
                         x: {
                             type: 'time',
                             time: {
-                                unit: currentTimeRange <= 7 ? 'day' :
-                                      currentTimeRange <= 90 ? 'week' :
-                                      currentTimeRange <= 365 ? 'month' : 'year',
+                                unit: currentTimeRange <= 7 ? 'day' : 'week',
                                 tooltipFormat: 'MMM dd, yyyy',
                                 displayFormats: {
                                     day: 'MMM d',
@@ -3621,15 +4217,55 @@
             // Store chart data for theme switching
             window.combinedChartData = data;
 
-            // Update desktop price summary
+            // Update desktop price summary with correct time range labels
             const currency = window.currentMainCurrency || 'EUR';
             const symbol = getCurrencySymbol(currency);
             const range = maxPrice - minPrice;
             const rangePercent = minPrice > 0 ? ((range / minPrice) * 100).toFixed(1) : '0.0';
 
+            // Update labels based on current time range
+            let timeRangeLabel = '';
+            if (currentTimeRange === 7) {
+                timeRangeLabel = '1W';
+            } else if (currentTimeRange === 30) {
+                timeRangeLabel = '1M';
+            } else if (currentTimeRange === 180) {
+                timeRangeLabel = '6M';
+            } else if (currentTimeRange === 365) {
+                timeRangeLabel = '1Y';
+            } else if (currentTimeRange === 0) {
+                timeRangeLabel = 'ALL';
+            } else {
+                timeRangeLabel = `${currentTimeRange}D`;
+            }
+
+            document.getElementById('desktopHighLabel').textContent = `${timeRangeLabel} High`;
+            document.getElementById('desktopLowLabel').textContent = `${timeRangeLabel} Low`;
+            document.getElementById('desktopRangeLabel').textContent = `${timeRangeLabel} Range`;
+
             document.getElementById('desktopHighPrice').textContent = `${maxPrice.toFixed(2)} ${symbol}`;
             document.getElementById('desktopLowPrice').textContent = `${minPrice.toFixed(2)} ${symbol}`;
             document.getElementById('desktopPriceRange').textContent = `${rangePercent}%`;
+
+            // Update desktop range progress bar with conditional colors and percentage fill
+            const desktopProgressBar = document.getElementById('desktopPriceRangeProgress');
+            if (desktopProgressBar) {
+                // Remove existing classes
+                desktopProgressBar.classList.remove('positive', 'negative');
+                
+                const rangePercentNum = parseFloat(rangePercent);
+                
+                // Set width based on range percentage (cap at 100%)
+                const fillWidth = Math.min(Math.abs(rangePercentNum), 100);
+                desktopProgressBar.style.width = `${fillWidth}%`;
+                
+                // Set color based on whether range is positive or negative
+                if (rangePercentNum > 0) {
+                    desktopProgressBar.classList.add('positive');
+                } else {
+                    desktopProgressBar.classList.add('negative');
+                }
+            }
 
             // Transactions are now handled by the timeline component below the chart
             // No longer adding transaction bubbles to the chart for cleaner visualization
@@ -3830,9 +4466,12 @@
                     // Update all displays with the full data object received from the server
                     updatePriceDisplays(data);
                     
+                    // Note: Ticker updates are now handled automatically by ticker.js
+                    
                     // Create/update chart with historical data
                     if (window.innerWidth <= 768) {
                         createMobileChart(data);
+                        updateMobileRecentTransactions(data).catch(console.error);
                     } else {
                         createChart(data);
                     }
@@ -3925,6 +4564,8 @@
                     // Update displays with the new price data (pass the full data object)
                     updatePriceDisplays(data);
                     
+                    // Note: Ticker updates are now handled automatically by ticker.js
+                    
                     // Update timeline if transactions have changed
                     if (transactionCountChanged) {
                         createTimeline(data);
@@ -3944,8 +4585,13 @@
                             timestamp: data.priceTimestamp || data.timestamp || new Date().toISOString()
                         };
                         updateMobileChartWithLatestPrice(window.mobileChart, chartPriceData);
+                    } else if (!(window.innerWidth <= 768)) {
+                        // For desktop, use TradingView chart update
+                        console.log('Updating TradingView chart with latest price:', price);
+                        // Update price using TradingView chart's update function
+                        updateTradingViewChartPrice(price);
                     } else if (combinedChart) {
-                        console.log('Updating chart with latest price:', price);
+                        console.log('Updating Chart.js with latest price:', price);
                         // updateChartWithLatestPrice needs price info, construct a specific object for it
                         const chartPriceData = {
                             price: price, // Current price in main currency
@@ -3962,6 +4608,7 @@
                         console.log('Chart not found during price update, creating new chart');
                         if (window.innerWidth <= 768) {
                             createMobileChart(data);
+                            updateMobileRecentTransactions(data).catch(console.error);
                         } else {
                             createChart(data);
                         }
@@ -3999,7 +4646,7 @@
                 
                 // Update mobile portfolio header error state
                 document.getElementById('mobileCurrentValue').textContent = 'Error';
-                document.getElementById('mobileSecondaryValue').textContent = 'Error';
+                // Secondary value removed from mobile view
                 document.getElementById('mobilePnLAmount').textContent = 'Error';
                 document.getElementById('mobilePnLPercent').textContent = 'Error';
                 document.getElementById('mobileHoldings').textContent = 'Error BTC';
@@ -4025,203 +4672,19 @@
             }
         }
 
-        // Quick Add Transaction functionality
+        // Quick Add Transaction functionality using shared modal component
         function showQuickAddTransaction() {
-            const modal = document.createElement('div');
-            modal.className = 'modal';
-            
-            // Get current date and time in ISO format for default value
-            const now = new Date();
-            const localISOString = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-            
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h2><i class="fas fa-plus"></i> Add New Transaction</h2>
-                    <form id="quickAddTransactionForm">
-                        <div class="form-group">
-                            <label for="quickAddDate"><i class="fas fa-calendar"></i> Date</label>
-                            <input type="datetime-local" id="quickAddDate" value="${localISOString}" required>
-                        </div>
-                                                 <div class="form-group">
-                             <label for="quickAddType"><i class="fas fa-exchange-alt"></i> Type</label>
-                             <select id="quickAddType" required>
-                                 <option value="buy">🟢 Buy</option>
-                                 <option value="sell">🔴 Sell</option>
-                             </select>
-                         </div>
-                        <div class="form-group">
-                            <label for="quickAddAmount"><i class="fab fa-bitcoin"></i> BTC Amount</label>
-                            <input type="number" id="quickAddAmount" step="0.00000001" placeholder="0.12345678" required>
-                            <p class="help-text">Maximum precision: 8 decimal places (1 satoshi = 0.00000001 BTC)</p>
-                        </div>
-                                                <div class="form-row">
-                            <div class="form-group">
-                                <label for="quickAddPrice"><i class="fas fa-money-bill"></i> Price</label>
-                                <input type="number" id="quickAddPrice" step="0.01" placeholder="25000.00" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="quickAddCurrency"><i class="fas fa-globe"></i> Currency</label>
-                                <select id="quickAddCurrency" required>
-                                    <option value="EUR" selected>EUR €</option>
-                                    <option value="USD">USD $</option>
-                                    <option value="PLN">PLN zł</option>
-                                    <option value="GBP">GBP £</option>
-                                    <option value="JPY">JPY ¥</option>
-                                    <option value="CHF">CHF Fr</option>
-                                    <option value="BRL">BRL R$</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="quickAddFee"><i class="fas fa-hand-holding-usd"></i> Fee</label>
-                            <input type="number" id="quickAddFee" step="0.01" placeholder="5.00" value="0">
-                            <p class="help-text">Transaction fee in the specified currency</p>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div id="calculatedCost" style="margin-top: 10px; font-weight: bold;">
-                                Calculated Cost: <span>0.00</span>
-                            </div>
-                        </div>
-                        
-                        <div class="form-buttons">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Add Transaction
-                            </button>
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-            
-            // Add event listeners for price and amount to calculate cost automatically
-            const priceInput = document.getElementById('quickAddPrice');
-            const amountInput = document.getElementById('quickAddAmount');
-            const costDisplay = document.querySelector('#calculatedCost span');
-            
-            const updateCalculatedCost = () => {
-                const price = parseFloat(priceInput.value) || 0;
-                const amount = parseFloat(amountInput.value) || 0;
-                const cost = price * amount;
-                costDisplay.textContent = cost.toFixed(2);
-            };
-            
-            priceInput.addEventListener('input', updateCalculatedCost);
-            amountInput.addEventListener('input', updateCalculatedCost);
-            
-            // Add Bitcoin precision validation and easter egg
-            amountInput.addEventListener('blur', function() {
-                const value = parseFloat(this.value);
-                if (!isNaN(value)) {
-                    // Easter egg: Check if trying to add more than 21 million BTC
-                    if (value > 21000000) {
-                        const funnyMessages = [
-                            "🤔 Wait a minute... There are only 21 million Bitcoin in existence! Are you Satoshi Nakamoto? 👨‍💻",
-                            "🚀 Whoa there, time traveler! Did you mine all the Bitcoin from the future? ⏰",
-                            "😂 21 million BTC? That's more Bitcoin than exists! Maybe try buying the entire world first? 🌍",
-                            "🎩 Found the secret Bitcoin printer, eh? The Federal Reserve wants to know your location! 🏦",
-                            "🤑 21M+ BTC? At that point you'd own more Bitcoin than Bitcoin itself! That's some next-level HODLing! 💎🙌",
-                            "🧙‍♂️ Ah yes, the legendary Bitcoin whale who owns more Bitcoin than mathematically possible! 🐋",
-                            "🎪 Step right up! See the person who broke the laws of Bitcoin economics! 🎭"
-                        ];
-                        
-                        const randomMessage = funnyMessages[Math.floor(Math.random() * funnyMessages.length)];
-                        
-                        // Show the funny message
-                        showNotification(randomMessage, 'error');
-                        
-                        // Reset to a reasonable amount
-                        this.value = "21000000";
-                        console.log("🎉 Easter egg triggered! Someone tried to add more than 21M BTC!");
-                        updateCalculatedCost();
-                        return;
-                    }
-                    
-                    // Round to 8 decimal places (satoshi precision)
-                    const rounded = Math.round(value * 100000000) / 100000000;
-                    if (rounded !== value) {
-                        this.value = rounded.toFixed(8).replace(/\.?0+$/, '');
-                        console.log(`BTC amount rounded from ${value} to ${rounded} (satoshi precision)`);
-                        updateCalculatedCost(); // Recalculate cost with rounded amount
-                    }
-                }
-            });
-
-            // Close modal when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
-
-            // Handle form submission
-            const form = modal.querySelector('#quickAddTransactionForm');
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const submitBtn = form.querySelector('.btn-primary');
-                    const originalText = submitBtn.innerHTML;
-                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
-                    submitBtn.disabled = true;
-                    
-                    const rawAmount = parseFloat(document.getElementById('quickAddAmount').value);
-                    const roundedAmount = Math.round(rawAmount * 100000000) / 100000000; // Round to satoshi precision
-                    
-                    const newTransaction = {
-                        date: new Date(document.getElementById('quickAddDate').value).toISOString(),
-                        type: document.getElementById('quickAddType').value,
-                        amount: roundedAmount,
-                        price: parseFloat(document.getElementById('quickAddPrice').value),
-                        currency: document.getElementById('quickAddCurrency').value,
-                        fee: parseFloat(document.getElementById('quickAddFee').value) || 0
-                    };
-                    
-                    // Calculate cost
-                    newTransaction.cost = newTransaction.amount * newTransaction.price;
-                    
-                    // Add the transaction
-                    const response = await fetch('/api/admin/transactions', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(newTransaction)
-                    });
-                    
-                    if (!response.ok) {
-                        throw new Error('Failed to add transaction');
-                    }
-                    
-                    // Success!
-                    modal.remove();
-                    
+            window.transactionModal.showAddModal({
+                apiEndpoint: '/api/admin/transactions',
+                onSuccess: () => {
                     // Show success notification
                     showNotification('✅ Transaction added successfully!', 'success');
                     
                     // Refresh the dashboard data
                     console.log('Transaction added, refreshing dashboard...');
                     loadData(true); // Force full refresh to include new transaction
-                    
-                } catch (error) {
-                    console.error('Error adding transaction:', error);
-                    showNotification('❌ Error adding transaction: ' + error.message, 'error');
-                    
-                    // Re-enable button
-                    const submitBtn = form.querySelector('.btn-primary');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
                 }
             });
-
-            // Focus on amount field for quick entry
-            setTimeout(() => {
-                document.getElementById('quickAddAmount').focus();
-            }, 100);
         }
 
         // Show notification function
@@ -4264,6 +4727,8 @@
         // Initial load and setup intervals
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Page loaded, initializing...');
+            
+            // Note: Ticker updates are now handled automatically by ticker.js
             
             // CRITICAL: Load currency settings FIRST before any data operations
             console.log('📋 Loading currency settings...');
@@ -4327,52 +4792,7 @@
                 }
             });
             
-            // Setup refresh button
-            document.getElementById('refreshBtn').addEventListener('click', async () => {
-                console.log('Manual refresh triggered');
-                try {
-                    // Directly fetch fresh price
-                    const response = await fetch('/api/current-price?fresh=true');
-                    if (response.ok) {
-                        const freshPriceData = await response.json();
-                        console.log('Fetched fresh price data:', freshPriceData);
-                        
-                        // Update the UI immediately with the fresh price
-                        if (combinedChart) {
-                            const priceData = {
-                                price: freshPriceData.priceEUR,
-                                priceEUR: freshPriceData.priceEUR,
-                                priceUSD: freshPriceData.priceUSD,
-                                mainCurrency: window.currentMainCurrency || 'EUR',
-                                eurUsd: freshPriceData.eurUsd,
-                                eurPln: freshPriceData.eurPln,
-                                timestamp: freshPriceData.timestamp,
-                                isCached: false
-                            };
-                            
-                            // Update displays and chart with fresh price
-                            updatePriceDisplays(priceData);
-                            updateChartWithLatestPrice(combinedChart, priceData);
-                            
-                            // Update last update time
-                            lastUpdateTime = new Date(freshPriceData.timestamp);
-                            document.getElementById('lastUpdate').textContent = 
-                                `${lastUpdateTime.toLocaleTimeString()} (fresh)`;
-                            document.getElementById('priceUpdate').classList.add('pulsing');
-                            setTimeout(() => {
-                                document.getElementById('priceUpdate').classList.remove('pulsing');
-                            }, 1000);
-                        }
-                    } else {
-                        // If direct price fetch fails, fallback to regular refresh
-                        loadData(false);
-                    }
-                } catch (error) {
-                    console.error('Error fetching fresh price:', error);
-                    // Fallback to regular refresh
-                    loadData(false);
-                }
-            });
+            // Refresh button removed for TradingView chart implementation
             
             // Trigger refresh when returning to the page to catch any added transactions or settings changes
             document.addEventListener('visibilitychange', async () => {
@@ -4403,14 +4823,21 @@
             // Theme toggle functionality
             setupThemeToggle();
 
+            // Setup mobile add button
+
+
             // Setup add transaction buttons
             document.getElementById('sidebarAddBtn').addEventListener('click', () => {
                 showQuickAddTransaction();
             });
             
-            document.getElementById('mobileAddBtn').addEventListener('click', () => {
-                showQuickAddTransaction();
-            });
+            // Setup mobile add button
+            const mobileAddBtn = document.getElementById('mobileAddBtn');
+            if (mobileAddBtn) {
+                mobileAddBtn.addEventListener('click', () => {
+                    showQuickAddTransaction();
+                });
+            }
             
             // Add debug functions to window for manual testing
             window.debugCurrency = async function() {
@@ -4542,38 +4969,30 @@
                     // Reload data to recreate chart
                     loadData(true);
                 }
-            } else if (!isMobile && combinedChart) {
-                // For desktop chart, try update first, but recreate if gradients need updating
-                try {
-                    updateChartTheme();
-                    combinedChart.update('none'); // Update without animation for immediate change
-                    
-                    // Force a redraw to ensure gradient updates are applied
-                    setTimeout(() => {
-                        if (combinedChart) {
-                            combinedChart.update();
-                        }
-                    }, 50);
-                } catch (error) {
-                    console.log('Chart update failed, recreating chart:', error);
-                    // If update fails, recreate the chart
-                    combinedChart.destroy();
-                    combinedChart = null;
-                    
-                    // Try to recreate with stored data, otherwise reload
-                    if (window.combinedChartData) {
-                        createChart(window.combinedChartData);
-                    } else {
-                        loadData(true);
-                    }
+            } else if (!(window.innerWidth <= 768)) {
+                // For desktop with TradingView chart, we need to recreate it for theme changes
+                // Clean up existing chart
+                if (typeof cleanupTradingViewChart === 'function') {
+                    cleanupTradingViewChart();
+                }
+                
+                // Recreate chart with stored data
+                if (window.combinedChartData) {
+                    const chartContainer = document.querySelector('.chart-wrapper');
+                    createTradingViewChart(chartContainer, window.combinedChartData);
+                } else {
+                    // If no data available, do a full reload
+                    loadData(true);
                 }
             }
         }
         
+        // Function to setup mobile add button
+
+        
         // Function to setup theme toggle
         function setupThemeToggle() {
             const themeToggle = document.getElementById('themeToggle');
-            const mobileThemeToggle = document.getElementById('mobileThemeToggle');
             
             // Check if user has a saved preference
             const savedTheme = localStorage.getItem('theme');
@@ -4581,13 +5000,9 @@
                 document.body.classList.add('light-theme');
             }
             
-            // Add click event listeners for both desktop and mobile theme toggles
+            // Add click event listeners for desktop theme toggle
             if (themeToggle) {
                 themeToggle.addEventListener('click', handleThemeChange);
-            }
-            
-            if (mobileThemeToggle) {
-                mobileThemeToggle.addEventListener('click', handleThemeChange);
             }
         }
         
@@ -5289,6 +5704,8 @@
 
         // Modified loadData function
     </script>
+    <script src="js/transaction-modal.js"></script>
+    <script src="js/btc-utils.js"></script>
     <script src="js/electron-integration.js"></script>
 </body>
 </html> 

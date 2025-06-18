@@ -73,7 +73,6 @@ const isHeadless = process.argv.includes('--headless');
 
 let mainWindow;
 let tray;
-let expressServer;
 const PORT = process.env.PORT || 3000;
 
 function createWindow() {
@@ -143,27 +142,6 @@ function createTray() {
     },
     { type: 'separator' },
     {
-      label: 'Restart Server',
-      click: () => {
-        console.log('Manually restarting server...');
-        if (expressServer) {
-          // Set a flag to indicate this is a manual restart
-          app.manualRestart = true;
-          
-          // Kill the current server process
-          expressServer.kill();
-          
-          // Start a new server
-          setTimeout(() => {
-            app.manualRestart = false;
-            startExpressServer();
-          }, 1000);
-        } else {
-          startExpressServer();
-        }
-      }
-    },
-    {
       label: 'View Logs',
       click: () => {
         // Open the log file if it exists
@@ -200,7 +178,7 @@ function createTray() {
           },
           server: {
             port: PORT,
-            status: expressServer ? 'running' : 'not running'
+            status: 'running in main process'
           },
           paths: {
             logFile: logFile,
@@ -226,211 +204,11 @@ function createTray() {
         });
       }
     },
-    {
-      label: 'Reset Extracted Files',
-      click: () => {
-        const { dialog } = require('electron');
-        dialog.showMessageBox({
-          type: 'warning',
-          title: 'Reset Extracted Files',
-          message: 'Are you sure you want to reset all extracted files?',
-          detail: 'This will delete and recreate all extracted server files. It may help resolve module loading issues.',
-          buttons: ['Yes', 'Cancel'],
-          defaultId: 1
-        }).then(result => {
-          if (result.response === 0) {
-            try {
-              // Stop the server if it's running
-              if (expressServer) {
-                app.manualRestart = true;
-                expressServer.kill();
-                // Give it a little time to shut down
-                console.log('Stopping server before resetting files...');
-                setTimeout(() => {
-                  resetExtractedFiles();
-                }, 1000);
-              } else {
-                resetExtractedFiles();
-              }
-            } catch (err) {
-              console.error('Error in reset process:', err);
-              dialog.showErrorBox('Error', `Failed to initiate reset: ${err.message}`);
-            }
-          }
-        });
-      }
-    },
-    {
-      label: 'Manual Cleanup Instructions',
-      click: () => {
-        const { dialog, shell } = require('electron');
-        const extractDir = path.join(app.getPath('userData'), 'extracted');
-        const userDataDir = app.getPath('userData');
-        
-        dialog.showMessageBox({
-          type: 'info',
-          title: 'Manual Cleanup Instructions',
-          message: 'How to manually reset the application files',
-          detail: 'If the automatic reset is not working, follow these steps:\n\n' +
-                  '1. Close the application completely (select "Quit" from the tray menu)\n' +
-                  '2. Open File Explorer and navigate to this folder:\n' +
-                  userDataDir + '\n\n' +
-                  '3. Delete the "extracted" folder\n' +
-                  '4. Restart the application\n\n' +
-                  'Click "Open Folder" to open the directory in File Explorer.',
-          buttons: ['Open Folder', 'Copy Path', 'Cancel'],
-          defaultId: 0
-        }).then(result => {
-          if (result.response === 0) {
-            // Open the folder in File Explorer
-            shell.openPath(userDataDir);
-          } else if (result.response === 1) {
-            // Copy the path to clipboard
-            require('electron').clipboard.writeText(userDataDir);
-            dialog.showMessageBox({
-              type: 'info',
-              title: 'Path Copied',
-              message: 'The path has been copied to your clipboard',
-              buttons: ['OK']
-            });
-          }
-        });
-      }
-    },
-    {
-      label: 'Run NPM Install',
-      click: () => {
-        try {
-          const extractDir = path.join(app.getPath('userData'), 'extracted');
-          if (!fs.existsSync(extractDir)) {
-            fs.mkdirSync(extractDir, { recursive: true });
-          }
-          
-          // Create package.json with the needed dependencies
-          const packageJson = {
-            "name": "btc-tracker-server",
-            "version": app.getVersion(),
-            "description": "Extracted server for BTC Tracker",
-            "dependencies": {
-              "express": "^4.18.2",
-              "cors": "^2.8.5",
-              "body-parser": "^1.20.2",
-              "axios": "^1.6.7",
-              "express-fileupload": "^1.5.1",
-              "express-session": "^1.18.1",
-              "passport": "^0.7.0",
-              "passport-local": "^1.0.0",
-              "bcryptjs": "^3.0.2",
-              "connect-flash": "^0.1.1",
-              "uuid": "^9.0.1",
-              "multer": "^1.4.5-lts.2",
-              "csv-parse": "^5.5.3",
-              "jsonwebtoken": "^9.0.2"
-            }
-          };
-          
-          fs.writeFileSync(path.join(extractDir, 'package.json'), JSON.stringify(packageJson, null, 2));
-          
-          // Show dialog
-          const { dialog } = require('electron');
-          dialog.showMessageBox({
-            type: 'info',
-            title: 'Run NPM Install',
-            message: 'Installing Node.js dependencies',
-            detail: 'This will install all required Node.js modules in the extracted directory. This may take a minute.',
-            buttons: ['OK']
-          });
-          
-          // Create npm-install.bat 
-          const npmInstallScript = `@echo off
-cd /d "${extractDir.replace(/\\/g, '\\\\')}"
-echo Installing dependencies in %CD%
-npm install --no-fund --no-audit --loglevel=error
-echo Installation complete
-pause
-exit`;
-          
-          const batchFilePath = path.join(extractDir, 'npm-install.bat');
-          fs.writeFileSync(batchFilePath, npmInstallScript);
-          
-          // Run the install script and show output
-          const { spawn } = require('child_process');
-          const npmInstall = spawn('cmd.exe', ['/c', batchFilePath], {
-            detached: true,
-            stdio: 'ignore',
-            windowsHide: false
-          });
-          
-          npmInstall.unref();
-          
-        } catch (err) {
-          console.error('Error running npm install:', err);
-          const { dialog } = require('electron');
-          dialog.showErrorBox('Error', `Failed to run npm install: ${err.message}`);
-        }
-      }
-    },
-    {
-      label: 'Smart Scan for Modules',
-      click: () => {
-        try {
-          const { dialog } = require('electron');
-          const userDataPath = app.getPath('userData');
-          const extractDir = path.join(userDataPath, 'extracted');
-          
-          dialog.showMessageBox({
-            type: 'info',
-            title: 'Smart Scan',
-            message: 'Scanning for required modules...',
-            detail: 'This will scan server.js for import references and ensure all modules are extracted.',
-            buttons: ['OK']
-          }).then(() => {
-            scanServerForRequiredModules(extractDir)
-              .then(result => {
-                dialog.showMessageBox({
-                  type: 'info',
-                  title: 'Scan Complete',
-                  message: 'Module extraction completed',
-                  detail: `Found and processed ${result.totalModules} module references.\n${result.missingModules} modules were missing and have been extracted.\n\nYou should restart the server for changes to take effect.`,
-                  buttons: ['Restart Server', 'Later'],
-                  defaultId: 0
-                }).then(response => {
-                  if (response.response === 0) {
-                    // Restart the server
-                    if (expressServer) {
-                      app.manualRestart = true;
-                      expressServer.kill();
-                      setTimeout(() => {
-                        app.manualRestart = false;
-                        app.serverRestartCount = 0;
-                        startExpressServer();
-                      }, 1000);
-                    } else {
-                      startExpressServer();
-                    }
-                  }
-                });
-              })
-              .catch(err => {
-                dialog.showErrorBox('Error', `Failed to scan modules: ${err.message}`);
-              });
-          });
-        } catch (err) {
-          console.error('Error in Smart Scan:', err);
-          const { dialog } = require('electron');
-          dialog.showErrorBox('Error', `Smart Scan failed: ${err.message}`);
-        }
-      }
-    },
+
     { 
       label: 'Quit', 
       click: () => {
         app.isQuitting = true;
-        
-        if (expressServer) {
-          expressServer.kill();
-        }
-        
         app.quit();
       }
     }
@@ -448,939 +226,110 @@ exit`;
   });
 }
 
+// Simplified server environment setup - just ensure data directory exists
 async function setupServerEnvironment() {
   const userDataPath = app.getPath('userData');
   const dataDir = path.join(userDataPath, 'data');
-  const extractDir = path.join(userDataPath, 'extracted');
 
-  // Create data directory
+  // Create data directory for user data (settings, transactions, etc.)
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
     console.log(`Created data directory: ${dataDir}`);
   }
 
-  // Create extraction directory
-  if (!fs.existsSync(extractDir)) {
-    fs.mkdirSync(extractDir, { recursive: true });
-    console.log(`Created extraction directory: ${extractDir}`);
-  }
-
-  return { userDataPath, dataDir, extractDir };
-}
-
-async function extractServerFiles(srcDir, destDir) {
-  console.log(`Extracting server files from ${srcDir} to ${destDir}`);
-
-  // Function to recursively copy directory
-  function copyDir(src, dest) {
-    // Create destination directory
-    if (!fs.existsSync(dest)) {
-      fs.mkdirSync(dest, { recursive: true });
-    }
-
-    // Read directory contents
-    const entries = fs.readdirSync(src, { withFileTypes: true });
-
-    for (const entry of entries) {
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-
-      if (entry.isDirectory()) {
-        // Skip node_modules and certain directories
-        if (entry.name === 'node_modules' || entry.name === '.git') {
-          continue;
-        }
-        // Recursively copy directory
-        copyDir(srcPath, destPath);
-      } else {
-        // Copy file
-        try {
-          fs.copyFileSync(srcPath, destPath);
-          console.log(`Copied ${srcPath} to ${destPath}`);
-        } catch (err) {
-          console.error(`Error copying ${srcPath}:`, err);
-        }
-      }
-    }
-  }
-
-  try {
-    // First, ensure the destination directory exists
-    if (!fs.existsSync(destDir)) {
-      fs.mkdirSync(destDir, { recursive: true });
-    }
-
-    // Copy the entire src directory structure
-    copyDir(srcDir, destDir);
-
-    // Create any missing critical directories
-    const criticalDirs = [
-      'server',
-      'server/exchanges',
-      'server/models',
-      'server/services',
-      'server/utils',
-      'routes',
-      'public',
-      'public/js',
-      'public/css',
-      'public/images'
-    ];
-
-    for (const dir of criticalDirs) {
-      const dirPath = path.join(destDir, dir);
-      if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-        console.log(`Created missing directory: ${dirPath}`);
-      }
-    }
-
-    // Create stubs for critical files if they're missing
-    const criticalFiles = [
-      {
-        path: 'server/priceCache.js',
-        content: `
-// Auto-generated stub for priceCache.js
-class PriceCache {
-  constructor() {
-    this.cache = new Map();
-  }
-
-  async getCurrentPrice(currency = 'USD') {
-    return { price: 0, lastUpdated: new Date().toISOString() };
-  }
-
-  async updatePrice(currency = 'USD') {
-    return { price: 0, lastUpdated: new Date().toISOString() };
-  }
-}
-
-module.exports = new PriceCache();`
-      },
-      {
-        path: 'server/summaryCache.js',
-        content: `
-// Auto-generated stub for summaryCache.js
-class SummaryCache {
-  constructor() {
-    this.cache = null;
-    this.lastUpdate = null;
-  }
-
-  async getSummary() {
-    return {
-      totalBTC: 0,
-      totalValue: 0,
-      profitLoss: 0,
-      lastUpdated: new Date().toISOString()
-    };
-  }
-}
-
-module.exports = new SummaryCache();`
-      }
-    ];
-
-    // Create exchange adapters
-    const exchangeAdapters = ['kraken', 'strike', 'binance', 'coinbase'];
-    for (const adapter of exchangeAdapters) {
-      criticalFiles.push({
-        path: `server/exchanges/${adapter}-adapter.js`,
-        content: `
-class ${adapter.charAt(0).toUpperCase() + adapter.slice(1)}Adapter {
-  constructor() {
-    this.name = '${adapter.charAt(0).toUpperCase() + adapter.slice(1)}';
-    this.connected = false;
-  }
-
-  getName() { return this.name; }
-  getRequiredCredentials() { return ['apiKey', 'apiSecret']; }
-  getStatus() { return this.connected; }
-  async connect() { this.connected = true; return true; }
-  async testConnection() { return true; }
-  async getTransactions() { return []; }
-  async getBalances() { return { BTC: 0 }; }
-}
-
-module.exports = ${adapter.charAt(0).toUpperCase() + adapter.slice(1)}Adapter;`
-      });
-    }
-
-    // Create any missing critical files
-    for (const file of criticalFiles) {
-      const filePath = path.join(destDir, file.path);
-      if (!fs.existsSync(filePath)) {
-        // Ensure the directory exists
-        const fileDir = path.dirname(filePath);
-        if (!fs.existsSync(fileDir)) {
-          fs.mkdirSync(fileDir, { recursive: true });
-        }
-        fs.writeFileSync(filePath, file.content.trim() + '\n');
-        console.log(`Created stub file: ${filePath}`);
-      }
-    }
-
-    // Copy package.json from the app root and modify it for the extracted server
-    const mainPackageJson = require(path.join(app.getAppPath(), 'package.json'));
-    const serverPackageJson = {
-      name: "btc-tracker-server",
-      version: mainPackageJson.version,
-      description: "Extracted server for BTC Tracker",
-      dependencies: mainPackageJson.dependencies
-    };
-
-    fs.writeFileSync(
-      path.join(destDir, 'package.json'),
-      JSON.stringify(serverPackageJson, null, 2) + '\n'
-    );
-
-    console.log('Server files extraction completed successfully');
-  } catch (err) {
-    console.error('Error during file extraction:', err);
-    throw err;
-  }
-}
-
-// Add this utility function for recursive directory copying
-function copyFolderRecursiveSync(source, target) {
-  // Check if source exists
-  if (!fs.existsSync(source)) {
-    console.error(`Source folder does not exist: ${source}`);
-    return false;
-  }
-
-  // Create target folder if it doesn't exist
-  if (!fs.existsSync(target)) {
-    fs.mkdirSync(target, { recursive: true });
-    console.log(`Created target folder: ${target}`);
-  }
-
-  // Get all files and folders in source
-  try {
-    const files = fs.readdirSync(source);
-    console.log(`Files in ${source}: ${files.length} items`);
-
-    // Process each file/folder
-    for (const file of files) {
-      const currentSource = path.join(source, file);
-      const currentTarget = path.join(target, file);
-      
-      // Get file stats
-      const stat = fs.statSync(currentSource);
-      
-      if (stat.isDirectory()) {
-        // Recursively copy subdirectory
-        console.log(`Copying directory: ${currentSource} -> ${currentTarget}`);
-        copyFolderRecursiveSync(currentSource, currentTarget);
-      } else {
-        // Copy file
-        try {
-          fs.copyFileSync(currentSource, currentTarget);
-        } catch (err) {
-          console.error(`Error copying file ${currentSource}: ${err.message}`);
-        }
-      }
-    }
-    return true;
-  } catch (err) {
-    console.error(`Error reading directory ${source}: ${err.message}`);
-    return false;
-  }
+  return { userDataPath, dataDir };
 }
 
 async function startExpressServer() {
   try {
-    const { userDataPath, extractDir } = await setupServerEnvironment();
-    let serverDir = app.isPackaged ? extractDir : __dirname;
+    console.log('Starting Express server...');
+    
+    let serverPath;
     
     if (app.isPackaged) {
-      // Define Node.js paths
-      const nodeBinariesPath = path.join(process.resourcesPath, 'node_binaries');
-      let nodePath = path.join(nodeBinariesPath, 'node.exe');
-      const npmPath = path.join(nodeBinariesPath, 'npm.cmd');
-      
-      // Log paths for debugging
-      console.log('Node.js paths:');
-      console.log(`Node binary path: ${nodePath}`);
-      console.log(`npm path: ${npmPath}`);
-      console.log(`Node binaries directory: ${nodeBinariesPath}`);
-      console.log(`Resources path: ${process.resourcesPath}`);
+      console.log('Running in packaged mode');
       console.log(`App path: ${app.getAppPath()}`);
-
-      // Check if the Node.js binaries exist
-      let nodeSetupCompleted = fs.existsSync(nodePath);
+      console.log(`Resources path: ${process.resourcesPath}`);
+      console.log(`__dirname: ${__dirname}`);
       
-      if (!nodeSetupCompleted) {
-        console.log('Node.js binaries not found. Setting up now...');
-        
-        // Create node_binaries directory if it doesn't exist
-        if (!fs.existsSync(nodeBinariesPath)) {
-          fs.mkdirSync(nodeBinariesPath, { recursive: true });
-          console.log('Created node_binaries directory');
-        }
-        
-        // Try several possible locations for the zip file
-        const possibleZipLocations = [
-          // Check in resources
-          path.join(process.resourcesPath, 'node-binaries.zip'),
-          // Check in app directory
-          path.join(app.getAppPath(), 'node_binaries', 'node-v22.14.0-win-x64.zip'),
-          // Check in app root
-          path.join(app.getAppPath(), 'node-v22.14.0-win-x64.zip')
-        ];
-        
-        console.log('Checking for Node.js zip in these locations:');
-        possibleZipLocations.forEach(p => console.log(` - ${p}`));
-        
-        // Find the first zip that exists
-        let zipPath = null;
-        for (const p of possibleZipLocations) {
-          if (fs.existsSync(p)) {
-            zipPath = p;
-            console.log(`Found Node.js zip at: ${zipPath}`);
-            break;
-          }
-        }
-        
-        if (!zipPath) {
-          console.error('Node.js zip not found in any location');
-          throw new Error('Node.js components not found. Please reinstall the application.');
-        }
-        
+      // In packaged mode, the server.js is likely in the ASAR archive
+      // According to Electron docs, we should use require() for files in ASAR
+      const possiblePaths = [
+        path.join(__dirname, 'server.js'),
+        path.join(__dirname, '..', 'server.js'),
+        './server.js',
+        '../server.js'
+      ];
+      
+      console.log('Checking possible server.js locations:');
+      for (const possiblePath of possiblePaths) {
+        console.log(`  Checking: ${possiblePath}`);
         try {
-          // Create temp directory
-          const tempDir = path.join(app.getPath('temp'), 'btc-tracker-node');
-          if (fs.existsSync(tempDir)) {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-          }
-          fs.mkdirSync(tempDir, { recursive: true });
-          console.log(`Created temp directory: ${tempDir}`);
-          
-          // Copy zip to temp
-          const tempZipPath = path.join(tempDir, 'node.zip');
-          fs.copyFileSync(zipPath, tempZipPath);
-          console.log(`Copied zip to: ${tempZipPath}`);
-          
-          // Update the extraction part
-          console.log('Extracting Node.js binaries...');
-          try {
-            // Try first with pure PowerShell (most reliable on Windows)
-            console.log('Using PowerShell for extraction');
-            const { execSync } = require('child_process');
-            execSync(`powershell -Command "Expand-Archive -Path '${tempZipPath}' -DestinationPath '${tempDir}' -Force"`, {
-              stdio: 'inherit'
-            });
-          } catch (extractErr) {
-            console.error('PowerShell extraction failed:', extractErr);
-            
-            // Try another PowerShell approach
-            try {
-              console.log('Trying alternative PowerShell extraction method...');
-              const { execSync } = require('child_process');
-              execSync(`powershell -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory('${tempZipPath}', '${tempDir}')"`, {
-                stdio: 'inherit'
-              });
+          // Try to resolve the module path
+          const resolvedPath = require.resolve(possiblePath);
+          console.log(`  ✓ Found server.js at: ${resolvedPath}`);
+          serverPath = resolvedPath;
+          break;
             } catch (err) {
-              console.error('Alternative PowerShell extraction failed:', err);
-              
-              // Try with Node.js
-              try {
-                console.log('Falling back to unzipper package');
-                // Try to require unzipper - it might not be available
-                try {
-                  const unzipper = require('unzipper');
-                  const fs = require('fs');
-                  const extractPromise = new Promise((resolve, reject) => {
-                    fs.createReadStream(tempZipPath)
-                      .pipe(unzipper.Extract({ path: tempDir }))
-                      .on('close', resolve)
-                      .on('error', reject);
-                  });
-                  await extractPromise;
-                } catch (unzipperErr) {
-                  console.error('Unzipper package not available:', unzipperErr);
-                  throw new Error('All extraction methods failed');
-                }
-              } catch (nodeErr) {
-                console.error('Node.js extraction failed:', nodeErr);
-                throw new Error('All extraction methods failed');
-              }
-            }
-          }
-          
-          // Find the extracted directory
-          const items = fs.readdirSync(tempDir);
-          console.log(`Items in temp directory: ${items.join(', ')}`);
-          
-          const extractedDir = path.join(tempDir, 'node-v22.14.0-win-x64');
-          if (!fs.existsSync(extractedDir)) {
-            console.error('Extracted directory not found');
-            throw new Error('Failed to extract Node.js binaries');
-          }
-          
-          // Use our recursive copy function
-          console.log(`Copying files from ${extractedDir} to ${nodeBinariesPath}`);
-          const success = copyFolderRecursiveSync(extractedDir, nodeBinariesPath);
-          
-          if (!success) {
-            throw new Error('Failed to copy Node.js files');
-          }
-          
-          console.log('Node.js binaries setup completed successfully');
-          
-          // Clean up
-          fs.rmSync(tempDir, { recursive: true, force: true });
-          console.log('Temp directory cleaned up');
-          
-          // After successful extraction, update nodeSetupCompleted flag
-          nodeSetupCompleted = true;
-          
-        } catch (error) {
-          console.error('Error setting up Node.js:', error);
-          throw new Error(`Failed to set up Node.js: ${error.message}`);
+          console.log(`  ✗ Not found: ${err.message}`);
         }
       }
-
-      await extractServerFiles(__dirname, extractDir);
-      console.log('Server files extracted successfully');
-
-      // Check if node_modules exists and package.json has changed
-      const nodeModulesPath = path.join(extractDir, 'node_modules');
-      const packageJsonPath = path.join(extractDir, 'package.json');
       
-      let shouldInstall = false;
-      
-      if (!fs.existsSync(nodeModulesPath)) {
-        console.log('node_modules not found, will install dependencies');
-        shouldInstall = true;
-      } else if (fs.existsSync(packageJsonPath)) {
-        const packageJsonStat = fs.statSync(packageJsonPath);
-        const nodeModulesStat = fs.statSync(nodeModulesPath);
-        if (packageJsonStat.mtime > nodeModulesStat.mtime) {
-          console.log('package.json is newer than node_modules, will reinstall dependencies');
-          shouldInstall = true;
+      if (!serverPath) {
+        // Fallback: try to find server.js in the ASAR archive
+        const asarServerPath = path.join(process.resourcesPath, 'app.asar', 'src', 'server.js');
+        console.log(`Trying ASAR path: ${asarServerPath}`);
+        if (fs.existsSync(asarServerPath)) {
+          serverPath = asarServerPath;
+          console.log(`✓ Found server.js in ASAR: ${serverPath}`);
         }
       }
-
-      if (shouldInstall) {
-        console.log('Installing npm dependencies...');
-        try {
-          // Ensure we have a valid node and npm path
-          if (!fs.existsSync(nodePath)) {
-            console.error('Node binary not found at:', nodePath);
-            // Try to find node in the system
-            try {
-              const { execSync } = require('child_process');
-              const systemNodePath = execSync('where node', { encoding: 'utf8' }).trim().split('\n')[0];
-              console.log(`Found system Node at: ${systemNodePath}`);
-              nodePath = systemNodePath;
-            } catch (whereErr) {
-              console.error('Cannot find node in the system:', whereErr);
-              throw new Error('Node.js not found in the system.');
-            }
-          }
-          
-          const { execSync } = require('child_process');
-          
-          // Use npm from the extracted Node.js binaries
-          if (fs.existsSync(npmPath)) {
-            console.log(`Using npm at: ${npmPath}`);
-            execSync(`"${npmPath}" install --no-fund --no-audit --loglevel=error`, {
-              cwd: extractDir,
-              stdio: ['ignore', 'pipe', 'pipe'],
-              env: {
-                ...process.env,
-                PATH: `${nodeBinariesPath};${process.env.PATH}`
-              }
-            });
+      
+      if (!serverPath) {
+        throw new Error(`Server file not found in packaged app. Checked multiple locations.`);
+      }
           } else {
-            // Try using system npm
-            console.log('Using system npm');
-            execSync('npm install --no-fund --no-audit --loglevel=error', {
-              cwd: extractDir,
-              stdio: ['ignore', 'pipe', 'pipe']
-            });
-          }
-          
-          console.log('npm install completed successfully');
-        } catch (npmError) {
-          console.error('Error during npm install:', npmError.message);
-          throw npmError;
-        }
-      }
-
-      const serverPath = path.join(serverDir, 'server.js');
-
-      if (!fs.existsSync(serverPath)) {
-        throw new Error(`Server file not found: ${serverPath}`);
-      }
-
-      // Ensure we have a node path
-      if (!fs.existsSync(nodePath)) {
-        console.error('Node binary still not found. Looking for system node...');
-        try {
-          const { execSync } = require('child_process');
-          nodePath = execSync('where node', { encoding: 'utf8' }).trim().split('\n')[0];
-          console.log(`Using system node at: ${nodePath}`);
-        } catch (whereError) {
-          console.error('Cannot find node in the system:', whereError);
-          throw new Error('Node.js not found. Cannot start server.');
-        }
-      }
-      
-      // Other environment variables to set
-      const env = {
-        ...process.env,
-        USE_WINDOWS_PATH: 'true',
-        ELECTRON_APP_PATH: app.getAppPath(),
-        ELECTRON_USER_DATA_PATH: userDataPath,
-        IS_ELECTRON: 'true',
-        ELECTRON_IS_PACKAGED: String(app.isPackaged),
-        HOME: serverDir,
-        USERPROFILE: serverDir,
-        NODE_PATH: '',
-        PWD: serverDir,
-        DEBUG: 'btc-tracker:*',
-        PATH: `${nodeBinariesPath};${process.env.PATH}`
-      };
-
-      process.chdir(serverDir);
-      console.log(`Starting server with node: ${nodePath}`);
-      expressServer = spawn(nodePath, ['--trace-warnings', serverPath], {
-        env,
-        cwd: serverDir,
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
-    } else {
-      // Development mode - use local node
-      const serverPath = path.join(serverDir, 'server.js');
-      
-      if (!fs.existsSync(serverPath)) {
-        throw new Error(`Server file not found: ${serverPath}`);
-      }
-      
-      const env = {
-        ...process.env,
-        USE_WINDOWS_PATH: 'true',
-        ELECTRON_APP_PATH: app.getAppPath(),
-        ELECTRON_USER_DATA_PATH: userDataPath,
-        IS_ELECTRON: 'true',
-        ELECTRON_IS_PACKAGED: 'false',
-        HOME: serverDir,
-        USERPROFILE: serverDir,
-        NODE_PATH: '',
-        PWD: serverDir,
-        DEBUG: 'btc-tracker:*'
-      };
-
-      process.chdir(serverDir);
-      expressServer = spawn('node', ['--trace-warnings', serverPath], {
-        env,
-        cwd: serverDir,
-        stdio: ['ignore', 'pipe', 'pipe']
-      });
+      // Development mode
+      serverPath = path.join(__dirname, 'server.js');
     }
 
-    expressServer.stdout.on('data', (data) => {
-      console.log(`[Server] ${data.toString().trim()}`);
-    });
+    console.log(`Using server path: ${serverPath}`);
+    
+    // Set up environment variables for the server
+    process.env.PORT = PORT.toString();
+    process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+    process.env.IS_ELECTRON = 'true';
+    process.env.ELECTRON_IS_PACKAGED = app.isPackaged ? 'true' : 'false';
+    process.env.ELECTRON_USER_DATA_PATH = app.getPath('userData');
 
-    expressServer.stderr.on('data', (data) => {
-      console.error(`[Server Error] ${data.toString().trim()}`);
-    });
+    // Instead of spawning a separate process, require and run the server directly
+    // This works better with ASAR archives according to Electron documentation
+    console.log('Loading server module...');
+    
+    // Clear the require cache to ensure fresh load
+    delete require.cache[require.resolve(serverPath)];
+    
+    // Require the server - this will start it automatically
+    require(serverPath);
+    
+    console.log('Server module loaded and started');
 
-    expressServer.on('error', (err) => {
-      console.error('Failed to start Express server:', err);
-    });
+    // Wait a moment for the server to start
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    expressServer.on('exit', (code) => {
-      console.log(`Express server exited with code ${code}`);
-      
-      if (code !== 0 && !app.isQuitting && !app.manualRestart) {
-        if (!app.serverRestartCount) app.serverRestartCount = 0;
-        app.serverRestartCount++;
-
-        if (app.serverRestartCount <= MAX_RESTARTS) {
-          console.log(`Restarting server (attempt ${app.serverRestartCount}/${MAX_RESTARTS})...`);
-          setTimeout(startExpressServer, 2000 * app.serverRestartCount);
-        } else {
-          console.error('Server crashed too many times. Not restarting automatically.');
-        }
-      }
-    });
-
-    console.log(`BTC Tracker server running on http://localhost:${PORT}`);
-    if (isHeadless) {
-      console.log('Running in headless mode - use tray icon or web browser');
-    }
+    console.log(`Express server should be running on http://localhost:${PORT}`);
+    
   } catch (error) {
     console.error('Error starting Express server:', error);
-  }
-}
-
-// Smart scanning function to find all required modules in server.js and related files
-async function scanServerForRequiredModules(extractDir) {
-  console.log('Starting smart scan for required modules...');
-  
-  // Define result counters
-  const result = {
-    totalModules: 0,
-    missingModules: 0,
-    processedFiles: 0
-  };
-  
-  // Make sure the extracted directory exists
-  if (!fs.existsSync(extractDir)) {
-    fs.mkdirSync(extractDir, { recursive: true });
-  }
-  
-  // Set of files we've processed to avoid duplicates
-  const processedFiles = new Set();
-  
-  // Queue of files to process
-  const filesToProcess = [path.join(extractDir, 'server.js')];
-  
-  // Check if the starting point exists
-  if (!fs.existsSync(filesToProcess[0])) {
-    console.log(`Main server.js not found at ${filesToProcess[0]}. Extracting it first...`);
-    const serverJsPath = path.join(__dirname, 'server.js');
-    if (fs.existsSync(serverJsPath)) {
-      const content = fs.readFileSync(serverJsPath, 'utf8');
-      fs.writeFileSync(filesToProcess[0], content);
-      console.log(`Extracted main server.js to ${filesToProcess[0]}`);
-    } else {
-      throw new Error('Could not find server.js in the application');
-    }
-  }
-  
-  // Regex patterns to detect require statements
-  const requirePattern = /require\(['"]([^'"]+)['"]\)/g;
-  const importPattern = /import\s+(?:\*\s+as\s+\w+|{\s*[\w\s,]+\s*}|\w+)\s+from\s+['"]([^'"]+)['"]/g;
-  
-  // Process all files in the queue
-  while (filesToProcess.length > 0) {
-    const currentFile = filesToProcess.shift();
     
-    // Skip if we've already processed this file
-    if (processedFiles.has(currentFile)) {
-      continue;
-    }
-    
-    // Mark as processed
-    processedFiles.add(currentFile);
-    result.processedFiles++;
-    
-    // Check if file exists
-    if (!fs.existsSync(currentFile)) {
-      console.log(`File not found: ${currentFile}`);
-      continue;
-    }
-    
-    console.log(`Processing file: ${currentFile}`);
-    
-    try {
-      // Read the file contents
-      const content = fs.readFileSync(currentFile, 'utf8');
-      
-      // Extract all require statements
-      let match;
-      let modulePaths = [];
-      
-      // Process require statements
-      while ((match = requirePattern.exec(content)) !== null) {
-        modulePaths.push(match[1]);
-      }
-      
-      // Process import statements
-      while ((match = importPattern.exec(content)) !== null) {
-        modulePaths.push(match[1]);
-      }
-      
-      // Process each module path
-      for (const modulePath of modulePaths) {
-        result.totalModules++;
-        
-        // Skip node built-ins and node_modules (those are handled by npm install)
-        if (modulePath.startsWith('node:') || 
-            (!modulePath.startsWith('./') && !modulePath.startsWith('../'))) {
-          continue;
-        }
-        
-        // Resolve the full path of the required module
-        const currentDir = path.dirname(currentFile);
-        let resolvedPath = path.resolve(currentDir, modulePath);
-        
-        // Handle directory imports (index.js)
-        if (!resolvedPath.endsWith('.js') && !resolvedPath.endsWith('.json')) {
-          if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isDirectory()) {
-            resolvedPath = path.join(resolvedPath, 'index.js');
-          } else {
-            resolvedPath += '.js';
-          }
-        }
-        
-        // Check if the module exists in extracted directory
-        if (!fs.existsSync(resolvedPath)) {
-          console.log(`Missing module: ${modulePath} (resolved to ${resolvedPath})`);
-          result.missingModules++;
-          
-          // Try to find the module in the app
-          const relativePathFromExtract = path.relative(extractDir, resolvedPath);
-          const possibleSources = [
-            path.join(__dirname, relativePathFromExtract),
-            path.join(app.getAppPath(), relativePathFromExtract)
-          ];
-          
-          let sourceFound = false;
-          for (const sourcePath of possibleSources) {
-            if (fs.existsSync(sourcePath)) {
-              console.log(`Found module at: ${sourcePath}`);
-              
-              // Create directory structure if needed
-              const dirPath = path.dirname(resolvedPath);
-              if (!fs.existsSync(dirPath)) {
-                fs.mkdirSync(dirPath, { recursive: true });
-              }
-              
-              // Copy the file
-              const content = fs.readFileSync(sourcePath, 'utf8');
-              fs.writeFileSync(resolvedPath, content);
-              console.log(`Extracted module to: ${resolvedPath}`);
-              
-              // Add to files to process
-              filesToProcess.push(resolvedPath);
-              sourceFound = true;
-              break;
-            }
-          }
-          
-          // If module not found, look for it in parent directories with slightly different names
-          if (!sourceFound) {
-            const moduleBasename = path.basename(modulePath, '.js');
-            const moduleDirname = path.dirname(modulePath);
-            
-            // Try various conventions like module-adapter.js, moduleAdapter.js, etc.
-            const variations = [
-              `${moduleBasename}-adapter.js`,
-              `${moduleBasename}Adapter.js`,
-              `${moduleBasename}-service.js`,
-              `${moduleBasename}Service.js`,
-              `${moduleBasename}.js`
-            ];
-            
-            for (const variant of variations) {
-              // First check in the original location
-              const originalRelative = path.join(moduleDirname, variant);
-              const originalPath = path.resolve(currentDir, originalRelative);
-              
-              if (fs.existsSync(originalPath)) {
-                console.log(`Found module variant at: ${originalPath}`);
-                fs.copyFileSync(originalPath, resolvedPath);
-                console.log(`Copied to: ${resolvedPath}`);
-                filesToProcess.push(resolvedPath);
-                sourceFound = true;
-                break;
-              }
-              
-              // Then check the app source
-              const appSrcPath = path.join(__dirname, originalRelative.startsWith('./') || originalRelative.startsWith('../') 
-                ? originalRelative 
-                : `./${originalRelative}`);
-              
-              if (fs.existsSync(appSrcPath)) {
-                console.log(`Found module variant in app at: ${appSrcPath}`);
-                fs.copyFileSync(appSrcPath, resolvedPath);
-                console.log(`Copied to: ${resolvedPath}`);
-                filesToProcess.push(resolvedPath);
-                sourceFound = true;
-                break;
-              }
-            }
-          }
-          
-          // Last resort, check the entire exchanges directory
-          if (!sourceFound && modulePath.includes('exchanges')) {
-            const exchangesDir = path.join(__dirname, 'exchanges');
-            if (fs.existsSync(exchangesDir)) {
-              const moduleBasename = path.basename(modulePath, '.js');
-              const destDir = path.join(extractDir, 'exchanges');
-              
-              if (!fs.existsSync(destDir)) {
-                fs.mkdirSync(destDir, { recursive: true });
-              }
-              
-              console.log(`Scanning exchanges directory: ${exchangesDir}`);
-              const exchangeFiles = fs.readdirSync(exchangesDir);
-              
-              // Look for matching files
-              for (const file of exchangeFiles) {
-                if (file.includes(moduleBasename) || moduleBasename.includes(file.replace('.js', ''))) {
-                  const sourcePath = path.join(exchangesDir, file);
-                  const destPath = path.join(destDir, file);
-                  
-                  console.log(`Found potential match: ${sourcePath}`);
-                  fs.copyFileSync(sourcePath, destPath);
-                  console.log(`Copied to: ${destPath}`);
-                  
-                  // Also create the specific file we're looking for
-                  fs.copyFileSync(sourcePath, resolvedPath);
-                  console.log(`Copied to target location: ${resolvedPath}`);
-                  
-                  filesToProcess.push(destPath);
-                  sourceFound = true;
-                }
-              }
-              
-              // If nothing matched, copy all exchange files
-              if (!sourceFound) {
-                console.log(`No specific match found, copying all exchange files`);
-                for (const file of exchangeFiles) {
-                  const sourcePath = path.join(exchangesDir, file);
-                  const destPath = path.join(destDir, file);
-                  
-                  if (fs.statSync(sourcePath).isFile()) {
-                    fs.copyFileSync(sourcePath, destPath);
-                    console.log(`Copied exchange file: ${destPath}`);
-                    filesToProcess.push(destPath);
-                  }
-                }
-                
-                // Create a stub file for the specific module we were looking for
-                const stubContent = `// Auto-generated stub for ${moduleBasename}
-module.exports = {
-  getExchangeInfo: async function() {
-    return {
-      name: '${moduleBasename.charAt(0).toUpperCase() + moduleBasename.slice(1)}',
-      url: 'https://example.com',
-      logoUrl: '/images/exchanges/default.png',
-      status: 'online'
-    };
-  },
-  getCurrentPrice: async function(currency = 'USD') {
-    // Return a default value
-    return { price: 0, lastUpdated: new Date().toISOString() };
-  }
-};`;
-                
-                fs.writeFileSync(resolvedPath, stubContent);
-                console.log(`Created stub for: ${resolvedPath}`);
-              }
-            }
-          }
-        } else {
-          // Module exists, add it to the processing queue
-          filesToProcess.push(resolvedPath);
-        }
-      }
-    } catch (err) {
-      console.error(`Error processing file ${currentFile}:`, err);
-    }
-  }
-  
-  console.log(`Smart scan completed. Processed ${result.processedFiles} files, found ${result.totalModules} module references, extracted ${result.missingModules} missing modules.`);
-  return result;
-}
-
-// New function to handle resetting extracted files
-function resetExtractedFiles() {
-  try {
+    // Show error dialog to user
     const { dialog } = require('electron');
-    const extractDir = path.join(app.getPath('userData'), 'extracted');
+    dialog.showErrorBox(
+      'Startup Error',
+      `Failed to start BTC Tracker: ${error.message}`
+    );
     
-    // Check if the directory exists
-    if (!fs.existsSync(extractDir)) {
-      dialog.showMessageBox({
-        type: 'info',
-        title: 'No Files to Reset',
-        message: 'No extracted files were found',
-        detail: 'The server will extract files on the next restart.',
-        buttons: ['OK']
-      });
-      return;
-    }
-    
-    // First try to check if any files are locked
-    try {
-      // Create a test file to see if we have write access
-      const testFile = path.join(extractDir, 'reset-test.txt');
-      fs.writeFileSync(testFile, 'Testing if directory is locked');
-      fs.unlinkSync(testFile);
-    } catch (accessErr) {
-      console.error('Directory appears to be locked:', accessErr);
-      dialog.showMessageBox({
-        type: 'error',
-        title: 'Directory Locked',
-        message: 'Cannot reset files - directory is in use',
-        detail: 'Please follow these steps:\n\n' +
-                '1. Click "OK" to close this message\n' +
-                '2. Right-click the BTC Tracker tray icon and select "Quit"\n' +
-                '3. Check Task Manager and end any running "node.exe" processes\n' +
-                '4. Restart the application and try again\n\n' +
-                'Alternatively, you can manually delete this folder when the app is not running:\n' +
-                extractDir,
-        buttons: ['OK']
-      });
-      return;
-    }
-    
-    // If we get here, we can proceed with deletion
-    // Simple function to delete directory recursively
-    const deleteFolderRecursive = function(pathToDelete) {
-      if (fs.existsSync(pathToDelete)) {
-        fs.readdirSync(pathToDelete).forEach((file) => {
-          const curPath = path.join(pathToDelete, file);
-          if (fs.lstatSync(curPath).isDirectory()) {
-            // Recursive call
-            deleteFolderRecursive(curPath);
-          } else {
-            // Delete file
-            try {
-              fs.unlinkSync(curPath);
-            } catch (unlinkErr) {
-              console.error(`Failed to delete file ${curPath}:`, unlinkErr);
-              throw unlinkErr; // Re-throw to stop the process
-            }
-          }
-        });
-        fs.rmdirSync(pathToDelete);
-      }
-    };
-    
-    try {
-      deleteFolderRecursive(extractDir);
-      console.log(`Deleted extracted directory: ${extractDir}`);
-    } catch (err) {
-      console.error('Failed to delete directory:', err);
-      dialog.showErrorBox('Error', 
-        `Failed to reset files: ${err.message}\n\n` +
-        `The directory may be in use. Please close all instances of the application ` +
-        `and try again, or manually delete the folder:\n${extractDir}`
-      );
-      return;
-    }
-    
-    // Show success dialog
-    dialog.showMessageBox({
-      type: 'info',
-      title: 'Files Reset',
-      message: 'Extracted files have been reset',
-      detail: 'The server will extract files again on the next restart.',
-      buttons: ['Restart Now', 'Later'],
-      defaultId: 0
-    }).then(result => {
-      if (result.response === 0) {
-        // Restart the server
-        app.serverRestartCount = 0;
-        setTimeout(() => {
-          app.manualRestart = false;
-          startExpressServer();
-        }, 1000);
-      }
-    });
-  } catch (err) {
-    const { dialog } = require('electron');
-    console.error('Error resetting extracted files:', err);
-    dialog.showErrorBox('Error', `Failed to reset files: ${err.message}`);
+    throw error;
   }
 }
 
@@ -1431,11 +380,5 @@ app.on('window-all-closed', () => {
   // Don't quit on all windows closed when in headless mode
   if (process.platform !== 'darwin' && !isHeadless) {
     app.quit();
-  }
-});
-
-process.on('exit', () => {
-  if (expressServer) {
-    expressServer.kill();
   }
 }); 

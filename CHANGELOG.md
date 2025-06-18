@@ -5,6 +5,28 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2025-06-16
+
+### 🚀 New Features
+- **Satoshi Unit Support** - Added full support for displaying Bitcoin amounts in Satoshis alongside traditional BTC units
+- **Enhanced Display Options** - BTC/Satoshi unit toggle with real-time switching across all views
+- **Improved User Experience** - Dynamic labels and smart input validation based on selected unit
+- **Chart Library Update** - Switched to [TradingView lightweight charts](https://github.com/tradingview/lightweight-charts) for better performance and enhanced visualization
+- **New Currencies** - Added support for Indian Rupee (INR) and Brazilian Real (BRL) with proper formatting and exchange rates
+- **Electron Enhancement** - Enhanced Windows installer with integrated node modules, eliminating post-installation import requirements
+- **Synchronized Price Logic** - Unified price display and conversion across all views with real-time updates
+- **Multi-Architecture Docker Images** - Added native support for AMD64, ARM64, and ARM/v7 architectures for enhanced Umbrel 
+
+### 🐛 Critical Bug Fixes
+- **Electron Installation** - Fixed Windows installer issues with proper node modules integration
+
+### ✨ Features Enhanced
+- **Satoshi Symbol Integration** - Implemented proper Satoshi symbol (⚡) from satsymbol.com. Special thanks to @satsymbol for creating and freely sharing this symbol to help drive Bitcoin adoption!
+- **Historical Data Refactor** - Optimized historical Bitcoin price data loading with improved caching and sequential fetching to prevent rate limiting
+
+### 🔄 Changes
+- **Remove Coingecko remains** - Removed all legacy code, configuration and references related to the deprecated Coingecko API integration, cleaning up the codebase
+- 
 ## [0.5.3] - 2025-06-07
 
 - **Lightning Network donation support** - Dual payment system with Lightning Network as default option for instant, low-fee donations alongside traditional on-chain Bitcoin payments

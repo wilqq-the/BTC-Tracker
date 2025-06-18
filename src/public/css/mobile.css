@@ -1,0 +1,435 @@
+/* Mobile Navigation and Layout Styles */
+/* Consolidated mobile CSS to work with existing styles.css variables */
+
+/* Ensure mobile elements are hidden on desktop */
+.mobile-flex-row,
+.mobile-nav-bar {
+    display: none;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+    /* Hide desktop navigation */
+    nav {
+        display: none !important;
+    }
+    
+    /* Hide old mobile dropdown navigation and any conflicting elements */
+    .mobile-dropdown-nav,
+    .mobile-header,
+    .mobile-bottom-nav,
+    .mobile-nav,
+    .daily-ticker,
+    .ticker-container,
+    .top-ticker,
+    .price-ticker,
+    .ticker,
+    .btc-ticker,
+    .crypto-ticker,
+    .market-ticker,
+    .price-display,
+    .current-price {
+        display: none !important;
+    }
+
+    /* Also hide any element that contains ticker-related content */
+    *[class*="ticker"],
+    *[id*="ticker"],
+    *[class*="price-display"],
+    *[id*="price-display"] {
+        display: none !important;
+    }
+
+    /* Force hide any existing mobile navigation elements except our new ones */
+    *[class*="mobile-nav"]:not(.mobile-flex-row):not(.mobile-nav-bar) {
+        display: none !important;
+    }
+
+    /* Mobile Header Styling */
+    header {
+        display: flex !important;
+        flex-direction: column !important;
+        padding: 0.5rem 1rem !important;
+        margin: 0 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 100 !important;
+        background: var(--background-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+    }
+
+    header .mobile-flex-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+        margin: 0 !important;
+        margin-bottom: 3px !important;
+        padding: 0 !important;
+        position: relative !important;
+        z-index: 100 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    header .mobile-flex-row h1 {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        font-family: inherit !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        color: var(--text-color) !important;
+        line-height: 1.2 !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        text-decoration: none !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    header .mobile-flex-row .bitcoin-logo {
+        width: 20px !important;
+        height: 20px !important;
+        display: inline-block !important;
+        vertical-align: middle !important;
+        margin-right: 8px !important;
+        margin-left: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding: 0 !important;
+        flex-shrink: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    header .mobile-flex-row .theme-logout-container {
+        display: flex !important;
+        gap: 8px !important;
+        align-items: center !important;
+        flex-shrink: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+    }
+
+    /* Mobile Header Buttons */
+    header .mobile-flex-row .mobile-add-btn,
+    header .mobile-flex-row .mobile-theme-toggle {
+        background-color: rgba(247, 147, 26, 0.15) !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 6px !important;
+        margin: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+        color: var(--text-color) !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        transition: all 0.2s ease !important;
+        font-size: 13px !important;
+        box-shadow: none !important;
+        text-decoration: none !important;
+    }
+
+    header .mobile-flex-row .mobile-add-btn:hover,
+    header .mobile-flex-row .mobile-theme-toggle:hover {
+        background-color: rgba(247, 147, 26, 0.25) !important;
+    }
+
+    header .mobile-flex-row .mobile-logout-btn {
+        background-color: rgba(231, 76, 60, 0.15) !important;
+        color: var(--text-color) !important;
+        border: none !important;
+        border-radius: 6px !important;
+        padding: 6px !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        text-decoration: none !important;
+        transition: all 0.2s ease !important;
+        font-size: 13px !important;
+        box-shadow: none !important;
+    }
+
+    header .mobile-flex-row .mobile-logout-btn:hover {
+        background-color: rgba(231, 76, 60, 0.25) !important;
+    }
+
+    /* Mobile Bottom Navigation */
+    .mobile-nav-bar {
+        display: flex !important;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--background-color) !important;
+        border-top: 1px solid var(--border-color) !important;
+        padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+        z-index: 1000;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 4px;
+        text-decoration: none;
+        color: var(--text-secondary-color);
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .nav-item i {
+        font-size: 20px;
+        margin-bottom: 4px;
+    }
+
+    .nav-item span {
+        font-size: 11px;
+        font-weight: 500;
+        line-height: 1;
+    }
+
+    .nav-item.active {
+        color: var(--accent-color);
+    }
+
+    .nav-item:hover {
+        color: var(--text-color);
+    }
+
+    /* Edge-to-Edge Mobile Layout */
+    body {
+        background: var(--background-color) !important;
+        padding-bottom: 80px !important; /* Space for bottom nav */
+        position: relative;
+    }
+
+    .main-content,
+    .container,
+    .content-container,
+    .page-container,
+    .main-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+        width: 100% !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        overflow: visible !important;
+        background: var(--background-color) !important;
+    }
+
+    /* Edge-to-edge cards and sections */
+    .card,
+    .section,
+    .panel,
+    .content-section,
+    .transaction-history,
+    .exchange-list,
+    .admin-panel {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        background: var(--background-color) !important;
+        padding: 1rem !important;
+    }
+
+    /* Full-width headers and sections */
+    .section-header,
+    .page-header,
+    .content-header {
+        padding: 1rem !important;
+        margin: 0 !important;
+        background: var(--background-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        border-radius: 0 !important;
+    }
+
+    /* Transaction list edge-to-edge styling */
+    .transaction-item,
+    .transaction-row,
+    .list-item {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+        background: var(--background-color) !important;
+    }
+
+    /* Exchange cards edge-to-edge */
+    .exchange-card,
+    .api-card,
+    .settings-card {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+        background: var(--background-color) !important;
+    }
+
+    /* Admin panels edge-to-edge */
+    .admin-section,
+    .settings-section,
+    .config-section {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        padding: 1rem !important;
+        background: var(--background-color) !important;
+    }
+
+    /* Button containers full width */
+    .button-container,
+    .action-buttons,
+    .toolbar {
+        padding: 1rem !important;
+        margin: 0 !important;
+        background: var(--background-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        border-radius: 0 !important;
+        display: flex !important;
+        gap: 0.5rem !important;
+        flex-wrap: wrap !important;
+    }
+
+    /* Form containers edge-to-edge */
+    .form-container,
+    .modal-content,
+    .input-group {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        background: var(--background-color) !important;
+    }
+
+    /* Tables edge-to-edge */
+    .table-container,
+    .data-table {
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        overflow-x: auto !important;
+    }
+
+    /* Remove all container gaps and spaces */
+    .row,
+    .col,
+    .grid {
+        margin: 0 !important;
+        gap: 0 !important;
+    }
+
+    /* Mobile-optimized buttons */
+    .btn,
+    .button,
+    button:not(.mobile-add-btn):not(.mobile-theme-toggle):not(.nav-item) {
+        border-radius: 8px !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9rem !important;
+        font-weight: 500 !important;
+        min-height: 44px !important; /* iOS touch target */
+        border: 1px solid var(--border-color) !important;
+        background: var(--card-background) !important;
+        color: var(--text-color) !important;
+    }
+
+    .btn-primary,
+    .button-primary {
+        background: var(--accent-color) !important;
+        color: var(--background-color) !important;
+        border-color: var(--accent-color) !important;
+    }
+
+    /* Enhanced mobile search and filter bars */
+    .search-container,
+    .filter-container {
+        padding: 1rem !important;
+        background: var(--background-color) !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        margin: 0 !important;
+        position: sticky !important;
+        top: 60px !important; /* Below header */
+        z-index: 90 !important;
+    }
+
+    /* Mobile-friendly input fields */
+    input,
+    select,
+    textarea {
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+        font-size: 1rem !important;
+        min-height: 44px !important;
+        border: 1px solid var(--border-color) !important;
+        background: var(--card-background) !important;
+        color: var(--text-color) !important;
+        width: 100% !important;
+    }
+
+    /* Remove all unnecessary shadows and borders on mobile */
+    * {
+        box-shadow: none !important;
+    }
+
+    /* Keep only essential borders for visual separation */
+    .section:not(:last-child),
+    .card:not(:last-child),
+    .transaction-item:not(:last-child),
+    .exchange-card:not(:last-child),
+    .admin-section:not(:last-child) {
+        border-bottom: 1px solid var(--border-color) !important;
+    }
+}
+
+/* Theme toggle icon visibility - matches styles.css */
+.theme-toggle .fa-sun,
+.mobile-theme-toggle .fa-sun {
+    display: none;
+    color: var(--text-color);
+}
+
+.theme-toggle .fa-moon,
+.mobile-theme-toggle .fa-moon {
+    display: inline-block;
+    color: var(--text-color);
+}
+
+/* In light theme, show sun and hide moon */
+.light-theme .theme-toggle .fa-sun,
+.light-theme .mobile-theme-toggle .fa-sun {
+    display: inline-block;
+}
+
+.light-theme .theme-toggle .fa-moon,
+.light-theme .mobile-theme-toggle .fa-moon {
+    display: none;
+} 
