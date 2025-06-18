@@ -35,75 +35,39 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     let tooltipTimeout;
-    
-    // Function to check and adjust tooltip position if it goes off-screen
-    function adjustTooltipPosition() {
-        // Only run if tooltip is visible
-        if (!donationTooltip.classList.contains('show')) return;
-        
-        const tooltipRect = donationTooltip.getBoundingClientRect();
-        const linkRect = donationLink.getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        
-        console.log('Tooltip position:', {
-            tooltipLeft: tooltipRect.left,
-            tooltipRight: tooltipRect.right,
-            tooltipWidth: tooltipRect.width,
-            linkLeft: linkRect.left,
-            linkCenter: linkRect.left + (linkRect.width / 2),
-            linkRight: linkRect.right,
-            viewportWidth: viewportWidth
-        });
-        
-        // Check if tooltip is going off the left edge
-        if (tooltipRect.left < 20) {
-            donationTooltip.style.left = '20px';
-            donationTooltip.style.transform = 'translateY(0)';
-            
-            // Adjust arrow position
-            const arrow = donationTooltip.querySelector('.tooltip-arrow');
-            if (arrow) {
-                const arrowPos = linkRect.left + (linkRect.width / 2) - 20; // 20px offset from left
-                arrow.style.left = `${arrowPos}px`;
-            }
-        }
-        
-        // Check if tooltip is going off the right edge
-        if (tooltipRect.right > viewportWidth - 20) {
-            donationTooltip.style.left = 'auto';
-            donationTooltip.style.right = '20px';
-            donationTooltip.style.transform = 'translateY(0)';
-            
-            // Adjust arrow position
-            const arrow = donationTooltip.querySelector('.tooltip-arrow');
-            if (arrow) {
-                const arrowPos = (viewportWidth - linkRect.right) + (linkRect.width / 2) - 20;
-                arrow.style.right = `${arrowPos}px`;
-                arrow.style.left = 'auto';
-            }
-        }
-    }
 
     // Show tooltip
     donationLink.addEventListener('mouseenter', () => {
         clearTimeout(tooltipTimeout);
+        
+        // Show tooltip first to get its actual height
         donationTooltip.classList.add('show');
         
-        // Check if we're on mobile
-        if (window.innerWidth <= 768) {
-            // On mobile, position at the bottom of the screen
-            donationTooltip.style.bottom = '20px';
-            donationTooltip.style.left = '50%';
-            donationTooltip.style.transform = 'translateX(-50%) translateY(0)';
-        } else {
-            // Reset any custom positioning
-            donationTooltip.style.left = '';
-            donationTooltip.style.right = '';
-            donationTooltip.style.transform = '';
-            
-            // Adjust if needed
-            setTimeout(adjustTooltipPosition, 0);
+        // Position tooltip above the donation link
+        const linkRect = donationLink.getBoundingClientRect();
+        const tooltipRect = donationTooltip.getBoundingClientRect();
+        const tooltipWidth = 320;
+        const tooltipHeight = tooltipRect.height || 300; // Use actual height or fallback
+        const gap = 15;
+        
+        // Calculate position - above the link (fixed positioning, no scroll offset needed)
+        let top = linkRect.top - tooltipHeight - gap;
+        let left = linkRect.left + (linkRect.width / 2) - (tooltipWidth / 2);
+        
+        // Ensure tooltip doesn't go off screen horizontally
+        if (left < 10) left = 10;
+        if (left + tooltipWidth > window.innerWidth - 10) {
+            left = window.innerWidth - tooltipWidth - 10;
         }
+        
+        // If no space above, show below
+        if (top < 10) {
+            top = linkRect.bottom + gap;
+        }
+        
+        // Apply position
+        donationTooltip.style.top = top + 'px';
+        donationTooltip.style.left = left + 'px';
     });
 
     // Hide tooltip
@@ -126,12 +90,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 200);
     });
     
-    // Adjust tooltip position on window resize
-    window.addEventListener('resize', adjustTooltipPosition);
+    // Reposition tooltip on scroll
+    window.addEventListener('scroll', () => {
+        if (donationTooltip.classList.contains('show')) {
+            const linkRect = donationLink.getBoundingClientRect();
+            const tooltipRect = donationTooltip.getBoundingClientRect();
+            const tooltipWidth = 320;
+            const tooltipHeight = tooltipRect.height || 300;
+            const gap = 15;
+            
+            let top = linkRect.top - tooltipHeight - gap;
+            let left = linkRect.left + (linkRect.width / 2) - (tooltipWidth / 2);
+            
+            if (left < 10) left = 10;
+            if (left + tooltipWidth > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipWidth - 10;
+            }
+            
+            if (top < 10) {
+                top = linkRect.bottom + gap;
+            }
+            
+            donationTooltip.style.top = top + 'px';
+            donationTooltip.style.left = left + 'px';
+        }
+    });
     
     // Log initial positions for debugging
     console.log('Donation link position:', donationLink.getBoundingClientRect());
-    console.log('Footer links position:', document.querySelector('.footer-links').getBoundingClientRect());
+    const footerLinks = document.querySelector('.footer-links');
+    if (footerLinks) {
+        console.log('Footer links position:', footerLinks.getBoundingClientRect());
+    } else {
+        console.log('Footer links element not found');
+    }
 });
 
 function generateQRCode() {
