@@ -1994,8 +1994,7 @@ function loadSettings() {
         } else {
             const defaultSettings = {
                 secondaryCurrency: "PLN",
-                mainCurrency: "EUR",
-                btcUnit: "btc"
+                mainCurrency: "EUR"
             };
             
             fs.writeFileSync(SETTINGS_FILE, JSON.stringify(defaultSettings, null, 2));
@@ -2003,7 +2002,7 @@ function loadSettings() {
         }
     } catch (error) {
         logger.error('Error loading settings:', error);
-        return { secondaryCurrency: "PLN", mainCurrency: "EUR", btcUnit: "btc" };
+        return { secondaryCurrency: "PLN", mainCurrency: "EUR" };
     }
 }
 

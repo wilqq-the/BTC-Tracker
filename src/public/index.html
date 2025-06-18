@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="css/mobile.css">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
@@ -202,13 +201,6 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-        }
-        
-        /* Satoshi symbol styling */
-        .fak.fa-satoshisymbol-solid {
-            color: var(--accent-color);
-            font-size: 1em;
-            vertical-align: baseline;
         }
 
         .refresh-btn:hover {
@@ -1306,7 +1298,6 @@
             color: var(--muted-text-color);
             font-weight: 500;
             font-family: 'JetBrains Mono', monospace;
-            opacity: 0.8;
         }
 
         /* P&L specific styling */
@@ -2411,7 +2402,7 @@
                             <span>Holdings</span>
                         </div>
                         <div class="metric-row">
-                            <span class="label" id="totalBtcLabel">Total BTC</span>
+                            <span class="label">Total BTC</span>
                             <span class="value" id="totalBtc">Loading...</span>
                         </div>
                         <div class="metric-row">
@@ -3002,8 +2993,8 @@
             });
 
             // Update total BTC (always available)
-            document.getElementById('totalBtc').innerHTML = 
-                formatBtcDisplay(priceData.totalBTC || 0);
+            document.getElementById('totalBtc').textContent = 
+                (priceData.totalBTC || 0).toFixed(8);
 
             // --- Update Cards --- 
 
@@ -3447,7 +3438,7 @@
             document.getElementById('mobilePnLPercent').textContent = formattedPercent;
             
             // Update holdings info
-            document.getElementById('mobileHoldings').innerHTML = formatBtcDisplay(priceData.totalBTC || 0);
+            document.getElementById('mobileHoldings').textContent = `${(priceData.totalBTC || 0).toFixed(6)} BTC`;
             
             // Update current BTC price display
             const formattedBTCPrice = new Intl.NumberFormat('en-US', {
@@ -4658,7 +4649,7 @@
                 // Secondary value removed from mobile view
                 document.getElementById('mobilePnLAmount').textContent = 'Error';
                 document.getElementById('mobilePnLPercent').textContent = 'Error';
-                document.getElementById('mobileHoldings').textContent = 'Error';
+                document.getElementById('mobileHoldings').textContent = 'Error BTC';
                 
                 // Show error message to user
                 const errorMessage = document.createElement('div');
@@ -5615,7 +5606,7 @@
                     <div class="tooltip-header">${tx.type.charAt(0).toUpperCase() + tx.type.slice(1)} Transaction</div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Amount:</span>
-                        <span class="tooltip-value">${formatBtcDisplay(tx.amount)}</span>
+                        <span class="tooltip-value">${tx.amount.toFixed(4)} BTC</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Price:</span>
@@ -5659,7 +5650,7 @@
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Total Amount:</span>
-                        <span class="tooltip-value">${formatBtcDisplay(totalAmount)}</span>
+                        <span class="tooltip-value">${totalAmount.toFixed(4)} BTC</span>
                     </div>
                     <div class="tooltip-row">
                         <span class="tooltip-label">Total Value:</span>
@@ -5710,49 +5701,6 @@
             floatingTooltip.style.left = `${x}px`;
             floatingTooltip.style.top = `${y}px`;
         }
-
-        // Function to update BTC input fields based on current unit
-        function updateBtcInputFields() {
-            const btcInputs = document.querySelectorAll('input[id*="Amount"], input[id*="amount"]');
-            btcInputs.forEach(input => {
-                if (input.type === 'number' && (input.id.toLowerCase().includes('amount') || input.id.toLowerCase().includes('btc'))) {
-                    input.step = getBtcInputStep();
-                    input.placeholder = getBtcInputPlaceholder();
-                    
-                    // Update help text if it exists
-                    const helpText = input.parentElement.querySelector('.help-text');
-                    if (helpText && helpText.textContent.includes('decimal places')) {
-                        helpText.textContent = getBtcInputHelpText();
-                    }
-                }
-            });
-        }
-
-        // Function to update BTC-related labels based on current unit
-        function updateBtcLabels() {
-            const currentUnit = window.currentBtcUnit || 'btc';
-            const labelElement = document.getElementById('totalBtcLabel');
-            
-            if (labelElement) {
-                if (currentUnit === 'satoshi' || currentUnit === 'sats') {
-                    labelElement.innerHTML = 'Total <i class="fak fa-satoshisymbol-solid"></i>';
-                } else {
-                    labelElement.textContent = 'Total BTC';
-                }
-            }
-        }
-
-        // Listen for BTC unit changes
-        window.addEventListener('btcUnitChanged', function(event) {
-            console.log('BTC unit changed, updating displays');
-            updateBtcInputFields();
-            updateBtcLabels();
-            
-            // Refresh data to update all displays
-            if (typeof loadData === 'function') {
-                loadData();
-            }
-        });
 
         // Modified loadData function
     </script>
