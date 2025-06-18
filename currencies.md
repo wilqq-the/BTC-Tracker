@@ -88,8 +88,6 @@ graph TB
   - `EURJPY=X` - Euro to Japanese Yen
   - `EURCHF=X` - Euro to Swiss Franc
   - `EURBRL=X` - Euro to Brazilian Real
-  - `EURINR=X` - Euro to Indian Rupee
-
 - **Rate limiting protection**: Sequential fetching with 200ms delays
 - **Reliability**: 5 retry attempts with exponential backoff
 
@@ -135,8 +133,7 @@ Persistent storage with **dual format** for backward compatibility:
       "GBP": 0.8425300121307373,
       "JPY": 165.05299377441406,
       "CHF": 0.9363200068473816,
-      "BRL": 6.337900161743164,
-      "INR": 89.23450000000000
+      "BRL": 6.337900161743164
     },
     "USD": {
       "EUR": 0.877500021705777,
@@ -144,8 +141,7 @@ Persistent storage with **dual format** for backward compatibility:
       "GBP": 0.7393201039324906,
       "JPY": 144.8340056196518,
       "CHF": 0.8216208263321306,
-      "BRL": 5.561507529498674,
-      "INR": 78.23450000000000
+      "BRL": 5.561507529498674
     }
   },
   "eurUsd": 1.1396011114120483,
@@ -154,7 +150,6 @@ Persistent storage with **dual format** for backward compatibility:
   "eurJpy": 165.05299377441406,
   "eurChf": 0.9363200068473816,
   "eurBrl": 6.337900161743164,
-  "eurInr": 89.23450000000000,
   "timestamp": "2025-06-07T16:06:10.079Z"
 }
 ```
@@ -187,15 +182,14 @@ User currency preferences:
 | Japanese Yen | JPY | Secondary | Direct from Yahoo Finance |
 | Swiss Franc | CHF | Secondary | Direct from Yahoo Finance |
 | Brazilian Real | BRL | Secondary | Direct from Yahoo Finance |
-| Indian Rupee | INR | Secondary | Direct from Yahoo Finance |
 
 ### Currency Pair Support Matrix
 
 | **From** | **To** | **Method** | **Example** |
 |----------|--------|------------|-------------|
-| EUR | USD, PLN, GBP, JPY, CHF, BRL, INR | Direct | `exchangeRates.EUR.USD` |
+| EUR | USD, PLN, GBP, JPY, CHF, BRL | Direct | `exchangeRates.EUR.USD` |
 | USD | EUR | Calculated | `1 / eurUsd` |
-| USD | PLN, GBP, JPY, CHF, BRL, INR | Cross-rate | `eurPln / eurUsd` |
+| USD | PLN, GBP, JPY, CHF, BRL | Cross-rate | `eurPln / eurUsd` |
 | Any | Any | Cross-currency | Via EUR or USD base |
 
 ## 🔄 Data Flow
@@ -575,8 +569,8 @@ src/
 #### Fallback Exchange Rates
 ```javascript
 const defaultRates = {
-  EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34, INR: 89.23 },
-  USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76, INR: 78.23 }
+  EUR: { USD: 1.1, PLN: 4.5, GBP: 0.85, JPY: 160, CHF: 0.95, BRL: 6.34 },
+  USD: { EUR: 0.9, PLN: 4.0, GBP: 0.75, JPY: 145, CHF: 0.85, BRL: 5.76 }
 };
 ```
 
@@ -685,29 +679,4 @@ const health = {
 ---
 
 *Last Updated: December 2024*
-*Version: 0.5.2*
-
-// Display formatted currency value
-function formatCurrency(value, abbreviated = false) {
-  const mainCurrency = localStorage.getItem('mainCurrency') || 'USD';
-  
-  // Get currency symbol
-  let symbol = '$';
-  if (mainCurrency === 'EUR') symbol = '€';
-  if (mainCurrency === 'GBP') symbol = '£';
-  if (mainCurrency === 'INR') symbol = '₹';
-  
-  // Format the number
-  let formattedValue;
-  if (abbreviated && Math.abs(value) >= 1000) {
-    if (Math.abs(value) >= 1000000) {
-      formattedValue = (value / 1000000).toFixed(2) + 'M';
-    } else {
-      formattedValue = (value / 1000).toFixed(2) + 'k';
-    }
-  } else {
-    formattedValue = value.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  }
-  
-  return symbol + formattedValue;
-} 
+*Version: 0.5.2* 

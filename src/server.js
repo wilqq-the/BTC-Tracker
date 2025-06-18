@@ -232,15 +232,9 @@ async function initializeData() {
         
         await loadData(); 
         
-        // Check if we need to fetch historical data
-        const needsHistoricalDataRefresh = checkIfHistoricalDataNeedsRefresh();
-        if (!historicalBTCData || historicalBTCData.length === 0 || needsHistoricalDataRefresh) {
-            const reason = !historicalBTCData || historicalBTCData.length === 0 ? 
-                "empty data" : "outdated data";
-            logger.info(`Historical data ${reason}, triggering fetch`);
+        if (!historicalBTCData || historicalBTCData.length === 0) {
+            logger.info("Historical data empty after loading from file, triggering initial fetch");
             fetchHistoricalBTCData().catch(err => logger.error("Initial historical data fetch failed:", err));
-        } else {
-            logger.info(`Historical data is current (${historicalBTCData.length} days), skipping fetch`);
         }
 
         // Initialize the summary cache with the calculation function
@@ -520,98 +514,6 @@ async function fetchExchangeRates() {
     }
 }
 
-// Helper function to check if historical data needs refresh
-function checkIfHistoricalDataNeedsRefresh() {
-    if (!historicalBTCData || historicalBTCData.length === 0) {
-        return true;
-    }
-    
-    // Find the most recent date in historical data
-    const sortedData = [...historicalBTCData].sort((a, b) => new Date(b.date) - new Date(a.date));
-    const mostRecentDate = new Date(sortedData[0].date);
-    const today = new Date();
-    
-    // Calculate days difference
-    const daysDiff = Math.floor((today - mostRecentDate) / (1000 * 60 * 60 * 24));
-    
-    // Check what day of the week today is
-    const todayDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-    const isWeekend = todayDay === 0 || todayDay === 6; // Sunday or Saturday
-    
-    logger.debug(`Historical data check: most recent date ${mostRecentDate.toISOString().split('T')[0]}, ${daysDiff} days old, today is ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][todayDay]}`);
-    
-    // On weekends, be more lenient (data might be from Friday)
-    const maxDaysOld = isWeekend ? 4 : 2;
-    
-    if (daysDiff > maxDaysOld) {
-        logger.info(`Historical data is ${daysDiff} days old (max allowed: ${maxDaysOld} on ${isWeekend ? 'weekends' : 'weekdays'}), needs refresh`);
-        return true;
-    }
-    
-    return false;
-}
-
-// Helper function to merge historical data intelligently
-function mergeHistoricalData(existingData, newData) {
-    if (!Array.isArray(existingData) || existingData.length === 0) {
-        logger.info('No existing historical data, using new data');
-        return newData.sort((a, b) => new Date(a.date) - new Date(b.date));
-    }
-    
-    if (!Array.isArray(newData) || newData.length === 0) {
-        logger.info('No new historical data, keeping existing data');
-        return existingData;
-    }
-    
-    // Create a map of existing dates for fast lookup
-    const existingMap = new Map();
-    existingData.forEach(item => {
-        if (item.date) {
-            existingMap.set(item.date, item);
-        }
-    });
-    
-    // Add new data points (only if they don't exist or if they're more recent)
-    let addedCount = 0;
-    let updatedCount = 0;
-    
-    newData.forEach(newItem => {
-        if (!newItem.date) return;
-        
-        const existing = existingMap.get(newItem.date);
-        if (!existing) {
-            // New date - add it
-            existingMap.set(newItem.date, newItem);
-            addedCount++;
-        } else if (newItem.priceEUR && newItem.priceUSD) {
-            // Update existing date if new data has both prices
-            existingMap.set(newItem.date, {
-                ...existing,
-                ...newItem
-            });
-            updatedCount++;
-        }
-    });
-    
-    // Convert back to array and sort by date
-    const mergedArray = Array.from(existingMap.values())
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    const existingCount = existingData.length;
-    const finalCount = mergedArray.length;
-    
-    logger.info(`Historical data merge: ${existingCount} existing, ${addedCount} added, ${updatedCount} updated, ${finalCount} total`);
-    
-    // Log date range
-    if (mergedArray.length > 0) {
-        const firstDate = mergedArray[0].date;
-        const lastDate = mergedArray[mergedArray.length - 1].date;
-        logger.info(`Historical data range: ${firstDate} to ${lastDate}`);
-    }
-    
-    return mergedArray;
-}
-
 // Fetch historical BTC data using Yahoo Finance
 async function fetchHistoricalBTCData() {
     try {
@@ -623,18 +525,6 @@ async function fetchHistoricalBTCData() {
         // Calculate start and end dates
         const endDate = Math.floor(Date.now() / 1000);
         const startDate = endDate - (yearsToFetch * 365 * 24 * 60 * 60); // X years ago in seconds
-        
-        const startDateStr = new Date(startDate * 1000).toISOString().split('T')[0];
-        const endDateStr = new Date(endDate * 1000).toISOString().split('T')[0];
-        logger.info(`Fetching data from ${startDateStr} to ${endDateStr}`);
-        
-        // Check existing data range for comparison
-        if (historicalBTCData && historicalBTCData.length > 0) {
-            const sortedExisting = [...historicalBTCData].sort((a, b) => new Date(a.date) - new Date(b.date));
-            const existingFirst = sortedExisting[0].date;
-            const existingLast = sortedExisting[sortedExisting.length - 1].date;
-            logger.info(`Existing data range: ${existingFirst} to ${existingLast} (${historicalBTCData.length} days)`);
-        }
         
         // Get historical data for BTC-USD
         const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
@@ -663,9 +553,8 @@ async function fetchHistoricalBTCData() {
             price: btcEurData[date].close // Use EUR as the default price
         }));
         
-        // Merge with existing data instead of replacing
-        const mergedData = mergeHistoricalData(historicalBTCData, newHistoricalData);
-        historicalBTCData = mergedData;
+        // Use new historical data
+        historicalBTCData = newHistoricalData;
         
         // Save to file
         saveHistoricalBTCData();
@@ -783,24 +672,11 @@ async function fetchYahooFinanceData(symbol, startDate, endDate) {
 setInterval(fetchCurrentBTCPrice, 10 * 60 * 1000); // Every 10 minutes (was 5 minutes)
 setInterval(fetchExchangeRates, 2 * 60 * 60 * 1000); // Every 2 hours (was 1 hour)
 
-// Check historical data gaps every 4 hours (more frequent than the default 24h)
-setInterval(() => {
-    const needsRefresh = checkIfHistoricalDataNeedsRefresh();
-    if (needsRefresh) {
-        logger.info('Periodic check: Historical data needs refresh, fetching...');
-        fetchHistoricalBTCData().catch(err => 
-            logger.error('Periodic historical data fetch failed:', err)
-        );
-    } else {
-        logger.debug('Periodic check: Historical data is current');
-    }
-}, 4 * 60 * 60 * 1000); // Every 4 hours
-
 // Update historical data refresh to use settings
 function setupHistoricalDataRefresh() {
     try {
         const settings = loadSettings();
-        const refreshHours = parseFloat(settings.historicalDataRefreshHours || '24');
+        const refreshHours = parseInt(settings.historicalDataRefreshHours || '24');
         
         logger.info(`Setting up historical data refresh interval: ${refreshHours} hours`);
         
@@ -1121,11 +997,6 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
         const forceFresh = req.query.fresh === 'true';
         const priceOnly = req.query.priceOnly === 'true';
         
-        // Get settings and currencies at the main scope so they can be used throughout
-        const settings = loadSettings();
-        const mainCurrency = settings.mainCurrency || 'EUR';
-        const secondaryCurrency = settings.secondaryCurrency || 'USD';
-        
         // Get current transaction stats for cache validation
         const transactionStats = {
             count: transactions.length,
@@ -1137,6 +1008,9 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
         
         // Function to calculate summary data
         const calculateSummary = async () => {
+            const settings = loadSettings();
+            const mainCurrency = settings.mainCurrency || 'EUR';
+            const secondaryCurrency = settings.secondaryCurrency || 'USD';
             
             logger.debug(`Using currencies: Main=${mainCurrency}, Secondary=${secondaryCurrency}`);
     
@@ -1161,33 +1035,6 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 eurChf: cachedPrices.eurChf,
                 timestamp: cachedPrices.timestamp
             });
-            
-            // Calculate weekly price date for ticker (similar to /api/current-price)
-            let weeklyPriceDate = 'previous period';
-            if (Array.isArray(historicalBTCData) && historicalBTCData.length > 0) {
-                const today = new Date();
-                const sevenDaysAgo = new Date(today);
-                sevenDaysAgo.setDate(today.getDate() - 7);
-                const targetTimestamp = sevenDaysAgo.getTime();
-                
-                let smallestDiff = Infinity;
-                for (const dataPoint of historicalBTCData) {
-                    if (!dataPoint.date) continue;
-                    
-                    const dataDate = new Date(dataPoint.date);
-                    const diff = Math.abs(dataDate.getTime() - targetTimestamp);
-                    
-                    if (diff < smallestDiff) {
-                        smallestDiff = diff;
-                        weeklyPriceDate = dataPoint.date;
-                        
-                        // If we find an exact match or very close, break early
-                        if (diff < 24 * 60 * 60 * 1000) { // Within 1 day
-                            break;
-                        }
-                    }
-                }
-            }
             
             const currentBTCPriceEUR = cachedPrices.priceEUR || 0;
             
@@ -1240,7 +1087,6 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 eurJpy: cachedPrices.eurJpy || 160,
                 eurChf: cachedPrices.eurChf || 0.95,
                 eurBrl: cachedPrices.eurBrl || 6.0,
-                eurInr: cachedPrices.eurInr || 89.23,
     
                 currentPrice: {
                     [mainCurrency.toLowerCase()]: currentBTCPriceMain || 0,
@@ -1270,11 +1116,6 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
                 priceUSD: cachedPrices.priceUSD || 0,
                 timestamp: cachedPrices.timestamp,
                 exchangeRates: cachedPrices.exchangeRates || {},
-                
-                // Add historical price data for ticker calculations
-                previousDayPrice: cachedPrices.previousDayPrice || 0,
-                previousWeekPrice: cachedPrices.previousWeekPrice || 0,
-                weeklyPriceDate: weeklyPriceDate,
                 cacheInfo: {
                     priceLastUpdated: priceCache.getPriceLastUpdated(),
                     ratesLastUpdated: priceCache.getRatesLastUpdated(),
@@ -1309,46 +1150,17 @@ app.get('/api/summary', isAuthenticated, async (req, res) => {
 
         // Add transactions and historical data only when sending to client (not in cache)
         if (!priceOnly) {
-            // Process transactions with correct P&L for current main currency
-            const processedTransactions = transactions.map(tx => {
-                if (tx.type !== 'buy') return tx;
-                
-                const amount = Number(tx.amount) || 0;
-                const currentBTCPriceMain = priceCache.getBTCPrice(mainCurrency) || 0;
-                const mainToSecondaryRate = priceCache.getExchangeRate(mainCurrency, secondaryCurrency) || 1.0;
-                
-                const currentValueMain = amount * currentBTCPriceMain;
-                const currentValueSecondary = currentValueMain * mainToSecondaryRate;
-                
-                const costMain = tx.base?.[mainCurrency.toLowerCase()]?.cost || 0;
-                const costSecondary = tx.base?.[secondaryCurrency.toLowerCase()]?.cost || (costMain * mainToSecondaryRate);
-
-                const pnlMain = currentValueMain - costMain;
-                const pnlSecondaryCalculated = currentValueSecondary - costSecondary;
-                
-                const pnlPercentageMain = costMain > 0 ? (pnlMain / costMain) * 100 : 0;
-                const pnlPercentageSecondary = costSecondary > 0 ? (pnlSecondaryCalculated / costSecondary) * 100 : 0;
-                
-                return {
-                    ...tx,
-                    pnl: pnlMain, 
-                    pnlPercentage: pnlPercentageMain,
-                    pnlSecondary: pnlSecondaryCalculated,
-                    pnlPercentageSecondary: pnlPercentageSecondary
-                };
-            });
-            
-            summary.transactions = processedTransactions;
+            summary.transactions = transactions;
             summary.historicalBTCData = historicalBTCData;
         }
 
         if (priceOnly) {
             logger.info('[server.js] Sending price-only summary to client with ALL exchange rates:');
-            logger.info(`[server.js] EUR rates - USD: ${summary.eurUsd}, PLN: ${summary.eurPln}, GBP: ${summary.eurGbp}, JPY: ${summary.eurJpy}, CHF: ${summary.eurChf}, BRL: ${summary.eurBrl}, INR: ${summary.eurInr}`);
+            logger.info(`[server.js] EUR rates - USD: ${summary.eurUsd}, PLN: ${summary.eurPln}, GBP: ${summary.eurGbp}, JPY: ${summary.eurJpy}, CHF: ${summary.eurChf}, BRL: ${summary.eurBrl}`);
             logger.info(`[server.js] BTC prices - EUR: ${summary.priceEUR}, USD: ${summary.priceUSD}`);
             logger.info(`[server.js] Timestamp: ${summary.timestamp}`);
             if (summary.exchangeRates && summary.exchangeRates.USD) {
-                logger.info(`[server.js] USD rates - EUR: ${summary.exchangeRates.USD.EUR}, PLN: ${summary.exchangeRates.USD.PLN}, GBP: ${summary.exchangeRates.USD.GBP}, JPY: ${summary.exchangeRates.USD.JPY}, CHF: ${summary.exchangeRates.USD.CHF}, BRL: ${summary.exchangeRates.USD.BRL}, INR: ${summary.exchangeRates.USD.INR}`);
+                logger.info(`[server.js] USD rates - EUR: ${summary.exchangeRates.USD.EUR}, PLN: ${summary.exchangeRates.USD.PLN}, GBP: ${summary.exchangeRates.USD.GBP}, JPY: ${summary.exchangeRates.USD.JPY}, CHF: ${summary.exchangeRates.USD.CHF}, BRL: ${summary.exchangeRates.USD.BRL}`);
             }
         } else {
             logger.debug('Sending full summary to client');
@@ -1396,110 +1208,6 @@ async function getExchangeRates() {
         return { EUR: 1, USD: 1.1, PLN: 4.5 };
     }
 }
-
-
-// Add endpoint to get historical data status for admin panel
-app.get('/api/admin/historical-status', isAuthenticated, async (req, res) => {
-    try {
-        if (!historicalBTCData || historicalBTCData.length === 0) {
-            return res.json({
-                hasData: false,
-                count: 0,
-                message: 'No historical data available'
-            });
-        }
-        
-        const sortedData = [...historicalBTCData].sort((a, b) => new Date(a.date) - new Date(b.date));
-        const oldestDate = sortedData[0].date;
-        const newestDate = sortedData[sortedData.length - 1].date;
-        const newestDateTime = new Date(newestDate);
-        const now = new Date();
-        const daysSinceUpdate = Math.floor((now - newestDateTime) / (1000 * 60 * 60 * 24));
-        
-        // Check if refresh is needed
-        const needsRefresh = checkIfHistoricalDataNeedsRefresh();
-        
-        res.json({
-            hasData: true,
-            count: historicalBTCData.length,
-            dateRange: {
-                from: oldestDate,
-                to: newestDate
-            },
-            daysSinceLastUpdate: daysSinceUpdate,
-            needsRefresh: needsRefresh,
-            status: needsRefresh ? 'outdated' : 'current',
-            message: needsRefresh ? 
-                `Data is ${daysSinceUpdate} days old and needs refresh` : 
-                `Data is current (last update: ${newestDate})`
-        });
-    } catch (error) {
-        logger.error('Error getting historical data status:', error);
-        res.status(500).json({
-            hasData: false,
-            error: error.message
-        });
-    }
-});
-
-// Add endpoint for manual historical data refresh from admin panel
-app.post('/api/admin/refresh-historical-data', isAuthenticated, async (req, res) => {
-    try {
-        logger.info('Manual historical data refresh requested from admin panel');
-        
-        // Check current data status before refresh
-        const beforeStatus = historicalBTCData ? {
-            count: historicalBTCData.length,
-            oldestDate: historicalBTCData.length > 0 ? 
-                [...historicalBTCData].sort((a, b) => new Date(a.date) - new Date(b.date))[0].date : null,
-            newestDate: historicalBTCData.length > 0 ? 
-                [...historicalBTCData].sort((a, b) => new Date(b.date) - new Date(a.date))[0].date : null
-        } : { count: 0, oldestDate: null, newestDate: null };
-        
-        logger.info(`Historical data before refresh: ${beforeStatus.count} days (${beforeStatus.oldestDate} to ${beforeStatus.newestDate})`);
-        
-        // Trigger the refresh
-        const updatedData = await fetchHistoricalBTCData();
-        
-        if (updatedData && updatedData.length > 0) {
-            const afterStatus = {
-                count: updatedData.length,
-                oldestDate: [...updatedData].sort((a, b) => new Date(a.date) - new Date(b.date))[0].date,
-                newestDate: [...updatedData].sort((a, b) => new Date(b.date) - new Date(a.date))[0].date
-            };
-            
-            const newDays = afterStatus.count - beforeStatus.count;
-            
-            logger.info(`Historical data after refresh: ${afterStatus.count} days (${afterStatus.oldestDate} to ${afterStatus.newestDate})`);
-            logger.info(`Added ${newDays} new days of historical data`);
-            
-            res.json({
-                success: true,
-                message: 'Historical data refreshed successfully',
-                before: beforeStatus,
-                after: afterStatus,
-                newDaysAdded: Math.max(0, newDays),
-                dateRange: {
-                    from: afterStatus.oldestDate,
-                    to: afterStatus.newestDate
-                }
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                error: 'Failed to fetch historical data',
-                message: 'No data was returned from Yahoo Finance'
-            });
-        }
-    } catch (error) {
-        logger.error('Error in manual historical data refresh:', error);
-        res.status(500).json({
-            success: false,
-            error: error.message,
-            message: 'Error refreshing historical data'
-        });
-    }
-});
 
 // Add new endpoint for current price
 app.get('/api/current-price', isAuthenticated, async (req, res) => {
@@ -2120,78 +1828,52 @@ app.put('/api/settings', isAuthenticated, async (req, res) => {
     }
 });
 
-// Yahoo Finance API test endpoint for admin panel
-app.post('/api/admin/test-yahoo-api', isAuthenticated, async (req, res) => {
+// Test Yahoo Finance API connectivity (replacing CoinGecko test)
+app.post('/api/settings/test-coingecko-key', isAuthenticated, async (req, res) => {
     try {
-        logger.debug('[server.js] Testing Yahoo Finance API connectivity from admin panel');
+        // Note: This function is kept for backwards compatibility with the frontend
+        // but no longer tests CoinGecko API key since we now use Yahoo Finance
+
+        logger.debug('[server.js] Testing Yahoo Finance API connectivity');
         
         // Calculate current date timestamps (today only)
         const endDate = Math.floor(Date.now() / 1000);
         const startDate = endDate - (24 * 60 * 60); // 1 day ago
         
-        let btcPrice = null;
-        let exchangeRatesCount = 0;
-        const exchangeRates = {};
+        // Test Yahoo Finance connection for BTC price
+        const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
         
-        // Test BTC price fetching
-        try {
-            const btcUsdData = await fetchYahooFinanceData('BTC-USD', startDate, endDate);
-            if (btcUsdData && Object.keys(btcUsdData).length > 0) {
-                const dates = Object.keys(btcUsdData).sort();
-                if (dates.length > 0) {
-                    const latestDate = dates[dates.length - 1];
-                    btcPrice = btcUsdData[latestDate].close;
-                }
-            }
-        } catch (error) {
-            logger.warn('[server.js] BTC price test failed:', error.message);
-        }
-        
-        // Test exchange rates fetching
-        const testCurrencyPairs = ['EURUSD=X', 'EURPLN=X', 'EURGBP=X'];
-        
-        for (const pair of testCurrencyPairs) {
-            try {
-                const data = await fetchYahooFinanceData(pair, startDate, endDate);
-                if (data && Object.keys(data).length > 0) {
-                    const dates = Object.keys(data).sort();
-                    if (dates.length > 0) {
-                        const latestDate = dates[dates.length - 1];
-                        exchangeRates[pair] = data[latestDate].close;
-                        exchangeRatesCount++;
-                    }
-                }
-            } catch (error) {
-                logger.warn(`[server.js] Exchange rate test failed for ${pair}:`, error.message);
-            }
-        }
-        
-        // Determine overall success
-        const hasAnyData = btcPrice !== null || exchangeRatesCount > 0;
-        
-        if (hasAnyData) {
-            res.json({ 
-                success: true, 
-                message: 'Yahoo Finance API is working',
-                btcPrice: btcPrice ? btcPrice.toFixed(2) : null,
-                exchangeRatesCount: exchangeRatesCount,
-                exchangeRates: exchangeRates,
-                details: {
-                    btcPriceAvailable: btcPrice !== null,
-                    exchangeRatesAvailable: exchangeRatesCount > 0
-                }
-            });
-        } else {
-            res.json({ 
+        if (!btcUsdData || Object.keys(btcUsdData).length === 0) {
+            return res.json({ 
                 success: false, 
-                message: 'Could not fetch any data from Yahoo Finance API'
+                message: 'Could not connect to Yahoo Finance API'
             });
         }
+        
+        // Get the most recent price
+        const dates = Object.keys(btcUsdData).sort();
+        if (dates.length === 0) {
+            return res.json({
+                success: false,
+                message: 'No data returned from Yahoo Finance'
+            });
+        }
+        
+        const latestDate = dates[dates.length - 1];
+        const currentPrice = btcUsdData[latestDate].close;
+        
+        res.json({ 
+            success: true, 
+            message: 'Connection to Yahoo Finance API successful!',
+            currentPrice: currentPrice,
+            source: 'Yahoo Finance'
+        });
     } catch (error) {
-        logger.error('[server.js] Yahoo Finance API test error:', error);
+        logger.error('[server.js] Yahoo Finance API error:', error);
+            
         res.json({ 
             success: false, 
-            message: 'Error testing Yahoo Finance API: ' + error.message
+            message: 'Error connecting to Yahoo Finance API: ' + error.message
         });
     }
 });
