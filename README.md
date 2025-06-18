@@ -10,6 +10,8 @@ A simple, powerful application to track your Bitcoin investments and monitor the
 - **🐛 Critical Bug Fixes**: Resolved HTML encoding issues and improved settings synchronization
 - **📈 Chart Library Update**: Switched to a more [** TradingVeiw lightweight **](https://github.com/tradingview/lightweight-charts)  charting library for better performance 
 - **🌍 New Currencies**: Added support for Indian Rupee (INR) and Brazilian Real (BRL) with proper formatting and exchange rates
+- **📦 Electron**: Enhanced Windows installer with integrated node modules, no more importing after installation
+- **🔄 Synchronized Price Logic**: Unified price display and conversion across all views with real-time updates
 
 [**📋 View Full Changelog**](CHANGELOG.md) | [**🚀 Release Notes**](.github/RELEASE_TEMPLATE.md)
 
@@ -63,6 +65,7 @@ The result is a focused tool that tracks Bitcoin investments while respecting pr
 ### 🚀 **Integration & Deployment**
 - **Yahoo Finance Integration**: Reliable real-time price data with built-in rate limiting
 - **Containerized**: Runs in Docker or Podman with minimal setup
+- **Multi-Architecture Support**: Native ARM64, ARM/v7, and AMD64 support for Raspberry Pi, Umbrel, and x86 systems
 - **Exchange Integration**: Automatic sync of BTC buy transactions with major exchanges (Binance, Coinbase, Kraken, Strike) using READ-ONLY API keys
 - **Windows Desktop App**: Native Windows application with system tray support
 - **Automated Dependencies**: Dependabot integration for automated security updates
@@ -81,8 +84,26 @@ The application data is stored in:
 - `%APPDATA%\BTC-Tracker` (User settings and data)
 - `%LOCALAPPDATA%\BTC-Tracker` (Application files)
 
-
 Your data persists between application updates and can be backed up by copying the above directories.
+
+## Umbrel Installation (One-Click)
+
+BTC Tracker is available on the [Umbrel App Store](https://apps.umbrel.com/app/btctracker) for easy one-click installation on your Umbrel home server.
+
+### Installing on Umbrel
+
+1. Open the Umbrel App Store on your umbrelOS home server
+2. Search for "BTC Tracker" or navigate to the Bitcoin category
+3. Click "Install" to deploy BTC Tracker on your Umbrel node
+4. Access the application through your Umbrel dashboard
+
+**Benefits of running on Umbrel:**
+- **Privacy-focused**: Runs locally on your own hardware
+- **Bitcoin-native**: Perfect companion to your Bitcoin node
+- **Self-sovereign**: Complete control over your data and privacy
+- **Easy management**: Integrated with your Umbrel ecosystem
+
+*Special thanks to [@dennysubke](https://github.com/dennysubke) for submitting BTC Tracker to the Umbrel App Store.*
 
 ## Quick Start 🚀
 
@@ -264,7 +285,7 @@ MIT
 - **[GitHub Repository](https://github.com/wilqq-the/BTC-tracker)**: Source code and project files
 - **[Documentation](https://wilqq-the.github.io/BTC-tracker/)**: Comprehensive guides and screenshots
 - **[Docker Hub](https://hub.docker.com/r/thewilqq/btc-tracker)**: Pre-built Docker images
-- **[Umbrel App Store](https://apps.umbrel.com/app/btctracker)**: One-click installation on Umbrel OS (thanks to [@dennysubke](https://github.com/dennysubke))
+- **[Umbrel App Store](https://apps.umbrel.com/app/btctracker)**: One-click installation on Umbrel OS - *submitted by [@dennysubke](https://github.com/dennysubke)*
 
 ## Author
 

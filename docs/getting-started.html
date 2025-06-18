@@ -8,41 +8,147 @@
     <link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1><img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">BTC Tracker</h1>
-            <p>Track your Bitcoin investments and monitor your portfolio performance</p>
+        <header class="modern-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <img src="images/bitcoin-icon.svg" alt="Bitcoin Logo" class="bitcoin-logo">
+                    <h1>BTC Tracker</h1>
+                </div>
+                <p class="header-subtitle">Privacy-focused Bitcoin investment tracking</p>
+            </div>
+            <div class="header-gradient"></div>
         </header>
 
-        <nav class="app-nav">
-            <a href="index.html"><i class="fas fa-home"></i> Home</a>
-            <a href="getting-started.html" class="active"><i class="fas fa-rocket"></i> Getting Started</a>
-            <a href="features.html"><i class="fas fa-list-check"></i> Features</a>
-            <a href="screenshots.html"><i class="fas fa-image"></i> Screenshots</a>
-            <a href="https://github.com/wilqq-the/btc-tracker" class="github-link"><i class="fab fa-github"></i> GitHub</a>
+        <nav class="modern-nav">
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="getting-started.html" class="nav-item active">
+                <i class="fas fa-rocket"></i>
+                <span>Getting Started</span>
+            </a>
+            <a href="features.html" class="nav-item">
+                <i class="fas fa-list-check"></i>
+                <span>Features</span>
+            </a>
+            <a href="https://github.com/wilqq-the/btc-tracker" class="nav-item github-link">
+                <i class="fab fa-github"></i>
+                <span>GitHub</span>
+            </a>
         </nav>
 
-        <main class="getting-started-page">
-            <section>
-                <h2><i class="fas fa-rocket"></i> Getting Started with BTC Tracker</h2>
-                <p>
-                    BTC Tracker is designed to be simple to set up and use. Follow these instructions to get your Bitcoin tracking application up and running quickly.
-                </p>
-                
-                <div class="card">
-                    <h3><i class="fab fa-docker"></i> Using Docker (Recommended)</h3>
-                    <p>The easiest way to run BTC Tracker is using Docker. Make sure you have Docker installed on your system.</i></p>
+        <main class="getting-started-modern">
+            <div class="page-header">
+                <h2>Getting Started with BTC Tracker</h2>
+                <p>Choose your preferred installation method and start tracking your Bitcoin investments in minutes.</p>
+            </div>
+
+            <section class="installation-options">
+                <div class="install-method featured" id="umbrel">
+                    <div class="method-header">
+                        <div class="method-icon">
+                            <i class="fas fa-cube"></i>
+                        </div>
+                        <div class="method-info">
+                            <h3>Umbrel App Store</h3>
+                            <span class="badge recommended">Recommended</span>
+                            <p>One-click installation on your Umbrel home server</p>
+                        </div>
+                    </div>
                     
-                    <h4>Quick Start with Docker Run</h4>
-                    <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
+                    <div class="method-content">
+                        <div class="benefits">
+                            <h4>Why Choose Umbrel?</h4>
+                            <ul class="benefit-list">
+                                <li><i class="fas fa-shield-alt"></i> <strong>Privacy-focused:</strong> Run on your own hardware</li>
+                                <li><i class="fas fa-server"></i> <strong>Self-hosted:</strong> Complete control over your data</li>
+                                <li><i class="fas fa-mouse-pointer"></i> <strong>Easy setup:</strong> One-click installation</li>
+                                <li><i class="fas fa-sync-alt"></i> <strong>Auto-updates:</strong> Always stay up to date</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="installation-steps">
+                            <h4>Installation Steps</h4>
+                            <ol class="step-list">
+                                <li>
+                                    <span class="step-number">1</span>
+                                    <div class="step-content">
+                                        <strong>Access Umbrel App Store</strong>
+                                        <p>Open your Umbrel dashboard and navigate to the App Store</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="step-number">2</span>
+                                    <div class="step-content">
+                                        <strong>Search for BTC Tracker</strong>
+                                        <p>Find "BTC Tracker" in the Finance category or use the search function</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="step-number">3</span>
+                                    <div class="step-content">
+                                        <strong>Install with One Click</strong>
+                                        <p>Click "Install" and wait for the automatic setup to complete</p>
+                                    </div>
+                                </li>
+                                <li>
+                                    <span class="step-number">4</span>
+                                    <div class="step-content">
+                                        <strong>Start Tracking</strong>
+                                        <p>Access BTC Tracker from your Umbrel dashboard and begin adding transactions</p>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                        
+                        <div class="method-actions">
+                            <a href="https://apps.umbrel.com/app/btctracker" class="btn-primary" target="_blank">
+                                <i class="fas fa-external-link-alt"></i>
+                                View on Umbrel App Store
+                            </a>
+                        </div>
+                        
+                        <div class="attribution">
+                            <i class="fas fa-heart"></i>
+                            Thanks to <a href="https://github.com/dennysubke" target="_blank">@dennysubke</a> for submitting BTC Tracker to the Umbrel App Store
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-method" id="docker">
+                    <div class="method-header">
+                        <div class="method-icon">
+                            <i class="fab fa-docker"></i>
+                        </div>
+                        <div class="method-info">
+                            <h3>Docker Installation</h3>
+                            <p>Run anywhere with Docker containers</p>
+                        </div>
+                    </div>
+                    
+                    <div class="method-content">
+                        <div class="quick-start">
+                            <h4>Quick Start</h4>
+                            <div class="code-block">
+                                <pre><code>docker pull docker.io/thewilqq/btc-tracker:latest
 docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracker:latest</code></pre>
-                    <p>This will start application on localhost:3000 and use ./data as the data directory.</p>
-                    <h4>Using Docker Compose (Recommended)</h4>
-                    <p>For more configuration options, create a <code>docker-compose.yml</code> file with the following content:</p>
-                    <pre class="docker-compose"><code>services:
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <p class="code-note">This starts the application on localhost:3000 with data stored in ./data</p>
+                        </div>
+                        
+                        <div class="docker-compose-section">
+                            <h4>Docker Compose (Recommended)</h4>
+                            <p>Create a <code>docker-compose.yml</code> file:</p>
+                            <div class="code-block">
+                                <pre><code>services:
   btc-tracker:
     image: docker.io/thewilqq/btc-tracker:latest
     container_name: ${CONTAINER_NAME:-btc-tracker}
@@ -54,32 +160,69 @@ docker run -d -p 3000:3000 -v ./data:/app/src/data docker.io/thewilqq/btc-tracke
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=3000</code></pre>
-                    
-                    <p>Then run the application with:</p>
-                    <pre><code>docker-compose up -d</code></pre>
-                    
-                    <h4>Configuration Options</h4>
-                    <p>You can customize the following environment variables:</p>
-                    <ul class="config-options">
-                        <li><code class="env-var">CONTAINER_NAME</code>: Name of the container (default: btc-tracker)</li>
-                        <li><code class="env-var">PORT</code>: Port to access the application (default: 3000)</li>
-                        <li><code class="env-var">DATA_PATH</code>: Local path to store application data (default: ./data)</li>
-                        <li><code class="env-var">NODE_ENV</code>: Environment setting (default: development)</li>
-                    </ul>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            
+                            <p>Then start the application:</p>
+                            <div class="code-block">
+                                <pre><code>docker-compose up -d</code></pre>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="config-section">
+                            <h4>Configuration Options</h4>
+                            <div class="config-grid">
+                                <div class="config-item">
+                                    <code>CONTAINER_NAME</code>
+                                    <span>Container name (default: btc-tracker)</span>
+                                </div>
+                                <div class="config-item">
+                                    <code>PORT</code>
+                                    <span>Application port (default: 3000)</span>
+                                </div>
+                                <div class="config-item">
+                                    <code>DATA_PATH</code>
+                                    <span>Data storage path (default: ./data)</span>
+                                </div>
+                                <div class="config-item">
+                                    <code>NODE_ENV</code>
+                                    <span>Environment (default: development)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="card">
-                    <h3><i class="fab fa-node-js"></i> Manual Installation</h3>
-                    <p>If you prefer to run BTC Tracker without Docker, follow these steps:</p>
+
+                <div class="install-method" id="nodejs">
+                    <div class="method-header">
+                        <div class="method-icon">
+                            <i class="fab fa-node-js"></i>
+                        </div>
+                        <div class="method-info">
+                            <h3>Manual Installation</h3>
+                            <p>Direct installation for developers</p>
+                        </div>
+                    </div>
                     
-                    <h4>Prerequisites</h4>
-                    <ul>
-                        <li>Node.js (v14 or higher)</li>
-                        <li>npm or yarn</li>
-                    </ul>
-                    
-                    <h4>Installation Steps</h4>
-                    <pre><code># Clone the repository
+                    <div class="method-content">
+                        <div class="prerequisites">
+                            <h4>Prerequisites</h4>
+                            <ul class="prereq-list">
+                                <li><i class="fab fa-node-js"></i> Node.js (v14 or higher)</li>
+                                <li><i class="fas fa-download"></i> npm or yarn package manager</li>
+                                <li><i class="fab fa-git-alt"></i> Git (for cloning repository)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="installation-steps">
+                            <h4>Installation Steps</h4>
+                            <div class="code-block">
+                                <pre><code># Clone the repository
 git clone https://github.com/wilqq-the/btc-tracker.git
 cd btc-tracker
 
@@ -88,86 +231,177 @@ npm install
 
 # Start the application
 npm start</code></pre>
-                    
-                    <p>The application will be available at <code>http://localhost:3000</code>.</p>
+                                <button class="copy-btn" onclick="copyCode(this)">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <p class="code-note">The application will be available at <code>http://localhost:3000</code></p>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="card">
-                    <h3><i class="fas fa-user-plus"></i> First-Time Setup</h3>
-                    <p>When you first access BTC Tracker, you'll need to create an admin account:</p>
-                    <ol class="setup-steps">
-                        <li>Open your browser and navigate to <code class="step-code">http://localhost:3000</code></li>
-                        <li>You'll be redirected to the setup page</li>
-                        <li>Create an admin username and password</li>
-                        <li>Log in with your new credentials</li>
-                    </ol>
-                    <p>After setup, you'll be able to add transactions, view your Bitcoin portfolio, and track your investment performance.</p>
+
+                <div class="install-method">
+                    <div class="method-header">
+                        <div class="method-icon">
+                            <i class="fab fa-windows"></i>
+                        </div>
+                        <div class="method-info">
+                            <h3>Windows Desktop</h3>
+                            <p>Native Windows application</p>
+                        </div>
+                    </div>
+                    
+                    <div class="method-content">
+                        <div class="download-section">
+                            <h4>Download & Install</h4>
+                            <p>Get the latest Windows installer from GitHub releases:</p>
+                            <div class="method-actions">
+                                <a href="https://github.com/wilqq-the/btc-tracker/releases" class="btn-primary" target="_blank">
+                                    <i class="fas fa-download"></i>
+                                    Download for Windows
+                                </a>
+                            </div>
+                            <div class="features-list">
+                                <ul>
+                                    <li><i class="fas fa-desktop"></i> Native Windows application</li>
+                                    <li><i class="fas fa-tray"></i> System tray integration</li>
+                                    <li><i class="fas fa-wifi-slash"></i> Works offline</li>
+                                    <li><i class="fas fa-shield-alt"></i> Local data storage</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            <div class="cta">
-                <a href="features.html" class="button"><i class="fas fa-star"></i> Explore Features</a>
+            <section class="first-time-setup">
+                <div class="setup-header">
+                    <h2>First-Time Setup</h2>
+                    <p>Complete these steps after installation to start tracking your Bitcoin investments</p>
+                </div>
+                
+                <div class="setup-flow">
+                    <div class="setup-step">
+                        <div class="step-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Access the Application</h3>
+                            <p>Open your browser and navigate to <code>http://localhost:3000</code> (or your configured port)</p>
+                        </div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <div class="step-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Create Admin Account</h3>
+                            <p>You'll be redirected to the setup page where you can create your admin username and password</p>
+                        </div>
+                    </div>
+                    
+                    <div class="setup-step">
+                        <div class="step-icon">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <div class="step-content">
+                            <h3>Login & Start Tracking</h3>
+                            <p>Log in with your credentials and begin adding Bitcoin transactions to track your portfolio</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="next-steps">
+                <h2>What's Next?</h2>
+                <div class="next-actions">
+                    <a href="features.html" class="btn-primary">
+                        <i class="fas fa-star"></i>
+                        Explore Features
+                    </a>
+                    <a href="https://github.com/wilqq-the/btc-tracker" class="btn-secondary">
+                        <i class="fab fa-github"></i>
+                        View on GitHub
+                    </a>
+                </div>
             </div>
         </main>
 
         <a href="#" class="back-to-top" id="backToTop"><i class="fas fa-arrow-up"></i></a>
 
-        <footer>
-            <p>BTC Tracker is an open-source project released under the MIT License</p>
-            <div class="footer-links">
-                <a href="https://github.com/wilqq-the/btc-tracker" class="github-link" target="_blank"><i class="fab fa-github"></i> GitHub</a>
-                <div class="donation-container">
-                    <a href="#" class="donation-link" id="donationLink"><i class="fab fa-bitcoin"></i> Donate</a>
-                    <div class="donation-tooltip" id="donationTooltip">
-                        <div class="donation-content">
-                            <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
-                            
-                            <!-- Payment Method Toggle -->
-                            <div class="payment-method-toggle">
-                                <button class="method-btn" data-method="onchain" id="onchainBtn">
-                                    <i class="fab fa-bitcoin"></i> On-Chain
-                                </button>
-                                <button class="method-btn active" data-method="lightning" id="lightningBtn">
-                                    <i class="fas fa-bolt"></i> Lightning
-                                </button>
-                            </div>
-                            
-                            <!-- Lightning Section (Default) -->
-                            <div class="donation-section" id="lightningSection">
-                                <div class="donation-address">
-                                    <p><i class="fas fa-bolt"></i> Lightning Address:</p>
-                                    <div class="address-container">
-                                        <code id="lightningAddress">szymon_@strike.me</code>
-                                        <button onclick="copyAddress('lightning')" title="Copy Lightning address">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+        <footer class="modern-footer">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>BTC Tracker</h4>
+                    <p>Privacy-focused Bitcoin investment tracking</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <a href="https://github.com/wilqq-the/btc-tracker">GitHub Repository</a>
+                    <a href="https://apps.umbrel.com/app/btctracker">Umbrel App Store</a>
+                    <a href="https://hub.docker.com/r/thewilqq/btc-tracker">Docker Hub</a>
+                </div>
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <div class="donation-container">
+                        <a href="#" class="donation-link" id="donationLink">
+                            <i class="fab fa-bitcoin"></i> Donate Bitcoin
+                        </a>
+                        <div class="donation-tooltip" id="donationTooltip">
+                            <div class="donation-content">
+                                <h3><i class="fab fa-bitcoin"></i> Support BTC Tracker</h3>
+                                
+                                <!-- Payment Method Toggle -->
+                                <div class="payment-method-toggle">
+                                    <button class="method-btn" data-method="onchain" id="onchainBtn">
+                                        <i class="fab fa-bitcoin"></i> On-Chain
+                                    </button>
+                                    <button class="method-btn active" data-method="lightning" id="lightningBtn">
+                                        <i class="fas fa-bolt"></i> Lightning
+                                    </button>
+                                </div>
+                                
+                                <!-- Lightning Section (Default) -->
+                                <div class="donation-section" id="lightningSection">
+                                    <div class="donation-address">
+                                        <p><i class="fas fa-bolt"></i> Lightning Address:</p>
+                                        <div class="address-container">
+                                            <code id="lightningAddress">szymon_@strike.me</code>
+                                            <button onclick="copyAddress('lightning')" title="Copy Lightning address">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="qr-container">
+                                        <div id="lightningQrcode"></div>
                                     </div>
                                 </div>
-                                <div class="qr-container">
-                                    <div id="lightningQrcode"></div>
-                                </div>
-                            </div>
-                            
-                            <!-- On-Chain Section -->
-                            <div class="donation-section" id="onchainSection" style="display: none;">
-                                <div class="donation-address">
-                                    <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
-                                    <div class="address-container">
-                                        <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
-                                        <button onclick="copyAddress('btc')" title="Copy address">
-                                            <i class="fas fa-copy"></i>
-                                        </button>
+                                
+                                <!-- On-Chain Section -->
+                                <div class="donation-section" id="onchainSection" style="display: none;">
+                                    <div class="donation-address">
+                                        <p><i class="fab fa-bitcoin"></i> Bitcoin Address:</p>
+                                        <div class="address-container">
+                                            <code id="btcAddress">bc1qn058nln055rkvpnxvkk5qmv9j0ma9eg79a79ef</code>
+                                            <button onclick="copyAddress('btc')" title="Copy address">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="qr-container">
-                                    <div id="qrcode"></div>
+                                    <div class="qr-container">
+                                        <div id="qrcode"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+            <div class="footer-bottom">
+                <p>Open-source project released under the MIT License</p>
+                <p><i class="fab fa-bitcoin"></i> Powered by Bitcoin</p>
+            </div>
         </footer>
     </div>
 
@@ -192,7 +426,38 @@ npm start</code></pre>
                     behavior: 'smooth'
                 });
             });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
         });
+
+        // Copy code functionality
+        function copyCode(button) {
+            const codeBlock = button.parentElement.querySelector('code');
+            const text = codeBlock.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const originalIcon = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                button.style.color = 'var(--profit-color)';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalIcon;
+                    button.style.color = '';
+                }, 2000);
+            });
+        }
     </script>
 </body>
 </html> 
