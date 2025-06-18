@@ -1,11 +1,4 @@
-# Multi-arch compatible Dockerfile for Umbrel
 FROM node:18-alpine
-
-# Build arguments for multi-arch support
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
-ARG TARGETOS
-ARG TARGETARCH
 
 # Create app directory
 WORKDIR /app
@@ -21,9 +14,6 @@ COPY . .
 
 # Create data directory with appropriate permissions
 RUN mkdir -p src/data && chmod 777 src/data
-
-# Create uploads directory if it doesn't exist
-RUN mkdir -p src/uploads && chmod 777 src/uploads
 
 # Expose the port the app runs on
 EXPOSE 3000

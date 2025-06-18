@@ -10,7 +10,7 @@ class CurrencyConverter {
         this.baseCurrencies = ['EUR', 'USD'];
         
         // Secondary currencies that we support
-        this.secondaryCurrencies = ['GBP', 'JPY', 'CHF', 'PLN', 'BRL', 'INR'];
+        this.secondaryCurrencies = ['GBP', 'JPY', 'CHF', 'PLN', 'BRL'];
         
         // All supported currencies
         this.supportedCurrencies = [...this.baseCurrencies, ...this.secondaryCurrencies];

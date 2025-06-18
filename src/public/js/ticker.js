@@ -32,26 +32,24 @@ function updateTicker(data) {
     }
     
     // Convert historical prices from EUR to main currency before comparison
-    let dailyPriceInMainCurrency = currentPrice; // fallback
-    let dailyPriceDate = 'yesterday';
+    let weeklyPriceInMainCurrency = currentPrice; // fallback
+    let weeklyPriceDate = 'unknown date';
     
     // Get historical price (always stored in EUR) and convert to main currency
-    // Prioritize daily change over weekly for ticker display
-    const historicalPriceEUR = data.previousDayPrice || data.previousWeekPrice || 0;
+    const historicalPriceEUR = data.previousWeekPrice || data.previousDayPrice || 0;
     if (historicalPriceEUR > 0) {
         if (mainCurrency === 'EUR') {
-            dailyPriceInMainCurrency = historicalPriceEUR;
+            weeklyPriceInMainCurrency = historicalPriceEUR;
         } else if (mainCurrency === 'USD' && data.eurUsd) {
-            dailyPriceInMainCurrency = historicalPriceEUR * data.eurUsd;
+            weeklyPriceInMainCurrency = historicalPriceEUR * data.eurUsd;
         } else {
             // Convert from EUR to other supported currencies
             const rateKey = `eur${mainCurrency.toLowerCase()}`;
             if (data[rateKey]) {
-                dailyPriceInMainCurrency = historicalPriceEUR * data[rateKey];
+                weeklyPriceInMainCurrency = historicalPriceEUR * data[rateKey];
             }
         }
-        // Use daily change if available, otherwise weekly
-        dailyPriceDate = data.previousDayPrice ? 'yesterday' : (data.weeklyPriceDate || 'previous period');
+        weeklyPriceDate = data.weeklyPriceDate || 'previous period';
     }
     
     console.log('Price values:', {
@@ -62,23 +60,23 @@ function updateTicker(data) {
         previousWeekPriceEUR: data.previousWeekPrice,
         previousDayPriceEUR: data.previousDayPrice,
         historicalPriceEUR: historicalPriceEUR,
-        dailyPriceDate: dailyPriceDate,
+        weeklyPriceDate: weeklyPriceDate,
         resolvedCurrentPrice: currentPrice,
-        resolvedDailyPriceInMainCurrency: dailyPriceInMainCurrency,
+        resolvedWeeklyPriceInMainCurrency: weeklyPriceInMainCurrency,
         currencyConversionRate: mainCurrency === 'USD' ? data.eurUsd : data[`eur${mainCurrency.toLowerCase()}`],
-        conversionApplied: mainCurrency !== 'EUR' ? `${historicalPriceEUR} EUR * ${mainCurrency === 'USD' ? data.eurUsd : data[`eur${mainCurrency.toLowerCase()}`]} = ${dailyPriceInMainCurrency}` : 'No conversion needed'
+        conversionApplied: mainCurrency !== 'EUR' ? `${historicalPriceEUR} EUR * ${mainCurrency === 'USD' ? data.eurUsd : data[`eur${mainCurrency.toLowerCase()}`]} = ${weeklyPriceInMainCurrency}` : 'No conversion needed'
     });
     
-    const change = currentPrice - dailyPriceInMainCurrency;
-    const percentChange = dailyPriceInMainCurrency > 0 ? (change / dailyPriceInMainCurrency) * 100 : 0;
+    const change = currentPrice - weeklyPriceInMainCurrency;
+    const percentChange = weeklyPriceInMainCurrency > 0 ? (change / weeklyPriceInMainCurrency) * 100 : 0;
     
-    console.log(`Calculated daily changes (compared to ${dailyPriceDate}):`, {
+    console.log(`Calculated weekly changes (compared to ${weeklyPriceDate}):`, {
         change,
         percentChange,
-        calculation: `${currentPrice} - ${dailyPriceInMainCurrency} = ${change}`,
-        percentCalc: dailyPriceInMainCurrency > 0 ? 
-            `(${change} / ${dailyPriceInMainCurrency}) * 100 = ${percentChange}` : 
-            'Skipped due to zero daily price'
+        calculation: `${currentPrice} - ${weeklyPriceInMainCurrency} = ${change}`,
+        percentCalc: weeklyPriceInMainCurrency > 0 ? 
+            `(${change} / ${weeklyPriceInMainCurrency}) * 100 = ${percentChange}` : 
+            'Skipped due to zero weekly price'
     });
     
     // Format values with appropriate currency
@@ -95,8 +93,8 @@ function updateTicker(data) {
     
     console.log('Formatted values:', {
         current: formattedCurrent,
-        dailyChange: formattedChange,
-        dailyPercent: formattedPercent
+        weeklyChange: formattedChange,
+        weeklyPercent: formattedPercent
     });
     
     // Update display
@@ -104,9 +102,9 @@ function updateTicker(data) {
     weeklyChange.textContent = formattedChange;
     weeklyPercent.textContent = formattedPercent;
     
-    // Add tooltip for daily price date
-    weeklyChange.title = `Change since ${dailyPriceDate}`;
-    weeklyPercent.title = `Change since ${dailyPriceDate}`;
+    // Add tooltip for weekly price date
+    weeklyChange.title = `Change since ${weeklyPriceDate}`;
+    weeklyPercent.title = `Change since ${weeklyPriceDate}`;
     
     // Add positive/negative classes
     const changeClass = change === 0 ? '' : (change > 0 ? 'positive' : 'negative');
@@ -115,23 +113,17 @@ function updateTicker(data) {
     
     console.log('Applied styles:', {
         changeClass,
-        dailyChangeClass: weeklyChange.className,
-        dailyPercentClass: weeklyPercent.className
+        weeklyChangeClass: weeklyChange.className,
+        weeklyPercentClass: weeklyPercent.className
     });
 }
 
-// Function to fetch price data from unified summary endpoint
-async function fetchTickerData() {
-    console.log('Starting ticker data fetch from summary endpoint...');
+// Function to fetch price data
+async function fetchPriceData() {
+    console.log('Starting price data fetch...');
     try {
-        console.log('Sending request to /api/summary?priceOnly=true');
-        const response = await fetch('/api/summary?priceOnly=true&t=' + Date.now(), {
-            cache: 'no-cache',
-            headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache'
-            }
-        });
+        console.log('Sending request to /api/current-price');
+        const response = await fetch('/api/current-price');
         
         if (!response.ok) {
             console.error('API request failed:', {
@@ -143,7 +135,7 @@ async function fetchTickerData() {
         
         console.log('Response received, parsing JSON...');
         const data = await response.json();
-        console.log('Parsed ticker data from summary:', data);
+        console.log('Parsed price data:', data);
         
         if (!data || (typeof data.priceEUR === 'undefined' && typeof data.price === 'undefined')) {
             console.error('Invalid price data received:', data);
@@ -151,9 +143,9 @@ async function fetchTickerData() {
         }
         
         updateTicker(data);
-        console.log('Ticker update completed successfully');
+        console.log('Price update completed successfully');
     } catch (error) {
-        console.error('Error fetching ticker data:', {
+        console.error('Error fetching price data:', {
             name: error.name,
             message: error.message,
             stack: error.stack
@@ -161,15 +153,12 @@ async function fetchTickerData() {
     }
 }
 
-// Initialize ticker with unified approach
+// Initialize ticker
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing unified ticker...');
-    
+    console.log('Initializing ticker...');
     // Initial fetch
-    fetchTickerData();
+    fetchPriceData();
     
-    // Update every 5 minutes for all pages
-    setInterval(fetchTickerData, 5 * 60 * 1000);
-    
-    console.log('Ticker initialized with 5-minute updates using /api/summary endpoint');
+    // Update every 5 minutes (reduced from 1 minute to avoid rate limits)
+    setInterval(fetchPriceData, 5 * 60 * 1000);
 }); 

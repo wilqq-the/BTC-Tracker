@@ -103,6 +103,9 @@ if [ "$COMPOSE_ENGINE" != "" ]; then
   echo -e "${GREEN}✓${NC} BTC Tracker is now running!"
   echo -e "   Access it at: ${GREEN}http://localhost:$PORT${NC}"
   echo
+  echo -e "${YELLOW}TIP:${NC} You can set a CoinGecko API key in the Admin Panel for better rate limits"
+  
+  echo
   echo -e "To stop the application, run: ${YELLOW}$COMPOSE_ENGINE down${NC}"
 else
   # Using native Docker/Podman commands
@@ -117,6 +120,7 @@ else
   echo -e "${GREEN}✓${NC} BTC Tracker is now running!"
   echo -e "   Access it at: ${GREEN}http://localhost:$PORT${NC}"
   echo
+  echo -e "${YELLOW}TIP:${NC} You can set a CoinGecko API key in the Admin Panel for better rate limits"
   
   echo
   echo -e "To stop the application, run: ${YELLOW}$CONTAINER_ENGINE stop $CONTAINER_NAME${NC}"
