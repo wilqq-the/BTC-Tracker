@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="styles.css?v=0.5.2">
     <link rel="stylesheet" href="css/mobile.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://kit.fontawesome.com/090ca49637.js" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
     <link rel="shortcut icon" href="images/favicon.ico?v=0.5.2" type="image/x-icon">
@@ -569,6 +570,137 @@
             border-left: 3px solid var(--accent-color);
         }
         
+        /* Compact Symbol Toggle Switch for BTC Unit */
+        .toggle-switch-container {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 0.5rem;
+        }
+
+        .symbol-toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+        }
+
+        .symbol-toggle-switch input[type="checkbox"] {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+
+        .symbol-toggle-slider {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+
+        .symbol-toggle-button {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 24px;
+            height: 24px;
+            background: #fff;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+
+        /* Symbol positioning */
+        .symbol-toggle-slider::before,
+        .symbol-toggle-slider::after {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            z-index: 1;
+        }
+
+        /* BTC symbol (left side) */
+        .symbol-toggle-slider::before {
+            content: "₿";
+            left: 8px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Satoshi symbol (right side) - placeholder for now, will be replaced with actual symbol */
+        .symbol-toggle-slider::after {
+            content: "S";
+            font-family: inherit;
+            font-weight: bold;
+            right: 8px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Checked state - Satoshi mode (Lightning purple) */
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider {
+            background: #7c1cf4;
+            border-color: #7c1cf4;
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider .symbol-toggle-button {
+            transform: translateX(28px);
+            background: #fff;
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider::before {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .symbol-toggle-switch input:checked + .symbol-toggle-slider::after {
+            color: #fff;
+        }
+
+        /* Unchecked state - BTC mode (Bitcoin orange) */
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider {
+            background: rgba(247, 147, 26, 0.2);
+            border-color: rgba(247, 147, 26, 0.3);
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider .symbol-toggle-button {
+            background: #f7931a;
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider::before {
+            color: #fff;
+        }
+
+        /* Hover effects */
+        .symbol-toggle-slider:hover {
+            box-shadow: 0 0 0 3px rgba(124, 28, 244, 0.2);
+        }
+
+        .symbol-toggle-switch input:not(:checked) + .symbol-toggle-slider:hover {
+            box-shadow: 0 0 0 3px rgba(247, 147, 26, 0.2);
+        }
+
+        /* Unit description below switch */
+        .unit-description {
+            text-align: left;
+            margin-top: 0.5rem;
+            margin-left: 0;
+            font-size: 0.75rem;
+            color: var(--text-secondary-color, #aaa);
+            font-weight: 400;
+            transition: color 0.3s ease;
+        }
+
+        /* Remove active color change - description should stay normal color */
+        
         /* Compact Danger Zone */
         .danger-zone-compact {
             margin-top: 20px;
@@ -783,6 +915,9 @@
         </header>
 
         <div class="admin-section">
+
+
+
             <div class="settings-grid">
                 <div class="settings-column">
                     <div class="card settings-card">
@@ -811,6 +946,22 @@
                                     <option value="EUR">Euro (EUR)</option>
                                 </select>
                                 <p class="help-text">Show P&L in this currency alongside the main currency</p>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="btcUnit"><i class="fab fa-bitcoin"></i> Bitcoin Display Unit</label>
+                                <div class="toggle-switch-container">
+                                    <div class="symbol-toggle-switch">
+                                        <input type="checkbox" id="btcUnit" name="btcUnit">
+                                        <label for="btcUnit" class="symbol-toggle-slider">
+                                            <span class="symbol-toggle-button"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="unit-description" id="unitDescription">
+                                    Display in BTC (decimal format)
+                                </div>
+                                <p class="help-text">Toggle between BTC (₿) with up to 8 decimal places or Satoshis (<i class="fak fa-satoshisymbol-solid"></i>) as whole numbers. 1 BTC = 100,000,000 Satoshis</p>
                             </div>
                             
                             <div class="form-group">
@@ -995,6 +1146,7 @@
                     <div class="qr-container">
                         <div id="lightningQrcode"></div>
                     </div>
+
                 </div>
                 
                 <!-- On-Chain Section -->
@@ -1062,6 +1214,7 @@
                 // Populate form fields
                 document.getElementById('secondaryCurrency').value = settings.secondaryCurrency || 'PLN';
                 document.getElementById('mainCurrency').value = settings.mainCurrency || 'EUR';
+                document.getElementById('btcUnit').checked = (settings.btcUnit === 'satoshi');
                 
                 // Set global variables for transaction modal
                 window.mainCurrency = settings.mainCurrency || 'EUR';
@@ -1179,6 +1332,7 @@
                 const settings = {
                     secondaryCurrency,
                     mainCurrency,
+                    btcUnit,
                     historicalDataYears,
                     historicalDataRefreshHours
                 };
@@ -2424,7 +2578,7 @@
             })
             .catch(error => {
                 console.error('Failed to fetch version:', error);
-                document.getElementById('app-version').textContent = '0.5.3';
+                document.getElementById('app-version').textContent = '0.5.4';
             });
 
         function generateQRCode() {
@@ -2866,6 +3020,7 @@
                 button.disabled = false;
             }
         });
+
         // Function to update unit description
         function updateUnitDescription() {
             const unitDescription = document.getElementById('unitDescription');
@@ -2899,5 +3054,6 @@
             // Transactions are now managed in transactions.html
         });
     </script>
+    <script src="js/btc-utils.js"></script>
 </body>
 </html> 
