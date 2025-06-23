@@ -24,7 +24,7 @@
     "electron:dev": "npx electron-builder && npx electron dist/electron-main.js"
   },
   "dependencies": {
-    "axios": "^1.6.7",
+    "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.2",
     "connect-flash": "^0.1.1",
@@ -38,7 +38,7 @@
     "multer": "^1.4.5-lts.2",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "unzipper": "^0.10.14",
+    "unzipper": "^0.12.3",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
