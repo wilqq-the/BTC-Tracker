@@ -70,18 +70,26 @@ describe('Authentication API', () => {
 
     it('should return no single user when multiple users exist', async () => {
       // Create multiple test users
-      await createTestUser({
+      const user1 = await createTestUser({
         email: 'user1@example.com',
         name: 'User One'
       })
-      await createTestUser({
+      const user2 = await createTestUser({
         email: 'user2@example.com',
         name: 'User Two'
       })
 
+      console.log('Created users:', user1.id, user2.id)
+
+      // Check how many users exist in database
+      const userCount = await testDb.user.count()
+      console.log('Total users in database:', userCount)
+
       const mockRequest = createMockRequest('GET', '/api/auth/check-user')
       const response = await checkUserGET(mockRequest)
       const data = await response.json()
+
+      console.log('API response:', data)
 
       expect(response.status).toBe(200)
       expect(data.singleUser).toBe(false)

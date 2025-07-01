@@ -117,12 +117,17 @@ export class SettingsService {
         notifications: updatedSettings.notifications,
       });
 
-      const savedRecord = await prisma.appSettings.update({
+      const savedRecord = await prisma.appSettings.upsert({
         where: { id: settingsId },
-        data: {
+        update: {
           settingsData: settingsData,
           version: updatedSettings.version,
           lastUpdated: new Date(),
+        },
+        create: {
+          id: settingsId,
+          settingsData: settingsData,
+          version: updatedSettings.version,
         },
       });
 
