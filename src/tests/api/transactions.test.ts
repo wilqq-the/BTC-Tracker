@@ -24,6 +24,7 @@ jest.mock('../../lib/exchange-rate-service', () => ({
 jest.mock('../../lib/bitcoin-price-service', () => ({
   BitcoinPriceService: {
     getCurrentPrice: jest.fn().mockResolvedValue({ price: 50000 }),
+    calculateAndStorePortfolioSummary: jest.fn().mockResolvedValue(undefined),
     calculateAndStorePortfolioSummaryDebounced: jest.fn().mockResolvedValue(undefined)
   }
 }))
