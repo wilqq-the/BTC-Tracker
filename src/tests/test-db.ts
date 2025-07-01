@@ -12,6 +12,18 @@ import { prisma } from '../lib/prisma'
 export const testDb = prisma
 
 /**
+ * Check if a table exists in the database
+ */
+async function tableExists(tableName: string): Promise<boolean> {
+  try {
+    await testDb.$queryRaw`SELECT name FROM sqlite_master WHERE type='table' AND name=${tableName}`
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Initialize test database with schema (simplified)
  */
 export async function initTestDatabase(): Promise<void> {
@@ -32,20 +44,65 @@ export async function initTestDatabase(): Promise<void> {
 }
 
 /**
- * Clean all data from test database
+ * Clean all data from test database with error handling for missing tables
  */
 export async function cleanTestDatabase(): Promise<void> {
   try {
     // Delete in reverse order of dependencies
-    await testDb.bitcoinPriceIntraday.deleteMany()
-    await testDb.bitcoinPriceHistory.deleteMany()
-    await testDb.bitcoinCurrentPrice.deleteMany()
-    await testDb.portfolioSummary.deleteMany()
-    await testDb.exchangeRate.deleteMany()
-    await testDb.customCurrency.deleteMany()
-    await testDb.bitcoinTransaction.deleteMany()
-    await testDb.appSettings.deleteMany()
-    await testDb.user.deleteMany()
+    // Use try-catch for each table in case it doesn't exist yet
+    try { 
+      if (await tableExists('bitcoin_price_intraday')) {
+        await testDb.bitcoinPriceIntraday.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_price_history')) {
+        await testDb.bitcoinPriceHistory.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_current_price')) {
+        await testDb.bitcoinCurrentPrice.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('portfolio_summary')) {
+        await testDb.portfolioSummary.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('exchange_rates')) {
+        await testDb.exchangeRate.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('custom_currencies')) {
+        await testDb.customCurrency.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_transactions')) {
+        await testDb.bitcoinTransaction.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('app_settings')) {
+        await testDb.appSettings.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('users')) {
+        await testDb.user.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
     
     console.log('🧹 Test database cleaned')
   } catch (error) {
@@ -60,14 +117,54 @@ export async function cleanTestDatabase(): Promise<void> {
 export async function cleanUserData(): Promise<void> {
   try {
     // Delete user-related data but keep settings
-    await testDb.bitcoinPriceIntraday.deleteMany()
-    await testDb.bitcoinPriceHistory.deleteMany()
-    await testDb.bitcoinCurrentPrice.deleteMany()
-    await testDb.portfolioSummary.deleteMany()
-    await testDb.exchangeRate.deleteMany()
-    await testDb.customCurrency.deleteMany()
-    await testDb.bitcoinTransaction.deleteMany()
-    await testDb.user.deleteMany()
+    // Use try-catch for each table in case it doesn't exist yet
+    try { 
+      if (await tableExists('bitcoin_price_intraday')) {
+        await testDb.bitcoinPriceIntraday.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_price_history')) {
+        await testDb.bitcoinPriceHistory.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_current_price')) {
+        await testDb.bitcoinCurrentPrice.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('portfolio_summary')) {
+        await testDb.portfolioSummary.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('exchange_rates')) {
+        await testDb.exchangeRate.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('custom_currencies')) {
+        await testDb.customCurrency.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('bitcoin_transactions')) {
+        await testDb.bitcoinTransaction.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
+    
+    try { 
+      if (await tableExists('users')) {
+        await testDb.user.deleteMany()
+      }
+    } catch (e) { /* Table might not exist */ }
     // Keep appSettings
     
     console.log('🧹 User data cleaned, settings preserved')

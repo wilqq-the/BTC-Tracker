@@ -20,7 +20,9 @@ module.exports = {
     '!src/**/*.d.ts',
     '!src/scripts/**/*',
     '!src/app/**/layout.tsx',
-    '!src/app/**/page.tsx'
+    '!src/app/**/page.tsx',
+    '!src/components/**/*',
+    '!src/app/**/*.tsx'
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],

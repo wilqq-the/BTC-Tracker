@@ -23,6 +23,15 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
+    - name: Setup test database
+      run: |
+        echo "Setting up test database..."
+        npx prisma generate
+        npx prisma migrate deploy
+      env:
+        DATABASE_URL: "file:./test.db"
+        NODE_ENV: test
+    
     - name: Run linter
       run: npm run lint
     
@@ -30,6 +39,15 @@ jobs:
       run: npm run test:ci
       env:
         CI: true
+        NODE_ENV: test
+        DATABASE_URL: "file:./test.db"
+        NEXTAUTH_SECRET: "test-secret-key-for-jest-testing-only"
+        NEXTAUTH_URL: "http://localhost:3000"
+        DISABLE_EXTERNAL_APIS: true
+        MOCK_BITCOIN_PRICE: true
+        MOCK_EXCHANGE_RATES: true
+        TEST_TIMEOUT: 10000
+        JEST_VERBOSE: false
     
     - name: Build Next.js app
       run: npm run build
