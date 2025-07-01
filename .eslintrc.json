@@ -1,0 +1,7 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-console": "off",
+    "react-hooks/exhaustive-deps": "off"
+  }
+} 

@@ -1,0 +1,27 @@
+# Build outputs
+.next/
+out/
+build/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.tsbuildinfo
+next-env.d.ts
+
+# Database
+*.db
+*.sqlite
+
+# Logs
+*.log
+
+# Environment files
+.env*
+
+# Coverage
+coverage/
+
+# Prisma generated
+prisma/generated/ 

@@ -1,0 +1,163 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Bitcoin transactions table - stores only original transaction data
+model BitcoinTransaction {
+  id                    Int      @id @default(autoincrement())
+  type                  String   // 'BUY' or 'SELL'
+  btcAmount             Float    @map("btc_amount")
+  
+  // Original transaction data (what user actually entered)
+  originalPricePerBtc   Float    @map("original_price_per_btc")
+  originalCurrency      String   @map("original_currency")
+  originalTotalAmount   Float    @map("original_total_amount")
+  
+  // Fees and metadata
+  fees                  Float    @default(0)
+  feesCurrency          String   @default("USD") @map("fees_currency")
+  transactionDate       DateTime @map("transaction_date")
+  notes                 String?
+  
+  // Tracking
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("bitcoin_transactions")
+}
+
+// Historical Bitcoin prices (daily OHLC data for long-term trends)
+model BitcoinPriceHistory {
+  id        Int      @id @default(autoincrement())
+  date      String   @unique // Store as YYYY-MM-DD string
+  openUsd   Float    @map("open_usd")
+  highUsd   Float    @map("high_usd")
+  lowUsd    Float    @map("low_usd")
+  closeUsd  Float    @map("close_usd")
+  volume    Float?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bitcoin_price_history")
+  @@index([date])
+}
+
+// Intraday Bitcoin prices (5-10 minute intervals for current day and recent activity)
+model BitcoinPriceIntraday {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @unique
+  priceUsd  Float    @map("price_usd")
+  volume    Float?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bitcoin_price_intraday")
+  @@index([timestamp])
+}
+
+// Exchange rates cache for currency conversion
+model ExchangeRate {
+  id           Int      @id @default(autoincrement())
+  fromCurrency String   @map("from_currency")
+  toCurrency   String   @map("to_currency")
+  rate         Float
+  lastUpdated  DateTime @default(now()) @map("last_updated")
+
+  @@unique([fromCurrency, toCurrency])
+  @@map("exchange_rates")
+}
+
+// App settings table
+model AppSettings {
+  id           Int      @id @default(autoincrement())
+  settingsData String   @map("settings_data") // JSON string
+  lastUpdated  DateTime @default(now()) @map("last_updated")
+  version      String   @default("1.0.0")
+
+  @@map("app_settings")
+}
+
+// Users table for authentication
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  name         String?
+  displayName  String?  @map("display_name") // Personalized display name
+  profilePicture String? @map("profile_picture") // Profile picture filename/URL
+  pinHash      String?  @map("pin_hash") // Added for PIN authentication
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// Custom currencies table for user-defined currencies
+model CustomCurrency {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  symbol    String
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("custom_currencies")
+}
+
+// Bitcoin current price table for storing current price with daily changes
+model BitcoinCurrentPrice {
+  id                     Int      @id @default(autoincrement())
+  priceUsd               Float    @map("price_usd")
+  priceChange24hUsd      Float    @default(0) @map("price_change_24h_usd")
+  priceChange24hPercent  Float    @default(0) @map("price_change_24h_percent")
+  timestamp              String   // Store as string for consistency
+  source                 String   @default("api")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("bitcoin_current_price")
+}
+
+// Portfolio summary table for storing pre-calculated portfolio data
+model PortfolioSummary {
+  id                          Int      @id @default(1) // Single row constraint
+  
+  // Holdings
+  totalBtc                    Float    @default(0) @map("total_btc")
+  totalTransactions           Int      @default(0) @map("total_transactions")
+  
+  // Investment (in user's main currency)
+  totalInvested               Float    @default(0) @map("total_invested")
+  totalFees                   Float    @default(0) @map("total_fees")
+  averageBuyPrice             Float    @default(0) @map("average_buy_price")
+  mainCurrency                String   @default("USD") @map("main_currency")
+  
+  // Current Value (updated with each price change)
+  currentBtcPriceUsd          Float    @default(0) @map("current_btc_price_usd")
+  currentPortfolioValue       Float    @default(0) @map("current_portfolio_value")
+  
+  // P&L (in main currency)
+  unrealizedPnl               Float    @default(0) @map("unrealized_pnl")
+  unrealizedPnlPercent        Float    @default(0) @map("unrealized_pnl_percent")
+  
+  // 24h Changes (in main currency)
+  portfolioChange24h          Float    @default(0) @map("portfolio_change_24h")
+  portfolioChange24hPercent   Float    @default(0) @map("portfolio_change_24h_percent")
+  
+  // Secondary currency display values
+  secondaryCurrency           String   @default("EUR") @map("secondary_currency")
+  currentValueSecondary       Float    @default(0) @map("current_value_secondary")
+  
+  // Metadata
+  lastUpdated                 DateTime @default(now()) @map("last_updated")
+  lastPriceUpdate             DateTime @default(now()) @map("last_price_update")
+
+  @@map("portfolio_summary")
+}
