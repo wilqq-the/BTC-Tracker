@@ -283,7 +283,7 @@ MIT
 ## Resources
 
 - **[GitHub Repository](https://github.com/wilqq-the/BTC-tracker)**: Source code and project files
-- **[Documentation](https://wilqq-the.github.io/BTC-tracker/)**: Comprehensive guides and screenshots
+- **[Documentation](https://wilqq-the.github.io/BTC-Tracker/)**: Comprehensive guides and screenshots
 - **[Docker Hub](https://hub.docker.com/r/thewilqq/btc-tracker)**: Pre-built Docker images
 
 ## Author
