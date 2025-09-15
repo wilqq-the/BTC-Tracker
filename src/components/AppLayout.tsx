@@ -49,20 +49,20 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* Subtle Footer */}
-      <footer className="h-10 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between px-6">
-        <ThemedText variant="muted" size="xs">
-          Bitcoin Tracker v{process.env.npm_package_version || '0.6.0'} • Open Source
+      <footer className="h-auto md:h-10 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2 md:py-0 space-y-1 md:space-y-0">
+        <ThemedText variant="muted" size="xs" className="text-center md:text-left">
+          BTC Tracker v{process.env.npm_package_version || '0.6.0'}
         </ThemedText>
         
-        <div className="flex items-center space-x-4">
-          <ThemedText variant="muted" size="xs">
+        <div className="flex items-center space-x-2 md:space-x-4">
+          <ThemedText variant="muted" size="xs" className="hidden sm:block">
             Made with ❤️ for the Bitcoin community
           </ThemedText>
           <button
             onClick={() => setIsDonationModalOpen(true)}
             className="text-xs text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors hover:underline"
           >
-            Support Development
+            Support
           </button>
         </div>
       </footer>

@@ -366,15 +366,15 @@ export default function TransactionsPage() {
 
   return (
     <AppLayout>
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
           <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <h1 className="text-2xl font-bold text-btc-text-primary">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
+              <h1 className="text-xl md:text-2xl font-bold text-btc-text-primary">
                 Transaction History
               </h1>
-              <div className="bg-btc-bg-tertiary px-2 py-1 rounded-md">
+              <div className="bg-btc-bg-tertiary px-2 py-1 rounded-md inline-block">
                 <ThemedText variant="secondary" size="sm">
                   {filteredAndSortedTransactions.length} 
                   {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
@@ -382,38 +382,38 @@ export default function TransactionsPage() {
                 </ThemedText>
               </div>
             </div>
-            <ThemedText variant="secondary">
+            <ThemedText variant="secondary" className="text-sm md:text-base">
               Manage your Bitcoin transactions and track performance
             </ThemedText>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:space-x-3">
             <ThemedButton
               variant="secondary"
               onClick={() => setShowImportModal(true)}
-              className="text-btc-text-secondary hover:text-btc-text-primary"
+              className="text-btc-text-secondary hover:text-btc-text-primary text-xs sm:text-sm"
             >
-              <span className="mr-2">⬆️</span> Import
+              <span className="mr-1 sm:mr-2">⬆️</span> Import
             </ThemedButton>
             <ThemedButton
               variant="secondary"
               onClick={handleExport}
               disabled={transactions.length === 0}
-              className="text-btc-text-secondary hover:text-btc-text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-btc-text-secondary hover:text-btc-text-primary disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
             >
-              <span className="mr-2">⬇️</span> Export
+              <span className="mr-1 sm:mr-2">⬇️</span> Export
             </ThemedButton>
             <ThemedButton
               variant="primary"
               onClick={handleAddTransaction}
-              className="bg-bitcoin hover:bg-bitcoin-dark"
+              className="bg-bitcoin hover:bg-bitcoin-dark text-xs sm:text-sm"
             >
-              + Add Transaction
+              + Add
             </ThemedButton>
           </div>
         </div>
 
         {/* Filters and Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
           {/* Quick Stats */}
           <ThemedCard>
             <div className="text-center">
@@ -462,7 +462,7 @@ export default function TransactionsPage() {
 
         {/* Filters and Controls */}
         <ThemedCard className="mb-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Type Filter */}
             <div className="flex items-center space-x-2">
               <ThemedText variant="secondary" size="sm">Filter:</ThemedText>
@@ -523,8 +523,8 @@ export default function TransactionsPage() {
         {/* Transactions Table */}
         <ThemedCard padding={false}>
           <div className="overflow-x-auto">
-            {/* Table Header */}
-            <div className="bg-btc-bg-tertiary px-6 py-3 border-b border-btc-border-primary">
+            {/* Table Header - Desktop Only */}
+            <div className="hidden lg:block bg-btc-bg-tertiary px-6 py-3 border-b border-btc-border-primary">
               <div className="grid grid-cols-10 gap-4 text-xs font-medium text-btc-text-secondary uppercase tracking-wider">
                 <button 
                   onClick={() => {
@@ -612,8 +612,10 @@ export default function TransactionsPage() {
                   const pnlPercent = calculatePnLPercent(transaction);
 
                   return (
-                    <div key={transaction.id} className="px-6 py-4 hover:bg-btc-bg-tertiary transition-colors">
-                      <div className="grid grid-cols-10 gap-4 items-center">
+                    <div key={transaction.id}>
+                      {/* Desktop View */}
+                      <div className="hidden lg:block px-6 py-4 hover:bg-btc-bg-tertiary transition-colors">
+                        <div className="grid grid-cols-10 gap-4 items-center">
                         {/* Date */}
                         <div className="text-sm">
                           <div className="text-btc-text-primary font-medium">
@@ -743,12 +745,84 @@ export default function TransactionsPage() {
                         </div>
                       </div>
 
-                      {/* Notes */}
-                      {transaction.notes && (
-                        <div className="mt-2 text-xs text-btc-text-muted">
-                          Note: {transaction.notes}
+                        {/* Notes */}
+                        {transaction.notes && (
+                          <div className="mt-2 text-xs text-btc-text-muted">
+                            Note: {transaction.notes}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Mobile View - Card Layout */}
+                      <div className="lg:hidden px-4 py-4 border-b border-btc-border-secondary hover:bg-btc-bg-tertiary transition-colors">
+                        <div className="space-y-3">
+                          {/* Header Row */}
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                transaction.type === 'BUY' 
+                                  ? 'bg-profit text-white' 
+                                  : 'bg-loss text-white'
+                              }`}>
+                                {transaction.type}
+                              </span>
+                              <div className="text-xs text-btc-text-muted mt-1">
+                                {new Date(transaction.transaction_date).toLocaleDateString()}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-mono text-sm font-medium text-btc-text-primary">
+                                {transaction.btc_amount.toFixed(6)} ₿
+                              </div>
+                              <div className="text-xs text-btc-text-muted">
+                                @ {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Values Row */}
+                          <div className="flex justify-between items-center pt-2 border-t border-btc-border-secondary">
+                            <div>
+                              <div className="text-xs text-btc-text-muted">Total</div>
+                              <div className="text-sm font-medium text-btc-text-primary">
+                                {formatCurrency(transaction.main_currency_total_amount || transaction.original_total_amount, transaction.main_currency || transaction.original_currency)}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-xs text-btc-text-muted">P&L</div>
+                              <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
+                              </div>
+                              <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                {formatPercentage(pnlPercent)}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Actions Row */}
+                          <div className="flex justify-end space-x-2 pt-2">
+                            <button
+                              onClick={() => handleEditTransaction(transaction)}
+                              className="px-3 py-1.5 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin hover:text-bitcoin-dark text-xs font-medium rounded-md border border-bitcoin/20 hover:border-bitcoin/40 transition-all duration-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransaction(transaction.id)}
+                              className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium rounded-md border border-red-500/20 hover:border-red-500/40 transition-all duration-200"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          
+                          {/* Notes */}
+                          {transaction.notes && (
+                            <div className="text-xs text-btc-text-muted pt-2 border-t border-btc-border-secondary">
+                              Note: {transaction.notes}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })

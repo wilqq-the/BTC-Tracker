@@ -73,6 +73,9 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   const { theme: currentTheme } = useTheme();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  
+  // Responsive height based on screen size
+  const [chartHeight, setChartHeight] = useState(height);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
   const lineSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
   const areaSeriesRef = useRef<ISeriesApi<'Area'> | null>(null);
@@ -100,6 +103,24 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   const [mainCurrency, setMainCurrency] = useState<string>('USD');
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
 
+  // Handle responsive height
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      if (width < 640) { // Mobile
+        setChartHeight(300);
+      } else if (width < 1024) { // Tablet
+        setChartHeight(350);
+      } else { // Desktop
+        setChartHeight(height);
+      }
+    };
+
+    handleResize(); // Set initial height
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [height]);
+
   // Initialize chart
   useEffect(() => {
     if (!chartContainerRef.current) return;
@@ -117,7 +138,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       // Create chart with current theme
       const chart = createChart(chartContainerRef.current, {
         width: chartContainerRef.current.clientWidth,
-        height: height,
+        height: chartHeight,
         layout: {
           background: { type: ColorType.Solid, color: colors.background },
           textColor: colors.textColor,
@@ -1305,39 +1326,41 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   return (
     <ThemedCard padding={false} className="overflow-hidden">
       {/* Chart Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+      <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 md:mb-4">
+          <div className="mb-2 sm:mb-0">
+            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
               Bitcoin Price Chart
             </h3>
-            <div className="flex items-center space-x-4 mt-1">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1">
+              <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
                 ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </div>
-              <div className={`text-sm ${priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% ({priceChange24h >= 0 ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
+              <div className={`text-xs md:text-sm ${priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% 
+                <span className="hidden sm:inline"> ({priceChange24h >= 0 ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
               </div>
             </div>
           </div>
           
           {loading && (
-            <div className="text-gray-500 dark:text-gray-400">
-              Loading chart data...
+            <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+              Loading...
             </div>
           )}
         </div>
 
         {/* Chart Controls */}
-        <div className="flex items-center justify-between">
-          {/* Time Range Buttons */}
-          <div className="flex space-x-1">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+          {/* Time Range Buttons - Scrollable on mobile */}
+          <div className="flex space-x-1 overflow-x-auto pb-1 sm:pb-0">
             {timeRangeButtons.map((button) => (
               <ThemedButton
                 key={button.value}
                 variant={timeRange === button.value ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setTimeRange(button.value)}
+                className="flex-shrink-0 text-xs md:text-sm"
               >
                 {button.label}
               </ThemedButton>
@@ -1345,7 +1368,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
           </div>
 
           {/* Chart Type Buttons */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2">
             <div className="flex space-x-1">
               {chartTypeButtons.map((button) => (
                 <ThemedButton
@@ -1354,8 +1377,10 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
                   size="sm"
                   onClick={() => setChartType(button.value)}
                   title={button.label}
+                  className="text-xs md:text-sm"
                 >
-                  {button.icon}
+                  <span className="hidden sm:inline">{button.label}</span>
+                  <span className="sm:hidden">{button.icon}</span>
                 </ThemedButton>
               ))}
             </div>
@@ -1366,7 +1391,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
                 variant={showMovingAverage ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={() => setShowMovingAverage(!showMovingAverage)}
-                className={showMovingAverage ? 'bg-blue-600 text-white' : ''}
+                className={`text-xs md:text-sm ${showMovingAverage ? 'bg-blue-600 text-white' : ''}`}
                 title="20-period Moving Average"
               >
                 MA20

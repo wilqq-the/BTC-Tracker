@@ -141,9 +141,28 @@ export default function SettingsPage() {
       )}
 
       {/* Settings Content with Secondary Sidebar */}
-      <div className="flex h-full">
-        {/* Settings Navigation Sidebar */}
-        <div className="w-64 bg-btc-bg-secondary border-r border-btc-border-secondary p-6 overflow-y-auto">
+      <div className="flex flex-col lg:flex-row h-full">
+        {/* Mobile Tab Navigation */}
+        <div className="lg:hidden bg-btc-bg-secondary border-b border-btc-border-secondary p-4 overflow-x-auto">
+          <div className="flex space-x-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as SettingsTab)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-bitcoin text-white'
+                    : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Desktop Settings Navigation Sidebar */}
+        <div className="hidden lg:block w-64 bg-btc-bg-secondary border-r border-btc-border-secondary p-6 overflow-y-auto">
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-btc-text-primary">
@@ -196,7 +215,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Main Settings Content */}
-        <div className="flex-1 p-6 overflow-auto">
+        <div className="flex-1 p-4 lg:p-6 overflow-auto">
           {activeTab === 'account' && (
             <UserAccountSettingsPanel />
           )}

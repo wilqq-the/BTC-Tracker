@@ -30,7 +30,11 @@ interface ConvertedPortfolioData {
   currentPortfolioValueSecondary: number;
 }
 
-export default function PortfolioSidebar() {
+interface PortfolioSidebarProps {
+  onClose?: () => void;
+}
+
+export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
   const [portfolioData, setPortfolioData] = useState<PortfolioSummaryData | null>(null);
   const [convertedData, setConvertedData] = useState<ConvertedPortfolioData | null>(null);
   const [priceData, setPriceData] = useState<BitcoinPriceData | null>(null);
@@ -288,7 +292,7 @@ export default function PortfolioSidebar() {
 
   if (loading) {
     return (
-      <div className="w-80 bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4">
+      <div className="w-full lg:w-80 h-full bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4">
         <div className="animate-pulse">
           <div className="h-6 bg-gray-300 dark:bg-gray-700 rounded mb-4"></div>
           <div className="space-y-3">
@@ -303,7 +307,7 @@ export default function PortfolioSidebar() {
 
   if (!portfolioData || !convertedData) {
     return (
-      <div className="w-80 bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4">
+      <div className="w-full lg:w-80 h-full bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4">
         <div className="text-center">
           <div className="text-4xl mb-4">₿</div>
           <ThemedText variant="secondary">No portfolio data</ThemedText>
@@ -313,20 +317,34 @@ export default function PortfolioSidebar() {
   }
 
   return (
-    <div className="w-80 bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4 overflow-y-auto">
+    <div className="w-full lg:w-80 h-full bg-gray-100 dark:bg-gray-900 border-r border-gray-300 dark:border-gray-700 p-4 overflow-y-auto">
       {/* Portfolio Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
             Portfolio
           </h2>
-          <button 
-            onClick={handleRefresh}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-            title="Refresh portfolio data"
-          >
-            ↻
-          </button>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleRefresh}
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+              title="Refresh portfolio data"
+            >
+              ↻
+            </button>
+            {/* Close button for mobile */}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                title="Close sidebar"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         <ThemedText variant="muted" size="sm">
           {convertedData.totalTransactions} transactions
