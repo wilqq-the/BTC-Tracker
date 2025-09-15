@@ -49,8 +49,17 @@ jobs:
         TEST_TIMEOUT: 10000
         JEST_VERBOSE: false
     
+    - name: Generate Prisma Client for build
+      run: npx prisma generate
+      env:
+        DATABASE_URL: "file:./prisma/build.db"
+    
     - name: Build Next.js app
       run: npm run build
+      env:
+        DATABASE_URL: "file:./prisma/build.db"
+        NEXTAUTH_SECRET: "build-time-secret-not-used-in-production"
+        NEXTAUTH_URL: "http://localhost:3000"
     
     - name: Verify build output
       run: |
