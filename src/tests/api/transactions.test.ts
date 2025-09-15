@@ -59,15 +59,18 @@ describe('Transactions API', () => {
 
   beforeAll(async () => {
     await setupTestDatabase()
-    testUser = await createTestUser({ email: 'testuser@example.com', password: 'password123' })
   }, 30000)
 
   beforeEach(async () => {
     await cleanTestDatabase()
     await seedTestDatabase()
     
-    // Recreate test user since cleanTestDatabase removes it
-    testUser = await createTestUser({ email: 'testuser@example.com', password: 'password123' })
+    // Recreate test user with unique email to avoid conflicts
+    const timestamp = Date.now()
+    testUser = await createTestUser({ 
+      email: `testuser-${timestamp}@example.com`, 
+      password: 'password123' 
+    })
     
     // Create a test transaction for each test
     const transaction = await createTestTransaction({
