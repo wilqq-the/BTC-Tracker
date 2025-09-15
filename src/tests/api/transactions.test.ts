@@ -59,6 +59,8 @@ describe('Transactions API', () => {
 
   beforeAll(async () => {
     await setupTestDatabase()
+    // Clean any leftover data from other test files
+    await testDb.user.deleteMany()
   }, 30000)
 
   beforeEach(async () => {
