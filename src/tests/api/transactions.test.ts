@@ -66,6 +66,9 @@ describe('Transactions API', () => {
     await cleanTestDatabase()
     await seedTestDatabase()
     
+    // Recreate test user since cleanTestDatabase removes it
+    testUser = await createTestUser({ email: 'testuser@example.com', password: 'password123' })
+    
     // Create a test transaction for each test
     const transaction = await createTestTransaction({
       type: 'BUY',

@@ -1,0 +1,371 @@
+FAIL src/tests/api/transactions.test.ts
+  ● Console
+    console.log
+      🧪 Jest test environment configured
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+    console.log
+      [DATA] Database URL: file:./test.db
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+    console.log
+      [TEST] Test database connected
+      at src/tests/setup.ts:35:11
+    console.log
+      [TOOL] Setting up test database...
+      at log (src/tests/test-db.ts:385:13)
+    console.log
+      [TOOL] Initializing test database...
+      at log (src/tests/test-db.ts:44:13)
+    console.log
+      [OK] Test database initialized
+      at log (src/tests/test-db.ts:193:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      [OK] Test database setup complete
+      at log (src/tests/test-db.ts:396:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      Response status: 200
+      at src/tests/api/transactions.test.ts:95:15
+    console.log
+      Response data: {
+        success: true,
+        data: [],
+        summary: {
+          total_transactions: 0,
+          total_buy_transactions: 0,
+          total_sell_transactions: 0,
+          total_btc_bought: 0,
+          total_btc_sold: 0,
+          current_btc_holdings: 0,
+          total_usd_invested: 0,
+          total_usd_received: 0,
+          total_fees_paid: 0,
+          average_buy_price: 0,
+          average_sell_price: 0,
+          realized_pnl: 0,
+          unrealized_pnl: 0,
+          total_pnl: 0,
+          roi_percentage: 0
+        },
+        message: 'Retrieved 0 transactions with EUR display values'
+      }
+      at src/tests/api/transactions.test.ts:96:15
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      prisma:error 
+      Invalid `prisma.bitcoinTransaction.update()` invocation in
+      /home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:127:64
+      
+        124 const originalTotalAmount = btcAmount * pricePerBtc;
+        125 
+        126 // Update transaction using Prisma - only store original data
+      → 127 const updatedTransaction = await prisma.bitcoinTransaction.update(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for an update.
+      at Object.Yc (node_modules/@prisma/client/runtime/library.js:12:432)
+    console.error
+      Error updating transaction: PrismaClientKnownRequestError: 
+      Invalid `prisma.bitcoinTransaction.update()` invocation in
+      /home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:127:64
+      
+        124 const originalTotalAmount = btcAmount * pricePerBtc;
+        125 
+        126 // Update transaction using Prisma - only store original data
+      → 127 const updatedTransaction = await prisma.bitcoinTransaction.update(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for an update.
+          at Zn.handleRequestError (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/@prisma/client/runtime/library.js:121:7459)
+          at Zn.handleAndLogRequestError (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/@prisma/client/runtime/library.js:121:6784)
+          at Zn.request (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/@prisma/client/runtime/library.js:121:6491)
+          at l (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/@prisma/client/runtime/library.js:130:9778) {
+        code: 'P2025',
+        meta: {
+          modelName: 'BitcoinTransaction',
+          cause: 'No record was found for an update.'
+        },
+        clientVersion: '6.10.1'
+      }
+      172 |     return NextResponse.json(response);
+      173 |   } catch (error) {
+    > 174 |     console.error('Error updating transaction:', error);
+          |             ^
+      175 |     return NextResponse.json({
+      176 |       success: false,
+      177 |       error: 'Failed to update transaction',
+      at error (src/app/api/transactions/[id]/route.ts:174:13)
+      at step (src/app/api/transactions/[id]/route.ts:5759:19)
+      at Object.throw (src/app/api/transactions/[id]/route.ts:5525:14)
+      at rejected (src/app/api/transactions/[id]/route.ts:5434:32)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      prisma:error 
+      Invalid `prisma.bitcoinTransaction.delete()` invocation in
+      /home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:202:45
+      
+        199 
+        200 // First check if transaction exists and delete it using Prisma
+        201 try {
+      → 202   await prisma.bitcoinTransaction.delete(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for a delete.
+      at Object.Yc (node_modules/@prisma/client/runtime/library.js:12:432)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.error
+      Error creating transaction: Error: Invalid JSON
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:662:35
+          at step (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:18:53)
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:8:12)
+          at Object.json (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:662:15)
+          at json (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:192:57)
+          at step (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:7699:19)
+          at Object.next (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:7465:14)
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:7397:39
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:7346:10)
+          at POST (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/route.ts:8345:10)
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:665:46
+          at step (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:18:53)
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:8:12)
+          at Object.<anonymous> (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:659:56)
+          at Promise.then.completed (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:121:9)
+          at run (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/home/runner/work/BTC-Tracker/BTC-Tracker/node_modules/jest-runner/build/testWorker.js:106:12)
+      263 |     return NextResponse.json(response, { status: 201 });
+      264 |   } catch (error) {
+    > 265 |     console.error('Error creating transaction:', error);
+          |             ^
+      266 |     return NextResponse.json({
+      267 |       success: false,
+      268 |       error: 'Failed to create transaction',
+      at error (src/app/api/transactions/route.ts:265:13)
+      at step (src/app/api/transactions/route.ts:7699:19)
+      at Object.throw (src/app/api/transactions/route.ts:7465:14)
+      at rejected (src/app/api/transactions/route.ts:7374:32)
+    console.log
+      🧹 Test database cleaned
+      at log (src/tests/test-db.ts:246:13)
+    console.log
+      🌱 Test database seeded
+      at log (src/tests/test-db.ts:357:13)
+    console.error
+      Error updating transaction: Error: Invalid JSON
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:676:35
+          at step (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:18:53)
+          at /home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:8:12)
+          at Object.json (/home/runner/work/BTC-Tracker/BTC-Tracker/src/tests/api/transactions.test.ts:676:15)
+          at json (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:99:57)
+          at step (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:5759:19)
+          at Object.next (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:5525:14)
+          at fulfilled (/home/runner/work/BTC-Tracker/BTC-Tracker/src/app/api/transactions/[id]/route.ts:5420:24)
+      172 |     return NextResponse.json(response);
+      173 |   } catch (error) {
+    > 174 |     console.error('Error updating transaction:', error);
+          |             ^
+      175 |     return NextResponse.json({
+      176 |       success: false,
+      177 |       error: 'Failed to update transaction',
+      at error (src/app/api/transactions/[id]/route.ts:174:13)
+      at step (src/app/api/transactions/[id]/route.ts:5759:19)
+      at Object.throw (src/app/api/transactions/[id]/route.ts:5525:14)
+      at rejected (src/app/api/transactions/[id]/route.ts:5434:32)
+    console.log
+      [TEST] Test database disconnected
+      at src/tests/setup.ts:42:13
+  ● Transactions API › GET /api/transactions › should retrieve all transactions with default pagination
+    expect(received).toBeGreaterThan(expected)
+    Expected: > 0
+    Received:   0
+      100 |       expect(data.message).toContain('Retrieved')
+      101 |       expect(Array.isArray(data.data)).toBe(true)
+    > 102 |       expect(data.data.length).toBeGreaterThan(0)
+          |                                ^
+      103 |       expect(data.summary).toBeDefined()
+      104 |       
+      105 |       // Check transaction structure
+      at src/tests/api/transactions.test.ts:102:32
+      at step (src/tests/api/transactions.test.ts:37:23)
+      at Object.next (src/tests/api/transactions.test.ts:18:53)
+      at fulfilled (src/tests/api/transactions.test.ts:9:58)
