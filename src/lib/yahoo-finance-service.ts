@@ -75,7 +75,7 @@ export class YahooFinanceService {
    */
   static async fetchIntradayData(): Promise<BitcoinPriceIntraday[]> {
     try {
-      console.log('📊 Fetching hourly intraday data for current day...');
+      console.log('[DATA] Fetching hourly intraday data for current day...');
       
       // Get start and end of current day
       const now = new Date();
@@ -108,7 +108,7 @@ export class YahooFinanceService {
         }
       }
       
-      console.log(`✅ Fetched ${intradayData.length} hourly data points for today`);
+      console.log(`[OK] Fetched ${intradayData.length} hourly data points for today`);
       return intradayData;
       
     } catch (error) {
@@ -257,7 +257,7 @@ export class YahooFinanceService {
         });
       }
       
-      console.log(`✅ Saved ${data.length} hourly intraday records for today`);
+      console.log(`[OK] Saved ${data.length} hourly intraday records for today`);
     } catch (error) {
       console.error('Error saving intraday data:', error);
       throw error;

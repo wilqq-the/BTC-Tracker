@@ -69,15 +69,25 @@ describe('Authentication API', () => {
     })
 
     it('should return no single user when multiple users exist', async () => {
-      // Create multiple test users
-      await createTestUser({
-        email: 'user1@example.com',
-        name: 'User One'
+      // Ensure clean state first
+      await testDb.user.deleteMany()
+      
+      // Create multiple test users with unique timestamps to avoid conflicts
+      const user1 = await createTestUser({
+        email: `user1-${Date.now()}@example.com`,
+        name: 'User One',
+        displayName: 'User One'
       })
-      await createTestUser({
-        email: 'user2@example.com',
-        name: 'User Two'
+      
+      const user2 = await createTestUser({
+        email: `user2-${Date.now()}@example.com`,
+        name: 'User Two',
+        displayName: 'User Two'
       })
+
+      // Verify we actually have 2 users
+      const userCount = await testDb.user.count()
+      expect(userCount).toBe(2)
 
       const mockRequest = createMockRequest('GET', '/api/auth/check-user')
       const response = await checkUserGET(mockRequest)
@@ -407,6 +417,9 @@ describe('Authentication API', () => {
     })
 
     it('should handle user check after registration', async () => {
+      // Ensure clean state - delete all users first
+      await testDb.user.deleteMany()
+      
       // Initially no users
       const initialCheck = createMockRequest('GET', '/api/auth/check-user')
       const initialResponse = await checkUserGET(initialCheck)

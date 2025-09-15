@@ -112,7 +112,9 @@ describe('Settings API', () => {
       const resetResponse = await settingsPOST()
       const resetData = await resetResponse.json()
 
-      expect(resetData.data.id).toBe(initialId)
+      // Settings should always use ID 1 (singleton pattern)
+      expect(resetData.data.id).toBe(1)
+      expect(initialId).toBe(1)
     })
   })
 
@@ -236,7 +238,7 @@ describe('Settings API', () => {
       const invalidCurrencyUpdate = {
         category: 'currency',
         updates: {
-          mainCurrency: 'PLN' // Only USD and EUR are allowed for main currency
+          mainCurrency: 'INVALID_XYZ' // Not a valid currency code
         }
       }
 
@@ -387,7 +389,7 @@ describe('Settings API', () => {
     it('should fail with invalid main currency in PUT', async () => {
       const invalidSettings = {
         currency: {
-          mainCurrency: 'GBP', // Invalid for main currency
+          mainCurrency: 'INVALID_ABC', // Invalid currency code
           secondaryCurrency: 'EUR' as SupportedCurrency,
           supportedCurrencies: ['USD', 'EUR', 'GBP'] as SupportedCurrency[],
           autoUpdateRates: true,

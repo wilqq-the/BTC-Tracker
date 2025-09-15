@@ -6,10 +6,16 @@
 import { PrismaClient } from '@prisma/client'
 import fs from 'fs'
 import { defaultSettings } from '../lib/types'
-import { prisma } from '../lib/prisma'
 
-// Use the same Prisma instance as the application
-export const testDb = prisma
+// Create a dedicated test database instance
+export const testDb = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || 'file:./test.db'
+    }
+  },
+  log: process.env.CI ? ['error'] : []
+})
 
 // Global flag to track if schema has been initialized
 let schemaInitialized = false
@@ -35,7 +41,7 @@ export async function initTestDatabase(): Promise<void> {
   }
 
   try {
-    console.log('🔧 Initializing test database...')
+    console.log('[TOOL] Initializing test database...')
     
     // Connect to the database
     await testDb.$connect()
@@ -45,7 +51,7 @@ export async function initTestDatabase(): Promise<void> {
     const hasSettings = await tableExists('app_settings')
     
     if (!hasUsers || !hasSettings) {
-      console.log('📋 Creating database schema...')
+      console.log('[INFO] Creating database schema...')
       
       // Create tables directly using raw SQL from the migration
       await testDb.$executeRawUnsafe(`
@@ -53,35 +59,37 @@ export async function initTestDatabase(): Promise<void> {
         CREATE TABLE IF NOT EXISTS "users" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "email" TEXT NOT NULL,
-            "name" TEXT NOT NULL,
-            "passwordHash" TEXT NOT NULL,
-            "pinHash" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "name" TEXT,
+            "display_name" TEXT,
+            "profile_picture" TEXT,
+            "password_hash" TEXT NOT NULL,
+            "pin_hash" TEXT,
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "app_settings" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "settingsData" TEXT NOT NULL,
+            "settings_data" TEXT NOT NULL,
             "version" TEXT NOT NULL DEFAULT '1.0.0',
-            "lastUpdated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "last_updated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "bitcoin_transactions" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "userId" INTEGER NOT NULL,
             "type" TEXT NOT NULL,
-            "btcAmount" REAL NOT NULL,
-            "originalPricePerBtc" REAL NOT NULL,
-            "originalTotalAmount" REAL NOT NULL,
-            "originalCurrency" TEXT NOT NULL DEFAULT 'USD',
-            "date" DATETIME NOT NULL,
-            "description" TEXT,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "bitcoin_transactions_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+            "btc_amount" REAL NOT NULL,
+            "original_price_per_btc" REAL NOT NULL,
+            "original_currency" TEXT NOT NULL,
+            "original_total_amount" REAL NOT NULL,
+            "fees" REAL NOT NULL DEFAULT 0,
+            "fees_currency" TEXT NOT NULL DEFAULT 'USD',
+            "transaction_date" DATETIME NOT NULL,
+            "notes" TEXT,
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
@@ -90,62 +98,72 @@ export async function initTestDatabase(): Promise<void> {
             "code" TEXT NOT NULL,
             "name" TEXT NOT NULL,
             "symbol" TEXT NOT NULL,
-            "isActive" BOOLEAN NOT NULL DEFAULT true,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "is_active" BOOLEAN NOT NULL DEFAULT true,
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "exchange_rates" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "fromCurrency" TEXT NOT NULL,
-            "toCurrency" TEXT NOT NULL,
+            "from_currency" TEXT NOT NULL,
+            "to_currency" TEXT NOT NULL,
             "rate" REAL NOT NULL,
-            "lastUpdated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "last_updated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "bitcoin_current_price" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "price" REAL NOT NULL,
-            "currency" TEXT NOT NULL DEFAULT 'USD',
-            "lastUpdated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            "source" TEXT NOT NULL DEFAULT 'api'
+            "price_usd" REAL NOT NULL,
+            "price_change_24h_usd" REAL NOT NULL DEFAULT 0,
+            "price_change_24h_percent" REAL NOT NULL DEFAULT 0,
+            "timestamp" TEXT NOT NULL,
+            "source" TEXT NOT NULL DEFAULT 'api',
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "bitcoin_price_history" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "date" DATETIME NOT NULL,
-            "open" REAL NOT NULL,
-            "high" REAL NOT NULL,
-            "low" REAL NOT NULL,
-            "close" REAL NOT NULL,
+            "date" TEXT NOT NULL,
+            "open_usd" REAL NOT NULL,
+            "high_usd" REAL NOT NULL,
+            "low_usd" REAL NOT NULL,
+            "close_usd" REAL NOT NULL,
             "volume" REAL,
-            "currency" TEXT NOT NULL DEFAULT 'USD',
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "bitcoin_price_intraday" (
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "timestamp" DATETIME NOT NULL,
-            "price" REAL NOT NULL,
-            "currency" TEXT NOT NULL DEFAULT 'USD',
+            "price_usd" REAL NOT NULL,
             "volume" REAL,
-            "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateTable
         CREATE TABLE IF NOT EXISTS "portfolio_summary" (
-            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-            "userId" INTEGER NOT NULL,
-            "totalBtc" REAL NOT NULL,
-            "totalInvested" REAL NOT NULL,
-            "currentValue" REAL NOT NULL,
-            "currency" TEXT NOT NULL DEFAULT 'USD',
-            "lastUpdated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT "portfolio_summary_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+            "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+            "total_btc" REAL NOT NULL DEFAULT 0,
+            "total_transactions" INTEGER NOT NULL DEFAULT 0,
+            "total_invested" REAL NOT NULL DEFAULT 0,
+            "total_fees" REAL NOT NULL DEFAULT 0,
+            "average_buy_price" REAL NOT NULL DEFAULT 0,
+            "main_currency" TEXT NOT NULL DEFAULT 'USD',
+            "current_btc_price_usd" REAL NOT NULL DEFAULT 0,
+            "current_portfolio_value" REAL NOT NULL DEFAULT 0,
+            "unrealized_pnl" REAL NOT NULL DEFAULT 0,
+            "unrealized_pnl_percent" REAL NOT NULL DEFAULT 0,
+            "portfolio_change_24h" REAL NOT NULL DEFAULT 0,
+            "portfolio_change_24h_percent" REAL NOT NULL DEFAULT 0,
+            "secondary_currency" TEXT NOT NULL DEFAULT 'EUR',
+            "current_value_secondary" REAL NOT NULL DEFAULT 0,
+            "last_updated" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            "last_price_update" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
 
         -- CreateIndex
@@ -155,10 +173,10 @@ export async function initTestDatabase(): Promise<void> {
         CREATE UNIQUE INDEX IF NOT EXISTS "custom_currencies_code_key" ON "custom_currencies"("code");
 
         -- CreateIndex
-        CREATE UNIQUE INDEX IF NOT EXISTS "exchange_rates_fromCurrency_toCurrency_key" ON "exchange_rates"("fromCurrency", "toCurrency");
+        CREATE UNIQUE INDEX IF NOT EXISTS "exchange_rates_from_currency_to_currency_key" ON "exchange_rates"("from_currency", "to_currency");
 
         -- CreateIndex
-        CREATE UNIQUE INDEX IF NOT EXISTS "bitcoin_price_history_date_currency_key" ON "bitcoin_price_history"("date", "currency");
+        CREATE UNIQUE INDEX IF NOT EXISTS "bitcoin_price_history_date_key" ON "bitcoin_price_history"("date");
 
         -- CreateIndex
         CREATE INDEX IF NOT EXISTS "bitcoin_price_intraday_timestamp_idx" ON "bitcoin_price_intraday"("timestamp");
@@ -172,9 +190,9 @@ export async function initTestDatabase(): Promise<void> {
     await testDb.$queryRaw`SELECT 1 as test`
     
     schemaInitialized = true
-    console.log('✅ Test database initialized')
+    console.log('[OK] Test database initialized')
   } catch (error) {
-    console.error('❌ Failed to initialize test database:', error)
+    console.error('[ERROR] Failed to initialize test database:', error)
     throw error
   }
 }
@@ -227,7 +245,7 @@ export async function cleanTestDatabase(): Promise<void> {
     
     console.log('🧹 Test database cleaned')
   } catch (error) {
-    console.error('❌ Failed to clean test database:', error)
+    console.error('[ERROR] Failed to clean test database:', error)
     throw error
   }
 }
@@ -272,11 +290,24 @@ export async function cleanUserData(): Promise<void> {
     if (await tableExists('users')) {
       await testDb.user.deleteMany()
     }
-    // Keep appSettings
+    
+    // Ensure settings still exist (or recreate if missing)
+    if (await tableExists('app_settings')) {
+      const settingsCount = await testDb.appSettings.count()
+      if (settingsCount === 0) {
+        await testDb.appSettings.create({
+          data: {
+            id: 1,
+            settingsData: JSON.stringify(defaultSettings),
+            version: defaultSettings.version
+          }
+        })
+      }
+    }
     
     console.log('🧹 User data cleaned, settings preserved')
   } catch (error) {
-    console.error('❌ Failed to clean user data:', error)
+    console.error('[ERROR] Failed to clean user data:', error)
     throw error
   }
 }
@@ -304,7 +335,7 @@ export async function seedTestDatabase(): Promise<void> {
     
     console.log('🌱 Test database seeded')
   } catch (error) {
-    console.error('❌ Failed to seed test database:', error)
+    console.error('[ERROR] Failed to seed test database:', error)
     throw error
   }
 }
@@ -321,7 +352,7 @@ export async function removeTestDatabase(): Promise<void> {
       console.log('🗑️ Test database file removed')
     }
   } catch (error) {
-    console.error('❌ Failed to remove test database:', error)
+    console.error('[ERROR] Failed to remove test database:', error)
   }
 }
 
@@ -330,7 +361,7 @@ export async function removeTestDatabase(): Promise<void> {
  */
 export async function setupTestDatabase(): Promise<void> {
   try {
-    console.log('🔧 Setting up test database...')
+    console.log('[TOOL] Setting up test database...')
     
     // Initialize database with schema
     await initTestDatabase()
@@ -341,9 +372,9 @@ export async function setupTestDatabase(): Promise<void> {
     // Seed with required data
     await seedTestDatabase()
     
-    console.log('✅ Test database setup complete')
+    console.log('[OK] Test database setup complete')
   } catch (error) {
-    console.error('❌ Test database setup failed:', error)
+    console.error('[ERROR] Test database setup failed:', error)
     throw error
   }
 }

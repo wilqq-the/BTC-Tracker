@@ -44,20 +44,20 @@ function getPeriodInDays(period: string): number {
 // Helper function to fetch Bitcoin historical data from Yahoo Finance
 async function fetchBitcoinHistoricalData(period: string): Promise<any[]> {
   try {
-    console.log(`📊 Fetching historical data from Yahoo Finance for period: ${period}`);
+    console.log(`[DATA] Fetching historical data from Yahoo Finance for period: ${period}`);
     
     let allHistoricalData: any[] = [];
     
     if (period === 'ALL') {
       // For ALL period, fetch data in chunks to ensure daily granularity
-      console.log('📊 Fetching ALL data in chunks to ensure daily granularity...');
+      console.log('[DATA] Fetching ALL data in chunks to ensure daily granularity...');
       
       const periods = ['10y', '5y']; // Fetch last 10 years + additional 5 years for overlap
       
       for (const chunkPeriod of periods) {
         try {
           const chunkData = await YahooFinanceService.fetchHistoricalData(chunkPeriod);
-          console.log(`✅ Fetched ${chunkData.length} records for ${chunkPeriod} period`);
+          console.log(`[OK] Fetched ${chunkData.length} records for ${chunkPeriod} period`);
           
           // Merge data, avoiding duplicates by date
           const existingDates = new Set(allHistoricalData.map(item => item.date));
@@ -77,7 +77,7 @@ async function fetchBitcoinHistoricalData(period: string): Promise<any[]> {
       allHistoricalData = await YahooFinanceService.fetchHistoricalData(yahooFinancePeriod);
     }
     
-    console.log(`✅ Successfully fetched ${allHistoricalData.length} total records from Yahoo Finance`);
+    console.log(`[OK] Successfully fetched ${allHistoricalData.length} total records from Yahoo Finance`);
     
     // Data is already in the correct format from Yahoo Finance service
     return allHistoricalData.map(record => ({
@@ -157,20 +157,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       try {
         const settings = await SettingsService.getPriceDataSettings();
         period = settings.historicalDataPeriod;
-        console.log(`📋 Using period from settings: ${period}`);
+        console.log(`[INFO] Using period from settings: ${period}`);
       } catch (error) {
         console.error('Error loading settings, using default period:', error);
         period = '1Y'; // Default fallback
       }
     } else {
-      console.log(`📋 Using period from request: ${period}`);
+      console.log(`[INFO] Using period from request: ${period}`);
     }
 
-    console.log(`🚀 Starting historical data fetch for period: ${period}`);
+    console.log(`[START] Starting historical data fetch for period: ${period}`);
     
     const historicalData = await fetchBitcoinHistoricalData(period);
     
-    console.log(`📊 Fetched ${historicalData.length} historical records`);
+    console.log(`[DATA] Fetched ${historicalData.length} historical records`);
 
     // Use YahooFinanceService to save historical data (which now uses Prisma)
     await YahooFinanceService.saveHistoricalData(historicalData);
@@ -181,8 +181,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       to: historicalData[historicalData.length - 1]?.date || ''
     };
 
-    console.log(`✅ Successfully inserted ${recordsAdded} historical records`);
-    console.log(`📅 Date range: ${dateRange.from} to ${dateRange.to}`);
+    console.log(`[OK] Successfully inserted ${recordsAdded} historical records`);
+    console.log(`[DATE] Date range: ${dateRange.from} to ${dateRange.to}`);
 
     const response: HistoricalDataResponse = {
       success: true,

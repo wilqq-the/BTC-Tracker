@@ -18,7 +18,7 @@ export async function GET(): Promise<NextResponse> {
     });
     
   } catch (error) {
-    console.error('❌ Error fetching today\'s OHLC data:', error);
+    console.error('[ERROR] Error fetching today\'s OHLC data:', error);
     
     return NextResponse.json({
       success: false,

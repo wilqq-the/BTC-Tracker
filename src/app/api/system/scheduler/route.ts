@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'restart':
-        console.log('🔄 Manual scheduler restart requested by user:', session.user?.email);
+        console.log('[SYNC] Manual scheduler restart requested by user:', session.user?.email);
         await AppInitializationService.restart();
         return NextResponse.json({
           success: true,
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'update':
-        console.log('🔄 Manual data update requested by user:', session.user?.email);
+        console.log('[SYNC] Manual data update requested by user:', session.user?.email);
         await AppInitializationService.triggerDataUpdate();
         return NextResponse.json({
           success: true,
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'initialize':
-        console.log('🚀 Manual initialization requested by user:', session.user?.email);
+        console.log('[START] Manual initialization requested by user:', session.user?.email);
         await AppInitializationService.initialize();
         return NextResponse.json({
           success: true,

@@ -36,7 +36,7 @@ export class AppInitializationService {
       return;
     }
 
-    console.log('🚀 Starting BTC Tracker application initialization...');
+    console.log('[START] Starting BTC Tracker application initialization...');
 
     // Create and store the initialization promise
     this.initPromise = this.performInitialization();
@@ -44,9 +44,9 @@ export class AppInitializationService {
     try {
       await this.initPromise;
       this.isInitialized = true;
-      console.log('✅ BTC Tracker application initialized successfully');
+      console.log('[OK] BTC Tracker application initialized successfully');
     } catch (error) {
-              console.error('❌ BTC Tracker application initialization failed:', error);
+              console.error('[ERROR] BTC Tracker application initialization failed:', error);
       // Reset so it can be retried
       this.initPromise = null;
       throw error;
@@ -82,12 +82,12 @@ export class AppInitializationService {
   private static async performInitialization(): Promise<void> {
     try {
       // 1. Initialize database (ensure it exists and is up to date)
-      console.log('🗄️ Initializing database...');
+      console.log('[CABINET] Initializing database...');
       await this.initializeDatabase();
-      console.log('✅ Database initialized');
+      console.log('[OK] Database initialized');
 
       // 2. Load application settings (with validation and fallback)
-      console.log('📋 Loading application settings...');
+      console.log('[INFO] Loading application settings...');
       let settings;
       
       try {
@@ -100,43 +100,43 @@ export class AppInitializationService {
           throw new Error('Settings validation failed: incomplete or corrupted settings');
         }
         
-        console.log(`📋 Settings loaded: ${settings.currency.mainCurrency} main currency, scheduler interval: ${settings.priceData.liveUpdateInterval}s`);
+        console.log(`[INFO] Settings loaded: ${settings.currency.mainCurrency} main currency, scheduler interval: ${settings.priceData.liveUpdateInterval}s`);
         
       } catch (error) {
-        console.log('⚠️ Settings invalid or missing, creating default settings...');
+        console.log('[WARN] Settings invalid or missing, creating default settings...');
         console.log('Settings error:', error instanceof Error ? error.message : 'Unknown error');
         
         // Create default settings
         settings = await SettingsService.resetToDefaults();
-        console.log(`📋 Default settings created: ${settings.currency.mainCurrency} main currency, scheduler interval: ${settings.priceData.liveUpdateInterval}s`);
+        console.log(`[INFO] Default settings created: ${settings.currency.mainCurrency} main currency, scheduler interval: ${settings.priceData.liveUpdateInterval}s`);
       }
 
       // 3. Initialize core exchange rates (independent of Bitcoin data)
-      console.log('💱 Initializing exchange rates...');
+      console.log('[EXCHANGE] Initializing exchange rates...');
       try {
         await ExchangeRateService.ensureMainCurrencyRates();
-        console.log('✅ Exchange rates initialized');
+        console.log('[OK] Exchange rates initialized');
       } catch (error) {
-        console.error('⚠️ Exchange rate initialization failed (continuing):', error);
+        console.error('[WARN] Exchange rate initialization failed (continuing):', error);
       }
 
       // 4. Start Historical Data Service
-      console.log('📈 Initializing historical data service...');
+      console.log('[UP] Initializing historical data service...');
       try {
         await HistoricalDataService.initialize();
-        console.log('✅ Historical data service initialized');
+        console.log('[OK] Historical data service initialized');
       } catch (error) {
-        console.error('⚠️ Historical data service initialization failed (continuing):', error);
+        console.error('[WARN] Historical data service initialization failed (continuing):', error);
       }
 
       // 5. Start Price Scheduler (most critical service)
-      console.log('⏰ Starting Bitcoin price scheduler...');
+      console.log('[TIME] Starting Bitcoin price scheduler...');
       await PriceScheduler.start();
-      console.log('✅ Bitcoin price scheduler started');
+      console.log('[OK] Bitcoin price scheduler started');
       
       // Log scheduler status
       const status = PriceScheduler.getStatus();
-      console.log('📊 Scheduler status:', {
+      console.log('[DATA] Scheduler status:', {
         isRunning: status.isRunning,
         intradayActive: status.intradayActive,
         historicalActive: status.historicalActive,
@@ -147,7 +147,7 @@ export class AppInitializationService {
       this.setupShutdownHandlers();
 
     } catch (error) {
-      console.error('💥 Critical error during app initialization:', error);
+      console.error('[BOOM] Critical error during app initialization:', error);
       throw error;
     }
   }
@@ -163,9 +163,9 @@ export class AppInitializationService {
     this.shutdownHandlersSetup = true;
 
     const cleanup = () => {
-      console.log('🛑 Shutting down BTC Tracker services...');
+      console.log('[STOP] Shutting down BTC Tracker services...');
       PriceScheduler.stop();
-      console.log('✅ Services stopped gracefully');
+      console.log('[OK] Services stopped gracefully');
     };
 
     // Handle different termination signals
@@ -191,7 +191,7 @@ export class AppInitializationService {
    * Force restart services (for settings changes)
    */
   static async restart(): Promise<void> {
-    console.log('🔄 Restarting BTC Tracker services...');
+    console.log('[SYNC] Restarting BTC Tracker services...');
     
     // Stop existing services
     PriceScheduler.stop();
@@ -203,7 +203,7 @@ export class AppInitializationService {
     // Reinitialize
     await this.initialize();
     
-    console.log('✅ Services restarted successfully');
+    console.log('[OK] Services restarted successfully');
   }
 
   /**
@@ -214,9 +214,9 @@ export class AppInitializationService {
       throw new Error('App not initialized. Call initialize() first.');
     }
 
-    console.log('🔄 Manual data update triggered...');
+    console.log('[SYNC] Manual data update triggered...');
     await PriceScheduler.updateNow();
-    console.log('✅ Manual data update completed');
+    console.log('[OK] Manual data update completed');
   }
 
   /**
@@ -225,38 +225,38 @@ export class AppInitializationService {
   private static async initializeDatabase(): Promise<void> {
     try {
       // Test database connection
-      console.log('🔍 Testing database connection...');
+      console.log('[SEARCH] Testing database connection...');
       await prisma.$connect();
       
       // Check if database is accessible
       await prisma.$queryRaw`SELECT 1`;
-      console.log('✅ Database connection successful');
+      console.log('[OK] Database connection successful');
 
       // Run pending migrations
-      console.log('🔄 Checking for database migrations...');
+      console.log('[SYNC] Checking for database migrations...');
       try {
         execSync('npx prisma migrate deploy', { 
           stdio: 'pipe',
           cwd: process.cwd()
         });
-        console.log('✅ Database migrations completed');
+        console.log('[OK] Database migrations completed');
       } catch (migrationError) {
-        console.log('⚠️ Migration command failed, attempting database setup...');
+        console.log('[WARN] Migration command failed, attempting database setup...');
         
         // If migrations fail, try to set up the database from scratch
         await this.setupFreshDatabase();
       }
 
       // Verify database structure
-      console.log('🔍 Verifying database structure...');
+      console.log('[SEARCH] Verifying database structure...');
       await this.verifyDatabaseStructure();
-      console.log('✅ Database structure verified');
+      console.log('[OK] Database structure verified');
 
     } catch (error) {
-      console.error('❌ Database initialization failed:', error);
+      console.error('[ERROR] Database initialization failed:', error);
       
       // Try to set up fresh database as last resort
-      console.log('🔧 Attempting fresh database setup...');
+      console.log('[TOOL] Attempting fresh database setup...');
       await this.setupFreshDatabase();
     }
   }
@@ -266,37 +266,37 @@ export class AppInitializationService {
    */
   private static async setupFreshDatabase(): Promise<void> {
     try {
-      console.log('🔧 Setting up fresh database...');
+      console.log('[TOOL] Setting up fresh database...');
       
       // Generate Prisma client
-      console.log('📋 Generating Prisma client...');
+      console.log('[INFO] Generating Prisma client...');
       execSync('npx prisma generate', { 
         stdio: 'pipe',
         cwd: process.cwd()
       });
 
       // Push schema to database (creates tables)
-      console.log('📋 Creating database schema...');
+      console.log('[INFO] Creating database schema...');
       execSync('npx prisma db push --accept-data-loss', { 
         stdio: 'pipe',
         cwd: process.cwd()
       });
 
       // Run seed data
-      console.log('🌱 Setting up initial data...');
+      console.log('Setting up initial data...');
       try {
         execSync('npx tsx prisma/seed.ts', { 
           stdio: 'pipe',
           cwd: process.cwd()
         });
-        console.log('✅ Initial data seeded');
+        console.log('[OK] Initial data seeded');
       } catch (seedError) {
-        console.warn('⚠️ Seeding failed (continuing):', seedError);
+        console.warn('[WARN] Seeding failed (continuing):', seedError);
       }
 
-      console.log('✅ Fresh database setup completed');
+      console.log('[OK] Fresh database setup completed');
     } catch (error) {
-      console.error('❌ Fresh database setup failed:', error);
+      console.error('[ERROR] Fresh database setup failed:', error);
       throw new Error(`Database setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -310,9 +310,9 @@ export class AppInitializationService {
       await prisma.user.findFirst();
       await prisma.bitcoinTransaction.findFirst();
       await prisma.appSettings.findFirst();
-      console.log('✅ Core database tables verified');
+      console.log('[OK] Core database tables verified');
     } catch (error) {
-      console.error('❌ Database structure verification failed:', error);
+      console.error('[ERROR] Database structure verification failed:', error);
       throw new Error('Database structure is invalid or incomplete');
     }
   }

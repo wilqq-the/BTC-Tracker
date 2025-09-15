@@ -927,7 +927,7 @@ export default function TransactionsPage() {
                 >
                   {importFile ? (
                     <div className="space-y-2">
-                      <div className="text-4xl">📄</div>
+                      <div className="text-4xl">[DOC]</div>
                       <div className="text-btc-text-primary font-medium">
                         {importFile.name}
                       </div>
@@ -937,7 +937,7 @@ export default function TransactionsPage() {
                       {/* Format Detection */}
                       {formatDetecting && (
                         <div className="text-btc-text-secondary text-sm flex items-center justify-center">
-                          <span className="animate-spin mr-2">⏳</span>
+                          <span className="animate-spin mr-2">[WAIT]</span>
                           Detecting format...
                         </div>
                       )}
@@ -958,7 +958,7 @@ export default function TransactionsPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <div className="text-4xl">📥</div>
+                      <div className="text-4xl">[INBOX]</div>
                       <div className="text-btc-text-primary font-medium">
                         Drag and drop your file here
                       </div>

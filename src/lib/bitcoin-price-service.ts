@@ -133,7 +133,7 @@ export class BitcoinPriceService {
             lowUsd: newLow
           }
         });
-        console.log(`📊 Updated today's historical record (${today}) with live price: $${currentPrice}`);
+        console.log(`[DATA] Updated today's historical record (${today}) with live price: $${currentPrice}`);
       } else {
         // Create new record for today (open = close = current price initially)
         await prisma.bitcoinPriceHistory.create({
@@ -146,7 +146,7 @@ export class BitcoinPriceService {
             volume: 0
           }
         });
-        console.log(`📊 Created today's historical record (${today}) with live price: $${currentPrice}`);
+        console.log(`[DATA] Created today's historical record (${today}) with live price: $${currentPrice}`);
       }
     } catch (error) {
       console.error('Error updating today\'s historical record:', error);
@@ -218,14 +218,31 @@ export class BitcoinPriceService {
         return this.cachedPrice;
       }
 
-      // Final fallback
-      throw new Error('No price data available');
+      // Try to fetch from Yahoo Finance if no database data
+      console.log('No price in database, fetching from Yahoo Finance...');
+      const { YahooFinanceService } = await import('@/lib/yahoo-finance-service');
+      const currentPrice = await YahooFinanceService.fetchCurrentPrice();
+      
+      // Store the fetched price
+      await this.storeCurrentPriceWithChanges(currentPrice, 'yahoo_finance');
+      
+      // Return the newly stored price
+      const newPriceData = await this.getCurrentPriceFromTable();
+      if (newPriceData) {
+        this.cachedPrice = newPriceData;
+        this.cacheTimestamp = now;
+        return newPriceData;
+      }
+      
+      // Final fallback if everything fails
+      throw new Error('Unable to fetch or store price data');
       
     } catch (error) {
       console.error('Error fetching Bitcoin price:', error);
       
+      // Return a fallback price to keep the app functional
       const fallbackPrice = {
-        price: 105000,
+        price: 100000,
         timestamp: new Date().toISOString(),
         source: 'fallback' as const,
         priceChange24h: 0,

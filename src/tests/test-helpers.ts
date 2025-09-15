@@ -11,7 +11,7 @@ import { User } from '@prisma/client'
 /**
  * Test user data factory
  */
-export const createTestUserData = (overrides: Partial<User> = {}) => ({
+export const createTestUserData = (overrides: any = {}) => ({
   email: 'test@example.com',
   name: 'Test User',
   displayName: 'Test User',
@@ -22,10 +22,11 @@ export const createTestUserData = (overrides: Partial<User> = {}) => ({
 /**
  * Create a test user in the database
  */
-export async function createTestUser(userData: Partial<User> = {}): Promise<User> {
+export async function createTestUser(userData: any = {}): Promise<User> {
   const testUserData = createTestUserData(userData)
   
-  const hashedPassword = await bcrypt.hash(testUserData.password, 10)
+  const password = testUserData.password || 'testpassword123'
+  const hashedPassword = await bcrypt.hash(password, 10)
   
   const user = await testDb.user.create({
     data: {
@@ -111,7 +112,15 @@ export const createTestTransactionData = (overrides: any = {}) => {
  * Create test transaction in database
  */
 export async function createTestTransaction(transactionData: any = {}) {
-  const testData = createTestTransactionData(transactionData)
+  // Remove userId and date fields that don't belong in the Prisma model
+  const { userId, date, ...cleanData } = transactionData
+  
+  // Use date for transactionDate if provided
+  if (date && !cleanData.transactionDate) {
+    cleanData.transactionDate = date
+  }
+  
+  const testData = createTestTransactionData(cleanData)
   
   return await testDb.bitcoinTransaction.create({
     data: testData

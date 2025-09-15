@@ -336,7 +336,7 @@ export function CurrencySettingsPanel({
             </ThemedText>
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
               <div className="flex items-start space-x-2">
-                <span className="text-amber-500 text-sm">⚠️</span>
+                <span className="text-amber-500 text-sm">[WARN]</span>
                 <div className="text-xs text-amber-600 dark:text-amber-400">
                   <strong>Exchange Rate Limitation:</strong> Custom currencies may not have live exchange rates available. 
                   They will use fallback rates (1.0) for conversions until rates are manually added or a compatible exchange rate source is found.
@@ -350,7 +350,7 @@ export function CurrencySettingsPanel({
             <div className="mb-4 p-4 bg-btc-bg-tertiary rounded-md border border-btc-border-primary">
               <div className="mb-3">
                 <div className="text-xs text-btc-text-muted">
-                  💡 <strong>Tip:</strong> Enter the currency code first - symbols and names will be automatically suggested from our comprehensive ISO 4217 database.
+                  [IDEA] <strong>Tip:</strong> Enter the currency code first - symbols and names will be automatically suggested from our comprehensive ISO 4217 database.
                 </div>
               </div>
               <form onSubmit={addCustomCurrency} className="space-y-3">
@@ -744,7 +744,7 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
         <ThemedCard>
           <div className="mb-4">
             <h4 className="font-medium text-btc-text-primary mb-2">
-              Intraday Data Settings ⚡
+              Intraday Data Settings [FAST]
             </h4>
             <ThemedText variant="muted" size="sm">
               Configure detailed intraday price tracking and data collection
@@ -776,7 +776,7 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
               </label>
               <div className="p-3 bg-btc-bg-tertiary border border-btc-border-primary rounded">
                 <div className="flex items-center space-x-2 text-sm">
-                  <span className="text-btc-text-primary">📈 Hourly data collection (24 points/day)</span>
+                  <span className="text-btc-text-primary">[UP] Hourly data collection (24 points/day)</span>
                 </div>
                 <div className="flex items-center space-x-2 text-sm mt-1">
                   <span className="text-btc-text-secondary">🗑️ Auto-cleanup daily (current day only)</span>
@@ -830,9 +830,9 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                           const status = result.status;
                           const message = `
 System Status:
-• App Initialized: ${status.app.isInitialized ? '✅' : '❌'}
-• Scheduler Running: ${status.app.scheduler?.isRunning ? '✅' : '❌'}
-• Database: ${status.database.status === 'connected' ? '✅' : '❌'}
+• App Initialized: ${status.app.isInitialized ? '[OK]' : '[ERROR]'}
+• Scheduler Running: ${status.app.scheduler?.isRunning ? '[OK]' : '[ERROR]'}
+• Database: ${status.database.status === 'connected' ? '[OK]' : '[ERROR]'}
 • Intraday Records: ${status.database.stats?.intradayRecords || 0}
 • Current Price: ${status.priceData.currentPrice ? '$' + status.priceData.currentPrice.price.toLocaleString() : 'No data'}
 • Last Update: ${status.priceData.currentPrice?.lastUpdate ? new Date(status.priceData.currentPrice.lastUpdate).toLocaleString() : 'Never'}
@@ -868,7 +868,7 @@ export function DisplaySettingsPanel({
   return (
     <ThemedCard>
       <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-        🎨 Display Settings
+        [ART] Display Settings
       </h2>
       
       <div className="space-y-6">
@@ -987,7 +987,7 @@ export function NotificationSettingsPanel({
   return (
     <ThemedCard>
       <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-        🔔 Notification Settings
+        [ALERT] Notification Settings
       </h2>
       
       <div className="space-y-6">

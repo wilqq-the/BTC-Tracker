@@ -25,7 +25,7 @@ export class PriceScheduler {
 
     // Load settings to configure intervals
     const settings = await SettingsService.getSettings();
-    console.log(`📋 Using settings: intraday ${settings.priceData.enableIntradayData ? 'enabled' : 'disabled'}, interval: ${settings.priceData.liveUpdateInterval}s`);
+    console.log(`[INFO] Using settings: intraday ${settings.priceData.enableIntradayData ? 'enabled' : 'disabled'}, interval: ${settings.priceData.liveUpdateInterval}s`);
 
     this.isRunning = true;
 
@@ -35,11 +35,11 @@ export class PriceScheduler {
     // Schedule intraday updates every hour
     if (settings.priceData.enableIntradayData) {
       const intervalMs = 60 * 60 * 1000; // 1 hour in milliseconds
-      console.log(`⏰ Scheduling hourly intraday updates (every hour)`);
+      console.log(`[TIME] Scheduling hourly intraday updates (every hour)`);
       
       this.intradayInterval = setInterval(async () => {
         try {
-          console.log('📊 Fetching hourly intraday Bitcoin data...');
+          console.log('[DATA] Fetching hourly intraday Bitcoin data...');
           const intradayData = await YahooFinanceService.fetchIntradayData();
           
           if (intradayData.length > 0) {
@@ -111,7 +111,7 @@ export class PriceScheduler {
    */
   private static async fetchInitialData() {
     try {
-      console.log('Fetching initial Bitcoin price data and exchange rates...');
+      console.log('[DATA] Fetching initial Bitcoin price data and exchange rates...');
       
       // Start exchange rate update first (independent of Bitcoin data)
       try {
@@ -120,11 +120,24 @@ export class PriceScheduler {
         console.error('Error fetching initial exchange rates:', error);
       }
       
-      // Check if we have recent data to avoid unnecessary API calls
+      // Always fetch current price from Yahoo Finance on startup
+      try {
+        console.log('[SYNC] Fetching current Bitcoin price from Yahoo Finance...');
+        const currentPrice = await YahooFinanceService.fetchCurrentPrice();
+        await BitcoinPriceService.storeCurrentPriceWithChanges(currentPrice, 'yahoo_finance');
+        console.log(`[OK] Current Bitcoin price: $${currentPrice.toFixed(2)}`);
+        
+        // Calculate initial portfolio summary
+        await BitcoinPriceService.calculateAndStorePortfolioSummary(currentPrice);
+      } catch (error) {
+        console.error('Error fetching current price:', error);
+      }
+      
+      // Check if we have historical data
       const latestPrice = await YahooFinanceService.getLatestPrice();
       
       if (!latestPrice) {
-        console.log('No existing price data found, fetching initial dataset...');
+        console.log('No existing historical data found, fetching initial dataset...');
         
         // Fetch historical data for the past year
         const historicalData = await YahooFinanceService.fetchHistoricalData('1y');

@@ -1,7 +1,14 @@
 {
-  "name": "BTC Tracker",
-  "version": "0.1.0",
+  "name": "btc-tracker",
+  "version": "0.6.0",
+  "description": "100% Private, Self-Hosted Bitcoin Portfolio Tracker",
+  "author": "BTC Tracker Contributors",
+  "license": "MIT",
   "private": true,
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

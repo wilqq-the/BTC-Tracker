@@ -19,5 +19,5 @@ process.env.TEST_TIMEOUT = '10000'
 process.env.JEST_VERBOSE = 'false'
 
 console.log('🧪 Jest test environment configured')
-console.log('📊 Database URL:', process.env.DATABASE_URL)
-console.log('🔐 NextAuth URL:', process.env.NEXTAUTH_URL) 
+console.log('[DATA] Database URL:', process.env.DATABASE_URL)
+console.log('[LOCK] NextAuth URL:', process.env.NEXTAUTH_URL) 

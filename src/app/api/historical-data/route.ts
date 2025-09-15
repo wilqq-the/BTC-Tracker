@@ -55,7 +55,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const resultMessage = all || days >= 5000 ? 'all available data' : `${days} days of data`;
-    console.log(`📊 Returning ${dailyData.length} records (${resultMessage})`);
+    console.log(`[DATA] Returning ${dailyData.length} records (${resultMessage})`);
 
     return NextResponse.json({
       success: true,

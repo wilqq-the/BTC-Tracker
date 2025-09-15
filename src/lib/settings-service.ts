@@ -8,8 +8,10 @@ export class SettingsService {
    * Validate currency settings
    */
   private static validateCurrencySettings(currencySettings: Partial<AppSettings['currency']>): void {
-    if (currencySettings.mainCurrency && !['USD', 'EUR'].includes(currencySettings.mainCurrency)) {
-      throw new Error(`Invalid main currency: ${currencySettings.mainCurrency}. Main currency must be USD or EUR.`);
+    // Allow any supported currency as main currency
+    const supportedCurrencies = ['USD', 'EUR', 'PLN', 'GBP', 'CAD', 'AUD', 'JPY', 'CHF', 'SEK', 'NOK'];
+    if (currencySettings.mainCurrency && !supportedCurrencies.includes(currencySettings.mainCurrency)) {
+      throw new Error(`Invalid main currency: ${currencySettings.mainCurrency}. Main currency must be one of: ${supportedCurrencies.join(', ')}`);
     }
   }
 

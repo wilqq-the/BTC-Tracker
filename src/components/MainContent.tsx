@@ -20,10 +20,11 @@ interface Transaction {
 }
 
 export default function MainContent() {
-  const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(105000);
+  const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0);
   const [priceData, setPriceData] = useState<BitcoinPriceData | null>(null);
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
+  const [loadingPrice, setLoadingPrice] = useState(true);
 
   useEffect(() => {
     // Load initial price
@@ -34,6 +35,9 @@ export default function MainContent() {
         setPriceData(price);
       } catch (error) {
         console.error('Error loading Bitcoin price:', error);
+        // Don't set a fallback value, let it stay at 0
+      } finally {
+        setLoadingPrice(false);
       }
     };
 
@@ -151,20 +155,23 @@ export default function MainContent() {
               {/* Transaction Rows */}
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {latestTransactions.map((transaction) => {
-                  const currentValue = transaction.btc_amount * currentBtcPrice;
+                  // Only calculate values if we have a price
+                  const currentValue = currentBtcPrice > 0 ? transaction.btc_amount * currentBtcPrice : 0;
                   const originalValue = transaction.main_currency_total_amount || transaction.original_total_amount;
                   
                   // Correct P&L calculation for both BUY and SELL
                   let pnl = 0;
-                  if (transaction.type === 'BUY') {
-                    // For BUY: P&L = current value - what we paid
-                    pnl = currentValue - originalValue;
-                  } else {
-                    // For SELL: P&L = what we received - what it would be worth now
-                    pnl = originalValue - currentValue;
+                  if (currentBtcPrice > 0) {
+                    if (transaction.type === 'BUY') {
+                      // For BUY: P&L = current value - what we paid
+                      pnl = currentValue - originalValue;
+                    } else {
+                      // For SELL: P&L = what we received - what it would be worth now
+                      pnl = originalValue - currentValue;
+                    }
                   }
                   
-                  const pnlPercent = originalValue > 0 ? (pnl / originalValue) * 100 : 0;
+                  const pnlPercent = originalValue > 0 && currentBtcPrice > 0 ? (pnl / originalValue) * 100 : 0;
 
                   return (
                     <div key={transaction.id} className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -208,18 +215,24 @@ export default function MainContent() {
                         {/* Current Value */}
                         <div className="text-sm">
                           <div className="text-btc-text-primary font-medium">
-                            {formatCurrency(currentValue, 'USD')}
+                            {currentBtcPrice > 0 ? formatCurrency(currentValue, 'USD') : '--'}
                           </div>
                         </div>
 
                         {/* P&L */}
                         <div className="text-sm">
-                          <div className={`font-medium ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                            {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, 'USD')}
-                          </div>
-                          <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                            {formatPercentage(pnlPercent)}
-                          </div>
+                          {currentBtcPrice > 0 ? (
+                            <>
+                              <div className={`font-medium ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, 'USD')}
+                              </div>
+                              <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                {formatPercentage(pnlPercent)}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-btc-text-muted">--</div>
+                          )}
                         </div>
                       </div>
                     </div>

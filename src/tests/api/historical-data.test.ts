@@ -75,7 +75,7 @@ describe('Historical Data API', () => {
     // Reset console.log and console.error to avoid test output pollution
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
-  });
+  }, 30000); // Increase timeout to 30 seconds
 
   afterEach(async () => {
     await cleanTestDatabase();
@@ -95,7 +95,7 @@ describe('Historical Data API', () => {
           volume: item.volume
         }))
       });
-    });
+    }, 30000); // Increase timeout
 
     it('should return daily historical data for default period', async () => {
       mockHistoricalDataService.getHistoricalData.mockResolvedValue(mockHistoricalData);

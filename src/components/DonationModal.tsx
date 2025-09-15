@@ -10,13 +10,14 @@ interface DonationModalProps {
 
 export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
   const [activeTab, setActiveTab] = useState<'bitcoin' | 'github' | 'coffee'>('bitcoin');
+  const [showLightning, setShowLightning] = useState(false);
 
   if (!isOpen) return null;
 
-  const bitcoinAddress = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
-  const lightningAddress = "donate@bitcointracker.dev";
-  const githubUrl = "https://github.com/your-username/bitcoin-tracker";
-  const coffeeUrl = "https://buymeacoffee.com/bitcointracker";
+  const bitcoinAddress = "bc1qfr4ault2fk85g573d643wumv2pqupu7aa7jrmw";
+  const lightningAddress = "wilqqthe@strike.me";
+  const githubUrl = "https://github.com/wilqq-the/BTC-Tracker";
+  const coffeeUrl = "https://buymeacoffee.com/wilqqthe";
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -76,140 +77,151 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         {/* Content */}
         <div className="p-6">
           {activeTab === 'bitcoin' && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <ThemedText variant="secondary" className="mb-4">
-                  Send Bitcoin directly to support development
-                </ThemedText>
-                
-                {/* Bitcoin QR Code Placeholder */}
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-4">
-                  <div className="w-48 h-48 mx-auto bg-white dark:bg-gray-700 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 dark:border-gray-600">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">📱</div>
-                      <ThemedText variant="muted" size="sm">
-                        QR Code
-                      </ThemedText>
-                      <ThemedText variant="muted" size="xs">
-                        Scan with wallet
-                      </ThemedText>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bitcoin Address */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
-                  <ThemedText variant="muted" size="xs" className="mb-1">
-                    Bitcoin Address
-                  </ThemedText>
-                  <div className="font-mono text-sm break-all text-gray-900 dark:text-gray-100">
-                    {bitcoinAddress}
-                  </div>
+            <div className="space-y-4">
+              {/* Toggle between Bitcoin and Lightning */}
+              <div className="flex justify-center">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex">
                   <button
-                    onClick={() => navigator.clipboard.writeText(bitcoinAddress)}
-                    className="mt-2 text-xs text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                    onClick={() => setShowLightning(false)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      !showLightning 
+                        ? 'bg-white dark:bg-gray-700 text-orange-600 dark:text-orange-400' 
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
                   >
-                    Copy Address
+                    ₿ Bitcoin
                   </button>
-                </div>
-
-                {/* Lightning */}
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 mt-4">
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="text-yellow-600 dark:text-yellow-400 mr-2">⚡</span>
-                    <ThemedText size="sm" className="font-medium">
-                      Lightning Network
-                    </ThemedText>
-                  </div>
-                  <div className="font-mono text-sm text-gray-900 dark:text-gray-100">
-                    {lightningAddress}
-                  </div>
                   <button
-                    onClick={() => navigator.clipboard.writeText(lightningAddress)}
-                    className="mt-1 text-xs text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300"
+                    onClick={() => setShowLightning(true)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      showLightning 
+                        ? 'bg-white dark:bg-gray-700 text-yellow-600 dark:text-yellow-400' 
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
                   >
-                    Copy Lightning Address
+                    ⚡ Lightning
                   </button>
                 </div>
               </div>
+
+              {!showLightning ? (
+                /* Bitcoin On-chain */
+                <div className="text-center">
+                  <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+                    <div className="w-40 h-40 mx-auto bg-white rounded-lg p-2">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=bitcoin:${bitcoinAddress}`}
+                        alt="Bitcoin QR Code"
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div className="font-mono text-xs break-all text-gray-900 dark:text-gray-100">
+                      {bitcoinAddress}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(bitcoinAddress)}
+                      className="mt-2 text-sm text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
+                    >
+                      Copy Address
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Lightning Network */
+                <div className="text-center">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                    <div className="w-40 h-40 mx-auto bg-white rounded-lg p-2">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('lightning:' + lightningAddress)}`}
+                        alt="Lightning QR Code"
+                        className="w-full h-full"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                    <div className="font-mono text-sm text-gray-900 dark:text-gray-100">
+                      {lightningAddress}
+                    </div>
+                    <button
+                      onClick={() => navigator.clipboard.writeText(lightningAddress)}
+                      className="mt-2 text-sm text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 font-medium"
+                    >
+                      Copy Lightning Address
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {activeTab === 'github' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="text-center">
-                <div className="text-6xl mb-4">🌟</div>
-                <ThemedText className="text-lg font-medium mb-2">
-                  Star the Repository
-                </ThemedText>
-                <ThemedText variant="secondary" className="mb-6">
-                  Show your support by starring the project on GitHub
-                </ThemedText>
+                <div className="mb-6">
+                  <svg className="w-16 h-16 mx-auto text-gray-700 dark:text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                </div>
                 
                 <a
                   href={githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors font-medium"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clipRule="evenodd" />
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                   </svg>
                   View on GitHub
                 </a>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                <ThemedText size="sm" className="font-medium mb-2">
-                  🐛 Found a bug?
-                </ThemedText>
-                <ThemedText variant="secondary" size="sm" className="mb-3">
-                  Report issues or suggest features on GitHub
-                </ThemedText>
-                <a
-                  href={`${githubUrl}/issues`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm"
-                >
-                  Report Issue →
-                </a>
+                
+                <div className="mt-4">
+                  <a
+                    href={`${githubUrl}/issues`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  >
+                    Report an issue →
+                  </a>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'coffee' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="text-center">
-                <div className="text-6xl mb-4">☕</div>
-                <ThemedText className="text-lg font-medium mb-2">
-                  Buy Me a Coffee
-                </ThemedText>
-                <ThemedText variant="secondary" className="mb-6">
-                  Support development with a small donation
-                </ThemedText>
+                <div className="text-5xl mb-4">☕</div>
+                
+                {/* Coffee QR Code */}
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                  <div className="w-32 h-32 mx-auto bg-white rounded-lg p-2">
+                    <img 
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(coffeeUrl)}`}
+                      alt="Coffee Page QR Code"
+                      className="w-full h-full"
+                    />
+                  </div>
+                </div>
                 
                 <a
                   href={coffeeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium"
                 >
                   <span className="mr-2">☕</span>
                   Buy Me a Coffee
                 </a>
-              </div>
-
-              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                <ThemedText size="sm" className="font-medium mb-2">
-                  💚 Why donate?
+                
+                <ThemedText variant="muted" size="xs" className="mt-3">
+                  Support the project with a small donation
                 </ThemedText>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                  <li>• Keep the project free and open-source</li>
-                  <li>• Fund new features and improvements</li>
-                  <li>• Support ongoing maintenance</li>
-                  <li>• Help with server costs</li>
-                </ul>
               </div>
             </div>
           )}
@@ -219,7 +231,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 rounded-b-xl">
           <div className="flex items-center justify-between">
             <ThemedText variant="muted" size="xs">
-              Bitcoin Tracker • Open Source
+              Bitcoin Tracker v{process.env.npm_package_version || '0.6.0'} • Open Source
             </ThemedText>
             <ThemedText variant="muted" size="xs">
               Made with ❤️ for the Bitcoin community

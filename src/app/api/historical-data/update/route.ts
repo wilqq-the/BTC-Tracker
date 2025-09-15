@@ -4,14 +4,14 @@ import { HistoricalDataService } from '@/lib/historical-data-service';
 // POST - Manually trigger historical data update
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    console.log('📊 Manual historical data update triggered via API');
+    console.log('[DATA] Manual historical data update triggered via API');
     
     const result = await HistoricalDataService.forceUpdate();
     
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('❌ Error in manual historical data update:', error);
+    console.error('[ERROR] Error in manual historical data update:', error);
     
     return NextResponse.json({
       success: false,
@@ -37,7 +37,7 @@ export async function GET(): Promise<NextResponse> {
     });
     
   } catch (error) {
-    console.error('❌ Error checking historical data status:', error);
+    console.error('[ERROR] Error checking historical data status:', error);
     
     return NextResponse.json({
       success: false,

@@ -1,32 +1,33 @@
 version: '3.8'
 
 services:
-  BTC Tracker:
-    image: thewilqq/BTC Tracker:${BTC Tracker_TAG:-latest}
-    container_name: BTC Tracker-app
+  btc-tracker:
+    image: btc-tracker:test
+    container_name: btc-tracker-app
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:../BTC Tracker.db
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-WFBKJWQSANFKNLWQNkwnqfwkqn!!#@932981nffnwq9h3FNIWFNEWF)}
+      - DATABASE_URL=file:../btc-tracker.db
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-super-secure-secret-key-here-change-this}
+      - NEXTAUTH_URL=http://localhost:3000
     volumes:
       # Persist database and uploads (entire app directory)
-      - BTC Tracker_data:/app
+      - btc_tracker_data:/app
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health", "||", "exit", "1"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
     networks:
-      - BTC Tracker-network
+      - btc-tracker-network
 
 volumes:
-  BTC Tracker_data:
+  btc_tracker_data:
     driver: local
 
 networks:
-  BTC Tracker-network:
+  btc-tracker-network:
     driver: bridge 

@@ -81,12 +81,19 @@ describe('Jest Setup Verification', () => {
     })
 
     it('should clean database between tests', async () => {
+      // Ensure settings exist first
+      await seedTestDatabase()
+      
       // Create a user
       await createTestUser({ email: 'cleanup@example.com' })
       
       // Verify user exists
       const usersBefore = await testDb.user.count()
       expect(usersBefore).toBeGreaterThan(0)
+      
+      // Verify settings exist before cleanup
+      const settingsBefore = await testDb.appSettings.count()
+      expect(settingsBefore).toBe(1)
       
       // Clean user data but preserve settings
       await cleanUserData()

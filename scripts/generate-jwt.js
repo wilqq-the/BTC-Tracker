@@ -8,10 +8,10 @@ const prisma = new PrismaClient()
 
 async function generateJWT(email, password) {
   try {
-    console.log('🔐 Generating NextAuth JWT token...')
+    console.log('[AUTH] Generating NextAuth JWT token...')
     
     if (!email || !password) {
-      console.error('❌ Email and password are required')
+      console.error('[ERROR] Email and password are required')
       console.log('Usage: node scripts/generate-jwt.js <email> <password>')
       process.exit(1)
     }
@@ -22,21 +22,21 @@ async function generateJWT(email, password) {
     })
     
     if (!user) {
-      console.error('❌ User not found:', email)
+      console.error('[ERROR] User not found:', email)
       process.exit(1)
     }
     
     const isValidPassword = await bcrypt.compare(password, user.passwordHash)
     
     if (!isValidPassword) {
-      console.error('❌ Invalid password')
+      console.error('[ERROR] Invalid password')
       process.exit(1)
     }
     
     // Generate NextAuth-compatible JWT
     const secret = process.env.NEXTAUTH_SECRET
     if (!secret) {
-      console.error('❌ NEXTAUTH_SECRET environment variable is required')
+      console.error('[ERROR] NEXTAUTH_SECRET environment variable is required')
       process.exit(1)
     }
     
@@ -51,18 +51,18 @@ async function generateJWT(email, password) {
     
     const token = jwt.sign(payload, secret, { algorithm: 'HS256' })
     
-    console.log('✅ JWT token generated successfully!')
-    console.log('\n📋 Token Details:')
+    console.log('[OK] JWT token generated successfully!')
+    console.log('\n[INFO] Token Details:')
     console.log(`User: ${user.email} (ID: ${user.id})`)
     console.log(`Expires: ${new Date(payload.exp * 1000).toISOString()}`)
-    console.log('\n🔑 JWT Token:')
+    console.log('\n[TOKEN] JWT Token:')
     console.log(token)
-    console.log('\n📝 Usage Example:')
+    console.log('\n[EXAMPLE] Usage Example:')
     console.log(`curl -H "Authorization: Bearer ${token}" \\`)
     console.log(`  http://localhost:3000/api/transactions`)
     
   } catch (error) {
-    console.error('❌ Error generating JWT:', error.message)
+    console.error('[ERROR] Error generating JWT:', error.message)
     process.exit(1)
   } finally {
     await prisma.$disconnect()

@@ -19,10 +19,15 @@ interface EnhancedTransaction extends BitcoinTransaction {
 const getCurrentBitcoinPrice = async (): Promise<number> => {
   try {
     const priceData = await BitcoinPriceService.getCurrentPrice();
+    // Handle null response
+    if (!priceData || !priceData.price) {
+      console.warn('No price data available, using fallback');
+      return 100000; // Fallback price
+    }
     return priceData.price;
   } catch (error) {
     console.error('Error getting current Bitcoin price:', error);
-    return 105000; // Fallback price
+    return 100000; // Fallback price
   }
 };
 

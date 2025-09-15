@@ -108,7 +108,7 @@ export class ExchangeRateService {
           const isCustomCurrency = !builtInCurrencies.includes(targetCurrency);
           
           if (isCustomCurrency) {
-            console.warn(`⚠️  Custom currency ${targetCurrency} not available in exchange rate API. Skipping rate storage.`);
+            console.warn(`[WARN]  Custom currency ${targetCurrency} not available in exchange rate API. Skipping rate storage.`);
           }
           continue;
         }
@@ -344,7 +344,7 @@ export class ExchangeRateService {
       const isCustomCurrency = !builtInCurrencies.includes(fromCurrency) || !builtInCurrencies.includes(toCurrency);
       
       if (isCustomCurrency) {
-        console.warn(`⚠️  No exchange rate available for custom currency conversion: ${fromCurrency} → ${toCurrency}. Using rate of 1.0. Consider adding this rate manually or using a different base currency.`);
+        console.warn(`[WARN]  No exchange rate available for custom currency conversion: ${fromCurrency} → ${toCurrency}. Using rate of 1.0. Consider adding this rate manually or using a different base currency.`);
       }
       
       return 1.0;

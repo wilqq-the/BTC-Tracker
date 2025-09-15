@@ -54,7 +54,7 @@ interface TransactionGroup {
   avgPrice: number;
   primaryType: 'BUY' | 'SELL';
   isMixed: boolean;
-  currentPrice: number;
+  // currentPrice removed - use from state instead
 }
 
 type ChartType = 'candlestick' | 'line' | 'area';
@@ -84,7 +84,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   const [timeRange, setTimeRange] = useState<TimeRange>('6M');
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [allChartData, setAllChartData] = useState<ChartData[]>([]); // Store all data
-  const [currentPrice, setCurrentPrice] = useState<number>(105000);
+  const [currentPrice, setCurrentPrice] = useState<number>(0); // Initialize with 0, will be loaded
   const [priceChange24h, setPriceChange24h] = useState<number>(0);
   const [priceChangePercent24h, setPriceChangePercent24h] = useState<number>(0);
   const [showMovingAverage, setShowMovingAverage] = useState<boolean>(true);
@@ -201,24 +201,24 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       
       if (!hasHistoricalData && globalChartDataCache.length === 0) {
         // No historical data available, need to load
-        console.log('📋 No historical data available, loading...');
+        console.log('[INFO] No historical data available, loading...');
         loadChartData();
       } else if (!hasHistoricalData && globalChartDataCache.length > 0) {
         // We have cached historical data, restore it
-        console.log('📋 Restoring cached historical data...');
+        console.log('[INFO] Restoring cached historical data...');
         setAllChartData(globalChartDataCache);
         setChartData(globalChartDataCache);
         setCurrentPrice(globalChartDataCache[globalChartDataCache.length - 1]?.close || 106000);
         setLoading(false);
       } else if (!hasHistoricalData && allChartData.length < 100) {
         // We're coming from 1D but don't have cached data, need to load fresh
-        console.log('📋 Coming from 1D without cached data, loading fresh historical data...');
+        console.log('[INFO] Coming from 1D without cached data, loading fresh historical data...');
         loadChartData();
       } else {
         // Historical data available, but we might need to update chartData if coming from 1D
-        console.log('📋 Historical data already available, checking if chartData needs update...');
+        console.log('[INFO] Historical data already available, checking if chartData needs update...');
         if (chartData.length < 100 && allChartData.length > 100) {
-          console.log('📋 Updating chartData to use historical data...');
+          console.log('[INFO] Updating chartData to use historical data...');
           setChartData(allChartData);
           setCurrentPrice(allChartData[allChartData.length - 1]?.close || 106000);
         }
@@ -229,7 +229,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   // Update viewport when time range changes (separate from data loading)
   useEffect(() => {
     if (chartRef.current && allChartData.length > 0) {
-      console.log(`📋 Time range changed to ${timeRange}, updating viewport...`);
+      console.log(`[INFO] Time range changed to ${timeRange}, updating viewport...`);
       setTimeout(() => {
         setViewportToTimeRange();
       }, 100);
@@ -286,7 +286,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     // Check if we have cached data that's still valid
     const now = Date.now();
     if (globalChartDataCache.length > 0 && (now - globalCacheTimestamp) < CACHE_DURATION) {
-      console.log('📋 Using cached chart data');
+      console.log('[INFO] Using cached chart data');
       setAllChartData(globalChartDataCache);
       setChartData(globalChartDataCache);
       setCurrentPrice(globalChartDataCache[globalChartDataCache.length - 1]?.close || currentPrice);
@@ -298,7 +298,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
 
     // Set up real-time data updates every 1 minute for chart data
     const chartUpdateInterval = setInterval(async () => {
-      console.log('🔄 Refreshing chart data for real-time updates...');
+      console.log('[SYNC] Refreshing chart data for real-time updates...');
       try {
         // Clear cache to force fresh data
         globalChartDataCache = [];
@@ -580,7 +580,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   const filterDataByTimeRange = () => {
     // This function is deprecated - data loading now follows the same pattern as 1D
     // All data is loaded directly into chartData, viewport is controlled by setViewportToTimeRange
-    console.log('📋 filterDataByTimeRange called - using direct data loading pattern');
+    console.log('[INFO] filterDataByTimeRange called - using direct data loading pattern');
   };
 
   const loadChartData = async () => {
@@ -621,14 +621,14 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
             }
                       const latestPrice = formattedData[formattedData.length - 1]?.close || currentPrice;
           setCurrentPrice(latestPrice);
-          console.log(`📊 Chart updated with ${formattedData.length} historical data points, latest: $${latestPrice.toLocaleString()}`);
+          console.log(`[DATA] Chart updated with ${formattedData.length} historical data points, latest: $${latestPrice.toLocaleString()}`);
           setLoading(false);
           return;
           }
         }
         
         // No intraday data available
-        console.log('⚠️ No intraday data available for 1D view');
+        console.log('[WARN] No intraday data available for 1D view');
         setLoading(false);
         return;
       }
@@ -636,7 +636,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       // Check if we have valid cached data
       const now = Date.now();
       if (globalChartDataCache.length > 0 && (now - globalCacheTimestamp) < CACHE_DURATION) {
-        console.log('📋 Using cached chart data (in loadChartData)');
+        console.log('[INFO] Using cached chart data (in loadChartData)');
         setAllChartData(globalChartDataCache);
         setChartData(globalChartDataCache); // Direct assignment like 1D
         setCurrentPrice(globalChartDataCache[globalChartDataCache.length - 1]?.close || currentPrice);
@@ -653,7 +653,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         const dataResult = await dataResponse.json();
         
         if (dataResult.success && dataResult.data.length > 0) {
-          console.log(`📊 Loaded ${dataResult.data.length} historical data points from API (all available data)`);
+          console.log(`[DATA] Loaded ${dataResult.data.length} historical data points from API (all available data)`);
           
           const formattedData = dataResult.data.map((item: any) => ({
             time: item.date,
@@ -673,20 +673,20 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
           setChartData(formattedData); // Direct assignment like 1D
           const latestPrice = formattedData[formattedData.length - 1]?.close || currentPrice;
           setCurrentPrice(latestPrice);
-          console.log(`📊 Chart updated with latest price: $${latestPrice.toLocaleString()}`);
+          console.log(`[DATA] Chart updated with latest price: $${latestPrice.toLocaleString()}`);
           setLoading(false);
           return;
         }
       }
       
       // No historical data available
-      console.log('⚠️ No historical data available from API');
+      console.log('[WARN] No historical data available from API');
       setLoading(false);
       return;
     } catch (error) {
       console.error('Error loading chart data:', error);
       // Show error state instead of mock data
-      console.log('⚠️ Chart data loading failed');
+      console.log('[WARN] Chart data loading failed');
     } finally {
       setLoading(false);
       setIsLoadingData(false);
@@ -698,18 +698,18 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   // Set chart viewport to show the selected time range
   const setViewportToTimeRange = () => {
     if (!chartRef.current || allChartData.length === 0) {
-      console.log(`⚠️ Cannot set viewport: chart=${!!chartRef.current}, allData=${allChartData.length}`);
+      console.log(`[WARN] Cannot set viewport: chart=${!!chartRef.current}, allData=${allChartData.length}`);
       return;
     }
     
     try {
       if (timeRange === 'ALL') {
         // Show all data - fit content to viewport
-        console.log('📍 Setting viewport to show all data');
+        console.log('[PIN] Setting viewport to show all data');
         chartRef.current.timeScale().fitContent();
       } else if (timeRange === '1D') {
         // For 1D, the data is already filtered to just today's data, so fit content
-        console.log('📍 Setting viewport for 1D data');
+        console.log('[PIN] Setting viewport for 1D data');
         chartRef.current.timeScale().fitContent();
       } else {
         // For other ranges, calculate the viewport based on the time range
@@ -717,7 +717,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         const totalDataPoints = allChartData.length;
         
         if (totalDataPoints === 0) {
-          console.log('📍 No data available');
+          console.log('[PIN] No data available');
           return;
         }
         
@@ -726,13 +726,13 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         const dataPointsToShow = Math.min(days, totalDataPoints);
         const startIndex = Math.max(0, totalDataPoints - dataPointsToShow);
         
-        console.log(`📍 Setting viewport to show ${timeRange} (${dataPointsToShow} data points from index ${startIndex})`);
+        console.log(`[PIN] Setting viewport to show ${timeRange} (${dataPointsToShow} data points from index ${startIndex})`);
         
         // Convert the time strings to Unix timestamps for TradingView
         const startTime = formatTimeForChart(allChartData[startIndex].time);
         const endTime = formatTimeForChart(allChartData[totalDataPoints - 1].time);
         
-        console.log(`📍 Viewport range: ${startTime} to ${endTime} (Unix timestamps)`);
+        console.log(`[PIN] Viewport range: ${startTime} to ${endTime} (Unix timestamps)`);
         
         // Set the visible range using Unix timestamps
         chartRef.current.timeScale().setVisibleRange({
@@ -741,12 +741,12 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         });
       }
     } catch (error) {
-      console.error('❌ Error setting viewport:', error);
+      console.error('[ERROR] Error setting viewport:', error);
       // Fallback to fit content
       try {
         chartRef.current?.timeScale().fitContent();
       } catch (fallbackError) {
-        console.error('❌ Fallback viewport setting also failed:', fallbackError);
+        console.error('[ERROR] Fallback viewport setting also failed:', fallbackError);
       }
     }
   };
@@ -803,16 +803,22 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
        const sellCount = group.filter(tx => tx.type === 'SELL').length;
        const totalAmount = group.reduce((sum, tx) => sum + tx.btc_amount, 0);
        
-       // Calculate total value and average price for the group (using original currency for now, will convert in tooltip)
+       // Calculate total value and average price using converted prices
        let totalValue = 0;
-       let avgPrice = 0;
+       let weightedPriceSum = 0;
+       let totalBtcAmount = 0;
        
        group.forEach(tx => {
-         const txPrice = tx.original_price_per_btc;
+         // Use converted price if available, otherwise fall back to original
+         const txPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
          totalValue += tx.btc_amount * txPrice;
-         avgPrice += txPrice;
+         // Calculate weighted average price
+         weightedPriceSum += txPrice * tx.btc_amount;
+         totalBtcAmount += tx.btc_amount;
        });
-       avgPrice = avgPrice / group.length;
+       
+       // Calculate weighted average price
+       const avgPrice = totalBtcAmount > 0 ? weightedPriceSum / totalBtcAmount : 0;
        
        // Determine primary type
        const primaryType = buyCount >= sellCount ? 'BUY' : 'SELL';
@@ -828,8 +834,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
          totalValue,
          avgPrice,
          primaryType,
-         isMixed,
-         currentPrice: currentPrice
+         isMixed
+         // Don't store currentPrice here - use it from state when needed
        };
      });
    };
@@ -841,8 +847,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
 
     const isDark = currentTheme === 'dark';
     const colors = {
-      upColor: '#22c55e',
-      downColor: '#ef4444',
+      profit: '#22c55e',  // Green for profit
+      loss: '#ef4444',    // Red for loss
       mixedColor: '#8b5cf6'
     };
 
@@ -855,6 +861,43 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     );
 
     const markers = validGroups.map(group => {
+      // Calculate P&L for the group
+      let isProfitable = false;
+      let markerColor = colors.mixedColor;
+      
+      if (!group.isMixed) {
+        if (group.primaryType === 'BUY') {
+          // For BUY: profitable if current price > average buy price
+          const avgBuyPrice = group.avgPrice;
+          isProfitable = currentPrice > avgBuyPrice;
+          markerColor = isProfitable ? colors.profit : colors.loss;
+        } else {
+          // For SELL: we need to compare with the average buy price before this sell
+          // For now, use a simple comparison: profitable if sold above current price
+          // (meaning we sold at a good time)
+          const avgSellPrice = group.avgPrice;
+          isProfitable = avgSellPrice > currentPrice;
+          markerColor = isProfitable ? colors.profit : colors.loss;
+        }
+      } else {
+        // For mixed groups, calculate net P&L
+        let totalPnL = 0;
+        group.transactions.forEach(tx => {
+          const txPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
+          if (tx.type === 'BUY') {
+            // For buys, calculate unrealized P&L
+            const pnl = (currentPrice - txPrice) * tx.btc_amount;
+            totalPnL += pnl;
+          } else {
+            // For sells, assume profitable if sold above current price
+            const pnl = (txPrice - currentPrice) * tx.btc_amount;
+            totalPnL += pnl;
+          }
+        });
+        isProfitable = totalPnL > 0;
+        markerColor = colors.mixedColor; // Keep mixed color for mixed groups
+      }
+      
       // Calculate marker size based on total value
       let markerSize = 1;
       if (group.totalValue > 50000) {
@@ -878,7 +921,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       return {
         time: group.time,
         position: group.primaryType === 'BUY' ? 'belowBar' : 'aboveBar',
-        color: group.isMixed ? colors.mixedColor : (group.primaryType === 'BUY' ? colors.upColor : colors.downColor),
+        color: markerColor,
         shape: group.isMixed ? 'square' : 'circle',
         text: markerText,
         size: markerSize,
@@ -889,7 +932,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     // Set markers on the series using the correct API
     try {
       createSeriesMarkers(series, markers);
-      console.log(`📍 Added ${markers.length} transaction markers to chart`);
+      console.log(`[PIN] Added ${markers.length} transaction markers to chart`);
     } catch (error) {
       console.error('Error setting transaction markers:', error);
     }
@@ -928,7 +971,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     const currencyArray = Array.from(uniqueCurrencies);
     if (currencyArray.length === 0) return;
 
-    console.log(`🔄 Pre-loading exchange rates for ${currencyArray.length} currencies: ${currencyArray.join(', ')}`);
+    console.log(`[SYNC] Pre-loading exchange rates for ${currencyArray.length} currencies: ${currencyArray.join(', ')}`);
 
     // Load all exchange rates in parallel
     const ratePromises = currencyArray.map(async (currency) => {
@@ -953,13 +996,13 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     });
 
     await Promise.all(ratePromises);
-    console.log(`✅ Exchange rates pre-loaded for ${currencyArray.length} currencies`);
+    console.log(`[OK] Exchange rates pre-loaded for ${currencyArray.length} currencies`);
   };
 
   // Load transactions from API and pre-convert prices
   const loadTransactions = async () => {
     if (isLoadingTransactions) {
-      console.log('🔄 Transactions already loading, skipping...');
+      console.log('[SYNC] Transactions already loading, skipping...');
       return;
     }
     
@@ -1000,7 +1043,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         const groups = groupTransactionsByProximity(transactionDataWithConvertedPrices, 24);
         setTransactionGroups(groups);
         
-        console.log(`📊 Loaded ${transactionDataWithConvertedPrices.length} transactions, grouped into ${groups.length} groups`);
+        console.log(`[DATA] Loaded ${transactionDataWithConvertedPrices.length} transactions, grouped into ${groups.length} groups`);
       }
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -1075,21 +1118,34 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
          const tx = closeGroup.transactions[0];
          const txDate = formatDate(closeGroup.time);
          
-         // Use pre-converted price
-         const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
-         const txPrice = formatPrice(convertedPrice);
-         const currentPrice = formatPrice(closeGroup.currentPrice);
+        // Use pre-converted price
+        const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
+        const txPrice = formatPrice(convertedPrice);
+        const currentPriceFormatted = formatPrice(currentPrice); // Use currentPrice from state
          
-         // Calculate actual P&L: (current price - converted buy price) × BTC amount
-         const priceDiff = closeGroup.currentPrice - convertedPrice;
-         const actualPnL = priceDiff * closeGroup.totalAmount;
-         const pnlPercent = convertedPrice > 0 ? (priceDiff / convertedPrice) * 100 : 0;
-         const pnlClass = actualPnL >= 0 ? 'text-green-500' : 'text-red-500';
+         // Calculate P&L based on transaction type
+        let actualPnL = 0;
+        let pnlPercent = 0;
+        let pnlClass = '';
+        
+        if (closeGroup.primaryType === 'BUY') {
+          // For BUY: profit if current price > buy price
+          const priceDiff = currentPrice - convertedPrice;
+          actualPnL = priceDiff * closeGroup.totalAmount;
+          pnlPercent = convertedPrice > 0 ? (priceDiff / convertedPrice) * 100 : 0;
+          pnlClass = actualPnL >= 0 ? 'text-green-500' : 'text-red-500';
+        } else {
+          // For SELL: show if it was a good sell (sold above current price)
+          const priceDiff = convertedPrice - currentPrice;
+          actualPnL = priceDiff * closeGroup.totalAmount;
+          pnlPercent = currentPrice > 0 ? (priceDiff / currentPrice) * 100 : 0;
+          pnlClass = actualPnL >= 0 ? 'text-green-500' : 'text-red-500';
+        }
 
-         tooltipContent = `
-           <div class="font-semibold mb-2 ${closeGroup.primaryType === 'BUY' ? 'text-green-500' : 'text-red-500'}">
-             ${closeGroup.primaryType} Transaction
-           </div>
+        tooltipContent = `
+          <div class="font-semibold mb-2 ${closeGroup.primaryType === 'BUY' ? 'text-blue-500' : 'text-orange-500'}">
+            ${closeGroup.primaryType} Transaction
+          </div>
            <div class="space-y-1">
              <div class="flex justify-between">
                <span class="text-gray-500 dark:text-gray-400">Date:</span>
@@ -1099,21 +1155,20 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
                <span class="text-gray-500 dark:text-gray-400">Amount:</span>
                <span>${formatBtc(closeGroup.totalAmount)}</span>
              </div>
-             <div class="flex justify-between">
-               <span class="text-gray-500 dark:text-gray-400">Price:</span>
-               <span>${txPrice}</span>
-             </div>
-             ${closeGroup.primaryType === 'BUY' ? `
-             <div class="flex justify-between">
-               <span class="text-gray-500 dark:text-gray-400">Current:</span>
-               <span>${currentPrice}</span>
-             </div>
-             <div class="flex justify-between">
-               <span class="text-gray-500 dark:text-gray-400">P&L:</span>
-               <span class="${pnlClass}">
-                 ${actualPnL >= 0 ? '+' : ''}${formatPrice(actualPnL)} (${pnlPercent.toFixed(2)}%)
-               </span>
-             </div>` : ''}
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Price:</span>
+              <span>${txPrice}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">Current:</span>
+              <span>${currentPriceFormatted}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-gray-500 dark:text-gray-400">${closeGroup.primaryType === 'BUY' ? 'Unrealized P&L:' : 'Opportunity Cost:'}</span>
+              <span class="${pnlClass}">
+                ${actualPnL >= 0 ? '+' : ''}${formatPrice(actualPnL)} (${pnlPercent >= 0 ? '+' : ''}${pnlPercent.toFixed(2)}%)
+              </span>
+            </div>
            </div>
          `;
              } else {
@@ -1150,10 +1205,10 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
          
          if (totalBuyAmount > 0) {
            weightedAvgBuyPrice = weightedAvgBuyPrice / totalBuyAmount;
-           totalPnL = (closeGroup.currentPrice - weightedAvgBuyPrice) * totalBuyAmount;
+           totalPnL = (currentPrice - weightedAvgBuyPrice) * totalBuyAmount;
          }
          
-         const pnlPercent = weightedAvgBuyPrice > 0 ? ((closeGroup.currentPrice - weightedAvgBuyPrice) / weightedAvgBuyPrice) * 100 : 0;
+         const pnlPercent = weightedAvgBuyPrice > 0 ? ((currentPrice - weightedAvgBuyPrice) / weightedAvgBuyPrice) * 100 : 0;
          const pnlClass = totalPnL >= 0 ? 'text-green-500' : 'text-red-500';
 
          tooltipContent = `
@@ -1258,10 +1313,10 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
             </h3>
             <div className="flex items-center space-x-4 mt-1">
               <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                ${currentPrice.toLocaleString()}
+                ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </div>
               <div className={`text-sm ${priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% ({priceChange24h >= 0 ? '+' : ''}${priceChange24h.toLocaleString()})
+                {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% ({priceChange24h >= 0 ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})
               </div>
             </div>
           </div>

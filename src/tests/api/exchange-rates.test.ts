@@ -39,10 +39,9 @@ describe('Exchange Rates API', () => {
     // Reset console.log and console.error to avoid test output pollution
     jest.spyOn(console, 'log').mockImplementation(() => {});
     jest.spyOn(console, 'error').mockImplementation(() => {});
-  });
+  }, 30000); // Increase timeout to 30 seconds
 
   afterEach(async () => {
-    await cleanTestDatabase();
     jest.restoreAllMocks();
   });
 

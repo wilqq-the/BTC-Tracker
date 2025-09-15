@@ -49,6 +49,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     BitcoinPriceService.clearCache();
     const priceData = await BitcoinPriceService.getCurrentPrice();
     
+    // Handle null price data
+    if (!priceData) {
+      return NextResponse.json({
+        success: false,
+        error: 'Unable to fetch price data',
+        message: 'Price service returned no data'
+      }, { status: 500 });
+    }
+    
     // Try to recalculate portfolio summary, but don't fail if it errors
     let portfolioUpdateMessage = 'and portfolio updated';
     try {

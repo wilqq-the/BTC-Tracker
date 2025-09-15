@@ -21,17 +21,17 @@ export class HistoricalDataService {
       const hasData = await this.checkHistoricalDataExists();
       
       if (!hasData) {
-        console.log('📊 No historical data found, fetching default 1Y data...');
+        console.log('[DATA] No historical data found, fetching default 1Y data...');
         await this.fetchHistoricalDataFromSettings();
       } else {
         // Check if data is fresh (within last 2 days)
         const isDataFresh = await this.checkDataFreshness();
         
         if (!isDataFresh) {
-          console.log('📊 Historical data is stale, updating with recent data...');
+          console.log('[DATA] Historical data is stale, updating with recent data...');
           await this.updateLatestData();
         } else {
-          console.log('✅ Historical data is fresh and up to date');
+          console.log('[OK] Historical data is fresh and up to date');
         }
       }
 
@@ -41,7 +41,7 @@ export class HistoricalDataService {
       this.isInitialized = true;
       console.log('🏛️ Historical Data Service initialized successfully');
     } catch (error) {
-      console.error('❌ Failed to initialize Historical Data Service:', error);
+      console.error('[ERROR] Failed to initialize Historical Data Service:', error);
     }
   }
 
@@ -113,7 +113,7 @@ export class HistoricalDataService {
       });
       
       if (!latestRecord) {
-        console.log('📅 No historical data found');
+        console.log('[DATE] No historical data found');
         return false;
       }
       
@@ -124,7 +124,7 @@ export class HistoricalDataService {
       
       // Check if daysOld is valid
       if (isNaN(daysOld)) {
-        console.log('📅 No valid historical data found');
+        console.log('[DATE] No valid historical data found');
         return false;
       }
       
@@ -142,7 +142,7 @@ export class HistoricalDataService {
       }
       
       const isFresh = daysOld <= maxAllowedAge;
-      console.log(`📅 Latest data is ${daysOld.toFixed(1)} days old (${latestRecord.date}), fresh: ${isFresh}`);
+      console.log(`[DATE] Latest data is ${daysOld.toFixed(1)} days old (${latestRecord.date}), fresh: ${isFresh}`);
       return isFresh;
     } catch (error) {
       console.error('Error checking data freshness:', error);
@@ -158,7 +158,7 @@ export class HistoricalDataService {
       const settings = await SettingsService.getSettings();
       const period = settings.priceData.historicalDataPeriod;
       
-      console.log(`📊 Fetching historical data for period: ${period}`);
+      console.log(`[DATA] Fetching historical data for period: ${period}`);
       
       // Convert app period to Yahoo Finance period
       const yahooFinancePeriod = this.getYahooFinancePeriod(period);
@@ -167,14 +167,14 @@ export class HistoricalDataService {
       const { YahooFinanceService } = await import('./yahoo-finance-service');
       const historicalData = await YahooFinanceService.fetchHistoricalData(yahooFinancePeriod);
       
-      console.log(`📊 Fetched ${historicalData.length} historical records`);
+      console.log(`[DATA] Fetched ${historicalData.length} historical records`);
 
       // Clear existing historical data and insert new data
       await this.replaceHistoricalData(historicalData);
       
-      console.log(`✅ Historical data fetch completed: ${historicalData.length} records`);
+      console.log(`[OK] Historical data fetch completed: ${historicalData.length} records`);
     } catch (error) {
-      console.error('❌ Error fetching historical data from settings:', error);
+      console.error('[ERROR] Error fetching historical data from settings:', error);
     }
   }
 
@@ -199,7 +199,7 @@ export class HistoricalDataService {
     
     const msUntil6AM = next6AM.getTime() - now.getTime();
     
-    console.log(`⏰ Scheduling daily historical data updates for 6:00 AM (next update in ${Math.round(msUntil6AM / 1000 / 60 / 60)} hours)`);
+    console.log(`[TIME] Scheduling daily historical data updates for 6:00 AM (next update in ${Math.round(msUntil6AM / 1000 / 60 / 60)} hours)`);
     
     // Set timeout for first update at 6 AM
     setTimeout(() => {
@@ -208,7 +208,7 @@ export class HistoricalDataService {
       
       // Then set up daily interval (every 24 hours)
       this.fetchInterval = setInterval(async () => {
-        console.log('🔄 Running scheduled daily historical data update at 6:00 AM...');
+        console.log('[SYNC] Running scheduled daily historical data update at 6:00 AM...');
         await this.updateLatestData();
       }, 24 * 60 * 60 * 1000); // 24 hours
       
@@ -220,20 +220,20 @@ export class HistoricalDataService {
    */
   private static async updateLatestData(): Promise<void> {
     try {
-      console.log('🔄 Updating latest historical data...');
+      console.log('[SYNC] Updating latest historical data...');
       
       // Fetch last 30 days to ensure we have recent data (Yahoo Finance uses 1mo for 30 days)
       const { YahooFinanceService } = await import('./yahoo-finance-service');
       const recentData = await YahooFinanceService.fetchHistoricalData('1mo');
       
-      console.log(`📊 Fetched ${recentData.length} recent historical records`);
+      console.log(`[DATA] Fetched ${recentData.length} recent historical records`);
 
       // Save the recent data (will update existing records with same dates)
       await YahooFinanceService.saveHistoricalData(recentData);
       
-      console.log(`✅ Daily historical data update completed: ${recentData.length} records processed`);
+      console.log(`[OK] Daily historical data update completed: ${recentData.length} records processed`);
     } catch (error) {
-      console.error('❌ Error updating latest historical data:', error);
+      console.error('[ERROR] Error updating latest historical data:', error);
     }
   }
 
@@ -298,18 +298,18 @@ export class HistoricalDataService {
    */
   static async forceUpdate(): Promise<{ success: boolean; message: string; recordsAdded?: number }> {
     try {
-      console.log('🔄 Force updating historical data...');
+      console.log('[SYNC] Force updating historical data...');
       
       // Fetch last 30 days to ensure we have recent data
       const { YahooFinanceService } = await import('./yahoo-finance-service');
       const recentData = await YahooFinanceService.fetchHistoricalData('1mo');
       
-      console.log(`📊 Fetched ${recentData.length} recent historical records for force update`);
+      console.log(`[DATA] Fetched ${recentData.length} recent historical records for force update`);
 
       // Save the recent data
       await YahooFinanceService.saveHistoricalData(recentData);
       
-      const message = `✅ Force update completed: ${recentData.length} records processed`;
+      const message = `[OK] Force update completed: ${recentData.length} records processed`;
       console.log(message);
       return {
         success: true,
@@ -317,7 +317,7 @@ export class HistoricalDataService {
         recordsAdded: recentData.length
       };
     } catch (error) {
-      const message = `❌ Error during force update: ${error}`;
+      const message = `[ERROR] Error during force update: ${error}`;
       console.error(message);
       return {
         success: false,
@@ -348,7 +348,7 @@ export class HistoricalDataService {
         console.log(`🗑️ Cleaned up ${result.count} old historical records (older than ${retentionDays} days)`);
       }
     } catch (error) {
-      console.error('❌ Error cleaning up old historical data:', error);
+      console.error('[ERROR] Error cleaning up old historical data:', error);
     }
   }
 
@@ -361,6 +361,6 @@ export class HistoricalDataService {
       this.fetchInterval = null;
     }
     this.isInitialized = false;
-    console.log('🛑 Historical Data Service stopped');
+    console.log('[STOP] Historical Data Service stopped');
   }
 } 

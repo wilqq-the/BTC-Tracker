@@ -49,11 +49,11 @@ const defaultSettings = {
 }
 
 async function main() {
-  console.log('🌱 Seeding database with default data...')
+  console.log('[SEED] Seeding database with default data...')
 
   try {
     // 1. Create default app settings
-    console.log('📋 Creating default app settings...')
+    console.log('[INFO] Creating default app settings...')
     await prisma.appSettings.upsert({
       where: { id: 1 },
       update: {}, // Don't update if exists
@@ -63,10 +63,10 @@ async function main() {
         version: defaultSettings.version,
       },
     })
-    console.log('✅ Default app settings created')
+    console.log('[OK] Default app settings created')
 
     // 2. Initialize portfolio summary with defaults
-    console.log('💼 Initializing portfolio summary...')
+    console.log('[INFO] Initializing portfolio summary...')
     await prisma.portfolioSummary.upsert({
       where: { id: 1 },
       update: {}, // Don't update if exists
@@ -88,10 +88,10 @@ async function main() {
         currentValueSecondary: 0,
       },
     })
-    console.log('✅ Portfolio summary initialized')
+    console.log('[OK] Portfolio summary initialized')
 
     // 3. Create default custom currencies (common ones beyond the main supported list)
-    console.log('💱 Creating default custom currencies...')
+    console.log('[INFO] Creating default custom currencies...')
     const customCurrencies = [
       { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
       { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
@@ -107,19 +107,19 @@ async function main() {
         create: currency,
       })
     }
-    console.log(`✅ Created ${customCurrencies.length} default custom currencies`)
+    console.log(`[OK] Created ${customCurrencies.length} default custom currencies`)
 
-    console.log('🎉 Database seeding completed successfully!')
+    console.log('[SUCCESS] Database seeding completed successfully!')
     console.log('')
-    console.log('📊 Summary:')
+    console.log('[SUMMARY] Summary:')
     console.log('• Default application settings created')
     console.log('• Portfolio summary initialized')
     console.log('• Custom currencies added')
     console.log('')
-    console.log('🚀 Your Bitcoin Tracker is ready for first use!')
+    console.log('[READY] Your Bitcoin Tracker is ready for first use!')
 
   } catch (error) {
-    console.error('❌ Error during database seeding:', error)
+    console.error('[ERROR] Error during database seeding:', error)
     throw error
   }
 }

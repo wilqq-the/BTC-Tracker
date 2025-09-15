@@ -6,7 +6,8 @@
 import { PrismaClient } from '@prisma/client'
 
 // Set test environment variables
-process.env.NODE_ENV = 'test'
+// Use type assertion to allow assignment to NODE_ENV
+(process.env as any).NODE_ENV = 'test'
 process.env.DATABASE_URL = 'file:./test.db'
 process.env.NEXTAUTH_SECRET = 'test-secret-key-for-jest-testing-only'
 process.env.NEXTAUTH_URL = 'http://localhost:3000'
@@ -31,14 +32,14 @@ beforeAll(async () => {
   // Connect to test database
   await testPrisma.$connect()
   
-  console.log('🧪 Test database connected')
+  console.log('[TEST] Test database connected')
 })
 
 // Cleanup after all tests
 afterAll(async () => {
   if (testPrisma) {
     await testPrisma.$disconnect()
-    console.log('🧪 Test database disconnected')
+    console.log('[TEST] Test database disconnected')
   }
 })
 

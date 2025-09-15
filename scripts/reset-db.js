@@ -10,31 +10,31 @@ const DEFAULT_DB_PATH = 'bitcoin-tracker.db'
 function resetDatabase(options = {}) {
   const { seed = true, dbPath = DEFAULT_DB_PATH } = options
 
-  console.log('🗑️  Resetting database to clean deployment state...')
+  console.log('[RESET] Resetting database to clean deployment state...')
 
   try {
     // Remove existing database file if it exists
     if (fs.existsSync(dbPath)) {
       fs.unlinkSync(dbPath)
-      console.log(`✅ Removed existing database file: ${dbPath}`)
+      console.log(`[OK] Removed existing database file: ${dbPath}`)
     } else {
-      console.log(`ℹ️  Database file doesn't exist: ${dbPath}`)
+      console.log(`[INFO] Database file doesn't exist: ${dbPath}`)
     }
 
     // Push the schema to create fresh database
-    console.log('📋 Creating fresh database schema...')
+    console.log('[INFO] Creating fresh database schema...')
     execSync('npx prisma db push --force-reset', { stdio: 'inherit' })
 
     if (seed) {
       // Run the seed script
-      console.log('🌱 Setting up clean deployment data...')
+      console.log('[SEED] Setting up clean deployment data...')
       execSync('npx tsx prisma/seed.ts', { stdio: 'inherit' })
     }
 
-    console.log('\n🎉 Clean deployment setup complete!')
+    console.log('\n[SUCCESS] Clean deployment setup complete!')
     
     if (seed) {
-      console.log('\n📋 Ready for testing!')
+      console.log('\n[INFO] Ready for testing!')
       console.log('   1. Start the dev server: npm run dev')
       console.log('   2. Navigate to /auth/signup to register your first user')
       console.log('   3. Test the complete auth flow from scratch')
@@ -42,7 +42,7 @@ function resetDatabase(options = {}) {
     }
 
   } catch (error) {
-    console.error('❌ Error resetting database:', error.message)
+    console.error('[ERROR] Error resetting database:', error.message)
     process.exit(1)
   }
 }

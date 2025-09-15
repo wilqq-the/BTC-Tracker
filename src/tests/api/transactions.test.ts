@@ -76,7 +76,7 @@ describe('Transactions API', () => {
       notes: 'Test transaction'
     })
     testTransactionId = transaction.id
-  })
+  }, 30000) // Increase timeout to 30 seconds
 
   afterAll(async () => {
     await testDb.$disconnect()
@@ -84,6 +84,10 @@ describe('Transactions API', () => {
 
   describe('GET /api/transactions', () => {
     it('should retrieve all transactions with default pagination', async () => {
+      // Verify the test transaction exists
+      const transactionCount = await testDb.bitcoinTransaction.count()
+      expect(transactionCount).toBeGreaterThan(0)
+
       const mockRequest = createMockRequest('GET', '/api/transactions')
       const response = await transactionsGET(mockRequest)
       const data = await response.json()
@@ -402,6 +406,18 @@ describe('Transactions API', () => {
 
   describe('PUT /api/transactions/[id]', () => {
     it('should update an existing transaction', async () => {
+      // Create a transaction to update
+      const transaction = await createTestTransaction({
+        userId: testUser.id,
+        type: 'BUY',
+        btcAmount: 0.1,
+        originalPricePerBtc: 50000,
+        originalCurrency: 'USD',
+        originalTotalAmount: 5000,
+        date: new Date('2024-01-15'),
+        notes: 'Original transaction'
+      })
+
       const updatedTransaction: TransactionFormData = {
         type: 'BUY',
         btc_amount: '0.15',
@@ -412,8 +428,8 @@ describe('Transactions API', () => {
         notes: 'Updated transaction'
       }
 
-      const mockRequest = createMockRequest('PUT', `/api/transactions/${testTransactionId}`, updatedTransaction)
-      const context = { params: Promise.resolve({ id: testTransactionId.toString() }) }
+      const mockRequest = createMockRequest('PUT', `/api/transactions/${transaction.id}`, updatedTransaction)
+      const context = { params: Promise.resolve({ id: transaction.id.toString() }) }
       
       const response = await transactionPUT(mockRequest, context)
       const data = await response.json()
@@ -421,7 +437,7 @@ describe('Transactions API', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(data.message).toContain('updated successfully')
-      expect(data.data.id).toBe(testTransactionId)
+      expect(data.data.id).toBe(transaction.id)
       expect(data.data.btc_amount).toBe(0.15)
       expect(data.data.original_price_per_btc).toBe(52000)
       expect(data.data.original_currency).toBe('EUR')

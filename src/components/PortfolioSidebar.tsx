@@ -56,7 +56,7 @@ export default function PortfolioSidebar() {
   }, []);
 
   const loadData = async () => {
-    console.log('🚀 Starting data load...');
+    console.log('[START] Starting data load...');
     try {
     await Promise.all([
       loadSettings(),
@@ -64,15 +64,15 @@ export default function PortfolioSidebar() {
         loadPortfolioData(),
         loadExchangeRates()
     ]);
-      console.log('✅ All data loaded successfully');
+      console.log('[OK] All data loaded successfully');
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      console.error('[ERROR] Error loading data:', error);
     }
     setLoading(false);
   };
 
   const loadExchangeRates = async () => {
-    console.log('🔄 loadExchangeRates called, checking cache...');
+    console.log('[SYNC] loadExchangeRates called, checking cache...');
     
     // Cache for 5 minutes
     const CACHE_DURATION = 5 * 60 * 1000;
@@ -81,17 +81,17 @@ export default function PortfolioSidebar() {
       return;
     }
 
-    console.log('🌐 Fetching fresh exchange rates...');
+    console.log('[WEB] Fetching fresh exchange rates...');
 
     try {
       const response = await fetch('/api/exchange-rates');
       console.log('📡 Exchange rates API response status:', response.status);
       
       const result = await response.json();
-      console.log('📊 Exchange rates API result:', result);
+      console.log('[DATA] Exchange rates API result:', result);
       
       if (result.rates && Array.isArray(result.rates) && result.rates.length > 0) {
-        console.log('✅ Processing', result.rates.length, 'exchange rates...');
+        console.log('[OK] Processing', result.rates.length, 'exchange rates...');
         
         // Convert to easy lookup format: USD_PLN: 3.71, EUR_USD: 1.15, etc.
         const ratesMap: Record<string, number> = {};
@@ -99,18 +99,18 @@ export default function PortfolioSidebar() {
         result.rates.forEach((rate: any) => {
           const key = `${rate.from_currency}_${rate.to_currency}`;
           ratesMap[key] = rate.rate;
-          console.log(`💱 Added rate: ${key} = ${rate.rate}`);
+          console.log(`[EXCHANGE] Added rate: ${key} = ${rate.rate}`);
         });
         
-        console.log('💱 Final exchange rates map:', ratesMap);
+        console.log('[EXCHANGE] Final exchange rates map:', ratesMap);
         setExchangeRates(ratesMap);
         setRatesLastFetched(new Date());
-        console.log('✅ Exchange rates loaded and cached');
+        console.log('[OK] Exchange rates loaded and cached');
       } else {
-        console.error('❌ Exchange rates API returned invalid data format:', result);
+        console.error('[ERROR] Exchange rates API returned invalid data format:', result);
       }
     } catch (error) {
-      console.error('❌ Error loading exchange rates:', error);
+      console.error('[ERROR] Error loading exchange rates:', error);
       // Keep existing rates if any
     }
   };
@@ -130,7 +130,7 @@ export default function PortfolioSidebar() {
   const loadCurrentPrice = async () => {
     try {
       const price = await BitcoinPriceClient.getCurrentPrice();
-      console.log('💰 Bitcoin price data:', {
+      console.log('[MONEY] Bitcoin price data:', {
         price: price?.price,
         source: price?.source,
         timestamp: price?.timestamp
@@ -144,17 +144,17 @@ export default function PortfolioSidebar() {
 
   const loadPortfolioData = async () => {
     try {
-      console.log('📊 Loading portfolio data...');
+      console.log('[DATA] Loading portfolio data...');
       const response = await fetch('/api/bitcoin-price?endpoint=portfolio');
       const result = await response.json();
       
-      console.log('📊 Portfolio API response:', result);
+      console.log('[DATA] Portfolio API response:', result);
       
       if (result.success && result.data) {
-        console.log('📊 Portfolio data loaded:', result.data);
+        console.log('[DATA] Portfolio data loaded:', result.data);
         setPortfolioData(result.data);
       } else {
-        console.error('📊 Portfolio API returned no data or failed:', result);
+        console.error('[DATA] Portfolio API returned no data or failed:', result);
       }
     } catch (error) {
       console.error('Error loading portfolio data:', error);
@@ -163,7 +163,7 @@ export default function PortfolioSidebar() {
 
   // Convert portfolio data using cached exchange rates
   useEffect(() => {
-    console.log('🔄 Conversion useEffect triggered:', {
+    console.log('[SYNC] Conversion useEffect triggered:', {
       hasPortfolioData: !!portfolioData,
       hasSettings: !!settings,
       exchangeRatesCount: Object.keys(exchangeRates).length,
@@ -173,15 +173,15 @@ export default function PortfolioSidebar() {
     
     if (portfolioData && settings) {
       if (Object.keys(exchangeRates).length > 0) {
-        console.log('✅ All conditions met, converting portfolio data...');
+        console.log('[OK] All conditions met, converting portfolio data...');
         convertPortfolioData();
       } else {
-        console.log('⚠️ No exchange rates yet, converting with fallback rates...');
+        console.log('[WARN] No exchange rates yet, converting with fallback rates...');
         // Fallback: convert with basic rates (USD=1, others=1)
       convertPortfolioData();
     }
     } else {
-      console.log('⏳ Waiting for portfolio data and settings to load...');
+      console.log('[WAIT] Waiting for portfolio data and settings to load...');
     }
   }, [portfolioData, settings, exchangeRates]);
 
@@ -212,7 +212,7 @@ export default function PortfolioSidebar() {
     const usdToMainRate = getExchangeRate('USD', mainCurrency);
     const usdToSecondaryRate = getExchangeRate('USD', secondaryCurrency);
 
-    console.log('💱 Using exchange rates:', { 
+    console.log('[EXCHANGE] Using exchange rates:', { 
       usdToMainRate, 
       usdToSecondaryRate,
       mainCurrency,
@@ -242,7 +242,7 @@ export default function PortfolioSidebar() {
         currentPortfolioValueSecondary: portfolioData.currentPortfolioValueUSD * usdToSecondaryRate,
       };
 
-    console.log('✅ Converted portfolio values:', {
+    console.log('[OK] Converted portfolio values:', {
       originalUSD: portfolioData.currentPortfolioValueUSD,
       convertedMain: converted.currentPortfolioValueMain,
       convertedSecondary: converted.currentPortfolioValueSecondary
