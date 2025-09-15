@@ -1,0 +1,4020 @@
+
+> btc-tracker@0.6.0 test
+> npm run test:setup && jest
+
+
+> btc-tracker@0.6.0 test:setup
+> DATABASE_URL='file:./test.db' npx prisma db push --force-reset
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": SQLite database "test.db" at "file:./test.db"
+
+The SQLite database "test.db" at "file:./test.db" was successfully reset.
+
+🚀  Your database is now in sync with your Prisma schema. Done in 144ms
+
+Running generate... (Use --skip-generate to skip the generators)
+[2K[1A[2K[GRunning generate... - Prisma Client
+[2K[1A[2K[G✔ Generated Prisma Client (v6.10.1) to ./node_modules/@prisma/client in 461ms
+
+PASS src/tests/basic.test.ts (9.852 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/bitcoin-price.test.ts (21.506 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error fetching Bitcoin price: Error: Service unavailable
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:157:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:156:57)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      28 |     });
+      29 |   } catch (error) {
+    > 30 |     console.error('Error fetching Bitcoin price:', error);
+         |             ^
+      31 |     
+      32 |     return NextResponse.json({
+      33 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:30:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error fetching Bitcoin price: Error: Database error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:173:69
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:172:57)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      28 |     });
+      29 |   } catch (error) {
+    > 30 |     console.error('Error fetching Bitcoin price:', error);
+         |             ^
+      31 |     
+      32 |     return NextResponse.json({
+      33 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:30:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error refreshing Bitcoin price: Error: API error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:216:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:214:50)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      75 |     });
+      76 |   } catch (error) {
+    > 77 |     console.error('Error refreshing Bitcoin price:', error);
+         |             ^
+      78 |     
+      79 |     return NextResponse.json({
+      80 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:77:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating portfolio after price refresh: Error: Portfolio error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:238:83
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:227:72)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      64 |       await BitcoinPriceService.calculateAndStorePortfolioSummary(priceData.price);
+      65 |     } catch (portfolioError) {
+    > 66 |       console.error('Error updating portfolio after price refresh:', portfolioError);
+         |               ^
+      67 |       portfolioUpdateMessage = 'but portfolio update failed';
+      68 |     }
+      69 |     
+
+      at src/app/api/bitcoin-price/route.ts:66:15
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      [ERROR] Error fetching today's OHLC data: Error: Database error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:310:63
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:309:40)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      19 |     
+      20 |   } catch (error) {
+    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
+         |             ^
+      22 |     
+      23 |     return NextResponse.json({
+      24 |       success: false,
+
+      at src/app/api/bitcoin-price/today/route.ts:21:13
+      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      [ERROR] Error fetching today's OHLC data: Error: Price service error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:333:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:322:64)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      19 |     
+      20 |   } catch (error) {
+    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
+         |             ^
+      22 |     
+      23 |     return NextResponse.json({
+      24 |       success: false,
+
+      at src/app/api/bitcoin-price/today/route.ts:21:13
+      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+FAIL src/tests/setup.test.ts (29.865 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+  ● Jest Setup Verification › Test Helpers › should clean database between tests
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 1
+    Received: 0
+
+      94 |       // Verify settings exist before cleanup
+      95 |       const settingsBefore = await testDb.appSettings.count()
+    > 96 |       expect(settingsBefore).toBe(1)
+         |                              ^
+      97 |       
+      98 |       // Clean user data but preserve settings
+      99 |       await cleanUserData()
+
+      at src/tests/setup.test.ts:96:30
+      at step (src/tests/setup.test.ts:41:23)
+      at Object.next (src/tests/setup.test.ts:22:53)
+      at fulfilled (src/tests/setup.test.ts:13:58)
+
+PASS src/tests/api/settings.test.ts (40.046 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating settings: Error: Invalid main currency: INVALID_XYZ. Main currency must be one of: USD, EUR, PLN, GBP, CAD, AUD, JPY, CHF, SEK, NOK
+          at Function.Object.<anonymous>.SettingsService.validateCurrencySettings (/mnt/c/Projects/src/lib/settings-service.ts:14:13)
+          at Function.<anonymous> (/mnt/c/Projects/src/lib/settings-service.ts:204:10)
+          at step (/mnt/c/Projects/src/lib/settings-service.ts:44:23)
+          at Object.next (/mnt/c/Projects/src/lib/settings-service.ts:25:53)
+          at /mnt/c/Projects/src/lib/settings-service.ts:19:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/lib/settings-service.ts:15:12)
+          at Function.Object.<anonymous>.SettingsService.updateCurrencySettings (/mnt/c/Projects/src/lib/settings-service.ts:300:16)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:68:51
+          at step (/mnt/c/Projects/src/app/api/settings/route.ts:33:23)
+          at Object.next (/mnt/c/Projects/src/app/api/settings/route.ts:14:53)
+          at fulfilled (/mnt/c/Projects/src/app/api/settings/route.ts:5:58)
+
+      102 |
+      103 |   } catch (error) {
+    > 104 |     console.error('Error updating settings:', error);
+          |             ^
+      105 |     
+      106 |     // Handle validation errors specifically
+      107 |     if (error instanceof Error && error.message.includes('Invalid main currency')) {
+
+      at src/app/api/settings/route.ts:104:13
+      at step (src/app/api/settings/route.ts:33:23)
+      at Object.throw (src/app/api/settings/route.ts:14:53)
+      at rejected (src/app/api/settings/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating settings: Error: Invalid main currency: INVALID_ABC. Main currency must be one of: USD, EUR, PLN, GBP, CAD, AUD, JPY, CHF, SEK, NOK
+          at Function.Object.<anonymous>.SettingsService.validateCurrencySettings (/mnt/c/Projects/src/lib/settings-service.ts:14:13)
+          at Function.Object.<anonymous>.SettingsService.validateSettings (/mnt/c/Projects/src/lib/settings-service.ts:23:12)
+          at Function.<anonymous> (/mnt/c/Projects/src/lib/settings-service.ts:105:12)
+          at step (/mnt/c/Projects/src/lib/settings-service.ts:44:23)
+          at Object.next (/mnt/c/Projects/src/lib/settings-service.ts:25:53)
+          at /mnt/c/Projects/src/lib/settings-service.ts:19:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/lib/settings-service.ts:15:12)
+          at Function.Object.<anonymous>.SettingsService.updateSettings (/mnt/c/Projects/src/lib/settings-service.ts:156:16)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:139:51
+          at step (/mnt/c/Projects/src/app/api/settings/route.ts:33:23)
+          at Object.next (/mnt/c/Projects/src/app/api/settings/route.ts:14:53)
+          at fulfilled (/mnt/c/Projects/src/app/api/settings/route.ts:5:58)
+
+      143 |       return savedSettings;
+      144 |     } catch (error) {
+    > 145 |       console.error('Error updating settings:', error);
+          |               ^
+      146 |       throw error;
+      147 |     }
+      148 |   }
+
+      at Function.<anonymous> (src/lib/settings-service.ts:145:15)
+      at step (src/lib/settings-service.ts:44:23)
+      at Object.next (src/lib/settings-service.ts:25:53)
+      at src/lib/settings-service.ts:19:71
+      at Object.<anonymous>.__awaiter (src/lib/settings-service.ts:15:12)
+      at Function.Object.<anonymous>.SettingsService.updateSettings (src/lib/settings-service.ts:156:16)
+      at src/app/api/settings/route.ts:139:51
+      at step (src/app/api/settings/route.ts:33:23)
+      at Object.next (src/app/api/settings/route.ts:14:53)
+      at fulfilled (src/app/api/settings/route.ts:5:58)
+
+    console.error
+      Error replacing settings: Error: Invalid main currency: INVALID_ABC. Main currency must be one of: USD, EUR, PLN, GBP, CAD, AUD, JPY, CHF, SEK, NOK
+          at Function.Object.<anonymous>.SettingsService.validateCurrencySettings (/mnt/c/Projects/src/lib/settings-service.ts:14:13)
+          at Function.Object.<anonymous>.SettingsService.validateSettings (/mnt/c/Projects/src/lib/settings-service.ts:23:12)
+          at Function.<anonymous> (/mnt/c/Projects/src/lib/settings-service.ts:105:12)
+          at step (/mnt/c/Projects/src/lib/settings-service.ts:44:23)
+          at Object.next (/mnt/c/Projects/src/lib/settings-service.ts:25:53)
+          at /mnt/c/Projects/src/lib/settings-service.ts:19:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/lib/settings-service.ts:15:12)
+          at Function.Object.<anonymous>.SettingsService.updateSettings (/mnt/c/Projects/src/lib/settings-service.ts:156:16)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:139:51
+          at step (/mnt/c/Projects/src/app/api/settings/route.ts:33:23)
+          at Object.next (/mnt/c/Projects/src/app/api/settings/route.ts:14:53)
+          at fulfilled (/mnt/c/Projects/src/app/api/settings/route.ts:5:58)
+
+      152 |
+      153 |   } catch (error) {
+    > 154 |     console.error('Error replacing settings:', error);
+          |             ^
+      155 |     
+      156 |     // Handle validation errors specifically
+      157 |     if (error instanceof Error && error.message.includes('Invalid main currency')) {
+
+      at src/app/api/settings/route.ts:154:13
+      at step (src/app/api/settings/route.ts:33:23)
+      at Object.throw (src/app/api/settings/route.ts:14:53)
+      at rejected (src/app/api/settings/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating settings: Error: Invalid JSON
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:519:35
+          at step (/mnt/c/Projects/src/tests/api/settings.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/settings.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/settings.test.ts:8:12)
+          at Object.json (/mnt/c/Projects/src/tests/api/settings.test.ts:519:15)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:57:32
+          at step (/mnt/c/Projects/src/app/api/settings/route.ts:33:23)
+          at Object.next (/mnt/c/Projects/src/app/api/settings/route.ts:14:53)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:8:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/app/api/settings/route.ts:4:12)
+          at PATCH (/mnt/c/Projects/src/app/api/settings/route.ts:114:12)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:522:43
+          at step (/mnt/c/Projects/src/tests/api/settings.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/settings.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/settings.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/settings.test.ts:516:57)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      102 |
+      103 |   } catch (error) {
+    > 104 |     console.error('Error updating settings:', error);
+          |             ^
+      105 |     
+      106 |     // Handle validation errors specifically
+      107 |     if (error instanceof Error && error.message.includes('Invalid main currency')) {
+
+      at src/app/api/settings/route.ts:104:13
+      at step (src/app/api/settings/route.ts:33:23)
+      at Object.throw (src/app/api/settings/route.ts:14:53)
+      at rejected (src/app/api/settings/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error replacing settings: Error: Invalid JSON
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:533:35
+          at step (/mnt/c/Projects/src/tests/api/settings.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/settings.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/settings.test.ts:8:12)
+          at Object.json (/mnt/c/Projects/src/tests/api/settings.test.ts:533:15)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:128:32
+          at step (/mnt/c/Projects/src/app/api/settings/route.ts:33:23)
+          at Object.next (/mnt/c/Projects/src/app/api/settings/route.ts:14:53)
+          at /mnt/c/Projects/src/app/api/settings/route.ts:8:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/app/api/settings/route.ts:4:12)
+          at PUT (/mnt/c/Projects/src/app/api/settings/route.ts:196:12)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:536:41
+          at step (/mnt/c/Projects/src/tests/api/settings.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/settings.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/settings.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/settings.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/settings.test.ts:530:55)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      152 |
+      153 |   } catch (error) {
+    > 154 |     console.error('Error replacing settings:', error);
+          |             ^
+      155 |     
+      156 |     // Handle validation errors specifically
+      157 |     if (error instanceof Error && error.message.includes('Invalid main currency')) {
+
+      at src/app/api/settings/route.ts:154:13
+      at step (src/app/api/settings/route.ts:33:23)
+      at Object.throw (src/app/api/settings/route.ts:14:53)
+      at rejected (src/app/api/settings/route.ts:6:65)
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/health.test.ts (45.328 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/exchange-rates.test.ts (39.47 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+FAIL src/tests/api/auth.test.ts (47.307 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+  ● Authentication API › GET /api/auth/check-user › should return no single user when multiple users exist
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 1
+
+      100 |       // Verify we actually have 2 users
+      101 |       const userCount = await testDb.user.count()
+    > 102 |       expect(userCount).toBe(2)
+          |                         ^
+      103 |
+      104 |       const mockRequest = createMockRequest('GET', '/api/auth/check-user')
+      105 |       const response = await checkUserGET(mockRequest)
+
+      at src/tests/api/auth.test.ts:102:25
+      at step (src/tests/api/auth.test.ts:37:23)
+      at Object.next (src/tests/api/auth.test.ts:18:53)
+      at fulfilled (src/tests/api/auth.test.ts:9:58)
+
+PASS src/tests/api/transactions.test.ts (49.469 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      Response status: 200
+
+      at src/tests/api/transactions.test.ts:95:15
+
+    console.log
+      Response data: {
+        success: true,
+        data: [
+          {
+            id: 1,
+            type: 'BUY',
+            btcAmount: 0.1,
+            originalPricePerBtc: 50000,
+            originalCurrency: 'USD',
+            originalTotalAmount: 5000,
+            fees: 0,
+            feesCurrency: 'USD',
+            transactionDate: '2024-01-15T00:00:00.000Z',
+            notes: 'Test transaction',
+            createdAt: '2025-09-15T15:54:35.115Z',
+            updatedAt: '2025-09-15T15:54:35.115Z',
+            transaction_date: '2024-01-15',
+            btc_amount: 0.1,
+            original_price_per_btc: 50000,
+            original_currency: 'USD',
+            original_total_amount: 5000,
+            fees_currency: 'USD',
+            created_at: '2025-09-15T15:54:35.115Z',
+            updated_at: '2025-09-15T15:54:35.115Z',
+            main_currency: 'USD',
+            main_currency_price_per_btc: 52500,
+            main_currency_total_amount: 5250,
+            secondary_currency: 'EUR',
+            secondary_currency_price_per_btc: 52500,
+            secondary_currency_total_amount: 5250,
+            secondary_currency_current_value: 5250,
+            secondary_currency_pnl: 0,
+            current_value_main: 5000,
+            pnl_main: -250
+          }
+        ],
+        summary: {
+          total_transactions: 0,
+          total_buy_transactions: 0,
+          total_sell_transactions: 0,
+          total_btc_bought: 0,
+          total_btc_sold: 0,
+          current_btc_holdings: 0,
+          total_usd_invested: 0,
+          total_usd_received: 0,
+          total_fees_paid: 0,
+          average_buy_price: 0,
+          average_sell_price: 0,
+          realized_pnl: 0,
+          unrealized_pnl: 0,
+          total_pnl: 0,
+          roi_percentage: 0
+        },
+        message: 'Retrieved 1 transactions with EUR display values'
+      }
+
+      at src/tests/api/transactions.test.ts:96:15
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      prisma:error 
+      Invalid `prisma.bitcoinTransaction.update()` invocation in
+      /mnt/c/Projects/src/app/api/transactions/[id]/route.ts:127:64
+      
+        124 const originalTotalAmount = btcAmount * pricePerBtc;
+        125 
+        126 // Update transaction using Prisma - only store original data
+      → 127 const updatedTransaction = await prisma.bitcoinTransaction.update(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for an update.
+
+      at Object.Yc (node_modules/@prisma/client/runtime/library.js:12:432)
+
+    console.error
+      Error updating transaction: PrismaClientKnownRequestError: 
+      Invalid `prisma.bitcoinTransaction.update()` invocation in
+      /mnt/c/Projects/src/app/api/transactions/[id]/route.ts:127:64
+      
+        124 const originalTotalAmount = btcAmount * pricePerBtc;
+        125 
+        126 // Update transaction using Prisma - only store original data
+      → 127 const updatedTransaction = await prisma.bitcoinTransaction.update(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for an update.
+          at Zn.handleRequestError (/mnt/c/Projects/node_modules/@prisma/client/runtime/library.js:121:7459)
+          at Zn.handleAndLogRequestError (/mnt/c/Projects/node_modules/@prisma/client/runtime/library.js:121:6784)
+          at Zn.request (/mnt/c/Projects/node_modules/@prisma/client/runtime/library.js:121:6491)
+          at l (/mnt/c/Projects/node_modules/@prisma/client/runtime/library.js:130:9778) {
+        code: 'P2025',
+        meta: {
+          modelName: 'BitcoinTransaction',
+          cause: 'No record was found for an update.'
+        },
+        clientVersion: '6.10.1'
+      }
+
+      172 |     return NextResponse.json(response);
+      173 |   } catch (error) {
+    > 174 |     console.error('Error updating transaction:', error);
+          |             ^
+      175 |     return NextResponse.json({
+      176 |       success: false,
+      177 |       error: 'Failed to update transaction',
+
+      at src/app/api/transactions/[id]/route.ts:174:13
+      at step (src/app/api/transactions/[id]/route.ts:44:23)
+      at Object.throw (src/app/api/transactions/[id]/route.ts:25:53)
+      at rejected (src/app/api/transactions/[id]/route.ts:17:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      prisma:error 
+      Invalid `prisma.bitcoinTransaction.delete()` invocation in
+      /mnt/c/Projects/src/app/api/transactions/[id]/route.ts:202:45
+      
+        199 
+        200 // First check if transaction exists and delete it using Prisma
+        201 try {
+      → 202   await prisma.bitcoinTransaction.delete(
+      An operation failed because it depends on one or more records that were required but not found. No record was found for a delete.
+
+      at Object.Yc (node_modules/@prisma/client/runtime/library.js:12:432)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error creating transaction: Error: Invalid JSON
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:662:35
+          at step (/mnt/c/Projects/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/transactions.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/transactions.test.ts:8:12)
+          at Object.json (/mnt/c/Projects/src/tests/api/transactions.test.ts:662:15)
+          at /mnt/c/Projects/src/app/api/transactions/route.ts:192:57
+          at step (/mnt/c/Projects/src/app/api/transactions/route.ts:44:23)
+          at Object.next (/mnt/c/Projects/src/app/api/transactions/route.ts:25:53)
+          at /mnt/c/Projects/src/app/api/transactions/route.ts:19:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/app/api/transactions/route.ts:15:12)
+          at POST (/mnt/c/Projects/src/app/api/transactions/route.ts:242:12)
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:665:46
+          at step (/mnt/c/Projects/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/transactions.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/transactions.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/transactions.test.ts:659:56)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      263 |     return NextResponse.json(response, { status: 201 });
+      264 |   } catch (error) {
+    > 265 |     console.error('Error creating transaction:', error);
+          |             ^
+      266 |     return NextResponse.json({
+      267 |       success: false,
+      268 |       error: 'Failed to create transaction',
+
+      at src/app/api/transactions/route.ts:265:13
+      at step (src/app/api/transactions/route.ts:44:23)
+      at Object.throw (src/app/api/transactions/route.ts:25:53)
+      at rejected (src/app/api/transactions/route.ts:17:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating transaction: Error: Invalid JSON
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:676:35
+          at step (/mnt/c/Projects/src/tests/api/transactions.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/transactions.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/transactions.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/transactions.test.ts:8:12)
+          at Object.json (/mnt/c/Projects/src/tests/api/transactions.test.ts:676:15)
+          at /mnt/c/Projects/src/app/api/transactions/[id]/route.ts:99:57
+          at step (/mnt/c/Projects/src/app/api/transactions/[id]/route.ts:44:23)
+          at Object.next (/mnt/c/Projects/src/app/api/transactions/[id]/route.ts:25:53)
+          at fulfilled (/mnt/c/Projects/src/app/api/transactions/[id]/route.ts:16:58)
+
+      172 |     return NextResponse.json(response);
+      173 |   } catch (error) {
+    > 174 |     console.error('Error updating transaction:', error);
+          |             ^
+      175 |     return NextResponse.json({
+      176 |       success: false,
+      177 |       error: 'Failed to update transaction',
+
+      at src/app/api/transactions/[id]/route.ts:174:13
+      at step (src/app/api/transactions/[id]/route.ts:44:23)
+      at Object.throw (src/app/api/transactions/[id]/route.ts:25:53)
+      at rejected (src/app/api/transactions/[id]/route.ts:17:65)
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/historical-data.test.ts (56.971 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/custom-currencies.test.ts (51.756 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+
+Test Suites: 2 failed, 8 passed, 10 total
+Tests:       2 failed, 195 passed, 197 total
+Snapshots:   0 total
+Time:        57.676 s
+Ran all test suites.

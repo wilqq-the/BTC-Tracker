@@ -510,8 +510,20 @@ describe('Transactions API', () => {
 
   describe('DELETE /api/transactions/[id]', () => {
     it('should delete an existing transaction', async () => {
-      const mockRequest = createMockRequest('DELETE', `/api/transactions/${testTransactionId}`)
-      const context = { params: Promise.resolve({ id: testTransactionId.toString() }) }
+      // Create a fresh transaction for this test to avoid conflicts
+      const transaction = await createTestTransaction({
+        userId: testUser.id,
+        type: 'SELL',
+        btcAmount: 0.05,
+        originalPricePerBtc: 55000,
+        originalCurrency: 'USD',
+        originalTotalAmount: 2750,
+        date: new Date('2024-02-01'),
+        notes: 'Transaction to delete'
+      })
+      
+      const mockRequest = createMockRequest('DELETE', `/api/transactions/${transaction.id}`)
+      const context = { params: Promise.resolve({ id: transaction.id.toString() }) }
       
       const response = await transactionDELETE(mockRequest, context)
       const data = await response.json()

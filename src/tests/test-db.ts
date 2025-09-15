@@ -258,6 +258,15 @@ export async function cleanUserData(): Promise<void> {
     // Ensure schema exists first
     await initTestDatabase()
     
+    // Save settings before cleanup
+    let savedSettings: any = null
+    if (await tableExists('app_settings')) {
+      const settings = await testDb.appSettings.findFirst()
+      if (settings) {
+        savedSettings = settings
+      }
+    }
+    
     // Delete user-related data but keep settings
     if (await tableExists('bitcoin_price_intraday')) {
       await testDb.bitcoinPriceIntraday.deleteMany()
@@ -291,10 +300,21 @@ export async function cleanUserData(): Promise<void> {
       await testDb.user.deleteMany()
     }
     
-    // Ensure settings still exist (or recreate if missing)
+    // Restore settings if they were saved and are now missing
     if (await tableExists('app_settings')) {
       const settingsCount = await testDb.appSettings.count()
-      if (settingsCount === 0) {
+      if (settingsCount === 0 && savedSettings) {
+        // Restore the saved settings
+        await testDb.appSettings.create({
+          data: {
+            id: savedSettings.id,
+            settingsData: savedSettings.settingsData,
+            version: savedSettings.version
+          }
+        })
+        console.log('🔧 Settings restored after cleanup')
+      } else if (settingsCount === 0) {
+        // Create default settings if none existed
         await testDb.appSettings.create({
           data: {
             id: 1,
@@ -302,6 +322,7 @@ export async function cleanUserData(): Promise<void> {
             version: defaultSettings.version
           }
         })
+        console.log('🔧 Default settings created after cleanup')
       }
     }
     
