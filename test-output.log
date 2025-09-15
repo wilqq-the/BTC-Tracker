@@ -12,13 +12,13 @@ Datasource "db": SQLite database "test.db" at "file:./test.db"
 
 The SQLite database "test.db" at "file:./test.db" was successfully reset.
 
-🚀  Your database is now in sync with your Prisma schema. Done in 144ms
+🚀  Your database is now in sync with your Prisma schema. Done in 151ms
 
 Running generate... (Use --skip-generate to skip the generators)
 [2K[1A[2K[GRunning generate... - Prisma Client
-[2K[1A[2K[G✔ Generated Prisma Client (v6.10.1) to ./node_modules/@prisma/client in 461ms
+[2K[1A[2K[G✔ Generated Prisma Client (v6.10.1) to ./node_modules/@prisma/client in 638ms
 
-PASS src/tests/basic.test.ts (9.852 s)
+PASS src/tests/basic.test.ts
   ● Console
 
     console.log
@@ -46,447 +46,7 @@ PASS src/tests/basic.test.ts (9.852 s)
 
       at src/tests/setup.ts:42:13
 
-PASS src/tests/api/bitcoin-price.test.ts (21.506 s)
-  ● Console
-
-    console.log
-      🧪 Jest test environment configured
-
-      at Object.<anonymous> (src/tests/jest.env.js:21:9)
-
-    console.log
-      [DATA] Database URL: file:./test.db
-
-      at Object.<anonymous> (src/tests/jest.env.js:22:9)
-
-    console.log
-      [LOCK] NextAuth URL: http://localhost:3000
-
-      at Object.<anonymous> (src/tests/jest.env.js:23:9)
-
-    console.log
-      [TEST] Test database connected
-
-      at src/tests/setup.ts:35:11
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      [TOOL] Initializing test database...
-
-      at src/tests/test-db.ts:44:13
-
-    console.log
-      [OK] Test database initialized
-
-      at src/tests/test-db.ts:193:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      Error fetching Bitcoin price: Error: Service unavailable
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:157:65
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:156:57)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      28 |     });
-      29 |   } catch (error) {
-    > 30 |     console.error('Error fetching Bitcoin price:', error);
-         |             ^
-      31 |     
-      32 |     return NextResponse.json({
-      33 |       success: false,
-
-      at src/app/api/bitcoin-price/route.ts:30:13
-      at step (src/app/api/bitcoin-price/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      Error fetching Bitcoin price: Error: Database error
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:173:69
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:172:57)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      28 |     });
-      29 |   } catch (error) {
-    > 30 |     console.error('Error fetching Bitcoin price:', error);
-         |             ^
-      31 |     
-      32 |     return NextResponse.json({
-      33 |       success: false,
-
-      at src/app/api/bitcoin-price/route.ts:30:13
-      at step (src/app/api/bitcoin-price/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      Error refreshing Bitcoin price: Error: API error
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:216:65
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:214:50)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      75 |     });
-      76 |   } catch (error) {
-    > 77 |     console.error('Error refreshing Bitcoin price:', error);
-         |             ^
-      78 |     
-      79 |     return NextResponse.json({
-      80 |       success: false,
-
-      at src/app/api/bitcoin-price/route.ts:77:13
-      at step (src/app/api/bitcoin-price/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      Error updating portfolio after price refresh: Error: Portfolio error
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:238:83
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:227:72)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      64 |       await BitcoinPriceService.calculateAndStorePortfolioSummary(priceData.price);
-      65 |     } catch (portfolioError) {
-    > 66 |       console.error('Error updating portfolio after price refresh:', portfolioError);
-         |               ^
-      67 |       portfolioUpdateMessage = 'but portfolio update failed';
-      68 |     }
-      69 |     
-
-      at src/app/api/bitcoin-price/route.ts:66:15
-      at step (src/app/api/bitcoin-price/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      [ERROR] Error fetching today's OHLC data: Error: Database error
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:310:63
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:309:40)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      19 |     
-      20 |   } catch (error) {
-    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
-         |             ^
-      22 |     
-      23 |     return NextResponse.json({
-      24 |       success: false,
-
-      at src/app/api/bitcoin-price/today/route.ts:21:13
-      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.error
-      [ERROR] Error fetching today's OHLC data: Error: Price service error
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:333:65
-          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
-          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
-          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
-          at new Promise (<anonymous>)
-          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
-          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:322:64)
-          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
-          at new Promise (<anonymous>)
-          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
-          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
-          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
-          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
-          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
-          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
-          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
-          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
-          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
-
-      19 |     
-      20 |   } catch (error) {
-    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
-         |             ^
-      22 |     
-      23 |     return NextResponse.json({
-      24 |       success: false,
-
-      at src/app/api/bitcoin-price/today/route.ts:21:13
-      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
-      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
-      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [TEST] Test database disconnected
-
-      at src/tests/setup.ts:42:13
-
-FAIL src/tests/setup.test.ts (29.865 s)
+PASS src/tests/setup.test.ts (9.735 s)
   ● Console
 
     console.log
@@ -600,46 +160,11 @@ FAIL src/tests/setup.test.ts (29.865 s)
       at src/tests/test-db.ts:357:13
 
     console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
       [TEST] Test database disconnected
 
       at src/tests/setup.ts:42:13
 
-  ● Jest Setup Verification › Test Helpers › should clean database between tests
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: 1
-    Received: 0
-
-      94 |       // Verify settings exist before cleanup
-      95 |       const settingsBefore = await testDb.appSettings.count()
-    > 96 |       expect(settingsBefore).toBe(1)
-         |                              ^
-      97 |       
-      98 |       // Clean user data but preserve settings
-      99 |       await cleanUserData()
-
-      at src/tests/setup.test.ts:96:30
-      at step (src/tests/setup.test.ts:41:23)
-      at Object.next (src/tests/setup.test.ts:22:53)
-      at fulfilled (src/tests/setup.test.ts:13:58)
-
-PASS src/tests/api/settings.test.ts (40.046 s)
+PASS src/tests/api/settings.test.ts (20.548 s)
   ● Console
 
     console.log
@@ -1101,7 +626,1233 @@ PASS src/tests/api/settings.test.ts (40.046 s)
 
       at src/tests/setup.ts:42:13
 
-PASS src/tests/api/health.test.ts (45.328 s)
+PASS src/tests/api/bitcoin-price.test.ts (32.369 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error fetching Bitcoin price: Error: Service unavailable
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:157:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:156:57)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      28 |     });
+      29 |   } catch (error) {
+    > 30 |     console.error('Error fetching Bitcoin price:', error);
+         |             ^
+      31 |     
+      32 |     return NextResponse.json({
+      33 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:30:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error fetching Bitcoin price: Error: Database error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:173:69
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:172:57)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      28 |     });
+      29 |   } catch (error) {
+    > 30 |     console.error('Error fetching Bitcoin price:', error);
+         |             ^
+      31 |     
+      32 |     return NextResponse.json({
+      33 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:30:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error refreshing Bitcoin price: Error: API error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:216:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:214:50)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      75 |     });
+      76 |   } catch (error) {
+    > 77 |     console.error('Error refreshing Bitcoin price:', error);
+         |             ^
+      78 |     
+      79 |     return NextResponse.json({
+      80 |       success: false,
+
+      at src/app/api/bitcoin-price/route.ts:77:13
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      Error updating portfolio after price refresh: Error: Portfolio error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:238:83
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:227:72)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      64 |       await BitcoinPriceService.calculateAndStorePortfolioSummary(priceData.price);
+      65 |     } catch (portfolioError) {
+    > 66 |       console.error('Error updating portfolio after price refresh:', portfolioError);
+         |               ^
+      67 |       portfolioUpdateMessage = 'but portfolio update failed';
+      68 |     }
+      69 |     
+
+      at src/app/api/bitcoin-price/route.ts:66:15
+      at step (src/app/api/bitcoin-price/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      [ERROR] Error fetching today's OHLC data: Error: Database error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:310:63
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:309:40)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      19 |     
+      20 |   } catch (error) {
+    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
+         |             ^
+      22 |     
+      23 |     return NextResponse.json({
+      24 |       success: false,
+
+      at src/app/api/bitcoin-price/today/route.ts:21:13
+      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.error
+      [ERROR] Error fetching today's OHLC data: Error: Price service error
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:333:65
+          at step (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:37:23)
+          at Object.next (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:18:53)
+          at /mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:12:71
+          at new Promise (<anonymous>)
+          at Object.<anonymous>.__awaiter (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:8:12)
+          at Object.<anonymous> (/mnt/c/Projects/src/tests/api/bitcoin-price.test.ts:322:64)
+          at Promise.then.completed (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:298:28)
+          at new Promise (<anonymous>)
+          at callAsyncCircusFn (/mnt/c/Projects/node_modules/jest-circus/build/utils.js:231:10)
+          at _callCircusTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:316:40)
+          at _runTest (/mnt/c/Projects/node_modules/jest-circus/build/run.js:252:3)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:126:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at _runTestsForDescribeBlock (/mnt/c/Projects/node_modules/jest-circus/build/run.js:121:9)
+          at run (/mnt/c/Projects/node_modules/jest-circus/build/run.js:71:3)
+          at runAndTransformResultsToJestFormat (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapterInit.js:122:21)
+          at jestAdapter (/mnt/c/Projects/node_modules/jest-circus/build/legacy-code-todo-rewrite/jestAdapter.js:79:19)
+          at runTestInternal (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:367:16)
+          at runTest (/mnt/c/Projects/node_modules/jest-runner/build/runTest.js:444:34)
+          at Object.worker (/mnt/c/Projects/node_modules/jest-runner/build/testWorker.js:106:12)
+
+      19 |     
+      20 |   } catch (error) {
+    > 21 |     console.error('[ERROR] Error fetching today\'s OHLC data:', error);
+         |             ^
+      22 |     
+      23 |     return NextResponse.json({
+      24 |       success: false,
+
+      at src/app/api/bitcoin-price/today/route.ts:21:13
+      at step (src/app/api/bitcoin-price/today/route.ts:33:23)
+      at Object.throw (src/app/api/bitcoin-price/today/route.ts:14:53)
+      at rejected (src/app/api/bitcoin-price/today/route.ts:6:65)
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/exchange-rates.test.ts (38.057 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/auth.test.ts (42.963 s)
+  ● Console
+
+    console.log
+      🧪 Jest test environment configured
+
+      at Object.<anonymous> (src/tests/jest.env.js:21:9)
+
+    console.log
+      [DATA] Database URL: file:./test.db
+
+      at Object.<anonymous> (src/tests/jest.env.js:22:9)
+
+    console.log
+      [LOCK] NextAuth URL: http://localhost:3000
+
+      at Object.<anonymous> (src/tests/jest.env.js:23:9)
+
+    console.log
+      [TEST] Test database connected
+
+      at src/tests/setup.ts:35:11
+
+    console.log
+      [TOOL] Setting up test database...
+
+      at src/tests/test-db.ts:385:13
+
+    console.log
+      [TOOL] Initializing test database...
+
+      at src/tests/test-db.ts:44:13
+
+    console.log
+      [OK] Test database initialized
+
+      at src/tests/test-db.ts:193:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [OK] Test database setup complete
+
+      at src/tests/test-db.ts:396:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      🧹 Test database cleaned
+
+      at src/tests/test-db.ts:246:13
+
+    console.log
+      🌱 Test database seeded
+
+      at src/tests/test-db.ts:357:13
+
+    console.log
+      [TEST] Test database disconnected
+
+      at src/tests/setup.ts:42:13
+
+PASS src/tests/api/health.test.ts (39.392 s)
   ● Console
 
     console.log
@@ -1459,823 +2210,7 @@ PASS src/tests/api/health.test.ts (45.328 s)
 
       at src/tests/setup.ts:42:13
 
-PASS src/tests/api/exchange-rates.test.ts (39.47 s)
-  ● Console
-
-    console.log
-      🧪 Jest test environment configured
-
-      at Object.<anonymous> (src/tests/jest.env.js:21:9)
-
-    console.log
-      [DATA] Database URL: file:./test.db
-
-      at Object.<anonymous> (src/tests/jest.env.js:22:9)
-
-    console.log
-      [LOCK] NextAuth URL: http://localhost:3000
-
-      at Object.<anonymous> (src/tests/jest.env.js:23:9)
-
-    console.log
-      [TEST] Test database connected
-
-      at src/tests/setup.ts:35:11
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      [TOOL] Initializing test database...
-
-      at src/tests/test-db.ts:44:13
-
-    console.log
-      [OK] Test database initialized
-
-      at src/tests/test-db.ts:193:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      [TEST] Test database disconnected
-
-      at src/tests/setup.ts:42:13
-
-FAIL src/tests/api/auth.test.ts (47.307 s)
-  ● Console
-
-    console.log
-      🧪 Jest test environment configured
-
-      at Object.<anonymous> (src/tests/jest.env.js:21:9)
-
-    console.log
-      [DATA] Database URL: file:./test.db
-
-      at Object.<anonymous> (src/tests/jest.env.js:22:9)
-
-    console.log
-      [LOCK] NextAuth URL: http://localhost:3000
-
-      at Object.<anonymous> (src/tests/jest.env.js:23:9)
-
-    console.log
-      [TEST] Test database connected
-
-      at src/tests/setup.ts:35:11
-
-    console.log
-      [TOOL] Setting up test database...
-
-      at src/tests/test-db.ts:385:13
-
-    console.log
-      [TOOL] Initializing test database...
-
-      at src/tests/test-db.ts:44:13
-
-    console.log
-      [OK] Test database initialized
-
-      at src/tests/test-db.ts:193:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [OK] Test database setup complete
-
-      at src/tests/test-db.ts:396:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      🧹 Test database cleaned
-
-      at src/tests/test-db.ts:246:13
-
-    console.log
-      🌱 Test database seeded
-
-      at src/tests/test-db.ts:357:13
-
-    console.log
-      [TEST] Test database disconnected
-
-      at src/tests/setup.ts:42:13
-
-  ● Authentication API › GET /api/auth/check-user › should return no single user when multiple users exist
-
-    expect(received).toBe(expected) // Object.is equality
-
-    Expected: 2
-    Received: 1
-
-      100 |       // Verify we actually have 2 users
-      101 |       const userCount = await testDb.user.count()
-    > 102 |       expect(userCount).toBe(2)
-          |                         ^
-      103 |
-      104 |       const mockRequest = createMockRequest('GET', '/api/auth/check-user')
-      105 |       const response = await checkUserGET(mockRequest)
-
-      at src/tests/api/auth.test.ts:102:25
-      at step (src/tests/api/auth.test.ts:37:23)
-      at Object.next (src/tests/api/auth.test.ts:18:53)
-      at fulfilled (src/tests/api/auth.test.ts:9:58)
-
-PASS src/tests/api/transactions.test.ts (49.469 s)
+PASS src/tests/api/transactions.test.ts (39.759 s)
   ● Console
 
     console.log
@@ -2358,16 +2293,16 @@ PASS src/tests/api/transactions.test.ts (49.469 s)
             feesCurrency: 'USD',
             transactionDate: '2024-01-15T00:00:00.000Z',
             notes: 'Test transaction',
-            createdAt: '2025-09-15T15:54:35.115Z',
-            updatedAt: '2025-09-15T15:54:35.115Z',
+            createdAt: '2025-09-15T15:59:54.014Z',
+            updatedAt: '2025-09-15T15:59:54.014Z',
             transaction_date: '2024-01-15',
             btc_amount: 0.1,
             original_price_per_btc: 50000,
             original_currency: 'USD',
             original_total_amount: 5000,
             fees_currency: 'USD',
-            created_at: '2025-09-15T15:54:35.115Z',
-            updated_at: '2025-09-15T15:54:35.115Z',
+            created_at: '2025-09-15T15:59:54.014Z',
+            updated_at: '2025-09-15T15:59:54.014Z',
             main_currency: 'USD',
             main_currency_price_per_btc: 52500,
             main_currency_total_amount: 5250,
@@ -2381,21 +2316,21 @@ PASS src/tests/api/transactions.test.ts (49.469 s)
           }
         ],
         summary: {
-          total_transactions: 0,
-          total_buy_transactions: 0,
+          total_transactions: 1,
+          total_buy_transactions: 1,
           total_sell_transactions: 0,
-          total_btc_bought: 0,
+          total_btc_bought: 0.1,
           total_btc_sold: 0,
-          current_btc_holdings: 0,
-          total_usd_invested: 0,
+          current_btc_holdings: 0.1,
+          total_usd_invested: 5250,
           total_usd_received: 0,
           total_fees_paid: 0,
-          average_buy_price: 0,
+          average_buy_price: 52500,
           average_sell_price: 0,
           realized_pnl: 0,
-          unrealized_pnl: 0,
-          total_pnl: 0,
-          roi_percentage: 0
+          unrealized_pnl: -250,
+          total_pnl: -250,
+          roi_percentage: -4.761904761904762
         },
         message: 'Retrieved 1 transactions with EUR display values'
       }
@@ -2816,7 +2751,7 @@ PASS src/tests/api/transactions.test.ts (49.469 s)
 
       at src/tests/setup.ts:42:13
 
-PASS src/tests/api/historical-data.test.ts (56.971 s)
+PASS src/tests/api/historical-data.test.ts (40.821 s)
   ● Console
 
     console.log
@@ -3314,7 +3249,7 @@ PASS src/tests/api/historical-data.test.ts (56.971 s)
 
       at src/tests/setup.ts:42:13
 
-PASS src/tests/api/custom-currencies.test.ts (51.756 s)
+PASS src/tests/api/custom-currencies.test.ts (42.364 s)
   ● Console
 
     console.log
@@ -4013,8 +3948,8 @@ PASS src/tests/api/custom-currencies.test.ts (51.756 s)
       at src/tests/setup.ts:42:13
 
 
-Test Suites: 2 failed, 8 passed, 10 total
-Tests:       2 failed, 195 passed, 197 total
+Test Suites: 10 passed, 10 total
+Tests:       2 skipped, 195 passed, 197 total
 Snapshots:   0 total
-Time:        57.676 s
+Time:        52.728 s, estimated 57 s
 Ran all test suites.
