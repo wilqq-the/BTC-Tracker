@@ -75,9 +75,10 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64
         push: true
         no-cache: true
+        provenance: false
+        sbom: false
         tags: |
           thewilqq/btc-tracker:latest
           thewilqq/btc-tracker:${{ steps.version.outputs.version }}
