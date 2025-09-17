@@ -30,6 +30,14 @@ This release marks a **complete rewrite** of BTC Tracker, migrating from the leg
   - Interactive candlestick, line, and area charts
   - Transaction markers with P&L visualization
   - Real-time price updates
+- **👥 Multi-User Support** with complete data isolation
+  - Individual user accounts with secure authentication
+  - Admin panel for user management and system oversight
+  - First user automatically becomes admin with user creation privileges
+- **📊 Enhanced Analytics & Profile Pages**
+  - Comprehensive analytics dashboard with monthly breakdowns and performance metrics
+  - Professional user profile management with avatar support and PIN authentication
+  - Advanced portfolio analytics with win/loss rates and holding period analysis
 - **🔐 Enhanced Security**
   - NextAuth.js for authentication
   - Proper session management
@@ -39,11 +47,10 @@ This release marks a **complete rewrite** of BTC Tracker, migrating from the leg
   - Custom currency management
   - Automatic rate updates
 
+
 #### **Performance Improvements**
-- **95% faster initial load** compared to Electron version
 - **Server-side rendering** for instant page loads
 - **Optimized database queries** with Prisma
-- **Background price updates** without UI blocking
 
 ### 🔄 Migration Notes
 
