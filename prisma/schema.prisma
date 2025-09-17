@@ -16,6 +16,10 @@ model BitcoinTransaction {
   type                  String   // 'BUY' or 'SELL'
   btcAmount             Float    @map("btc_amount")
   
+  // User relationship
+  userId                Int?     @map("user_id")
+  user                  User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
   // Original transaction data (what user actually entered)
   originalPricePerBtc   Float    @map("original_price_per_btc")
   originalCurrency      String   @map("original_currency")
@@ -32,6 +36,7 @@ model BitcoinTransaction {
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("bitcoin_transactions")
+  @@index([userId])
 }
 
 // Historical Bitcoin prices (daily OHLC data for long-term trends)
@@ -76,11 +81,14 @@ model ExchangeRate {
 // App settings table
 model AppSettings {
   id           Int      @id @default(autoincrement())
+  userId       Int?     @map("user_id")
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   settingsData String   @map("settings_data") // JSON string
   lastUpdated  DateTime @default(now()) @map("last_updated")
   version      String   @default("1.0.0")
 
   @@map("app_settings")
+  @@index([userId])
 }
 
 // Users table for authentication
@@ -92,8 +100,16 @@ model User {
   displayName  String?  @map("display_name") // Personalized display name
   profilePicture String? @map("profile_picture") // Profile picture filename/URL
   pinHash      String?  @map("pin_hash") // Added for PIN authentication
+  isAdmin      Boolean  @default(false) @map("is_admin") // Admin role (first user is auto-admin)
+  isActive     Boolean  @default(true) @map("is_active") // Allow admin to deactivate users
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  // Relations
+  transactions      BitcoinTransaction[]
+  settings          AppSettings[]
+  customCurrencies  CustomCurrency[]
+  portfolioSummary  PortfolioSummary?
 
   @@map("users")
 }
@@ -101,7 +117,9 @@ model User {
 // Custom currencies table for user-defined currencies
 model CustomCurrency {
   id        Int      @id @default(autoincrement())
-  code      String   @unique
+  userId    Int?     @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
   name      String
   symbol    String
   isActive  Boolean  @default(true) @map("is_active")
@@ -109,6 +127,8 @@ model CustomCurrency {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("custom_currencies")
+  @@unique([userId, code])
+  @@index([userId])
 }
 
 // Bitcoin current price table for storing current price with daily changes
@@ -127,7 +147,9 @@ model BitcoinCurrentPrice {
 
 // Portfolio summary table for storing pre-calculated portfolio data
 model PortfolioSummary {
-  id                          Int      @id @default(1) // Single row constraint
+  id                          Int      @id @default(autoincrement())
+  userId                      Int?     @unique @map("user_id")
+  user                        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Holdings
   totalBtc                    Float    @default(0) @map("total_btc")
@@ -160,4 +182,5 @@ model PortfolioSummary {
   lastPriceUpdate             DateTime @default(now()) @map("last_price_update")
 
   @@map("portfolio_summary")
+  @@index([userId])
 }

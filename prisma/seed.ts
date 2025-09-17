@@ -52,71 +52,55 @@ async function main() {
   console.log('[SEED] Seeding database with default data...')
 
   try {
-    // 1. Create default app settings
-    console.log('[INFO] Creating default app settings...')
+    // 1. Create default app settings (global, no user_id)
+    console.log('[INFO] Creating default global app settings...')
     await prisma.appSettings.upsert({
       where: { id: 1 },
       update: {}, // Don't update if exists
       create: {
         id: 1,
+        userId: null, // Global settings
         settingsData: JSON.stringify(defaultSettings),
         version: defaultSettings.version,
       },
     })
-    console.log('[OK] Default app settings created')
+    console.log('[OK] Default global app settings created')
 
-    // 2. Initialize portfolio summary with defaults
-    console.log('[INFO] Initializing portfolio summary...')
-    await prisma.portfolioSummary.upsert({
-      where: { id: 1 },
-      update: {}, // Don't update if exists
-      create: {
-        id: 1,
-        totalBtc: 0,
-        totalTransactions: 0,
-        totalInvested: 0,
-        totalFees: 0,
-        averageBuyPrice: 0,
-        mainCurrency: 'USD',
-        currentBtcPriceUsd: 0,
-        currentPortfolioValue: 0,
-        unrealizedPnl: 0,
-        unrealizedPnlPercent: 0,
-        portfolioChange24h: 0,
-        portfolioChange24hPercent: 0,
-        secondaryCurrency: 'EUR',
-        currentValueSecondary: 0,
-      },
-    })
-    console.log('[OK] Portfolio summary initialized')
+    // 2. Note: Portfolio summary is now user-specific, no global initialization needed
+    console.log('[INFO] Portfolio summary will be created per-user when they first use the app')
 
-    // 3. Create default custom currencies (common ones beyond the main supported list)
-    console.log('[INFO] Creating default custom currencies...')
+    // 3. Create default custom currencies (global, no user_id - available to all users)
+    console.log('[INFO] Creating default global custom currencies...')
     const customCurrencies = [
-      { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-      { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-      { code: 'MXN', name: 'Mexican Peso', symbol: '$' },
-      { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
-      { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+      { code: 'INR', name: 'Indian Rupee', symbol: '₹', userId: null },
+      { code: 'BRL', name: 'Brazilian Real', symbol: 'R$', userId: null },
+      { code: 'MXN', name: 'Mexican Peso', symbol: '$', userId: null },
+      { code: 'CNY', name: 'Chinese Yuan', symbol: '¥', userId: null },
+      { code: 'KRW', name: 'South Korean Won', symbol: '₩', userId: null },
     ]
 
     for (const currency of customCurrencies) {
       await prisma.customCurrency.upsert({
-        where: { code: currency.code },
+        where: { 
+          id: customCurrencies.indexOf(currency) + 1000 // Use high ID for globals
+        },
         update: {}, // Don't update if exists
-        create: currency,
+        create: {
+          id: customCurrencies.indexOf(currency) + 1000,
+          ...currency
+        },
       })
     }
-    console.log(`[OK] Created ${customCurrencies.length} default custom currencies`)
+    console.log(`[OK] Created ${customCurrencies.length} default global custom currencies`)
 
     console.log('[SUCCESS] Database seeding completed successfully!')
     console.log('')
     console.log('[SUMMARY] Summary:')
-    console.log('• Default application settings created')
-    console.log('• Portfolio summary initialized')
-    console.log('• Custom currencies added')
+    console.log('• Default global application settings created')
+    console.log('• Global custom currencies added')
+    console.log('• User-specific data (portfolio, settings) will be created per user')
     console.log('')
-    console.log('[READY] Your Bitcoin Tracker is ready for first use!')
+    console.log('[READY] Your multi-user Bitcoin Tracker is ready for first use!')
 
   } catch (error) {
     console.error('[ERROR] Error during database seeding:', error)

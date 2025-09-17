@@ -67,8 +67,12 @@ export class CustomCurrencyService {
       }
 
       // Check if a currency with this code exists (active or inactive)
-      const existingCurrency = await prisma.customCurrency.findUnique({
-        where: { code: normalizedCode }
+      // Since we have compound unique constraint, we need to find by userId and code
+      const existingCurrency = await prisma.customCurrency.findFirst({
+        where: { 
+          code: normalizedCode,
+          userId: null  // Check for global currencies first
+        }
       });
 
       if (existingCurrency) {
@@ -232,7 +236,7 @@ export class CustomCurrencyService {
    */
   static async getCurrencyByCode(code: string): Promise<CustomCurrency | null> {
     try {
-      const record = await prisma.customCurrency.findUnique({
+      const record = await prisma.customCurrency.findFirst({
         where: { 
           code: code.toUpperCase() 
         }

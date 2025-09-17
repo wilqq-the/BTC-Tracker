@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import AppLayout from '@/components/AppLayout';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
+import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
 
 interface BitcoinTransaction {
   id: number;
@@ -851,10 +852,10 @@ export default function TransactionsPage() {
                         key={type}
                         type="button"
                         onClick={() => setFormData(prev => ({ ...prev, type }))}
-                        className={`flex-1 py-2 px-4 rounded transition-colors ${
+                        className={`flex-1 py-2 px-4 rounded transition-colors font-medium ${
                           formData.type === type
                             ? type === 'BUY' ? 'bg-profit text-white' : 'bg-loss text-white'
-                            : 'bg-gray-800 text-btc-text-secondary hover:text-btc-text-primary'
+                            : 'bg-btc-bg-secondary text-btc-text-primary hover:bg-btc-bg-primary border border-btc-border-secondary'
                         }`}
                       >
                         {type}
@@ -1000,8 +1001,8 @@ export default function TransactionsPage() {
                   }`}
                 >
                   {importFile ? (
-                    <div className="space-y-2">
-                      <div className="text-4xl">[DOC]</div>
+                    <div className="space-y-3 text-center">
+                      <DocumentIcon className="h-12 w-12 text-btc-500 mx-auto" />
                       <div className="text-btc-text-primary font-medium">
                         {importFile.name}
                       </div>
@@ -1011,7 +1012,7 @@ export default function TransactionsPage() {
                       {/* Format Detection */}
                       {formatDetecting && (
                         <div className="text-btc-text-secondary text-sm flex items-center justify-center">
-                          <span className="animate-spin mr-2">[WAIT]</span>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-btc-500 mr-2"></div>
                           Detecting format...
                         </div>
                       )}
@@ -1031,8 +1032,8 @@ export default function TransactionsPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <div className="text-4xl">[INBOX]</div>
+                    <div className="space-y-3 text-center">
+                      <InboxIcon className="h-12 w-12 text-btc-text-muted mx-auto" />
                       <div className="text-btc-text-primary font-medium">
                         Drag and drop your file here
                       </div>

@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
+    // Log the database URL to ensure connection is proper
+    console.log('[AUTH CHECK] Checking for existing users...');
+    
     // Get all users count and first user info using Prisma
     const users = await prisma.user.findMany({
       select: {
@@ -14,11 +17,26 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     })
 
+    console.log(`[AUTH CHECK] Found ${users.length} users in database`);
+
     if (users.length === 0) {
+      // Double-check by counting
+      const userCount = await prisma.user.count();
+      console.log(`[AUTH CHECK] User count verification: ${userCount}`);
+      
+      if (userCount > 0) {
+        // There are users but query failed, don't redirect to signup
+        console.error('[AUTH CHECK] Users exist but query failed, returning error');
+        return NextResponse.json({ 
+          error: 'Database query issue, please refresh' 
+        }, { status: 500 })
+      }
+      
       return NextResponse.json({
         singleUser: false,
         email: null,
-        hasPin: false
+        hasPin: false,
+        noUsers: true
       })
     }
 
@@ -33,11 +51,16 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       singleUser: false,
       email: null,
-      hasPin: false
+      hasPin: false,
+      multipleUsers: true
     })
 
   } catch (error) {
-    console.error('Error checking user info:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('[AUTH CHECK] Critical error checking user info:', error)
+    // Don't redirect to signup on error - might just be a temporary issue
+    return NextResponse.json({ 
+      error: 'Database connection issue, please refresh',
+      temporary: true 
+    }, { status: 503 }) // 503 Service Unavailable
   }
 } 

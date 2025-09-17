@@ -4,6 +4,7 @@ import { BitcoinTransaction, TransactionFormData, TransactionSummary, Transactio
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
+import { withAuth } from '@/lib/auth-helpers';
 
 // Enhanced transaction interface with secondary currency values
 interface EnhancedTransaction extends BitcoinTransaction {
@@ -55,8 +56,8 @@ const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD')
 };
 
 // GET - Fetch all transactions with optional filtering
-export async function GET(request: NextRequest): Promise<NextResponse> {
-  try {
+export async function GET(request: NextRequest) {
+  return withAuth(request, async (userId, user) => {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const dateFrom = searchParams.get('date_from');
@@ -64,13 +65,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const limit = parseInt(searchParams.get('limit') || '100');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    // Get user's currency settings
+    // Get user's currency settings (TODO: Make user-specific)
     const settings = await SettingsService.getSettings();
     const mainCurrency = settings.currency.mainCurrency;
     const secondaryCurrency = settings.currency.secondaryCurrency;
 
-    // Build Prisma where clause
-    const whereClause: any = {};
+    // Build Prisma where clause with user filter
+    const whereClause: any = {
+      userId: userId
+    };
 
     // Apply filters
     if (type && type !== 'ALL') {
@@ -87,7 +90,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     }
 
-    // Now that all corruption sources are fixed, we can safely use bulk loading!
+    // Get transactions for this user only
     const transactions = await prisma.bitcoinTransaction.findMany({
       where: whereClause,
       orderBy: [
@@ -165,8 +168,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       };
     }));
 
-    // Calculate summary statistics
-    const summary = await calculateTransactionSummary();
+    // Calculate summary statistics for this user
+    const summary = await calculateTransactionSummary(userId);
 
     const response: TransactionResponse = {
       success: true,
@@ -176,19 +179,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('Error fetching transactions:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch transactions',
-      message: 'An error occurred while retrieving transactions'
-    } as TransactionResponse, { status: 500 });
-  }
+  });
 }
 
 // POST - Create new transaction
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  try {
+export async function POST(request: NextRequest) {
+  return withAuth(request, async (userId, user) => {
     const formData: TransactionFormData = await request.json();
 
     // Validate required fields
@@ -216,9 +212,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Calculate original total amount
     const originalTotalAmount = btcAmount * pricePerBtc;
 
-    // Insert transaction using Prisma - only store original data
+    // Insert transaction using Prisma - only store original data with user association
     const newTransaction = await prisma.bitcoinTransaction.create({
       data: {
+        userId: userId,
         type: formData.type,
         btcAmount: btcAmount,
         originalPricePerBtc: pricePerBtc,
@@ -261,30 +258,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     return NextResponse.json(response, { status: 201 });
-  } catch (error) {
-    console.error('Error creating transaction:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to create transaction',
-      message: 'An error occurred while creating the transaction'
-    } as TransactionResponse, { status: 500 });
-  }
+  });
 }
 
 // Helper function to calculate transaction summary
-async function calculateTransactionSummary(): Promise<TransactionSummary> {
+async function calculateTransactionSummary(userId: number): Promise<TransactionSummary> {
   return new Promise(async (resolve, reject) => {
     try {
-      // Get user's currency settings
+      // Get user's currency settings (TODO: Make user-specific)
       const settings = await SettingsService.getSettings();
       const mainCurrency = settings.currency.mainCurrency;
 
-      // Get transaction statistics using Prisma aggregations
+      // Get transaction statistics using Prisma aggregations for this user
       const [totalTransactions, buyTransactions, sellTransactions, allTransactions] = await Promise.all([
-        prisma.bitcoinTransaction.count(),
-        prisma.bitcoinTransaction.findMany({ where: { type: 'BUY' } }),
-        prisma.bitcoinTransaction.findMany({ where: { type: 'SELL' } }),
-        prisma.bitcoinTransaction.findMany()
+        prisma.bitcoinTransaction.count({ where: { userId } }),
+        prisma.bitcoinTransaction.findMany({ where: { userId, type: 'BUY' } }),
+        prisma.bitcoinTransaction.findMany({ where: { userId, type: 'SELL' } }),
+        prisma.bitcoinTransaction.findMany({ where: { userId } })
       ]);
 
       const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);

@@ -4,9 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import { AppSettings, CurrencySettings, PriceDataSettings, DisplaySettings, NotificationSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
+import AdminPanel from '@/components/AdminPanel';
 import AppLayout from '@/components/AppLayout';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'admin';
 
 interface SettingsResponse {
   success: boolean;
@@ -21,10 +22,12 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [userData, setUserData] = useState<any>(null);
 
-  // Load settings on component mount
+  // Load settings and user data on component mount
   useEffect(() => {
     loadSettings();
+    loadUserData();
   }, []);
 
   const loadSettings = async () => {
@@ -41,6 +44,18 @@ export default function SettingsPage() {
       showMessage('error', 'Error loading settings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUserData = async () => {
+    try {
+      const response = await fetch('/api/user');
+      if (response.ok) {
+        const data = await response.json();
+        setUserData(data);
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error);
     }
   };
 
@@ -124,7 +139,8 @@ export default function SettingsPage() {
     { id: 'currency', label: 'Currency' },
     { id: 'priceData', label: 'Price Data' },
     { id: 'display', label: 'Display' },
-    { id: 'notifications', label: 'Notifications' },
+    // { id: 'notifications', label: 'Notifications' }, // Coming soon
+    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin Panel' }] : [])
   ];
 
   return (
@@ -250,6 +266,10 @@ export default function SettingsPage() {
               onUpdate={(updates: any) => updateSettings('notifications', updates)}
               saving={saving}
             />
+          )}
+
+          {activeTab === 'admin' && userData?.isAdmin && (
+            <AdminPanel />
           )}
         </div>
       </div>

@@ -1,13 +1,13 @@
-name: Build and Test
+name: CI - Test & Build
 
 on:
   push:
-    branches: [ main, dev, feature/* ]
+    branches: [ "*" ]  # Run on every commit to any branch
   pull_request:
-    branches: [ main, dev ]
+    branches: [ "*" ]
 
 jobs:
-  build-and-test:
+  test-and-build:
     runs-on: ubuntu-latest
     
     steps:
@@ -23,6 +23,9 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
+    - name: Lint code
+      run: npm run lint
+    
     - name: Setup test database
       run: |
         echo "Setting up test database..."
@@ -32,38 +35,40 @@ jobs:
         DATABASE_URL: "file:./test.db"
         NODE_ENV: test
     
-    - name: Run linter
-      run: npm run lint
-    
     - name: Run tests
-      run: npm run test:ci -- --runInBand
+      run: npm run test:ci -- --runInBand --coverage
       env:
         CI: true
         NODE_ENV: test
         DATABASE_URL: "file:./test.db"
         NEXTAUTH_SECRET: "test-secret-key-for-jest-testing-only"
         NEXTAUTH_URL: "http://localhost:3000"
-        DISABLE_EXTERNAL_APIS: true
-        MOCK_BITCOIN_PRICE: true
-        MOCK_EXCHANGE_RATES: true
-        TEST_TIMEOUT: 10000
-        JEST_VERBOSE: false
     
     - name: Generate Prisma Client for build
       run: npx prisma generate
       env:
         DATABASE_URL: "file:./prisma/build.db"
     
-    - name: Build Next.js app
+    - name: Build application
       run: npm run build
       env:
         DATABASE_URL: "file:./prisma/build.db"
         NEXTAUTH_SECRET: "build-time-secret-not-used-in-production"
         NEXTAUTH_URL: "http://localhost:3000"
+        NODE_ENV: production
     
-    - name: Verify build output
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      if: success()
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage/lcov.info
+        fail_ci_if_error: false
+    
+    - name: Build summary
       run: |
-        echo "Build completed successfully!"
-        ls -la .next/
-        echo "Static files:"
-        ls -la .next/static/ || echo "No static files yet" 
+        echo "## 🎉 Build Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Linting passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ Build successful" >> $GITHUB_STEP_SUMMARY
+        echo "- 📦 Ready for deployment" >> $GITHUB_STEP_SUMMARY

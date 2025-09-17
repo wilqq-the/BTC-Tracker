@@ -30,11 +30,13 @@ export const authOptions: NextAuthOptions = {
 
           const isValidPassword = await bcrypt.compare(credentials.password, user.passwordHash)
           
-          if (isValidPassword) {
+          if (isValidPassword && user.isActive) {
             return {
               id: user.id.toString(),
               email: user.email,
-              name: user.name || user.email.split('@')[0]
+              name: user.name || user.email.split('@')[0],
+              isAdmin: user.isAdmin,
+              isActive: user.isActive
             }
           } else {
             console.log('Invalid password for user:', credentials.email)
@@ -76,11 +78,13 @@ export const authOptions: NextAuthOptions = {
 
           const isValidPin = await bcrypt.compare(credentials.pin, user.pinHash)
           
-          if (isValidPin) {
+          if (isValidPin && user.isActive) {
             return {
               id: user.id.toString(),
               email: user.email,
-              name: user.name || user.email.split('@')[0]
+              name: user.name || user.email.split('@')[0],
+              isAdmin: user.isAdmin,
+              isActive: user.isActive
             }
           } else {
             console.log('Invalid PIN for user:', credentials.email)
@@ -98,10 +102,12 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    // Production: 24 hours, Development/Other: 7 days (effectively infinite for dev)
+    maxAge: process.env.NODE_ENV === 'production' ? 24 * 60 * 60 : 7 * 24 * 60 * 60,
   },
   jwt: {
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    // Production: 24 hours, Development/Other: 7 days (effectively infinite for dev)
+    maxAge: process.env.NODE_ENV === 'production' ? 24 * 60 * 60 : 7 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user, account }) {
@@ -111,6 +117,8 @@ export const authOptions: NextAuthOptions = {
         token.sub = user.id
         token.email = user.email
         token.name = user.name
+        token.isAdmin = user.isAdmin
+        token.isActive = user.isActive
         // Add issued at time for better token validation
         token.iat = Math.floor(Date.now() / 1000)
       }
@@ -122,6 +130,8 @@ export const authOptions: NextAuthOptions = {
         // Ensure session has all necessary fields
         session.user.email = token.email as string
         session.user.name = token.name as string
+        session.user.isAdmin = token.isAdmin as boolean
+        session.user.isActive = token.isActive as boolean
       }
       return session
     }

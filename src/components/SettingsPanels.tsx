@@ -8,6 +8,7 @@ import { CustomCurrency } from '@/lib/custom-currency-service';
 import { CurrencySymbolService } from '@/lib/currency-symbol-service';
 import UserAvatar from './UserAvatar';
 import AvatarUploadModal from './AvatarUploadModal';
+import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
 
 interface SettingsPanelProps<T> {
   settings: T;
@@ -867,9 +868,12 @@ export function DisplaySettingsPanel({
   const { theme, setTheme } = useTheme();
   return (
     <ThemedCard>
-      <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-        [ART] Display Settings
-      </h2>
+      <div className="flex items-center space-x-3 mb-6">
+        <AdjustmentsHorizontalIcon className="h-6 w-6 text-btc-500" />
+        <h2 className="text-xl font-semibold text-btc-text-primary">
+          Display Settings
+        </h2>
+      </div>
       
       <div className="space-y-6">
         {/* Currently Implemented */}
@@ -893,81 +897,6 @@ export function DisplaySettingsPanel({
           <ThemedText variant="muted" size="sm" className="mt-1">
             Theme changes are saved automatically and persist across sessions
           </ThemedText>
-        </div>
-
-        {/* Future Features - Coming Soon */}
-        <div className="pt-6 border-t border-btc-border-secondary">
-          <h3 className="text-sm font-medium text-btc-text-secondary mb-4">Coming Soon</h3>
-          <div className="space-y-4 opacity-50">
-            <div>
-              <label className="block text-sm font-medium text-btc-text-muted mb-2">
-                Date Format
-              </label>
-              <select disabled className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed">
-                <option>MM/DD/YYYY (US Default)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-btc-text-muted mb-2">
-                Time Format
-              </label>
-              <select disabled className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed">
-                <option>24 Hour (Default)</option>
-              </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-btc-text-muted mb-2">
-                  BTC Decimal Places
-                </label>
-                <input
-                  type="number"
-                  disabled
-                  value="8"
-                  className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-btc-text-muted mb-2">
-                  Currency Decimal Places
-                </label>
-                <input
-                  type="number"
-                  disabled
-                  value="2"
-                  className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  disabled
-                  checked
-                  className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-                />
-                <label className="text-sm font-medium text-btc-text-muted">
-                  Show amounts in satoshis
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  disabled
-                  className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-                />
-                <label className="text-sm font-medium text-btc-text-muted">
-                  Use compact number format (1.2K instead of 1,200)
-                </label>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </ThemedCard>

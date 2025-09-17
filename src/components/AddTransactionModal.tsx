@@ -200,10 +200,10 @@ export default function AddTransactionModal({
                   key={type}
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, type }))}
-                  className={`flex-1 py-2 px-4 rounded transition-colors ${
+                  className={`flex-1 py-2 px-4 rounded transition-colors font-medium ${
                     formData.type === type
                       ? type === 'BUY' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   {type}

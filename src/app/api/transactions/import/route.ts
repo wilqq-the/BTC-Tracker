@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { withAuth } from '@/lib/auth-helpers';
 import { 
   ImportTransaction, 
   ImportResult,
@@ -13,8 +14,8 @@ import {
   parseJsonFile 
 } from './parsers';
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  try {
+export async function POST(request: NextRequest) {
+  return withAuth(request, async (userId, user) => {
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const skipDuplicates = formData.get('skip_duplicates') === 'true';
@@ -63,8 +64,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 });
     }
 
-    // Validate and import transactions
-    const result = await importTransactions(transactions, skipDuplicates);
+    // Validate and import transactions with user association
+    const result = await importTransactions(transactions, skipDuplicates, userId);
 
     // Recalculate portfolio after import (rate-limited to prevent I/O overload)
     if (result.imported > 0) {
@@ -80,20 +81,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       detected_format: detectedFormat,
       message: `Successfully imported ${result.imported} transactions${result.skipped > 0 ? `, skipped ${result.skipped} duplicates` : ''}`
     });
-
-  } catch (error) {
-    console.error('Import error:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Import failed',
-      message: error instanceof Error ? error.message : 'An unexpected error occurred during import'
-    }, { status: 500 });
-  }
+  });
 }
 
 async function importTransactions(
   transactions: ImportTransaction[], 
-  skipDuplicates: boolean
+  skipDuplicates: boolean,
+  userId: number
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: true,
@@ -117,6 +111,7 @@ async function importTransactions(
           
         const existing = await prisma.bitcoinTransaction.findFirst({
           where: {
+            userId: userId,
             type: transaction.type,
             btcAmount: transaction.btc_amount,
             originalPricePerBtc: transaction.original_price_per_btc,
@@ -135,9 +130,10 @@ async function importTransactions(
         }
       }
 
-      // Import the transaction
+      // Import the transaction with user association
       await prisma.bitcoinTransaction.create({
         data: {
+          userId: userId,
           type: transaction.type,
           btcAmount: transaction.btc_amount,
           originalPricePerBtc: transaction.original_price_per_btc,
@@ -151,7 +147,7 @@ async function importTransactions(
       });
 
       result.imported++;
-    } catch (error) {
+  } catch (error) {
       result.errors.push(`Transaction import error: ${error}`);
       result.details.invalid_transactions++;
       result.details.skipped_transactions.push({
@@ -162,4 +158,4 @@ async function importTransactions(
   }
 
   return result;
-}
+} 

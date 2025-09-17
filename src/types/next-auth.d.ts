@@ -1,22 +1,26 @@
 import NextAuth from "next-auth"
 
 declare module "next-auth" {
+  interface User {
+    isAdmin?: boolean
+    isActive?: boolean
+  }
+
   interface Session {
     user: {
       id: string
-      name?: string | null
-      email?: string | null
-      image?: string | null
+      email: string
+      name?: string
+      isAdmin?: boolean
+      isActive?: boolean
     }
-  }
-
-  interface User {
-    id: string
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    id: string
+    id?: string
+    isAdmin?: boolean
+    isActive?: boolean
   }
-} 
+}

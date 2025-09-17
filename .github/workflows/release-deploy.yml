@@ -1,0 +1,114 @@
+name: Deploy - Release
+
+on:
+  push:
+    branches: [ main, master ]
+  release:
+    types: [ published ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  deploy-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run full test suite
+      run: |
+        npx prisma generate
+        npx prisma db push --force-reset
+        npm run test:ci -- --runInBand --coverage
+      env:
+        CI: true
+        NODE_ENV: test
+        DATABASE_URL: "file:./test.db"
+        NEXTAUTH_SECRET: "test-secret-key-for-jest-testing-only"
+        NEXTAUTH_URL: "http://localhost:3000"
+    
+    - name: Build application
+      run: npm run build
+      env:
+        DATABASE_URL: "file:./prisma/build.db"
+        NEXTAUTH_SECRET: "build-time-secret-not-used-in-production"
+        NEXTAUTH_URL: "http://localhost:3000"
+        NODE_ENV: production
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    
+    - name: Extract version info
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "release" ]; then
+          echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+        else
+          echo "version=v$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+        fi
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+    
+    - name: Build and push Docker image (release)
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        push: true
+        tags: |
+          thewilqq/btc-tracker:latest
+          thewilqq/btc-tracker:${{ steps.version.outputs.version }}
+          thewilqq/btc-tracker:stable
+        labels: |
+          org.opencontainers.image.title=BTC Tracker
+          org.opencontainers.image.description=Self-hosted Bitcoin portfolio tracker
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.revision=${{ github.sha }}
+          org.opencontainers.image.created=${{ steps.version.outputs.date }}
+          org.opencontainers.image.source=https://github.com/${{ github.repository }}
+          org.opencontainers.image.url=https://hub.docker.com/r/thewilqq/btc-tracker
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          VERSION=${{ steps.version.outputs.version }}
+          BUILD_DATE=${{ steps.version.outputs.date }}
+          COMMIT_SHA=${{ steps.version.outputs.sha_short }}
+    
+    - name: Create deployment summary
+      run: |
+        echo "## 🚀 Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Docker Tags**: latest, stable, ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platforms**: linux/amd64, linux/arm64, linux/arm/v7" >> $GITHUB_STEP_SUMMARY
+        echo "- **Registry**: https://hub.docker.com/r/thewilqq/btc-tracker" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ steps.version.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Update Docker Hub description
+      uses: peter-evans/dockerhub-description@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: thewilqq/btc-tracker
+        short-description: "Self-hosted Bitcoin portfolio tracker with multi-user support"

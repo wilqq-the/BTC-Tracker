@@ -26,30 +26,45 @@ export default function SignInPage() {
     const loadUserInfo = async () => {
       try {
         const response = await fetch('/api/auth/check-user')
-        if (response.ok) {
-          const data = await response.json()
-          
-          // If no users exist, redirect to registration
-          if (!data.singleUser && data.email === null) {
-            console.log('No users found, redirecting to registration...')
-            router.push('/auth/signup')
+        const data = await response.json()
+        
+        // Handle error responses
+        if (!response.ok) {
+          if (data.temporary) {
+            // Temporary error - retry after a moment
+            console.log('Temporary database issue, retrying...')
+            setTimeout(() => {
+              loadUserInfo() // Retry
+            }, 2000)
             return
           }
-          
-          setUserInfo(data)
-          
-          // Auto-fill email if single user
-          if (data.singleUser && data.email) {
-            setEmail(data.email)
-          }
-          
-          // Set default login mode based on PIN availability
-          if (data.singleUser && data.hasPin) {
-            setLoginMode('pin')
-          }
+          console.error('Error from check-user API:', data.error)
+          setError('Database connection issue. Please refresh the page.')
+          setInitialLoading(false)
+          return
+        }
+        
+        // Only redirect to signup if we're certain no users exist
+        if (!data.error && data.hasOwnProperty('noUsers') && data.noUsers === true) {
+          console.log('No users found, redirecting to registration...')
+          router.push('/auth/signup')
+          return
+        }
+        
+        setUserInfo(data)
+        
+        // Auto-fill email if single user
+        if (data.singleUser && data.email) {
+          setEmail(data.email)
+        }
+        
+        // Set default login mode based on PIN availability
+        if (data.singleUser && data.hasPin) {
+          setLoginMode('pin')
         }
       } catch (error) {
         console.error('Error loading user info:', error)
+        setError('Failed to load. Please refresh the page.')
       } finally {
         setInitialLoading(false)
       }

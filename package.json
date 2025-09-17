@@ -29,6 +29,7 @@
     "auth:generate-jwt": "node scripts/generate-jwt.js"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@internationalized/date": "^3.8.2",
     "@prisma/client": "^6.10.1",
     "@radix-ui/react-accordion": "^1.2.11",

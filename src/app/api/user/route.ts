@@ -20,6 +20,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         displayName: true,
         profilePicture: true,
         pinHash: true,
+        isAdmin: true,
+        isActive: true,
         createdAt: true
       }
     })
@@ -35,6 +37,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       displayName: user.displayName,
       profilePicture: user.profilePicture,
       hasPin: user.pinHash !== null,
+      isAdmin: user.isAdmin,
+      isActive: user.isActive,
       createdAt: user.createdAt
     })
 

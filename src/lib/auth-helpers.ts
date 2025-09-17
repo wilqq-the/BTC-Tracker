@@ -6,6 +6,8 @@ export interface AuthUser {
   id: string
   email: string
   name?: string
+  isAdmin?: boolean
+  isActive?: boolean
 }
 
 /**
@@ -67,10 +69,29 @@ export async function verifyApiToken(request: NextRequest): Promise<AuthUser | n
       return null
     }
     
+    // Get fresh user data from database to include admin status
+    const { prisma } = await import('@/lib/prisma')
+    const user = await prisma.user.findUnique({
+      where: { id: parseInt(token.sub) },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        isAdmin: true,
+        isActive: true
+      }
+    })
+    
+    if (!user || !user.isActive) {
+      return null
+    }
+    
     return {
-      id: token.sub,
-      email: token.email,
-      name: token.name || undefined
+      id: user.id.toString(),
+      email: user.email,
+      name: user.name || undefined,
+      isAdmin: user.isAdmin,
+      isActive: user.isActive
     }
   } catch (error) {
     console.error('Token verification failed:', error)
@@ -123,4 +144,120 @@ export function extractBearerToken(request: NextRequest): string | null {
  */
 export function isApiTokenRequest(request: NextRequest): boolean {
   return !!extractBearerToken(request)
+}
+
+/**
+ * Get current user ID from authenticated request
+ * Returns null if not authenticated
+ */
+export async function getCurrentUserId(request: NextRequest): Promise<number | null> {
+  const user = await verifyApiToken(request)
+  return user ? parseInt(user.id) : null
+}
+
+/**
+ * Get current user ID from authenticated request or throw error
+ * Use this when user authentication is required
+ */
+export async function requireCurrentUserId(request: NextRequest): Promise<number> {
+  const userId = await getCurrentUserId(request)
+  if (!userId) {
+    throw new Error('Authentication required')
+  }
+  return userId
+}
+
+/**
+ * Utility function for API routes that need user context
+ * Returns user data or error response
+ */
+export async function withAuth<T>(
+  request: NextRequest,
+  handler: (userId: number, user: AuthUser) => Promise<T>
+): Promise<T | Response> {
+  try {
+    const authResult = await requireApiAuth(request)
+    
+    if ('error' in authResult) {
+      return new Response(
+        JSON.stringify({ success: false, error: authResult.error }),
+        { 
+          status: authResult.status,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const userId = parseInt(authResult.user.id)
+    return await handler(userId, authResult.user)
+    
+  } catch (error) {
+    console.error('Auth handler error:', error)
+    return new Response(
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+}
+
+/**
+ * Utility function for API routes that require admin access
+ * Returns user data or error response
+ */
+export async function withAdminAuth<T>(
+  request: NextRequest,
+  handler: (userId: number, user: AuthUser) => Promise<T>
+): Promise<T | Response> {
+  try {
+    const authResult = await requireApiAuth(request)
+    
+    if ('error' in authResult) {
+      return new Response(
+        JSON.stringify({ success: false, error: authResult.error }),
+        { 
+          status: authResult.status,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Check if user is admin
+    if (!authResult.user.isAdmin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Admin access required' }),
+        { 
+          status: 403,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const userId = parseInt(authResult.user.id)
+    return await handler(userId, authResult.user)
+    
+  } catch (error) {
+    console.error('Admin auth handler error:', error)
+    return new Response(
+      JSON.stringify({ success: false, error: 'Internal server error' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    )
+  }
+}
+
+/**
+ * Check if current user is admin
+ */
+export async function isCurrentUserAdmin(request: NextRequest): Promise<boolean> {
+  try {
+    const user = await verifyApiToken(request)
+    return user?.isAdmin === true
+  } catch {
+    return false
+  }
 } 

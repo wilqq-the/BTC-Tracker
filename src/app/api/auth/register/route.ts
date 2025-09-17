@@ -38,17 +38,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const saltRounds = 12
     const passwordHash = await bcrypt.hash(password, saltRounds)
 
+    // Check if this is the first user (should be admin)
+    const userCount = await prisma.user.count()
+    const isFirstUser = userCount === 0
+
     // Create user
     const newUser = await prisma.user.create({
       data: {
         email,
         passwordHash,
-        name: name || email.split('@')[0]
+        name: name || email.split('@')[0],
+        isAdmin: isFirstUser, // First user is automatically admin
+        isActive: true
       },
       select: {
         id: true,
         email: true,
-        name: true
+        name: true,
+        isAdmin: true,
+        isActive: true
       }
     })
 

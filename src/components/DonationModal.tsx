@@ -194,12 +194,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           )}
 
           {activeTab === 'coffee' && (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="text-center">
-                <div className="text-5xl mb-4">☕</div>
-                
                 {/* Coffee QR Code */}
-                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 mb-4">
+                <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 mb-6">
                   <div className="w-32 h-32 mx-auto bg-white rounded-lg p-2">
                     <img 
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(coffeeUrl)}`}
@@ -213,15 +211,17 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                   href={coffeeUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium"
+                  className="inline-flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors font-medium text-sm"
                 >
-                  <span className="mr-2">☕</span>
+                  <span className="mr-2 text-sm">☕</span>
                   Buy Me a Coffee
                 </a>
                 
-                <ThemedText variant="muted" size="xs" className="mt-3">
-                  Support the project with a small donation
-                </ThemedText>
+                <div className="mt-4 px-4">
+                  <ThemedText variant="muted" size="sm" className="block">
+                    Support the project with a small donation
+                  </ThemedText>
+                </div>
               </div>
             </div>
           )}

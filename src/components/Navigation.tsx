@@ -118,8 +118,20 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
               Transactions
             </ThemedButton>
             
-            <ThemedButton variant="ghost" size="sm">
-              Exchanges
+            <ThemedButton 
+              variant={pathname === '/analytics' ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => window.location.href = '/analytics'}
+            >
+              Analytics
+            </ThemedButton>
+            
+            <ThemedButton 
+              variant={pathname === '/profile' ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => window.location.href = '/profile'}
+            >
+              Profile
             </ThemedButton>
             
             <ThemedButton 
@@ -202,25 +214,47 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
               Transactions
             </button>
             
-            <button
-              className="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Exchanges
-            </button>
-            
-            <button
-              onClick={() => {
-                window.location.href = '/settings';
-                setIsMobileMenuOpen(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                pathname === '/settings' 
-                  ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' 
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-              }`}
-            >
-              Settings
-            </button>
+              <button
+                onClick={() => {
+                  window.location.href = '/analytics';
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/analytics' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Analytics
+              </button>
+              
+              <button
+                onClick={() => {
+                  window.location.href = '/profile';
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/profile' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Profile
+              </button>
+              
+              <button
+                onClick={() => {
+                  window.location.href = '/settings';
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/settings' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Settings
+              </button>
             
             <div className="border-t border-gray-200 dark:border-gray-700 pt-2 mt-2">
               <button

@@ -35,7 +35,7 @@ interface PortfolioSidebarProps {
 }
 
 export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
-  const [portfolioData, setPortfolioData] = useState<PortfolioSummaryData | null>(null);
+  const [portfolioData, setPortfolioData] = useState<any>(null);
   const [convertedData, setConvertedData] = useState<ConvertedPortfolioData | null>(null);
   const [priceData, setPriceData] = useState<BitcoinPriceData | null>(null);
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -149,13 +149,14 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
   const loadPortfolioData = async () => {
     try {
       console.log('[DATA] Loading portfolio data...');
-      const response = await fetch('/api/bitcoin-price?endpoint=portfolio');
+      const response = await fetch('/api/portfolio-metrics');
       const result = await response.json();
       
       console.log('[DATA] Portfolio API response:', result);
       
       if (result.success && result.data) {
         console.log('[DATA] Portfolio data loaded:', result.data);
+        // Store the raw data from API
         setPortfolioData(result.data);
       } else {
         console.error('[DATA] Portfolio API returned no data or failed:', result);
@@ -225,29 +226,29 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
     });
 
       const converted: ConvertedPortfolioData = {
-        totalBTC: portfolioData.totalBTC,
-        totalSatoshis: Math.round(portfolioData.totalBTC * 100000000),
-        totalTransactions: portfolioData.totalTransactions,
+        totalBTC: portfolioData.totalBtc || 0,
+        totalSatoshis: portfolioData.totalSatoshis || 0,
+        totalTransactions: portfolioData.totalTransactions || 0,
         
         // Main currency values
         mainCurrency,
-        averageBuyPriceMain: portfolioData.averageBuyPriceUSD * usdToMainRate,
-        currentBTCPriceMain: portfolioData.currentBTCPriceUSD * usdToMainRate,
-        currentPortfolioValueMain: portfolioData.currentPortfolioValueUSD * usdToMainRate,
-        unrealizedPnLMain: portfolioData.unrealizedPnLUSD * usdToMainRate,
-        unrealizedPnLPercentage: portfolioData.unrealizedPnLPercent,
-        portfolioChange24hMain: portfolioData.portfolioChange24hUSD * usdToMainRate,
-        portfolioChange24hPercentage: portfolioData.portfolioChange24hPercent,
-        totalInvestedMain: portfolioData.totalInvestedUSD * usdToMainRate,
-        totalFeesMain: portfolioData.totalFeesUSD * usdToMainRate,
+        averageBuyPriceMain: (portfolioData.avgBuyPrice || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        currentBTCPriceMain: (portfolioData.currentBtcPrice || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        currentPortfolioValueMain: (portfolioData.portfolioValue || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        unrealizedPnLMain: (portfolioData.unrealizedPnL || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        unrealizedPnLPercentage: portfolioData.roi || 0,
+        portfolioChange24hMain: (portfolioData.portfolioChange24h || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        portfolioChange24hPercentage: portfolioData.portfolioChange24hPercent || 0,
+        totalInvestedMain: (portfolioData.totalInvested || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        totalFeesMain: 0, // Not provided by the API, default to 0
         
         // Secondary currency values
         secondaryCurrency,
-        currentPortfolioValueSecondary: portfolioData.currentPortfolioValueUSD * usdToSecondaryRate,
+        currentPortfolioValueSecondary: (portfolioData.portfolioValue || 0) * (secondaryCurrency === 'USD' ? 1 : usdToSecondaryRate),
       };
 
     console.log('[OK] Converted portfolio values:', {
-      originalUSD: portfolioData.currentPortfolioValueUSD,
+      originalUSD: portfolioData.portfolioValue,
       convertedMain: converted.currentPortfolioValueMain,
       convertedSecondary: converted.currentPortfolioValueSecondary
     });

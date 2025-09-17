@@ -356,7 +356,12 @@ export const getStatusTextClass = (value: number) => {
 };
 
 // Currency formatting with theme colors
-export const formatCurrency = (amount: number, currency: string = '') => {
+export const formatCurrency = (amount: number | undefined | null, currency: string = '') => {
+  // Handle undefined or null amounts
+  if (amount === undefined || amount === null || isNaN(amount)) {
+    return currency ? `${currency} 0.00` : '$0.00';
+  }
+  
   const getCurrencySymbol = (curr: string) => {
     switch (curr.toUpperCase()) {
       case 'USD': return '$';
