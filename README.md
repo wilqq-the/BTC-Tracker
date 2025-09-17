@@ -62,7 +62,6 @@ docker-compose up -d
 npm install
 cp .env.example .env
 # Add NEXTAUTH_SECRET to .env
-npx prisma db push
 npm run dev
 ```
 

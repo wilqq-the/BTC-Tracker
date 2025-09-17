@@ -11,7 +11,7 @@ import { defaultSettings } from '../lib/types'
 export const testDb = new PrismaClient({
   datasources: {
     db: {
-      url: process.env.DATABASE_URL || 'file:./test.db'
+      url: 'file:./test.db'
     }
   },
   log: process.env.CI ? ['error'] : []

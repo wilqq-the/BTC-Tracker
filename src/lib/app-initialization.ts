@@ -4,7 +4,7 @@ import { HistoricalDataService } from './historical-data-service';
 import { SettingsService } from './settings-service';
 import { prisma } from './prisma';
 import { execSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
 /**
@@ -220,10 +220,45 @@ export class AppInitializationService {
   }
 
   /**
+   * Ensure database directory exists and has proper permissions
+   */
+  private static async ensureDatabaseDirectory(): Promise<void> {
+    try {
+      // Fixed database directory path
+      const dbDir = './data';
+      
+      // Create directory if it doesn't exist
+      if (!existsSync(dbDir)) {
+        console.log(`[SETUP] Creating database directory: ${dbDir}`);
+        mkdirSync(dbDir, { recursive: true, mode: 0o755 });
+        console.log('[OK] Database directory created');
+      }
+
+      // Ensure the directory is writable
+      try {
+        const testFile = path.join(dbDir, '.write-test');
+        require('fs').writeFileSync(testFile, 'test');
+        require('fs').unlinkSync(testFile);
+        console.log('[OK] Database directory is writable');
+      } catch (writeError) {
+        console.error(`[ERROR] Database directory is not writable: ${dbDir}`);
+        throw new Error(`Database directory ${dbDir} is not writable. Check permissions.`);
+      }
+
+    } catch (error) {
+      console.error('[ERROR] Failed to ensure database directory:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Initialize database - ensure it exists and run migrations
    */
   private static async initializeDatabase(): Promise<void> {
     try {
+      // Ensure database directory exists first
+      await this.ensureDatabaseDirectory();
+      
       // Test database connection
       console.log('[SEARCH] Testing database connection...');
       await prisma.$connect();

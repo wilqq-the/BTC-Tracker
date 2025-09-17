@@ -1,11 +1,6 @@
 # Use the official Node.js runtime as the base image
 FROM node:22-alpine AS base
 
-# Accept build arguments
-ARG VERSION
-ARG BUILD_DATE
-ARG COMMIT_SHA
-
 # Install dependencies only when needed
 FROM base AS deps
 # Install build dependencies for native modules like sqlite3
@@ -32,8 +27,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client for current platform
-RUN npx prisma generate --no-engine
+# Generate Prisma Client
 RUN npx prisma generate
 
 # Set environment variables for build process
@@ -75,9 +69,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/src/data ./src/data
 
-# Create directory for SQLite database and uploads
-RUN mkdir -p /app/public/uploads/avatars
-RUN chown -R nextjs:nodejs /app/public/uploads
+# Create directories for SQLite database and uploads
+RUN mkdir -p /app/public/uploads/avatars /app/data
+RUN chown -R nextjs:nodejs /app/public/uploads /app/data
 
 # Ensure the nextjs user can write to the app directory for database
 RUN chown -R nextjs:nodejs /app

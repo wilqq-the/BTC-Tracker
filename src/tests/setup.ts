@@ -24,7 +24,7 @@ beforeAll(async () => {
   testPrisma = new PrismaClient({
     datasources: {
       db: {
-        url: process.env.DATABASE_URL
+        url: 'file:./test.db'
       }
     }
   })

@@ -4,12 +4,16 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Enhanced Prisma configuration for better I/O performance
+// Enhanced Prisma configuration with fixed database path
+const DATABASE_PATH = process.env.NODE_ENV === 'test' 
+  ? 'file:./test.db' 
+  : 'file:./data/btc-tracker.db';
+
 export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
   datasources: {
     db: {
-      url: process.env.DATABASE_URL
+      url: DATABASE_PATH
     }
   }
 })
