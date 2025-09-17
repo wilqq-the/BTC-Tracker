@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { BitcoinTransaction, TransactionFormData, TransactionResponse } from '@/lib/types';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { withAuth } from '@/lib/auth-helpers';
 
 // Helper function to get exchange rate
 const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD'): Promise<number> => {
@@ -23,7 +24,7 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withAuth(request, async (userId, user) => {
     const params = await context.params;
     const transactionId = parseInt(params.id);
     
@@ -35,8 +36,11 @@ export async function GET(
       } as TransactionResponse, { status: 400 });
     }
 
-    const transaction = await prisma.bitcoinTransaction.findUnique({
-      where: { id: transactionId }
+    const transaction = await prisma.bitcoinTransaction.findFirst({
+      where: { 
+        id: transactionId,
+        userId: userId
+      }
     });
 
     // Format the transaction to match expected format
@@ -69,14 +73,7 @@ export async function GET(
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('Error fetching transaction:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to fetch transaction',
-      message: 'An error occurred while retrieving the transaction'
-    } as TransactionResponse, { status: 500 });
-  }
+  });
 }
 
 // PUT - Update transaction by ID
@@ -84,7 +81,7 @@ export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withAuth(request, async (userId, user) => {
     const params = await context.params;
     const transactionId = parseInt(params.id);
     
@@ -123,9 +120,12 @@ export async function PUT(
     // Calculate original total amount
     const originalTotalAmount = btcAmount * pricePerBtc;
 
-    // Update transaction using Prisma - only store original data
+    // Update transaction using Prisma - only store original data for this user
     const updatedTransaction = await prisma.bitcoinTransaction.update({
-      where: { id: transactionId },
+      where: { 
+        id: transactionId,
+        userId: userId
+      },
       data: {
         type: formData.type,
         btcAmount: btcAmount,
@@ -170,14 +170,7 @@ export async function PUT(
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('Error updating transaction:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to update transaction',
-      message: 'An error occurred while updating the transaction'
-    } as TransactionResponse, { status: 500 });
-  }
+  });
 }
 
 // DELETE - Delete transaction by ID
@@ -185,7 +178,7 @@ export async function DELETE(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  try {
+  return withAuth(request, async (userId, user) => {
     const params = await context.params;
     const transactionId = parseInt(params.id);
     
@@ -197,10 +190,13 @@ export async function DELETE(
       } as TransactionResponse, { status: 400 });
     }
 
-    // First check if transaction exists and delete it using Prisma
+    // First check if transaction exists and delete it using Prisma - only for this user
     try {
       await prisma.bitcoinTransaction.delete({
-        where: { id: transactionId }
+        where: { 
+          id: transactionId,
+          userId: userId
+        }
       });
     } catch (error: any) {
       if (error.code === 'P2025') {
@@ -228,12 +224,5 @@ export async function DELETE(
     };
 
     return NextResponse.json(response);
-  } catch (error) {
-    console.error('Error deleting transaction:', error);
-    return NextResponse.json({
-      success: false,
-      error: 'Failed to delete transaction',
-      message: 'An error occurred while deleting the transaction'
-    } as TransactionResponse, { status: 500 });
-  }
+  });
 } 

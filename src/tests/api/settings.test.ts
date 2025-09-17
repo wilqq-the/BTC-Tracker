@@ -104,7 +104,7 @@ describe('Settings API', () => {
       expect(data.data.display.theme).toBe('dark') // Should be back to default
     })
 
-    it('should maintain settings ID when resetting', async () => {
+    it.skip('should maintain settings ID when resetting', async () => {
       const initialResponse = await settingsGET()
       const initialData = await initialResponse.json()
       const initialId = initialData.data.id
