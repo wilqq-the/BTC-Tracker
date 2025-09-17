@@ -75,7 +75,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64,linux/arm/v7
+        platforms: linux/amd64,linux/arm64
         push: true
         tags: |
           thewilqq/btc-tracker:latest
@@ -101,7 +101,7 @@ jobs:
         echo "## 🚀 Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Docker Tags**: latest, stable, ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Platforms**: linux/amd64, linux/arm64, linux/arm/v7" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
         echo "- **Registry**: https://hub.docker.com/r/thewilqq/btc-tracker" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit**: ${{ steps.version.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
     

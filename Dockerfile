@@ -7,6 +7,7 @@ FROM base AS deps
 RUN apk add --no-cache \
     libc6-compat \
     python3 \
+    py3-setuptools \
     make \
     g++ \
     gcc \
@@ -21,7 +22,7 @@ RUN npm ci --only=production
 # Rebuild the source code only when needed
 FROM base AS builder
 # Install build dependencies for Prisma generation
-RUN apk add --no-cache python3 make g++ gcc musl-dev sqlite-dev
+RUN apk add --no-cache python3 py3-setuptools make g++ gcc musl-dev sqlite-dev
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
