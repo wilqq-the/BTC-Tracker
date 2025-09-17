@@ -1,6 +1,11 @@
 # Use the official Node.js runtime as the base image
 FROM node:22-alpine AS base
 
+# Accept build arguments
+ARG VERSION
+ARG BUILD_DATE
+ARG COMMIT_SHA
+
 # Install dependencies only when needed
 FROM base AS deps
 # Install build dependencies for native modules like sqlite3
@@ -17,7 +22,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -27,7 +32,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
+# Generate Prisma Client for current platform
+RUN npx prisma generate --no-engine
 RUN npx prisma generate
 
 # Set environment variables for build process
