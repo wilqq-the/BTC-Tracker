@@ -77,6 +77,7 @@ jobs:
         context: .
         platforms: linux/amd64
         push: true
+        no-cache: true
         tags: |
           thewilqq/btc-tracker:latest
           thewilqq/btc-tracker:${{ steps.version.outputs.version }}
@@ -89,8 +90,6 @@ jobs:
           org.opencontainers.image.created=${{ steps.version.outputs.date }}
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
           org.opencontainers.image.url=https://hub.docker.com/r/thewilqq/btc-tracker
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
         build-args: |
           VERSION=${{ steps.version.outputs.version }}
           BUILD_DATE=${{ steps.version.outputs.date }}
