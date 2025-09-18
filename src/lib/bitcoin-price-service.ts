@@ -470,7 +470,7 @@ export class BitcoinPriceService {
       const totalFeesUSD = aggregateData._sum.fees || 0;
 
       // Batch exchange rate lookups by currency to reduce I/O
-      const uniqueCurrencies = Array.from(new Set(buyTransactions.map(tx => tx.originalCurrency)));
+      const uniqueCurrencies = Array.from(new Set(buyTransactions.map(tx => tx.originalCurrency))) as string[];
       const exchangeRatePromises = uniqueCurrencies.map(currency => 
         ExchangeRateService.getExchangeRate(currency, 'USD').catch(error => {
           console.warn(`Failed to get exchange rate for ${currency}, using 1.0:`, error);

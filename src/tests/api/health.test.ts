@@ -63,7 +63,7 @@ describe('Health API', () => {
 
     it('should return environment from NODE_ENV when available', async () => {
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      (process.env as any).NODE_ENV = 'production';
       mockAppInitializationService.initialize.mockResolvedValue(undefined);
 
       const response = await getHealth();
@@ -73,7 +73,7 @@ describe('Health API', () => {
       expect(data.environment).toBe('production');
 
       // Restore original value
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
 
     it('should return unhealthy status when app initialization fails', async () => {
@@ -93,7 +93,7 @@ describe('Health API', () => {
       const originalEnv = process.env.NODE_ENV;
       
       delete process.env.npm_package_version;
-      delete process.env.NODE_ENV;
+      delete (process.env as any).NODE_ENV;
       
       mockAppInitializationService.initialize.mockResolvedValue(undefined);
 
@@ -106,7 +106,7 @@ describe('Health API', () => {
 
       // Restore original values
       if (originalVersion) process.env.npm_package_version = originalVersion;
-      if (originalEnv) process.env.NODE_ENV = originalEnv;
+      if (originalEnv) (process.env as any).NODE_ENV = originalEnv;
     });
 
     it('should include valid timestamp in ISO format', async () => {

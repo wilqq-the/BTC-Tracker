@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const currentHoldings = totalBtcBought - totalBtcSold;
     
     // Get exchange rates for all currencies
-    const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency)));
+    const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency))) as string[];
     const exchangeRatePromises = uniqueCurrencies.map(currency => 
       ExchangeRateService.getExchangeRate(currency, mainCurrency).catch(() => 1.0)
     );

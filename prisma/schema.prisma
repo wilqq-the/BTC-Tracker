@@ -7,7 +7,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = "file:./data/btc-tracker.db"
+  url      = env("DATABASE_URL")
 }
 
 // Bitcoin transactions table - stores only original transaction data
