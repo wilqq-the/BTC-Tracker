@@ -12,7 +12,8 @@ RUN apk add --no-cache \
     g++ \
     gcc \
     musl-dev \
-    sqlite-dev
+    sqlite-dev \
+    su-exec
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -70,7 +71,7 @@ COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/src/data ./src/data
 
 # Make entrypoint scripts executable
-RUN chmod +x ./scripts/docker-entrypoint.sh ./scripts/docker-entrypoint.sh
+RUN chmod +x ./scripts/docker-entrypoint.sh
 
 # Note: Prisma client is already generated at build time
 # The SQLite driver is embedded, so different file paths work without regeneration

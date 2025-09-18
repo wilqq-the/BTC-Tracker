@@ -8,6 +8,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      # PUID/PGID for permission management (TrueNAS, homelab compatibility)
+      - PUID=${PUID:-1000}  # Set to your user ID: `id -u`
+      - PGID=${PGID:-1000}  # Set to your group ID: `id -g`
       # Flexible database paths - choose one approach:
       - DATABASE_URL=file:/app/data/bitcoin-tracker.db     # Recommended: mounted volume
       # - DATABASE_URL=file:/data/bitcoin-tracker.db       # Host directory mount
