@@ -8,13 +8,17 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      # Flexible database paths - choose one approach:
+      - DATABASE_URL=file:/app/data/bitcoin-tracker.db     # Recommended: mounted volume
+      # - DATABASE_URL=file:/data/bitcoin-tracker.db       # Host directory mount
+      # - DATABASE_URL=postgresql://user:pass@postgres:5432/btctracker  # PostgreSQL
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-super-secure-secret-key-here-change-this}
       - NEXTAUTH_URL=http://localhost:3000
     volumes:
-      # Database storage - automatically created at ./data/btc-tracker.db
-      - btc_tracker_data:/app/data
-      # Avatar uploads
-      - btc_tracker_uploads:/app/public/uploads
+      # Mount data directory for flexible database storage
+      - btc_data:/app/data
+      # Optional: mount host directory for database
+      # - /host/path/to/data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
@@ -26,9 +30,7 @@ services:
       - btc-tracker-network
 
 volumes:
-  btc_tracker_data:
-    driver: local
-  btc_tracker_uploads:
+  btc_data:
     driver: local
 
 networks:

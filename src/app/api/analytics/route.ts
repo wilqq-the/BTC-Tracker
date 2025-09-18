@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Filter transactions for the selected range (for charts/analysis)
-    const rangeTransactions = allTransactions.filter(tx => 
+    const rangeTransactions = allTransactions.filter((tx: any) => 
       tx.transactionDate >= startDate
     );
 
@@ -64,19 +64,19 @@ export async function GET(request: NextRequest) {
     }>();
 
     // Calculate statistics - use ALL transactions for accurate holdings
-    const allBuyTransactions = allTransactions.filter(tx => tx.type === 'BUY');
-    const allSellTransactions = allTransactions.filter(tx => tx.type === 'SELL');
+    const allBuyTransactions = allTransactions.filter((tx: any) => tx.type === 'BUY');
+    const allSellTransactions = allTransactions.filter((tx: any) => tx.type === 'SELL');
     
-    const totalBtcBought = allBuyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-    const totalBtcSold = allSellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
+    const totalBtcBought = allBuyTransactions.reduce((sum: number, tx: any) => sum + tx.btcAmount, 0);
+    const totalBtcSold = allSellTransactions.reduce((sum: number, tx: any) => sum + tx.btcAmount, 0);
     const currentHoldings = totalBtcBought - totalBtcSold;
     
     // For period analysis, use filtered transactions
-    const buyTransactions = rangeTransactions.filter(tx => tx.type === 'BUY');
-    const sellTransactions = rangeTransactions.filter(tx => tx.type === 'SELL');
+    const buyTransactions = rangeTransactions.filter((tx: any) => tx.type === 'BUY');
+    const sellTransactions = rangeTransactions.filter((tx: any) => tx.type === 'SELL');
     
     // Get exchange rates for all currencies used in ALL transactions
-    const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency)));
+    const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency))) as string[];
     const exchangeRatePromises = uniqueCurrencies.map(currency => 
       ExchangeRateService.getExchangeRate(currency, mainCurrency).catch(() => 1.0)
     );
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
     const avgSellPrice = totalBtcSold > 0 ? weightedSellPriceSum / totalBtcSold : 0;
     
     // Now calculate monthly breakdown with converted prices (for range only)
-    rangeTransactions.forEach(tx => {
+    rangeTransactions.forEach((tx: any) => {
       const monthKey = tx.transactionDate.toISOString().substring(0, 7); // YYYY-MM
       const exchangeRate = currencyToRateMap[tx.originalCurrency] || 1.0;
       const convertedPrice = tx.originalPricePerBtc * exchangeRate;
@@ -163,11 +163,11 @@ export async function GET(request: NextRequest) {
     // Calculate win rate using ALL sell transactions
     let winningTrades = 0;
     let losingTrades = 0;
-    allSellTransactions.forEach(tx => {
+    allSellTransactions.forEach((tx: any) => {
       // Find average buy price before this sell from ALL buy transactions
-      const buysBeforeSell = allBuyTransactions.filter(b => b.transactionDate < tx.transactionDate);
+      const buysBeforeSell = allBuyTransactions.filter((b: any) => b.transactionDate < tx.transactionDate);
       const avgBuyBeforeSell = buysBeforeSell.length > 0
-        ? buysBeforeSell.reduce((sum, b) => sum + b.originalPricePerBtc, 0) / buysBeforeSell.length
+        ? buysBeforeSell.reduce((sum: number, b: any) => sum + b.originalPricePerBtc, 0) / buysBeforeSell.length
         : 0;
       
       if (tx.originalPricePerBtc > avgBuyBeforeSell) {
@@ -187,10 +187,10 @@ export async function GET(request: NextRequest) {
     let maxProfit = -Infinity;
     let maxLoss = Infinity;
     
-    allSellTransactions.forEach(tx => {
-      const buysBeforeSell = allBuyTransactions.filter(b => b.transactionDate < tx.transactionDate);
+    allSellTransactions.forEach((tx: any) => {
+      const buysBeforeSell = allBuyTransactions.filter((b: any) => b.transactionDate < tx.transactionDate);
       const avgBuyBeforeSell = buysBeforeSell.length > 0
-        ? buysBeforeSell.reduce((sum, b) => sum + b.originalPricePerBtc, 0) / buysBeforeSell.length
+        ? buysBeforeSell.reduce((sum: number, b: any) => sum + b.originalPricePerBtc, 0) / buysBeforeSell.length
         : 0;
       
       const profit = (tx.originalPricePerBtc - avgBuyBeforeSell) * tx.btcAmount;
@@ -242,13 +242,13 @@ export async function GET(request: NextRequest) {
     }));
 
     // Most active month
-    const mostActiveMonth = monthlyBreakdown.reduce((max, month) => 
+    const mostActiveMonth = monthlyBreakdown.reduce((max: any, month: any) => 
       (month.buys + month.sells) > (max.buys + max.sells) ? month : max
     , monthlyBreakdown[0] || { monthName: 'N/A', year: '' });
 
     // Largest purchase (from ALL buy transactions)
     const largestPurchase = allBuyTransactions.length > 0 
-      ? allBuyTransactions.reduce((max, tx) => 
+      ? allBuyTransactions.reduce((max: any, tx: any) => 
           tx.btcAmount > max.btcAmount ? tx : max
         )
       : null;
@@ -294,7 +294,7 @@ export async function GET(request: NextRequest) {
           let longTermGains = 0;
           let totalFeesPaid = 0;
           
-          allSellTransactions.forEach(sellTx => {
+          allSellTransactions.forEach((sellTx: any) => {
             const sellDate = sellTx.transactionDate;
             const exchangeRate = currencyToRateMap[sellTx.originalCurrency] || 1.0;
             const sellPrice = sellTx.originalPricePerBtc * exchangeRate;
@@ -324,7 +324,7 @@ export async function GET(request: NextRequest) {
             totalFeesPaid += sellTx.fees || 0;
           });
           
-          allBuyTransactions.forEach(tx => {
+          allBuyTransactions.forEach((tx: any) => {
             totalFeesPaid += tx.fees || 0;
           });
           

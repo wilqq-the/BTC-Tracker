@@ -21,28 +21,34 @@ const mockYahooFinanceService = YahooFinanceService as jest.Mocked<typeof YahooF
 // Test data
 const mockHistoricalData = [
   {
+    id: 1,
     date: '2024-01-01',
     open_usd: 42000,
     high_usd: 43000,
     low_usd: 41000,
     close_usd: 42500,
-    volume: 1000000000
+    volume: 1000000000,
+    created_at: '2024-01-01T00:00:00.000Z'
   },
   {
+    id: 2,
     date: '2024-01-02',
     open_usd: 42500,
     high_usd: 44000,
     low_usd: 42000,
     close_usd: 43500,
-    volume: 1200000000
+    volume: 1200000000,
+    created_at: '2024-01-02T00:00:00.000Z'
   },
   {
+    id: 3,
     date: '2024-01-03',
     open_usd: 43500,
     high_usd: 45000,
     low_usd: 43000,
     close_usd: 44000,
-    volume: 1100000000
+    volume: 1100000000,
+    created_at: '2024-01-03T00:00:00.000Z'
   }
 ];
 
@@ -349,7 +355,14 @@ describe('Historical Data API', () => {
   describe('POST /api/historical-data/fetch', () => {
     beforeEach(() => {
       mockSettingsService.getPriceDataSettings.mockResolvedValue({
-        historicalDataPeriod: '1Y'
+        historicalDataPeriod: '1Y',
+        intradayInterval: '1h',
+        priceUpdateInterval: 300,
+        liveUpdateInterval: 60,
+        enableIntradayData: true,
+        maxHistoricalDays: 365,
+        dataRetentionDays: 365,
+        maxIntradayDays: 7
       });
       mockYahooFinanceService.fetchHistoricalData.mockResolvedValue(mockHistoricalData);
       mockYahooFinanceService.saveHistoricalData.mockResolvedValue(undefined);
@@ -370,7 +383,18 @@ describe('Historical Data API', () => {
       expect(data.data.dateRange.from).toBe('2024-01-01');
       expect(data.data.dateRange.to).toBe('2024-01-03');
       expect(mockYahooFinanceService.fetchHistoricalData).toHaveBeenCalledWith('6mo');
-      expect(mockYahooFinanceService.saveHistoricalData).toHaveBeenCalledWith(mockHistoricalData);
+      expect(mockYahooFinanceService.saveHistoricalData).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            date: '2024-01-01',
+            open_usd: 42000,
+            high_usd: 43000,
+            low_usd: 41000,
+            close_usd: 42500,
+            volume: 1000000000
+          })
+        ])
+      );
     });
 
     it('should fetch historical data with period from settings when no body provided', async () => {

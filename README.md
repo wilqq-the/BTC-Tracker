@@ -50,7 +50,7 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 **With Docker (recommended):**
 ```bash
-git clone https://github.com/your-username/BTC-Tracker.git
+git clone https://github.com/wilqq-the/BTC-Tracker.git
 cd BTC-Tracker
 cp docker.env.example .env
 # Edit .env and add NEXTAUTH_SECRET
@@ -62,6 +62,7 @@ docker-compose up -d
 npm install
 cp .env.example .env
 # Add NEXTAUTH_SECRET to .env
+npx prisma db push
 npm run dev
 ```
 
