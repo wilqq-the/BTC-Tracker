@@ -268,12 +268,8 @@ export class AppInitializationService {
     try {
       console.log('[TOOL] Setting up fresh database...');
       
-      // Generate Prisma client
-      console.log('[INFO] Generating Prisma client...');
-      execSync('npx prisma generate', { 
-        stdio: 'pipe',
-        cwd: process.cwd()
-      });
+      // Note: Prisma client is already generated at build time
+      console.log('[INFO] Using pre-generated Prisma client...');
 
       // Push schema to database (creates tables)
       console.log('[INFO] Creating database schema...');

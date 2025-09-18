@@ -2,18 +2,23 @@ version: '3.8'
 
 services:
   btc-tracker:
-    image: btc-tracker:latest
+    image: thewilqq/btc-tracker:latest
     container_name: btc-tracker-app
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=file:../btc-tracker.db
+      # Flexible database paths - choose one approach:
+      - DATABASE_URL=file:/app/data/bitcoin-tracker.db     # Recommended: mounted volume
+      # - DATABASE_URL=file:/data/bitcoin-tracker.db       # Host directory mount
+      # - DATABASE_URL=postgresql://user:pass@postgres:5432/btctracker  # PostgreSQL
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-your-super-secure-secret-key-here-change-this}
       - NEXTAUTH_URL=http://localhost:3000
     volumes:
-      # Persist database and uploads (entire app directory)
-      - btc_tracker_data:/app
+      # Mount data directory for flexible database storage
+      - btc_data:/app/data
+      # Optional: mount host directory for database
+      # - /host/path/to/data:/app/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
@@ -25,7 +30,7 @@ services:
       - btc-tracker-network
 
 volumes:
-  btc_tracker_data:
+  btc_data:
     driver: local
 
 networks:

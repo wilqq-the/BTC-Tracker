@@ -17,7 +17,7 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -27,12 +27,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Set environment variables for build process
-ENV DATABASE_URL="file:../bitcoin-tracker.db"
+# Set environment variables for build process  
 ENV NODE_ENV="production"
+# Use dummy DATABASE_URL for build - will be overridden at runtime
+ENV DATABASE_URL="file:./build-dummy.db"
+
+# Generate Prisma client for build process
+RUN npx prisma generate
 
 # Build the application
 RUN npm run build
@@ -60,18 +61,23 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma files and generated client
+# Copy Prisma schema for runtime generation
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# NOTE: .prisma and @prisma will be generated at runtime
 
 # Copy database and scripts for initialization
 COPY --from=builder /app/scripts ./scripts
 COPY --from=builder /app/src/data ./src/data
 
-# Create directory for SQLite database and uploads
-RUN mkdir -p /app/public/uploads/avatars
-RUN chown -R nextjs:nodejs /app/public/uploads
+# Make entrypoint scripts executable
+RUN chmod +x ./scripts/docker-entrypoint.sh ./scripts/docker-entrypoint-simple.sh
+
+# Note: Prisma client is already generated at build time
+# The SQLite driver is embedded, so different file paths work without regeneration
+
+# Create directories for SQLite database and uploads
+RUN mkdir -p /app/public/uploads/avatars /app/data
+RUN chown -R nextjs:nodejs /app/public/uploads /app/data
 
 # Ensure the nextjs user can write to the app directory for database
 RUN chown -R nextjs:nodejs /app
@@ -84,6 +90,5 @@ ENV PORT="3000"
 # set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
 
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD ["node", "server.js"] 
+# Use entrypoint script for dynamic database setup
+CMD ["./scripts/docker-entrypoint.sh"] 

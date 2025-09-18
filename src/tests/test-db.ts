@@ -5,15 +5,14 @@
 
 import { PrismaClient } from '@prisma/client'
 import fs from 'fs'
+import { execSync } from 'child_process'
 import { defaultSettings } from '../lib/types'
+
+// NOTE: Prisma client generation is handled by the test:setup script
+// This ensures the client is available before Jest starts
 
 // Create a dedicated test database instance
 export const testDb = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || 'file:./test.db'
-    }
-  },
   log: process.env.CI ? ['error'] : []
 })
 
