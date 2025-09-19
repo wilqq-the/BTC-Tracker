@@ -4,6 +4,15 @@
 
 Track your Bitcoin investments privately on your own PC. Import transactions from exchanges or add them manually. Multi-user support with admin controls. Your data never leaves your server, period.
 
+## Install on Umbrel
+
+[![Available on Umbrel App Store](umbrel.svg)](https://apps.umbrel.com/app/btctracker)
+
+**Special thanks to [@dennysubke](https://github.com/dennysubke) for helping bring BTC Tracker to Umbrel!**
+
+
+*Install BTC Tracker with one click on your Umbrel home server*
+
 ## What it does
 
 - **Multi-user setup** - First user becomes admin, can create accounts for others
@@ -90,7 +99,7 @@ Open `http://localhost:3000` and register the first user (becomes admin automati
 3. Drop the CSV file - format detected automatically
 4. Review and import
 
-Supports most major exchanges. If yours isn't supported, open an issue.
+Supports most major exchanges. If yours isn't supported, open an issue with example file.
 
 ## Tech stack
 
@@ -132,4 +141,4 @@ MIT - do what you want with it.
 
 ---
 
-**Your Bitcoin data belongs on your server, not someone else's.**
+**Your Bitcoin data belongs to you, not someone else's.**
