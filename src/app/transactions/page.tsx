@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import AppLayout from '@/components/AppLayout';
+import AddTransactionModal from '@/components/AddTransactionModal';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
 
@@ -36,32 +37,11 @@ interface BitcoinTransaction {
   pnl_main?: number;
 }
 
-interface TransactionFormData {
-  type: 'BUY' | 'SELL';
-  btc_amount: string;
-  price_per_btc: string;
-  currency: string;
-  fees: string;
-  transaction_date: string;
-  notes: string;
-}
-
-const initialFormData: TransactionFormData = {
-  type: 'BUY',
-  btc_amount: '',
-  price_per_btc: '',
-  currency: 'USD',
-  fees: '0',
-  transaction_date: new Date().toISOString().split('T')[0],
-  notes: ''
-};
-
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<BitcoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BitcoinTransaction | null>(null);
-  const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -112,22 +92,12 @@ export default function TransactionsPage() {
 
   const handleAddTransaction = () => {
     setEditingTransaction(null);
-    setFormData(initialFormData);
-    setShowAddForm(true);
+    setShowAddModal(true);
   };
 
   const handleEditTransaction = (transaction: BitcoinTransaction) => {
     setEditingTransaction(transaction);
-    setFormData({
-      type: transaction.type,
-      btc_amount: transaction.btc_amount.toString(),
-      price_per_btc: transaction.original_price_per_btc.toString(),
-      currency: transaction.original_currency,
-      fees: transaction.fees.toString(),
-      transaction_date: transaction.transaction_date,
-      notes: transaction.notes
-    });
-    setShowAddForm(true);
+    setShowAddModal(true);
   };
 
   const handleDeleteTransaction = async (id: number) => {
@@ -151,38 +121,6 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleSubmitTransaction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const method = editingTransaction ? 'PUT' : 'POST';
-      const url = editingTransaction 
-        ? `/api/transactions/${editingTransaction.id}` 
-        : '/api/transactions';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setShowAddForm(false);
-        setFormData(initialFormData);
-        setEditingTransaction(null);
-        loadTransactions(); // Reload transactions
-      } else {
-        alert(`Error: ${result.error || result.message}`);
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
-    }
-  };
 
   const calculatePnL = (transaction: BitcoinTransaction) => {
     // Use API-provided P&L calculation if available (more accurate)
@@ -833,151 +771,19 @@ export default function TransactionsPage() {
         </ThemedCard>
 
         {/* Add/Edit Transaction Modal */}
-        {showAddForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
-                {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
-              </h3>
-
-              <form onSubmit={handleSubmitTransaction} className="space-y-4">
-                {/* Transaction Type */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Transaction Type
-                  </label>
-                  <div className="flex space-x-2">
-                    {(['BUY', 'SELL'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, type }))}
-                        className={`flex-1 py-2 px-4 rounded transition-colors font-medium ${
-                          formData.type === type
-                            ? type === 'BUY' ? 'bg-profit text-white' : 'bg-loss text-white'
-                            : 'bg-btc-bg-secondary text-btc-text-primary hover:bg-btc-bg-primary border border-btc-border-secondary'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* BTC Amount */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    BTC Amount
-                  </label>
-                  <input
-                    type="number"
-                    step="0.00000001"
-                    value={formData.btc_amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="0.00000000"
-                    required
-                  />
-                </div>
-
-                {/* Price per BTC */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Price per BTC
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_btc}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="105000.00"
-                    required
-                  />
-                </div>
-
-                {/* Currency */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Currency
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                  >
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="PLN">PLN - Polish Złoty</option>
-                    <option value="GBP">GBP - British Pound</option>
-                  </select>
-                </div>
-
-                {/* Fees */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Fees
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.fees}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Transaction Date */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Transaction Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.transaction_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    required
-                  />
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="Add any notes about this transaction..."
-                    rows={3}
-                  />
-                </div>
-
-                {/* Form Actions */}
-                <div className="flex space-x-3 pt-4">
-                  <ThemedButton
-                    type="submit"
-                    variant="primary"
-                    className="flex-1 bg-btc-orange hover:bg-btc-orange-dark"
-                  >
-                    {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
-                  </ThemedButton>
-                  <ThemedButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowAddForm(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </ThemedButton>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <AddTransactionModal
+          isOpen={showAddModal}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTransaction(null);
+          }}
+          onSuccess={() => {
+            setShowAddModal(false);
+            setEditingTransaction(null);
+            loadTransactions();
+          }}
+          editingTransaction={editingTransaction}
+        />
 
         {/* Import Modal */}
         {showImportModal && (
