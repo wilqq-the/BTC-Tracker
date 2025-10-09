@@ -18,6 +18,7 @@ export default function PinKeypad({
 }: PinKeypadProps) {
   const [pin, setPin] = useState('')
   const [animatingButton, setAnimatingButton] = useState<string | null>(null)
+  const [submittedPins, setSubmittedPins] = useState<Set<string>>(new Set())
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Handle keyboard input
@@ -33,8 +34,9 @@ export default function PinKeypad({
       } else if (key === 'Backspace') {
         event.preventDefault()
         handleBackspace()
-      } else if (key === 'Enter' && pin.length >= 4) {
+      } else if (key === 'Enter' && pin.length >= 4 && !submittedPins.has(pin)) {
         event.preventDefault()
+        setSubmittedPins(prev => new Set(prev).add(pin))
         onPinComplete(pin)
       }
     }
@@ -48,20 +50,22 @@ export default function PinKeypad({
     return () => document.removeEventListener('keydown', handleKeyPress)
   }, [pin, loading, onPinComplete])
 
-  // Auto-submit when PIN reaches max length
+  // Auto-submit when PIN reaches max length (but only if not already submitted)
   useEffect(() => {
-    if (pin.length === maxLength) {
+    if (pin.length === maxLength && !submittedPins.has(pin)) {
+      setSubmittedPins(prev => new Set(prev).add(pin))
       setTimeout(() => {
         onPinComplete(pin)
       }, 200) // Small delay for visual feedback
     }
-  }, [pin, maxLength, onPinComplete])
+  }, [pin, maxLength, onPinComplete, submittedPins])
 
   // Clear PIN when error changes (for retry)
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
         setPin('')
+        setSubmittedPins(new Set()) // Clear submitted PINs to allow retry
       }, 1000)
       return () => clearTimeout(timer)
     }
@@ -87,17 +91,29 @@ export default function PinKeypad({
 
   const handleClear = () => {
     setPin('')
+    setSubmittedPins(new Set()) // Clear submitted PINs when clearing
     
     // Button animation
     setAnimatingButton('clear')
     setTimeout(() => setAnimatingButton(null), 150)
   }
 
+  const handleSubmit = () => {
+    if (pin.length >= 4 && !submittedPins.has(pin)) {
+      setSubmittedPins(prev => new Set(prev).add(pin))
+      onPinComplete(pin)
+      
+      // Button animation
+      setAnimatingButton('submit')
+      setTimeout(() => setAnimatingButton(null), 150)
+    }
+  }
+
   const keypadButtons = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
-    ['clear', '0', 'backspace']
+    [pin.length >= 4 ? 'submit' : 'clear', '0', 'backspace']
   ]
 
   return (
@@ -154,6 +170,7 @@ export default function PinKeypad({
             const isNumber = !isNaN(parseInt(button))
             const isBackspace = button === 'backspace'
             const isClear = button === 'clear'
+            const isSubmit = button === 'submit'
             
             return (
               <button
@@ -167,15 +184,19 @@ export default function PinKeypad({
                     handleBackspace()
                   } else if (isClear) {
                     handleClear()
+                  } else if (isSubmit) {
+                    handleSubmit()
                   }
                 }}
-                disabled={loading}
+                disabled={loading || (isSubmit && (pin.length < 4 || submittedPins.has(pin)))}
                 className={`
                   w-16 h-16 rounded-full font-semibold text-xl transition-all duration-150 
                   ${isNumber
                     ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 hover:border-btc-500 hover:bg-btc-50 dark:hover:bg-btc-900/20'
                     : isClear
                     ? 'bg-red-500 text-white hover:bg-red-600'
+                    : isSubmit
+                    ? 'bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed'
                     : 'bg-gray-500 text-white hover:bg-gray-600'
                   }
                   ${isAnimating ? 'scale-95 bg-btc-500 text-white' : ''}
@@ -190,6 +211,10 @@ export default function PinKeypad({
                 ) : isClear ? (
                   <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                ) : isSubmit ? (
+                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
                   button
@@ -207,7 +232,12 @@ export default function PinKeypad({
         </ThemedText>
         {pin.length >= 4 && pin.length < maxLength && (
           <ThemedText variant="muted" size="xs">
-            Press Enter to sign in or continue typing
+            Press Enter or tap ✓ to sign in, or continue typing
+          </ThemedText>
+        )}
+        {pin.length < 4 && (
+          <ThemedText variant="muted" size="xs">
+            Enter at least 4 digits
           </ThemedText>
         )}
       </div>
