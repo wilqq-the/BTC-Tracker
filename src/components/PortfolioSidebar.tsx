@@ -225,26 +225,28 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
       availableRates: Object.keys(exchangeRates)
     });
 
+      // Note: The API now returns all values already converted to mainCurrency,
+      // so we don't need to convert them again here. We only pass them through.
       const converted: ConvertedPortfolioData = {
         totalBTC: portfolioData.totalBtc || 0,
         totalSatoshis: portfolioData.totalSatoshis || 0,
         totalTransactions: portfolioData.totalTransactions || 0,
         
-        // Main currency values
+        // Main currency values (already in mainCurrency from API)
         mainCurrency,
-        averageBuyPriceMain: (portfolioData.avgBuyPrice || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
-        currentBTCPriceMain: (portfolioData.currentBtcPrice || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
-        currentPortfolioValueMain: (portfolioData.portfolioValue || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
-        unrealizedPnLMain: (portfolioData.unrealizedPnL || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        averageBuyPriceMain: portfolioData.avgBuyPrice || 0,
+        currentBTCPriceMain: portfolioData.currentBtcPrice || 0,
+        currentPortfolioValueMain: portfolioData.portfolioValue || 0,
+        unrealizedPnLMain: portfolioData.unrealizedPnL || 0,
         unrealizedPnLPercentage: portfolioData.roi || 0,
-        portfolioChange24hMain: (portfolioData.portfolioChange24h || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        portfolioChange24hMain: portfolioData.portfolioChange24h || 0,
         portfolioChange24hPercentage: portfolioData.portfolioChange24hPercent || 0,
-        totalInvestedMain: (portfolioData.totalInvested || 0) * (mainCurrency === 'USD' ? 1 : usdToMainRate),
+        totalInvestedMain: portfolioData.totalInvested || 0,
         totalFeesMain: 0, // Not provided by the API, default to 0
         
-        // Secondary currency values
+        // Secondary currency values (need to convert from main to secondary)
         secondaryCurrency,
-        currentPortfolioValueSecondary: (portfolioData.portfolioValue || 0) * (secondaryCurrency === 'USD' ? 1 : usdToSecondaryRate),
+        currentPortfolioValueSecondary: (portfolioData.portfolioValue || 0) * (getExchangeRate(mainCurrency, secondaryCurrency)),
       };
 
     console.log('[OK] Converted portfolio values:', {
