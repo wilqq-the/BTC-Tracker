@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemedButton } from './ui/ThemeProvider';
 import { SupportedCurrency } from '@/lib/types';
+import currencies from '@/data/currencies.json';
 
 interface TransactionFormData {
   type: 'BUY' | 'SELL';
@@ -53,18 +54,10 @@ export default function AddTransactionModal({
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
   const [allAvailableCurrencies, setAllAvailableCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
   
-  // Currency metadata for display (built-in currencies)
-  const currencyInfo: Record<SupportedCurrency, { name: string; symbol: string }> = {
-    'USD': { name: 'US Dollar', symbol: '$' },
-    'EUR': { name: 'Euro', symbol: '€' },
-    'PLN': { name: 'Polish Złoty', symbol: 'zł' },
-    'GBP': { name: 'British Pound', symbol: '£' },
-    'CAD': { name: 'Canadian Dollar', symbol: 'C$' },
-    'AUD': { name: 'Australian Dollar', symbol: 'A$' },
-    'JPY': { name: 'Japanese Yen', symbol: '¥' },
-    'CHF': { name: 'Swiss Franc', symbol: 'CHF' },
-    'SEK': { name: 'Swedish Krona', symbol: 'kr' },
-    'NOK': { name: 'Norwegian Krone', symbol: 'kr' },
+  // Helper function to get currency info from currencies.json
+  const getCurrencyInfo = (code: string) => {
+    const currency = currencies.find(c => c.alpha === code);
+    return currency ? { name: currency.name, symbol: currency.symbol } : { name: code, symbol: code };
   };
 
   // Load supported currencies from settings and custom currencies
@@ -96,11 +89,14 @@ export default function AddTransactionModal({
         setCustomCurrencies(customCurrencyList);
         
         // Combine built-in and custom currencies for the dropdown
-        const builtInCurrencies = enabledCurrencies.map(code => ({
-          code,
-          name: currencyInfo[code]?.name || code,
-          symbol: currencyInfo[code]?.symbol || code
-        }));
+        const builtInCurrencies = enabledCurrencies.map(code => {
+          const info = getCurrencyInfo(code);
+          return {
+            code,
+            name: info.name,
+            symbol: info.symbol
+          };
+        });
         
         const customCurrenciesFormatted = customCurrencyList.map(currency => ({
           code: currency.code,
@@ -133,11 +129,14 @@ export default function AddTransactionModal({
       } catch (error) {
         console.error('Error loading currencies:', error);
         // Keep default currencies as fallback
-        const fallbackCurrencies = supportedCurrencies.map(code => ({
-          code,
-          name: currencyInfo[code]?.name || code,
-          symbol: currencyInfo[code]?.symbol || code
-        }));
+        const fallbackCurrencies = supportedCurrencies.map(code => {
+          const info = getCurrencyInfo(code);
+          return {
+            code,
+            name: info.name,
+            symbol: info.symbol
+          };
+        });
         setAllAvailableCurrencies(fallbackCurrencies);
       }
     };

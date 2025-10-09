@@ -117,8 +117,13 @@ export async function GET(request: NextRequest) {
     }));
 
     // Get current Bitcoin price and exchange rates for secondary currency calculations
-    const currentBtcPrice = await getCurrentBitcoinPrice();
-    const mainToSecondaryRate = await ExchangeRateService.getExchangeRate(mainCurrency, secondaryCurrency);
+    const currentBtcPriceUSD = await getCurrentBitcoinPrice(); // This is always in USD
+    const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
+    const usdToSecondaryRate = await ExchangeRateService.getExchangeRate('USD', secondaryCurrency);
+    
+    // Convert BTC price to user's currencies
+    const currentBtcPriceInMain = currentBtcPriceUSD * usdToMainRate;
+    const currentBtcPriceInSecondary = currentBtcPriceUSD * usdToSecondaryRate;
 
     // Enhance transactions with dynamically calculated currency values
     const enhancedTransactions = await Promise.all(formattedTransactions.map(async (transaction) => {
@@ -134,9 +139,7 @@ export async function GET(request: NextRequest) {
       const secondaryCurrencyPrice = transaction.original_price_per_btc * originalToSecondaryRate;
       const secondaryCurrencyTotal = transaction.original_total_amount * originalToSecondaryRate;
       
-      // Calculate current value and P&L in both currencies
-      const currentBtcPriceInMain = currentBtcPrice; // Assuming currentBtcPrice is in main currency
-      const currentBtcPriceInSecondary = currentBtcPrice * (await ExchangeRateService.getExchangeRate(mainCurrency, secondaryCurrency));
+      // Calculate current value and P&L in both currencies (using pre-converted prices)
       
       const currentValueMain = transaction.btc_amount * currentBtcPriceInMain;
       const currentValueSecondary = transaction.btc_amount * currentBtcPriceInSecondary;

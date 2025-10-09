@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Bug Fixes
 - Fixed mobile PIN login missing submit button and infinite retry loop
+- Fixed critical currency conversion bugs in portfolio and transaction P&L calculations
+- Fixed 24h portfolio change always showing €0.00 by calculating it in real-time
 
 ## [0.6.0] - 2025-09-17
 

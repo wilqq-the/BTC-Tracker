@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { ThemedCard, ThemedText } from '@/components/ui/ThemeProvider';
+import currencies from '@/data/currencies.json';
 
 interface AnalyticsData {
   avgBuyPrice: number;
@@ -43,6 +44,7 @@ export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('1Y');
+  const [mainCurrency, setMainCurrency] = useState('USD');
 
   useEffect(() => {
     loadAnalytics();
@@ -91,6 +93,7 @@ export default function AnalyticsPage() {
             }
           };
           setAnalyticsData(transformedData);
+          setMainCurrency(result.data.mainCurrency || 'USD');
         }
       }
     } catch (error) {
@@ -98,6 +101,16 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (value: number | undefined, currency: string = mainCurrency) => {
+    if (value === undefined || value === null) return `${getCurrencySymbol(currency)}0`;
+    return `${getCurrencySymbol(currency)}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const currencyData = currencies.find(c => c.alpha === currency);
+    return currencyData ? currencyData.symbol : currency + ' ';
   };
 
   const exportToCSV = () => {
@@ -150,7 +163,7 @@ export default function AnalyticsPage() {
             <div className="p-4">
               <ThemedText variant="muted" size="sm">Average Buy Price</ThemedText>
               <div className="text-2xl font-bold text-btc-text-primary mt-1">
-                ${analyticsData?.avgBuyPrice.toLocaleString() || '0'}
+                {formatCurrency(analyticsData?.avgBuyPrice)}
               </div>
               <ThemedText variant="muted" size="xs" className={`mt-1 ${analyticsData?.roi && analyticsData.roi > 0 ? 'text-green-500' : 'text-red-500'}`}>
                 {analyticsData?.roi ? `${analyticsData.roi > 0 ? '+' : ''}${analyticsData.roi.toFixed(2)}% ROI` : 'Loading...'}
@@ -162,7 +175,7 @@ export default function AnalyticsPage() {
             <div className="p-4">
               <ThemedText variant="muted" size="sm">Total P&L</ThemedText>
               <div className={`text-2xl font-bold ${analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.totalPnL ? `${analyticsData.totalPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.totalPnL).toLocaleString()}` : '$0'}
+                {analyticsData?.totalPnL ? `${analyticsData.totalPnL >= 0 ? '+' : '-'}${formatCurrency(analyticsData.totalPnL)}` : formatCurrency(0)}
               </div>
               <ThemedText variant="muted" size="xs" className="mt-1">
                 Realized + Unrealized
@@ -186,7 +199,7 @@ export default function AnalyticsPage() {
             <div className="p-4">
               <ThemedText variant="muted" size="sm">Best Trade</ThemedText>
               <div className="text-2xl font-bold text-profit mt-1">
-                {analyticsData?.bestTrade ? `+$${analyticsData.bestTrade.profit.toLocaleString()}` : '$0'}
+                {analyticsData?.bestTrade ? `+${formatCurrency(analyticsData.bestTrade.profit)}` : formatCurrency(0)}
               </div>
               <ThemedText variant="muted" size="xs" className="mt-1">
                 {analyticsData?.bestTrade ? new Date(analyticsData.bestTrade.date).toLocaleDateString() : 'N/A'}
@@ -225,7 +238,7 @@ export default function AnalyticsPage() {
             <div className="p-4">
               <ThemedText variant="muted" size="sm">Unrealized P&L</ThemedText>
               <div className={`text-2xl font-bold ${analyticsData?.unrealizedPnL && analyticsData.unrealizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.unrealizedPnL ? `${analyticsData.unrealizedPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.unrealizedPnL).toLocaleString()}` : '$0'}
+                {analyticsData?.unrealizedPnL ? `${analyticsData.unrealizedPnL >= 0 ? '+' : '-'}${formatCurrency(analyticsData.unrealizedPnL)}` : formatCurrency(0)}
               </div>
               <ThemedText variant="muted" size="xs" className="mt-1">
                 Current holdings
@@ -237,7 +250,7 @@ export default function AnalyticsPage() {
             <div className="p-4">
               <ThemedText variant="muted" size="sm">Realized P&L</ThemedText>
               <div className={`text-2xl font-bold ${analyticsData?.realizedPnL && analyticsData.realizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.realizedPnL ? `${analyticsData.realizedPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.realizedPnL).toLocaleString()}` : '$0'}
+                {analyticsData?.realizedPnL ? `${analyticsData.realizedPnL >= 0 ? '+' : '-'}${formatCurrency(analyticsData.realizedPnL)}` : formatCurrency(0)}
               </div>
               <ThemedText variant="muted" size="xs" className="mt-1">
                 Closed positions
@@ -482,7 +495,7 @@ export default function AnalyticsPage() {
                           {month.percentGain ? `${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%` : ''}
                         </ThemedText>
                         <ThemedText variant="muted" size="xs" className="block">
-                          {month.impact ? `$${Math.abs(month.impact).toFixed(0)}` : ''}
+                          {month.impact ? formatCurrency(Math.abs(month.impact)) : ''}
                         </ThemedText>
                       </div>
                       <div 
@@ -534,19 +547,19 @@ export default function AnalyticsPage() {
               <div>
                 <ThemedText variant="muted" size="sm">Short-term Gains</ThemedText>
                 <div className={`text-xl font-semibold ${analyticsData?.taxReport.shortTermGains && analyticsData.taxReport.shortTermGains > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                  ${analyticsData?.taxReport.shortTermGains ? Math.abs(analyticsData.taxReport.shortTermGains).toLocaleString() : '0'}
+                  {formatCurrency(analyticsData?.taxReport.shortTermGains || 0)}
                 </div>
               </div>
               <div>
                 <ThemedText variant="muted" size="sm">Long-term Gains</ThemedText>
                 <div className={`text-xl font-semibold ${analyticsData?.taxReport.longTermGains && analyticsData.taxReport.longTermGains > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                  ${analyticsData?.taxReport.longTermGains ? Math.abs(analyticsData.taxReport.longTermGains).toLocaleString() : '0'}
+                  {formatCurrency(analyticsData?.taxReport.longTermGains || 0)}
                 </div>
               </div>
               <div>
                 <ThemedText variant="muted" size="sm">Total Taxable</ThemedText>
                 <div className="text-xl font-semibold text-btc-text-primary mt-1">
-                  ${analyticsData?.taxReport.totalTaxable ? Math.abs(analyticsData.taxReport.totalTaxable).toLocaleString() : '0'}
+                  {formatCurrency(analyticsData?.taxReport.totalTaxable || 0)}
                 </div>
               </div>
             </div>
