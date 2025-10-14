@@ -404,7 +404,7 @@ export default function DashboardGrid() {
               <strong>Drag:</strong> Click and hold anywhere on a widget, then drag to rearrange. 
               <strong>Resize:</strong> Drag the bottom-right corner. 
               <strong>Remove:</strong> Click the ✕ button. 
-              Don't forget to save your changes!
+              Don&apos;t forget to save your changes!
             </p>
           </div>
         </div>

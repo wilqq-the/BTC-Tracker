@@ -349,7 +349,7 @@ export default function AnalyticsPage() {
                 Monthly Purchase Performance
               </h2>
               <ThemedText variant="muted" size="xs" className="mb-4">
-                How each month's purchases perform at current BTC price
+                How each month&apos;s purchases perform at current BTC price
               </ThemedText>
               
               {/* Dynamic bar chart */}
