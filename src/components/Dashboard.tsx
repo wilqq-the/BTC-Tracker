@@ -2,12 +2,12 @@
 
 import React from 'react';
 import AppLayout from './AppLayout';
-import MainContent from './MainContent';
+import DashboardGrid from './dashboard/DashboardGrid';
 
 export default function Dashboard() {
   return (
     <AppLayout>
-      <MainContent />
+      <DashboardGrid />
     </AppLayout>
   );
 } 

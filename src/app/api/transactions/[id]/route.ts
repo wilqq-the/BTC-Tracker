@@ -54,6 +54,7 @@ export async function GET(
       original_total_amount: transaction.originalTotalAmount,
       fees_currency: transaction.feesCurrency,
       notes: transaction.notes || '',
+      tags: (transaction as any).tags || '',
       created_at: transaction.createdAt,
       updated_at: transaction.updatedAt
     } : null;
@@ -135,9 +136,10 @@ export async function PUT(
         fees: fees,
         feesCurrency: formData.currency, // fees currency same as transaction currency
         transactionDate: new Date(formData.transaction_date),
-        notes: formData.notes || ''
+        notes: formData.notes || '',
+        tags: formData.tags || null
         // updatedAt is automatically handled by Prisma
-      }
+      } as any
     });
 
     // Recalculate portfolio after updating transaction
@@ -159,6 +161,7 @@ export async function PUT(
       original_total_amount: updatedTransaction.originalTotalAmount,
       fees_currency: updatedTransaction.feesCurrency,
       notes: updatedTransaction.notes || '',
+      tags: (updatedTransaction as any).tags || '',
       created_at: updatedTransaction.createdAt,
       updated_at: updatedTransaction.updatedAt
     };
