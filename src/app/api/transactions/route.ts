@@ -112,6 +112,7 @@ export async function GET(request: NextRequest) {
       original_total_amount: tx.originalTotalAmount,
       fees_currency: tx.feesCurrency,
       notes: tx.notes || '',
+      tags: (tx as any).tags || '',
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));
@@ -227,8 +228,9 @@ export async function POST(request: NextRequest) {
         fees: fees,
         feesCurrency: formData.currency, // fees currency same as transaction currency
         transactionDate: new Date(formData.transaction_date),
-        notes: formData.notes || ''
-      }
+        notes: formData.notes || '',
+        tags: formData.tags || null
+      } as any
     });
 
     // Format the transaction to match expected format
@@ -242,6 +244,7 @@ export async function POST(request: NextRequest) {
       original_total_amount: newTransaction.originalTotalAmount,
       fees_currency: newTransaction.feesCurrency,
       notes: newTransaction.notes || '',
+      tags: (newTransaction as any).tags || '',
       created_at: newTransaction.createdAt,
       updated_at: newTransaction.updatedAt
     };

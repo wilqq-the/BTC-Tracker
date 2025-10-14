@@ -5,12 +5,24 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.1] - 2025-10-09
+## [0.6.1] - 2025-10-14
+
+### ✨ New Features
+- Added customizable dashboard with drag-and-drop widgets (5 widgets: Chart, Transactions, Goals, Portfolio, DCA)
+- Added Multi-Timeframe Performance widget
+- Added Monthly Summary widget
+- Added Bitcoin Goals & DCA Calculator with scenario projections
+- Added DCA Performance Analysis with timing/consistency scoring
+- Redesigned Analytics page with professional layout
+- Added working CSV export for sell transactions (capital gains report)
 
 ### 🔧 Bug Fixes
 - Fixed mobile PIN login missing submit button and infinite retry loop
-- Fixed critical currency conversion bugs in portfolio and transaction P&L calculations
-- Fixed 24h portfolio change always showing €0.00 by calculating it in real-time
+- Fixed currency conversion bugs in portfolio and transaction P&L calculations
+- Fixed 24h portfolio change showing €0.00
+- Fixed goals recalculation using wrong scenario growth rates
+- Fixed DCA timing score being too harsh (38% below avg now scores 8.7/10 instead of 3.8/10)
+- Fixed portfolio summary widget not showing unrealized P&L
 
 ## [0.6.0] - 2025-09-17
 

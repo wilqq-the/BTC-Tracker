@@ -14,6 +14,7 @@ interface TransactionFormData {
   fees: string;
   transaction_date: string;
   notes: string;
+  tags: string;
 }
 
 interface AddTransactionModalProps {
@@ -30,7 +31,8 @@ const initialFormData: TransactionFormData = {
   currency: 'USD',
   fees: '0',
   transaction_date: new Date().toISOString().split('T')[0],
-  notes: ''
+  notes: '',
+  tags: ''
 };
 
 export default function AddTransactionModal({ 
@@ -47,7 +49,8 @@ export default function AddTransactionModal({
       currency: editingTransaction.original_currency,
       fees: editingTransaction.fees.toString(),
       transaction_date: editingTransaction.transaction_date,
-      notes: editingTransaction.notes
+      notes: editingTransaction.notes || '',
+      tags: editingTransaction.tags || ''
     } : initialFormData
   );
   
@@ -64,6 +67,26 @@ export default function AddTransactionModal({
     const currency = currencies.find(c => c.alpha === code);
     return currency ? { name: currency.name, symbol: currency.symbol } : { name: code, symbol: code };
   };
+
+  // Update form data when editingTransaction changes
+  useEffect(() => {
+    if (editingTransaction) {
+      setFormData({
+        type: editingTransaction.type,
+        btc_amount: editingTransaction.btc_amount.toString(),
+        price_per_btc: editingTransaction.original_price_per_btc.toString(),
+        currency: editingTransaction.original_currency,
+        fees: editingTransaction.fees.toString(),
+        transaction_date: editingTransaction.transaction_date,
+        notes: editingTransaction.notes || '',
+        tags: editingTransaction.tags || ''
+      });
+      setCurrencySearch('');
+    } else {
+      setFormData(initialFormData);
+      setCurrencySearch('');
+    }
+  }, [editingTransaction]);
 
   // Load supported currencies from settings and custom currencies
   useEffect(() => {
@@ -469,6 +492,23 @@ export default function AddTransactionModal({
               placeholder="Add any notes about this transaction..."
               rows={3}
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tags (Optional)
+            </label>
+            <input
+              type="text"
+              value={formData.tags}
+              onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
+              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+              placeholder="e.g. DCA, Long-term, Dip Buy (comma-separated)"
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Separate multiple tags with commas
+            </p>
           </div>
 
           {/* Form Actions */}

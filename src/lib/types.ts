@@ -47,6 +47,7 @@ export interface TransactionFormData {
   fees: string;
   transaction_date: string;
   notes: string;
+  tags?: string;
 }
 
 export interface TransactionSummary {
