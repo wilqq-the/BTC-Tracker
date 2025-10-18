@@ -130,8 +130,8 @@ export default function AnalyticsPage() {
   const exportToCSV = async () => {
     setExporting(true);
     try {
-      // Fetch all transactions
-      const response = await fetch('/api/transactions');
+      // Fetch all transactions for analytics
+      const response = await fetch('/api/transactions?limit=10000');
       const result = await response.json();
       
       if (!result.success || !result.data) {

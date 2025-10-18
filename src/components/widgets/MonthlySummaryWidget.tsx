@@ -28,7 +28,8 @@ export default function MonthlySummaryWidget({ id, isEditMode, onRefresh }: Widg
 
   const loadMonthlyStats = async () => {
     try {
-      const response = await fetch('/api/transactions');
+      // Fetch all transactions for monthly calculations
+      const response = await fetch('/api/transactions?limit=10000');
       const result = await response.json();
       
       if (result.success && result.data) {

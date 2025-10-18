@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed goals recalculation using wrong scenario growth rates
 - Fixed DCA timing score being too harsh (38% below avg now scores 8.7/10 instead of 3.8/10)
 - Fixed portfolio summary widget not showing unrealized P&L
+- **Transaction History page does not show all transactions (#108)** - Added pagination system with configurable items per page
 
 ## [0.6.0] - 2025-09-17
 

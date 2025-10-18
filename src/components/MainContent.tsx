@@ -49,7 +49,8 @@ export default function MainContent() {
     // Load latest transactions
     const loadLatestTransactions = async () => {
       try {
-        const response = await fetch('/api/transactions');
+        // Get latest transactions (first page, limit 10 is enough for display)
+        const response = await fetch('/api/transactions?limit=10');
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -87,7 +88,8 @@ export default function MainContent() {
   const refreshTransactions = async () => {
     setLoadingTransactions(true);
     try {
-      const response = await fetch('/api/transactions');
+      // Get latest transactions
+      const response = await fetch('/api/transactions?limit=10');
       const result = await response.json();
       
       if (result.success && result.data) {

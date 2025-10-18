@@ -1031,7 +1031,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     
     setIsLoadingTransactions(true);
     try {
-      const response = await fetch('/api/transactions');
+      // Fetch all transactions for the chart (use high limit)
+      const response = await fetch('/api/transactions?limit=10000');
       const result = await response.json();
       
       if (result.success && result.data) {
