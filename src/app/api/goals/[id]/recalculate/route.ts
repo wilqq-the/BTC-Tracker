@@ -98,7 +98,26 @@ export async function POST(
         });
       }
 
-      // Get the scenario for this goal
+      // For "Current Status", calculate what's needed at CURRENT price (no growth projection)
+      // This shows the realistic monthly amount needed if price stays the same
+      const stableScenario = {
+        id: 'stable',
+        name: 'Current Price',
+        icon: '📊',
+        description: 'Based on current market price',
+        annualGrowthRate: 0.00,
+        color: 'text-gray-600',
+        basis: 'Current price baseline'
+      };
+      
+      const currentPriceProjection = BTCProjectionService.calculateScenarioProjection(
+        stableScenario,
+        currentBtcPrice,
+        btcStillNeeded,
+        remainingMonths
+      );
+      
+      // Also get the original scenario for reference
       const scenarios = await BTCProjectionService.getScenarios();
       let goalScenario = scenarios.find(s => s.id === goal.priceScenario) || scenarios.find(s => s.id === 'stable')!;
 
@@ -110,14 +129,6 @@ export async function POST(
           basis: `Custom: ${goal.scenarioGrowthRate >= 0 ? '+' : ''}${(goal.scenarioGrowthRate * 100).toFixed(0)}%/yr`
         };
       }
-
-      // Calculate new projection using the SAME scenario
-      const newProjection = BTCProjectionService.calculateScenarioProjection(
-        goalScenario,
-        currentBtcPrice,
-        btcStillNeeded,
-        remainingMonths
-      );
 
       // Calculate progress
       const progressPercent = ((currentHoldings / goal.targetBtcAmount) * 100);
@@ -132,8 +143,13 @@ export async function POST(
 
       // Compare original vs current (both in mainCurrency now)
       const priceChange = ((currentBtcPrice - initialBtcPriceInMain) / initialBtcPriceInMain) * 100;
-      const monthlyChange = ((newProjection.averageMonthlyFiat - goal.monthlyFiatNeeded) / goal.monthlyFiatNeeded) * 100;
-
+      
+      // Convert goal's original monthly amount to current main currency for accurate comparison
+      const originalMonthlyInMain = goal.monthlyFiatNeeded * goalCurrencyToMainRate;
+      
+      // Use CURRENT PRICE projection for comparison (not scenario-based projection)
+      const monthlyChange = ((currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain) / originalMonthlyInMain) * 100;
+      
       return NextResponse.json({
         success: true,
         data: {
@@ -157,13 +173,13 @@ export async function POST(
             expected_holdings: expectedHoldings,
             is_on_track: isOnTrack
           },
-          // New projection
+          // New projection (based on current price, no growth assumptions)
           projection: {
-            monthly_fiat_needed: newProjection.averageMonthlyFiat,
+            monthly_fiat_needed: currentPriceProjection.averageMonthlyFiat,
             monthly_change_percent: monthlyChange,
-            total_fiat_needed: newProjection.totalFiatNeeded,
-            final_btc_price: newProjection.finalProjectedPrice,
-            scenario: goalScenario
+            total_fiat_needed: currentPriceProjection.totalFiatNeeded,
+            final_btc_price: currentBtcPrice, // Current price (stable)
+            scenario: goalScenario // Keep original scenario for reference
           },
           // Recommendations
           recommendations: {
@@ -171,9 +187,9 @@ export async function POST(
             message: isOnTrack 
               ? '✅ You are on track to meet your goal!' 
               : monthlyChange > 0
-                ? `⚠️ Consider increasing monthly investment by €${Math.abs(newProjection.averageMonthlyFiat - goal.monthlyFiatNeeded).toFixed(0)} or extending timeline`
+                ? `⚠️ Consider increasing monthly investment by ${Math.abs(currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain).toFixed(0)} ${mainCurrency} or extending timeline`
                 : '✅ BTC price drop means you can invest less and still meet your goal',
-            suggested_monthly: newProjection.averageMonthlyFiat
+            suggested_monthly: currentPriceProjection.averageMonthlyFiat
           }
         }
       });

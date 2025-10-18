@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import AppLayout from '@/components/AppLayout';
+import { formatCurrency } from '@/lib/theme';
 
 interface PriceScenario {
   id: string;
@@ -184,11 +185,19 @@ export default function GoalsPage() {
   
   const loadCurrentBitcoinPrice = async () => {
     try {
-      const response = await fetch('/api/bitcoin-price');
+      // Use portfolio-metrics API to get BTC price already converted to user's main currency
+      // This ensures consistency with the dashboard/portfolio display
+      const response = await fetch('/api/portfolio-metrics');
       const result = await response.json();
       
-      if (result.success && result.data?.price) {
-        setCurrentBtcPrice(result.data.price);
+      if (result.success && result.data) {
+        const btcPrice = result.data.currentBtcPrice; // Already in user's main currency
+        const mainCurrency = result.data.mainCurrency || 'USD';
+        
+        console.log('[Goals] BTC price in', mainCurrency + ':', btcPrice);
+        
+        setCurrentBtcPrice(btcPrice);
+        setSelectedCurrency(mainCurrency);
       }
     } catch (error) {
       console.error('Error loading Bitcoin price:', error);
@@ -534,11 +543,11 @@ export default function GoalsPage() {
         } else if (budget) {
           message = '✅ Goal is achievable with your monthly budget.';
         } else {
-          message = `💡 You'll need to invest approximately €${monthlyFiatNeeded.toFixed(2)} per month (${selected_scenario.scenario.name} scenario).`;
+          message = `💡 You'll need to invest approximately ${formatCurrency(monthlyFiatNeeded, currency)} per month (${selected_scenario.scenario.name} scenario).`;
         }
       } else {
         const shortfall = monthlyFiatNeeded - budget;
-        message = `⚠️ Your budget falls short by €${shortfall.toFixed(2)} per month. Consider extending your timeline or increasing your budget.`;
+        message = `⚠️ Your budget falls short by ${formatCurrency(shortfall, currency)} per month. Consider extending your timeline or increasing your budget.`;
       }
       
       setCalculation({
@@ -626,12 +635,22 @@ export default function GoalsPage() {
                         <h3 className="text-lg font-semibold text-btc-text-primary">
                           {goal.name}
                         </h3>
-                        <button
-                          onClick={() => deleteGoal(goal.id)}
-                          className="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 text-sm"
-                        >
-                          Delete
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => recalculateGoal(goal.id)}
+                            disabled={isRecalculating}
+                            className="px-3 py-1.5 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin hover:text-bitcoin-dark text-xs font-medium rounded-md border border-bitcoin/20 hover:border-bitcoin/40 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Recalculate based on current BTC price"
+                          >
+                            {isRecalculating ? '↻ Calculating...' : '↻ Recalculate'}
+                          </button>
+                          <button
+                            onClick={() => deleteGoal(goal.id)}
+                            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium rounded-md border border-red-500/20 hover:border-red-500/40 transition-all duration-200"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </div>
                       
                       {/* Scenario Badge + Status */}
@@ -750,7 +769,7 @@ export default function GoalsPage() {
                               <div className="flex justify-between">
                                 <ThemedText variant="secondary">BTC Price Now:</ThemedText>
                                 <ThemedText variant="primary" className="font-semibold">
-                                  {goal.currency === 'EUR' ? '€' : '$'}{recalc.current.btc_price.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                  {formatCurrency(recalc.current.btc_price, selectedCurrency)}
                                   <span className={`ml-1 text-xs ${recalc.current.price_change_percent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                     ({recalc.current.price_change_percent >= 0 ? '+' : ''}{recalc.current.price_change_percent.toFixed(1)}%)
                                   </span>
@@ -759,7 +778,7 @@ export default function GoalsPage() {
                               <div className="flex justify-between">
                                 <ThemedText variant="secondary">Monthly Needed:</ThemedText>
                                 <ThemedText variant="primary" className="font-semibold">
-                                  {goal.currency === 'EUR' ? '€' : '$'}{recalc.projection.monthly_fiat_needed.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                  {formatCurrency(recalc.projection.monthly_fiat_needed, selectedCurrency)}
                                   {recalc.projection.monthly_change_percent !== 0 && (
                                     <span className={`ml-1 text-xs ${recalc.projection.monthly_change_percent >= 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       ({recalc.projection.monthly_change_percent >= 0 ? '+' : ''}{recalc.projection.monthly_change_percent.toFixed(0)}%)
@@ -818,7 +837,7 @@ export default function GoalsPage() {
               {currentBtcPrice > 0 && (
                 <div className="mb-4 p-3 bg-bitcoin/10 border border-bitcoin/20 rounded-lg">
                   <ThemedText variant="secondary" className="text-sm">
-                    Current BTC Price: <span className="font-semibold text-bitcoin">€{currentBtcPrice.toLocaleString()}</span>
+                    Current BTC Price: <span className="font-semibold text-bitcoin">{formatCurrency(currentBtcPrice, selectedCurrency)}</span>
                   </ThemedText>
                 </div>
               )}
@@ -1007,8 +1026,8 @@ export default function GoalsPage() {
                     className="w-full h-2 bg-btc-bg-secondary rounded-lg appearance-none cursor-pointer accent-bitcoin"
                   />
                   <div className="flex justify-between text-xs text-btc-text-secondary mt-1">
-                    <span>€0</span>
-                    <span>€5,000</span>
+                    <span>{formatCurrency(0, selectedCurrency)}</span>
+                    <span>{formatCurrency(5000, selectedCurrency)}</span>
                   </div>
                 </div>
               </div>
@@ -1059,7 +1078,7 @@ export default function GoalsPage() {
                             Monthly Investment
                           </ThemedText>
                           <div className="text-2xl font-bold text-bitcoin">
-                            €{calculation.monthlyFiatNeeded.toLocaleString()}
+                            {formatCurrency(calculation.monthlyFiatNeeded, selectedCurrency)}
                           </div>
                           <ThemedText variant="muted" className="text-xs mt-1">
                             At current price
@@ -1131,13 +1150,13 @@ export default function GoalsPage() {
                                     </div>
                                   </td>
                                   <td className="text-right py-3 px-2 font-semibold text-btc-text-primary">
-                                    €{scenCalc.averageMonthlyFiat.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatCurrency(scenCalc.averageMonthlyFiat, selectedCurrency)}
                                   </td>
                                   <td className="text-right py-3 px-2 font-semibold text-btc-text-primary">
-                                    €{scenCalc.totalFiatNeeded.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatCurrency(scenCalc.totalFiatNeeded, selectedCurrency)}
                                   </td>
                                   <td className="text-right py-3 px-2 text-btc-text-secondary">
-                                    €{scenCalc.finalProjectedPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    {formatCurrency(scenCalc.finalProjectedPrice, selectedCurrency)}
                                   </td>
                                 </tr>
                               ))}
@@ -1319,7 +1338,7 @@ export default function GoalsPage() {
                         <div className="flex justify-between">
                           <ThemedText variant="muted" className="text-xs">Avg Buy Price</ThemedText>
                           <ThemedText className="text-sm font-medium">
-                            €{(dcaAnalysis.summary.avgBuyPrice || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            {formatCurrency(dcaAnalysis.summary.avgBuyPrice || 0, selectedCurrency)}
                           </ThemedText>
                         </div>
                       </div>
@@ -1360,7 +1379,7 @@ export default function GoalsPage() {
                                   {scenario.btcHoldings.toFixed(4)} ₿
                                 </td>
                                 <td className={`text-right py-2 px-1 font-medium text-xs ${scenario.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                  {scenario.pnl >= 0 ? '+' : ''}€{scenario.pnl.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                  {scenario.pnl >= 0 ? '+' : ''}{formatCurrency(Math.abs(scenario.pnl), selectedCurrency)}
                                   <span className="block text-[10px] text-btc-text-secondary">
                                     ({scenario.pnlPercentage.toFixed(1)}%)
                                   </span>
