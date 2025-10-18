@@ -58,7 +58,7 @@ interface TransactionGroup {
 }
 
 type ChartType = 'candlestick' | 'line' | 'area';
-type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
+type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
 
 // Global cache to prevent repeated API calls across component instances
 let globalChartDataCache: ChartData[] = [];
@@ -780,6 +780,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       case '3M': return 90;
       case '6M': return 180;
       case '1Y': return 365;
+      case '3Y': return 365 * 3;
+      case '5Y': return 365 * 5;
       case 'ALL': return 1000;
       default: return 30;
     }
@@ -1314,6 +1316,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     { label: '3M', value: '3M' },
     { label: '6M', value: '6M' },
     { label: '1Y', value: '1Y' },
+    { label: '3Y', value: '3Y' },
+    { label: '5Y', value: '5Y' },
     { label: 'ALL', value: 'ALL' },
   ];
 
