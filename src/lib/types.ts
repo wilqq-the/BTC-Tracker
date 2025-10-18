@@ -118,6 +118,12 @@ export interface TransactionResponse {
   success: boolean;
   data?: BitcoinTransaction | BitcoinTransaction[];
   summary?: TransactionSummary;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   message: string;
   error?: string;
 }

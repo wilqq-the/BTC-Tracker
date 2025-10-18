@@ -90,7 +90,8 @@ export default function LatestTransactionsWidget({ id, isEditMode, onRefresh }: 
 
   const loadLatestTransactions = React.useCallback(async () => {
     try {
-      const response = await fetch('/api/transactions');
+      // Fetch enough transactions for the widget
+      const response = await fetch(`/api/transactions?limit=${maxTransactions}`);
       const result = await response.json();
       
       if (result.success && result.data) {

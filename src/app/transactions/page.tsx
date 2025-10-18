@@ -45,7 +45,7 @@ export default function TransactionsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BitcoinTransaction | null>(null);
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
-  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentBtcPrice, setCurrentBtcPrice] = useState(105000); // Fallback price
   const [showImportModal, setShowImportModal] = useState(false);
@@ -54,6 +54,23 @@ export default function TransactionsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // Summary statistics for current filter (all transactions, not just current page)
+  const [summaryStats, setSummaryStats] = useState({
+    totalBtcBought: 0,
+    totalBtcSold: 0,
+    buyTransactionCount: 0,
+    sellTransactionCount: 0,
+    totalInvested: 0,
+    totalPnL: 0,
+    mainCurrency: 'USD'
+  });
   
   // New: Date range filter
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | '3m' | '1y' | 'custom'>('all');
@@ -77,6 +94,22 @@ export default function TransactionsPage() {
     loadTransactions();
     loadCurrentBitcoinPrice();
   }, []);
+
+  // Reload transactions when pagination changes
+  useEffect(() => {
+    if (!loading) {
+      loadTransactions(currentPage, itemsPerPage);
+    }
+  }, [currentPage, itemsPerPage]);
+
+  // Reload transactions when filters change (and reset to page 1)
+  useEffect(() => {
+    if (currentPage === 1) {
+      loadTransactions(1, itemsPerPage);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [filterType, dateRange, customDateFrom, customDateTo]);
   
   // Helper: Get date range boundaries
   const getDateRangeBoundaries = () => {
@@ -221,17 +254,96 @@ export default function TransactionsPage() {
     }
   };
 
-  const loadTransactions = async () => {
+  const loadSummaryStats = async () => {
     try {
-      const response = await fetch('/api/transactions');
+      // Build query parameters for fetching ALL transactions with same filters
+      const params = new URLSearchParams({
+        limit: '100000', // Very high limit to get all transactions for stats
+      });
+
+      // Add type filter if not ALL
+      if (filterType !== 'ALL') {
+        params.append('type', filterType);
+      }
+
+      // Add date range filters
+      const dateRangeBoundaries = getDateRangeBoundaries();
+      if (dateRangeBoundaries) {
+        params.append('date_from', dateRangeBoundaries.from.toISOString());
+        params.append('date_to', dateRangeBoundaries.to.toISOString());
+      }
+
+      const response = await fetch(`/api/transactions?${params}`);
+      const result = await response.json();
+      
+      if (result.success && Array.isArray(result.data)) {
+        const allTransactions = result.data;
+        
+        // Calculate summary statistics
+        const buyTxs = allTransactions.filter(t => t.type === 'BUY');
+        const sellTxs = allTransactions.filter(t => t.type === 'SELL');
+        
+        const totalBtcBought = buyTxs.reduce((sum, t) => sum + t.btc_amount, 0);
+        const totalBtcSold = sellTxs.reduce((sum, t) => sum + t.btc_amount, 0);
+        const totalInvested = buyTxs.reduce((sum, t) => sum + (t.main_currency_total_amount || 0), 0);
+        const totalPnL = allTransactions.reduce((sum, t) => sum + (t.pnl_main || 0), 0);
+        const mainCurrency = allTransactions[0]?.main_currency || 'USD';
+        
+        setSummaryStats({
+          totalBtcBought,
+          totalBtcSold,
+          buyTransactionCount: buyTxs.length,
+          sellTransactionCount: sellTxs.length,
+          totalInvested,
+          totalPnL,
+          mainCurrency
+        });
+      }
+    } catch (error) {
+      console.error('Error loading summary stats:', error);
+    }
+  };
+
+  const loadTransactions = async (page: number = currentPage, limit: number = itemsPerPage) => {
+    setLoading(true);
+    try {
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      // Add type filter if not ALL
+      if (filterType !== 'ALL') {
+        params.append('type', filterType);
+      }
+
+      // Add date range filters
+      const dateRangeBoundaries = getDateRangeBoundaries();
+      if (dateRangeBoundaries) {
+        params.append('date_from', dateRangeBoundaries.from.toISOString());
+        params.append('date_to', dateRangeBoundaries.to.toISOString());
+      }
+
+      const response = await fetch(`/api/transactions?${params}`);
       const result = await response.json();
       
       if (result.success) {
         setTransactions(Array.isArray(result.data) ? result.data : []);
+        
+        // Update pagination state from API response
+        if (result.pagination) {
+          setTotalItems(result.pagination.total);
+          setTotalPages(result.pagination.totalPages);
+          setCurrentPage(result.pagination.page);
+        }
       } else {
         console.error('Failed to load transactions:', result.error);
         setTransactions([]);
       }
+      
+      // Load summary stats whenever transactions are loaded
+      await loadSummaryStats();
     } catch (error) {
       console.error('Error loading transactions:', error);
       setTransactions([]);
@@ -431,28 +543,17 @@ export default function TransactionsPage() {
     }
   };
 
+  // Client-side filtering and sorting for the current page's transactions
   const filteredAndSortedTransactions = transactions
     .filter(t => {
-      // Type filter
-      if (filterType !== 'ALL' && t.type !== filterType) return false;
-      
-      // Date range filter
-      const dateRangeBoundaries = getDateRangeBoundaries();
-      if (dateRangeBoundaries) {
-        const txDate = new Date(t.transaction_date);
-        if (txDate < dateRangeBoundaries.from || txDate > dateRangeBoundaries.to) {
-          return false;
-        }
-      }
-      
-      // Tag filter
+      // Tag filter (client-side)
       if (selectedTags.length > 0) {
         const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
         const hasSelectedTag = selectedTags.some(selectedTag => txTags.includes(selectedTag));
         if (!hasSelectedTag) return false;
       }
       
-      // Search filter
+      // Search filter (client-side)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesNotes = t.notes?.toLowerCase().includes(query);
@@ -470,7 +571,7 @@ export default function TransactionsPage() {
       return true;
     })
     .sort((a, b) => {
-      let aValue, bValue;
+      let aValue: any, bValue: any;
       
       switch (sortBy) {
         case 'date':
@@ -485,10 +586,26 @@ export default function TransactionsPage() {
           aValue = calculatePnL(a);
           bValue = calculatePnL(b);
           break;
+        case 'price':
+          aValue = a.main_currency_price_per_btc || a.original_price_per_btc;
+          bValue = b.main_currency_price_per_btc || b.original_price_per_btc;
+          break;
+        case 'type':
+          aValue = a.type;
+          bValue = b.type;
+          break;
         default:
           return 0;
       }
       
+      // Handle string comparison for type
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      // Handle numeric comparison
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
     });
 
@@ -514,9 +631,16 @@ export default function TransactionsPage() {
               </h1>
               <div className="bg-btc-bg-tertiary px-2 py-1 rounded-md inline-block">
                 <ThemedText variant="secondary" size="sm">
-                  {filteredAndSortedTransactions.length} 
-                  {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
-                  {filteredAndSortedTransactions.length === 1 ? ' transaction' : ' transactions'}
+                  {totalItems > 0 ? (
+                    <>
+                      Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+                      {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
+                      {' transaction'}
+                      {totalItems !== 1 ? 's' : ''}
+                    </>
+                  ) : (
+                    'No transactions'
+                  )}
                 </ThemedText>
               </div>
             </div>
@@ -595,10 +719,10 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">BTC Bought</div>
               <div className="text-lg font-bold text-profit">
-                {filteredAndSortedTransactions.filter(t => t.type === 'BUY').reduce((sum, t) => sum + t.btc_amount, 0).toFixed(6)} ₿
+                {summaryStats.totalBtcBought.toFixed(6)} ₿
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
-                {filteredAndSortedTransactions.filter(t => t.type === 'BUY').length} txs
+                {summaryStats.buyTransactionCount} txs
             </div>
             </div>
 
@@ -606,10 +730,10 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">BTC Sold</div>
               <div className="text-lg font-bold text-loss">
-                {filteredAndSortedTransactions.filter(t => t.type === 'SELL').reduce((sum, t) => sum + t.btc_amount, 0).toFixed(6)} ₿
+                {summaryStats.totalBtcSold.toFixed(6)} ₿
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
-                {filteredAndSortedTransactions.filter(t => t.type === 'SELL').length} txs
+                {summaryStats.sellTransactionCount} txs
             </div>
             </div>
 
@@ -617,13 +741,10 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">Net Position</div>
               <div className="text-lg font-bold text-bitcoin">
-                {(
-                  filteredAndSortedTransactions.filter(t => t.type === 'BUY').reduce((sum, t) => sum + t.btc_amount, 0) -
-                  filteredAndSortedTransactions.filter(t => t.type === 'SELL').reduce((sum, t) => sum + t.btc_amount, 0)
-                ).toFixed(6)} ₿
+                {(summaryStats.totalBtcBought - summaryStats.totalBtcSold).toFixed(6)} ₿
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
-                Current holdings
+                {dateRange !== 'all' ? 'Period holdings' : 'Current holdings'}
               </div>
             </div>
 
@@ -631,10 +752,7 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">Total Invested</div>
               <div className="text-lg font-bold text-btc-text-primary">
-                {formatCurrency(
-                  filteredAndSortedTransactions.filter(t => t.type === 'BUY').reduce((sum, t) => sum + (t.main_currency_total_amount || 0), 0),
-                  filteredAndSortedTransactions[0]?.main_currency || 'USD'
-                )}
+                {formatCurrency(summaryStats.totalInvested, summaryStats.mainCurrency)}
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
                 Buy volume
@@ -645,12 +763,10 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">Avg Buy Price</div>
               <div className="text-lg font-bold text-btc-text-primary">
-                {(() => {
-                  const buyTxs = filteredAndSortedTransactions.filter(t => t.type === 'BUY');
-                  const totalBTC = buyTxs.reduce((sum, t) => sum + t.btc_amount, 0);
-                  const totalSpent = buyTxs.reduce((sum, t) => sum + (t.main_currency_total_amount || 0), 0);
-                  return totalBTC > 0 ? formatCurrency(totalSpent / totalBTC, filteredAndSortedTransactions[0]?.main_currency || 'USD') : '--';
-                })()}
+                {summaryStats.totalBtcBought > 0 
+                  ? formatCurrency(summaryStats.totalInvested / summaryStats.totalBtcBought, summaryStats.mainCurrency)
+                  : '--'
+                }
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
                 Per BTC
@@ -661,12 +777,9 @@ export default function TransactionsPage() {
             <div className="text-center">
               <div className="text-xs text-btc-text-muted mb-1">Total P&L</div>
               <div className={`text-lg font-bold ${
-                filteredAndSortedTransactions.reduce((sum, t) => sum + (t.pnl_main || 0), 0) >= 0 ? 'text-profit' : 'text-loss'
+                summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss'
               }`}>
-                {(() => {
-                  const totalPnL = filteredAndSortedTransactions.reduce((sum, t) => sum + (t.pnl_main || 0), 0);
-                  return (totalPnL >= 0 ? '+' : '') + formatCurrency(totalPnL, filteredAndSortedTransactions[0]?.main_currency || 'USD');
-                })()}
+                {(summaryStats.totalPnL >= 0 ? '+' : '') + formatCurrency(summaryStats.totalPnL, summaryStats.mainCurrency)}
               </div>
               <div className="text-xs text-btc-text-secondary mt-1">
                 Unrealized
@@ -812,35 +925,150 @@ export default function TransactionsPage() {
 
             {/* Row 3: Sort Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-btc-border-primary">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <ThemedText variant="secondary" size="sm">Sort by:</ThemedText>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-                >
-                  <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="pnl">P&L</option>
-                </select>
-              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <ThemedText variant="secondary" size="sm">Sort by:</ThemedText>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
+                  >
+                    <option value="date">Date</option>
+                    <option value="type">Type</option>
+                    <option value="amount">Amount</option>
+                    <option value="price">Price</option>
+                    <option value="pnl">P&L</option>
+                  </select>
+                </div>
 
-              <button
-                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className={`px-3 py-1 rounded text-xs transition-all duration-200 flex items-center space-x-1 ${
-                  sortOrder === 'desc' 
-                    ? 'bg-bitcoin text-white shadow-md' 
-                    : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary'
-                }`}
-              >
-                <span>{sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}</span>
-              </button>
+                <button
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className={`px-3 py-1 rounded text-xs transition-all duration-200 flex items-center space-x-1 ${
+                    sortOrder === 'desc' 
+                      ? 'bg-bitcoin text-white shadow-md' 
+                      : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary border border-btc-border-primary'
+                  }`}
+                >
+                  <span>{sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}</span>
+                </button>
               </div>
+              
 
             </div>
           </div>
         </ThemedCard>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Items per page selector */}
+            <div className="flex items-center space-x-2">
+              <ThemedText variant="secondary" size="sm">Show:</ThemedText>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(parseInt(e.target.value));
+                  setCurrentPage(1); // Reset to first page
+                }}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+              <ThemedText variant="secondary" size="sm">per page</ThemedText>
+            </div>
+
+            {/* Page navigation */}
+            <div className="flex items-center space-x-2">
+              {/* First page */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                ««
+              </button>
+
+              {/* Previous page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                ‹
+              </button>
+
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {(() => {
+                  const pages = [];
+                  const maxVisible = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                  
+                  if (endPage - startPage < maxVisible - 1) {
+                    startPage = Math.max(1, endPage - maxVisible + 1);
+                  }
+
+                  if (startPage > 1) {
+                    pages.push(
+                      <span key="start-ellipsis" className="px-2 text-btc-text-muted">...</span>
+                    );
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-3 py-1 rounded text-xs transition-all ${
+                          currentPage === i
+                            ? 'bg-bitcoin text-white font-semibold shadow-md'
+                            : 'bg-btc-bg-tertiary text-btc-text-primary hover:bg-btc-border-primary border border-btc-border-primary'
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  if (endPage < totalPages) {
+                    pages.push(
+                      <span key="end-ellipsis" className="px-2 text-btc-text-muted">...</span>
+                    );
+                  }
+
+                  return pages;
+                })()}
+              </div>
+
+              {/* Next page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                ›
+              </button>
+
+              {/* Last page */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                »»
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Transactions Table */}
         <ThemedCard padding={false}>
@@ -859,7 +1087,7 @@ export default function TransactionsPage() {
                     />
                   </div>
                 )}
-                <button 
+                <button
                   onClick={() => {
                     if (sortBy === 'date') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -877,8 +1105,25 @@ export default function TransactionsPage() {
                     </span>
                   )}
                 </button>
-                <div>Type</div>
-                <button 
+                <button
+                  onClick={() => {
+                    if (sortBy === 'type') {
+                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('type');
+                      setSortOrder('desc');
+                    }
+                  }}
+                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
+                >
+                  <span>Type</span>
+                  {sortBy === 'type' && (
+                    <span className="text-bitcoin">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={() => {
                     if (sortBy === 'amount') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -896,12 +1141,29 @@ export default function TransactionsPage() {
                     </span>
                   )}
                 </button>
-                <div>Original Price</div>
+                <button
+                  onClick={() => {
+                    if (sortBy === 'price') {
+                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('price');
+                      setSortOrder('desc');
+                    }
+                  }}
+                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
+                >
+                  <span>Original Price</span>
+                  {sortBy === 'price' && (
+                    <span className="text-bitcoin">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </button>
                 <div>Total (Main)</div>
                 <div>Total (Display)</div>
                 <div>Fees</div>
                 <div>Current Value</div>
-                <button 
+                <button
                   onClick={() => {
                     if (sortBy === 'pnl') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -1185,6 +1447,59 @@ export default function TransactionsPage() {
             </div>
           </div>
         </ThemedCard>
+
+        {/* Bottom Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Page info */}
+            <ThemedText variant="secondary" size="sm">
+              Page {currentPage} of {totalPages}
+            </ThemedText>
+
+            {/* Page navigation */}
+            <div className="flex items-center space-x-2">
+              {/* First page */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                ««
+              </button>
+
+              {/* Previous page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                ‹ Previous
+              </button>
+
+              {/* Next page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                Next ›
+              </button>
+
+              {/* Last page */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                »»
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Add/Edit Transaction Modal */}
         <AddTransactionModal

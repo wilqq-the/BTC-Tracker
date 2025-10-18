@@ -55,15 +55,16 @@ const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD')
   }
 };
 
-// GET - Fetch all transactions with optional filtering
+// GET - Fetch all transactions with optional filtering and pagination
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId, user) => {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = parseInt(searchParams.get('page') || '1');
+    const offset = (page - 1) * limit;
 
     // Get user's currency settings (TODO: Make user-specific)
     const settings = await SettingsService.getSettings();
@@ -89,6 +90,11 @@ export async function GET(request: NextRequest) {
         whereClause.transactionDate.lte = new Date(dateTo);
       }
     }
+
+    // Get total count for pagination
+    const totalCount = await prisma.bitcoinTransaction.count({
+      where: whereClause
+    });
 
     // Get transactions for this user only
     const transactions = await prisma.bitcoinTransaction.findMany({
@@ -175,11 +181,20 @@ export async function GET(request: NextRequest) {
     // Calculate summary statistics for this user
     const summary = await calculateTransactionSummary(userId);
 
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+
     const response: TransactionResponse = {
       success: true,
       data: enhancedTransactions as any, // Type assertion for compatibility
       summary,
-      message: `Retrieved ${transactions.length} transactions with ${secondaryCurrency} display values`
+      pagination: {
+        total: totalCount,
+        page: page,
+        limit: limit,
+        totalPages: totalPages
+      },
+      message: `Retrieved ${transactions.length} of ${totalCount} transactions with ${secondaryCurrency} display values`
     };
 
     return NextResponse.json(response);
