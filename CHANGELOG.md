@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed DCA timing score being too harsh (38% below avg now scores 8.7/10 instead of 3.8/10)
 - Fixed portfolio summary widget not showing unrealized P&L
 - **Transaction History page does not show all transactions (#108)** - Added pagination system with configurable items per page
+- **Current price data is not recalculated to main currency in DCA Calculator (#111)** - BTC price now converts from USD to user's main currency
 
 ## [0.6.0] - 2025-09-17
 
