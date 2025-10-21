@@ -672,7 +672,7 @@ export default function GoalsPage() {
                             ({goal.scenario_growth_rate >= 0 ? '+' : ''}{(goal.scenario_growth_rate * 100).toFixed(0)}%/yr)
                           </span>
                         </div>
-                        {recalc && (
+                        {recalc && recalc.current && (
                           <div className={`px-3 py-1 rounded-full text-xs font-bold ${recalc.current.is_on_track ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-orange-500/20 text-orange-600 dark:text-orange-400'}`}>
                             {recalc.current.is_on_track ? '✅ On Track' : '⚠️ Behind'}
                           </div>
@@ -728,7 +728,7 @@ export default function GoalsPage() {
                       </div>
                       
                         {/* CURRENT STATUS Section (auto-loaded) */}
-                        {recalc && (
+                        {recalc && recalc.current && (
                           <div className={`border-2 rounded-lg p-3 ${
                             recalc.current.is_on_track 
                               ? 'border-green-500/50 bg-green-500/5' 

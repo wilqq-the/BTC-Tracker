@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   return withAuth(request, async (userId, user) => {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const skipDuplicates = formData.get('skip_duplicates') === 'true';
+    const duplicateCheckMode = (formData.get('duplicate_check_mode') as string) || 'standard';
     const detectOnly = formData.get('detect_only') === 'true';
 
     if (!file) {
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and import transactions with user association
-    const result = await importTransactions(transactions, skipDuplicates, userId);
+    const result = await importTransactions(transactions, duplicateCheckMode, userId);
 
     // Recalculate portfolio after import (rate-limited to prevent I/O overload)
     if (result.imported > 0) {
@@ -84,9 +84,11 @@ export async function POST(request: NextRequest) {
   });
 }
 
+type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+
 async function importTransactions(
   transactions: ImportTransaction[], 
-  skipDuplicates: boolean,
+  duplicateCheckMode: string,
   userId: number
 ): Promise<ImportResult> {
   const result: ImportResult = {
@@ -104,19 +106,48 @@ async function importTransactions(
 
   for (const transaction of transactions) {
     try {
-      // Check for duplicates if requested
-      if (skipDuplicates) {
+      // Check for duplicates based on mode
+      if (duplicateCheckMode !== 'off') {
         // Convert date string to Date object for comparison
         const transactionDate = new Date(transaction.transaction_date);
-          
-        const existing = await prisma.bitcoinTransaction.findFirst({
-          where: {
-            userId: userId,
+        
+        // Build where clause based on duplicate check mode
+        let whereClause: any = {
+          userId: userId,
+          transactionDate: transactionDate
+        };
+        
+        if (duplicateCheckMode === 'strict') {
+          // Strict: All fields must match
+          whereClause = {
+            ...whereClause,
             type: transaction.type,
             btcAmount: transaction.btc_amount,
             originalPricePerBtc: transaction.original_price_per_btc,
-            transactionDate: transactionDate
-          }
+            originalCurrency: transaction.original_currency,
+            originalTotalAmount: transaction.original_total_amount,
+            fees: transaction.fees,
+            feesCurrency: transaction.fees_currency,
+            notes: transaction.notes || ''
+          };
+        } else if (duplicateCheckMode === 'standard') {
+          // Standard: Core fields must match (date, type, amount, price)
+          whereClause = {
+            ...whereClause,
+            type: transaction.type,
+            btcAmount: transaction.btc_amount,
+            originalPricePerBtc: transaction.original_price_per_btc
+          };
+        } else if (duplicateCheckMode === 'loose') {
+          // Loose: Only date and amount must match
+          whereClause = {
+            ...whereClause,
+            btcAmount: transaction.btc_amount
+          };
+        }
+          
+        const existing = await prisma.bitcoinTransaction.findFirst({
+          where: whereClause
         });
 
         if (existing) {
@@ -124,7 +155,7 @@ async function importTransactions(
           result.details.duplicate_transactions++;
           result.details.skipped_transactions.push({
             data: transaction,
-            reason: 'Duplicate transaction'
+            reason: `Duplicate transaction (${duplicateCheckMode} mode)`
           });
           continue;
         }
