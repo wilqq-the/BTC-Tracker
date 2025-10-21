@@ -55,6 +55,11 @@ export default function TransactionsPage() {
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
   
+  // Duplicate detection settings
+  type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+  const [duplicateCheckMode, setDuplicateCheckMode] = useState<DuplicateCheckMode>('standard');
+  const [showDuplicateSettings, setShowDuplicateSettings] = useState(false);
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
@@ -489,7 +494,7 @@ export default function TransactionsPage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      formData.append('skip_duplicates', 'true');
+      formData.append('duplicate_check_mode', duplicateCheckMode);
 
       const response = await fetch('/api/transactions/import', {
         method: 'POST',
@@ -499,10 +504,14 @@ export default function TransactionsPage() {
       const result = await response.json();
       
       if (result.success) {
-        alert(`Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`);
+        const message = duplicateCheckMode === 'off' 
+          ? `Successfully imported ${result.imported} transactions.`
+          : `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        alert(message);
         setShowImportModal(false);
         setImportFile(null);
         setDetectedFormat(null);
+        setDuplicateCheckMode('standard'); // Reset to default
         loadTransactions(); // Reload transactions
       } else {
         alert(`Import failed: ${result.error || result.message}`);
@@ -1518,8 +1527,8 @@ export default function TransactionsPage() {
 
         {/* Import Modal */}
         {showImportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-8">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 my-auto">
               <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
                 Import Transactions
               </h3>
@@ -1600,6 +1609,75 @@ export default function TransactionsPage() {
                   )}
                 </div>
 
+                {/* Duplicate Detection Settings */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-btc-text-primary">
+                      Duplicate Detection
+                    </h4>
+                    <button
+                      onClick={() => setShowDuplicateSettings(!showDuplicateSettings)}
+                      className="text-xs text-bitcoin hover:text-bitcoin-dark underline"
+                    >
+                      {showDuplicateSettings ? 'Hide details' : 'Show details'}
+                    </button>
+                  </div>
+                  
+                  {/* Mode Selection */}
+                  <div className="space-y-2">
+                    {[
+                      { 
+                        value: 'strict' as DuplicateCheckMode, 
+                        label: 'Strict', 
+                        desc: 'All fields must match (date, amount, price, fees, currency, notes)'
+                      },
+                      { 
+                        value: 'standard' as DuplicateCheckMode, 
+                        label: 'Standard (Recommended)', 
+                        desc: 'Core fields must match (date, amount, price, type)'
+                      },
+                      { 
+                        value: 'loose' as DuplicateCheckMode, 
+                        label: 'Loose', 
+                        desc: 'Only date and amount must match'
+                      },
+                      { 
+                        value: 'off' as DuplicateCheckMode, 
+                        label: 'Off', 
+                        desc: 'Import all transactions, including duplicates'
+                      }
+                    ].map((mode) => (
+                      <label
+                        key={mode.value}
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          duplicateCheckMode === mode.value
+                            ? 'border-bitcoin bg-bitcoin/5'
+                            : 'border-btc-border-primary hover:border-bitcoin/30'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="duplicateMode"
+                          value={mode.value}
+                          checked={duplicateCheckMode === mode.value}
+                          onChange={(e) => setDuplicateCheckMode(e.target.value as DuplicateCheckMode)}
+                          className="mt-0.5 mr-3 text-bitcoin focus:ring-bitcoin"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-btc-text-primary">
+                            {mode.label}
+                          </div>
+                          {showDuplicateSettings && (
+                            <div className="text-xs text-btc-text-secondary mt-1">
+                              {mode.desc}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Supported Formats Info */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
                   <h4 className="text-sm font-medium text-btc-text-primary">
@@ -1608,7 +1686,6 @@ export default function TransactionsPage() {
                   <ul className="text-xs text-btc-text-secondary space-y-1">
                     <li>• <strong>CSV:</strong> Standard format, Legacy format, Binance SPOT export</li>
                     <li>• <strong>JSON:</strong> Our export format or custom array</li>
-                    <li>• Duplicate transactions will be automatically skipped</li>
                   </ul>
                 </div>
 

@@ -1196,22 +1196,25 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
            </div>
          `;
              } else {
-         // Multiple transactions grouped
-         const groupDate = formatDate(closeGroup.time);
-         
-         // Calculate converted average price and total value using pre-converted prices
-         let convertedTotalValue = 0;
-         let convertedAvgPrice = 0;
-         
-         for (const tx of closeGroup.transactions) {
-           const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
-           convertedTotalValue += tx.btc_amount * convertedPrice;
-           convertedAvgPrice += convertedPrice;
-         }
-         convertedAvgPrice = convertedAvgPrice / closeGroup.transactions.length;
-         
-         const avgPrice = formatPrice(convertedAvgPrice);
-         const totalValue = formatPrice(convertedTotalValue);
+        // Multiple transactions grouped
+        const groupDate = formatDate(closeGroup.time);
+        
+        // Calculate volume-weighted average price and total value using pre-converted prices
+        let convertedTotalValue = 0;
+        let weightedPriceSum = 0;
+        let totalVolume = 0;
+        
+        for (const tx of closeGroup.transactions) {
+          const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
+          convertedTotalValue += tx.btc_amount * convertedPrice;
+          // Volume-weighted average: sum of (price × volume)
+          weightedPriceSum += convertedPrice * tx.btc_amount;
+          totalVolume += tx.btc_amount;
+        }
+        const convertedAvgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+        
+        const avgPrice = formatPrice(convertedAvgPrice);
+        const totalValue = formatPrice(convertedTotalValue);
 
          // Calculate P&L for grouped transactions using pre-converted prices
          let totalPnL = 0;

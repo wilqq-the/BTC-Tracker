@@ -304,10 +304,8 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
 
       let totalInvested = 0;
       let totalReceived = 0;
-      let totalBuyValue = 0;
-      let totalSellValue = 0;
-      let buyCount = 0;
-      let sellCount = 0;
+      let weightedBuyPriceSum = 0;
+      let weightedSellPriceSum = 0;
 
       // Calculate totals by converting each transaction to main currency
       for (const tx of allTransactions) {
@@ -317,12 +315,12 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
 
         if (tx.type === 'BUY') {
           totalInvested += mainCurrencyTotal + (tx.fees || 0);
-          totalBuyValue += mainCurrencyPrice;
-          buyCount++;
+          // Volume-weighted average: sum of (price × volume)
+          weightedBuyPriceSum += mainCurrencyPrice * tx.btcAmount;
         } else {
           totalReceived += mainCurrencyTotal - (tx.fees || 0);
-          totalSellValue += mainCurrencyPrice;
-          sellCount++;
+          // Volume-weighted average: sum of (price × volume)
+          weightedSellPriceSum += mainCurrencyPrice * tx.btcAmount;
         }
       }
 
@@ -345,8 +343,9 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
         total_usd_invested: totalInvested,
         total_usd_received: totalReceived,
         total_fees_paid: totalFeesPaid,
-        average_buy_price: buyCount > 0 ? totalBuyValue / buyCount : 0,
-        average_sell_price: sellCount > 0 ? totalSellValue / sellCount : 0,
+        // Volume-weighted average prices
+        average_buy_price: totalBtcBought > 0 ? weightedBuyPriceSum / totalBtcBought : 0,
+        average_sell_price: totalBtcSold > 0 ? weightedSellPriceSum / totalBtcSold : 0,
         realized_pnl: 0, // Simplified for now
         unrealized_pnl: unrealizedPnl,
         total_pnl: totalPnl,
