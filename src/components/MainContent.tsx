@@ -15,6 +15,10 @@ interface Transaction {
   original_price_per_btc: number;
   original_total_amount: number;
   main_currency_total_amount: number;
+  main_currency_price_per_btc?: number;
+  current_value_main?: number;
+  pnl_main?: number;
+  main_currency?: string;
   transaction_date: string;
   notes?: string;
 }
@@ -25,6 +29,7 @@ export default function MainContent() {
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(true);
+  const [mainCurrency, setMainCurrency] = useState<string>('USD');
 
   useEffect(() => {
     // Load initial price
@@ -44,7 +49,8 @@ export default function MainContent() {
     // Load latest transactions
     const loadLatestTransactions = async () => {
       try {
-        const response = await fetch('/api/transactions');
+        // Get latest transactions (first page, limit 10 is enough for display)
+        const response = await fetch('/api/transactions?limit=10');
         const result = await response.json();
         
         if (result.success && result.data) {
@@ -53,6 +59,11 @@ export default function MainContent() {
             .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
             .slice(0, 5);
           setLatestTransactions(latest);
+          
+          // Extract main currency from the first transaction
+          if (latest.length > 0 && latest[0].main_currency) {
+            setMainCurrency(latest[0].main_currency);
+          }
         }
       } catch (error) {
         console.error('Error loading latest transactions:', error);
@@ -77,7 +88,8 @@ export default function MainContent() {
   const refreshTransactions = async () => {
     setLoadingTransactions(true);
     try {
-      const response = await fetch('/api/transactions');
+      // Get latest transactions
+      const response = await fetch('/api/transactions?limit=10');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -86,6 +98,11 @@ export default function MainContent() {
           .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
           .slice(0, 5);
         setLatestTransactions(latest);
+        
+        // Extract main currency from the first transaction
+        if (latest.length > 0 && latest[0].main_currency) {
+          setMainCurrency(latest[0].main_currency);
+        }
       }
     } catch (error) {
       console.error('Error refreshing transactions:', error);
@@ -155,23 +172,12 @@ export default function MainContent() {
               {/* Transaction Rows - Desktop and Mobile */}
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {latestTransactions.map((transaction) => {
-                  // Only calculate values if we have a price
-                  const currentValue = currentBtcPrice > 0 ? transaction.btc_amount * currentBtcPrice : 0;
+                  // Use API-provided values in main currency
+                  const pricePerBtc = transaction.main_currency_price_per_btc || transaction.original_price_per_btc;
+                  const currentValue = transaction.current_value_main || 0;
+                  const pnl = transaction.pnl_main || 0;
                   const originalValue = transaction.main_currency_total_amount || transaction.original_total_amount;
-                  
-                  // Correct P&L calculation for both BUY and SELL
-                  let pnl = 0;
-                  if (currentBtcPrice > 0) {
-                    if (transaction.type === 'BUY') {
-                      // For BUY: P&L = current value - what we paid
-                      pnl = currentValue - originalValue;
-                    } else {
-                      // For SELL: P&L = what we received - what it would be worth now
-                      pnl = originalValue - currentValue;
-                    }
-                  }
-                  
-                  const pnlPercent = originalValue > 0 && currentBtcPrice > 0 ? (pnl / originalValue) * 100 : 0;
+                  const pnlPercent = originalValue > 0 ? (pnl / originalValue) * 100 : 0;
 
                   return (
                     <div key={transaction.id}>
@@ -211,22 +217,22 @@ export default function MainContent() {
 
                           {/* Price */}
                           <div className="text-sm text-btc-text-primary">
-                            {formatCurrency(transaction.original_price_per_btc, 'USD')}
+                            {formatCurrency(pricePerBtc, mainCurrency)}
                           </div>
 
                           {/* Current Value */}
                           <div className="text-sm">
                             <div className="text-btc-text-primary font-medium">
-                              {currentBtcPrice > 0 ? formatCurrency(currentValue, 'USD') : '--'}
+                              {currentValue > 0 ? formatCurrency(currentValue, mainCurrency) : '--'}
                             </div>
                           </div>
 
                           {/* P&L */}
                           <div className="text-sm">
-                            {currentBtcPrice > 0 ? (
+                            {currentValue > 0 ? (
                               <>
                                 <div className={`font-medium ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                  {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, 'USD')}
+                                  {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)}
                                 </div>
                                 <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                   {formatPercentage(pnlPercent)}
@@ -259,18 +265,18 @@ export default function MainContent() {
                               {transaction.btc_amount.toFixed(6)} ₿
                             </div>
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              @ {formatCurrency(transaction.original_price_per_btc, 'USD')}
+                              @ {formatCurrency(pricePerBtc, mainCurrency)}
                             </div>
                           </div>
                         </div>
                         
-                        {currentBtcPrice > 0 && (
+                        {currentValue > 0 && (
                           <div className="flex justify-between items-center pt-2 border-t border-gray-200 dark:border-gray-700">
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              Current: {formatCurrency(currentValue, 'USD')}
+                              Current: {formatCurrency(currentValue, mainCurrency)}
                             </div>
                             <div className={`text-sm font-medium ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                              {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, 'USD')} ({formatPercentage(pnlPercent)})
+                              {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)} ({formatPercentage(pnlPercent)})
                             </div>
                           </div>
                         )}

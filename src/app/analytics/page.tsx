@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { ThemedCard, ThemedText } from '@/components/ui/ThemeProvider';
+import currencies from '@/data/currencies.json';
 
 interface AnalyticsData {
   avgBuyPrice: number;
@@ -39,10 +40,25 @@ interface AnalyticsData {
   };
 }
 
+interface Transaction {
+  id: number;
+  type: 'BUY' | 'SELL';
+  transaction_date: string;
+  btc_amount: number;
+  original_price_per_btc: number;
+  original_total_amount: number;
+  original_currency: string;
+  main_currency_total_amount?: number;
+  main_currency_price_per_btc?: number;
+  notes?: string;
+}
+
 export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('1Y');
+  const [timeRange, setTimeRange] = useState<'1M' | '3M' | '6M' | '1Y' | 'ALL'>('ALL');
+  const [mainCurrency, setMainCurrency] = useState('USD');
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     loadAnalytics();
@@ -91,6 +107,7 @@ export default function AnalyticsPage() {
             }
           };
           setAnalyticsData(transformedData);
+          setMainCurrency(result.data.mainCurrency || 'USD');
         }
       }
     } catch (error) {
@@ -100,16 +117,92 @@ export default function AnalyticsPage() {
     }
   };
 
-  const exportToCSV = () => {
-    // Simple CSV export for tax purposes
-    const csvContent = "Date,Type,Amount,Price,Total,Currency\n";
-    // Add transaction data...
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `btc-tax-report-${new Date().getFullYear()}.csv`;
-    a.click();
+  const formatCurrency = (value: number | undefined, currency: string = mainCurrency) => {
+    if (value === undefined || value === null) return `${getCurrencySymbol(currency)}0`;
+    return `${getCurrencySymbol(currency)}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+  };
+
+  const getCurrencySymbol = (currency: string) => {
+    const currencyData = currencies.find(c => c.alpha === currency);
+    return currencyData ? currencyData.symbol : currency + ' ';
+  };
+
+  const exportToCSV = async () => {
+    setExporting(true);
+    try {
+      // Fetch all transactions for analytics
+      const response = await fetch('/api/transactions?limit=10000');
+      const result = await response.json();
+      
+      if (!result.success || !result.data) {
+        alert('Failed to load transactions for export');
+        return;
+      }
+
+      const transactions: Transaction[] = result.data;
+      
+      // Filter for SELL transactions only (taxable events)
+      const sellTransactions = transactions.filter(tx => tx.type === 'SELL');
+      
+      // Also get BUY transactions to calculate cost basis
+      const buyTransactions = transactions.filter(tx => tx.type === 'BUY');
+      
+      // Calculate average buy price for cost basis
+      const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btc_amount, 0);
+      const totalInvested = buyTransactions.reduce((sum, tx) => sum + (tx.main_currency_total_amount || tx.original_total_amount), 0);
+      const avgCostBasis = totalBtcBought > 0 ? totalInvested / totalBtcBought : 0;
+      
+      // Create CSV header for tax report
+      const csvHeader = 'Date Sold,BTC Amount Sold,Sale Price per BTC,Sale Proceeds,Cost Basis per BTC,Total Cost Basis,Capital Gain/Loss,Currency,Notes\n';
+      
+      // Create CSV rows for SELL transactions with capital gains
+      const csvRows = sellTransactions.map(tx => {
+        const date = new Date(tx.transaction_date).toLocaleDateString('en-US');
+        const btcAmount = tx.btc_amount.toFixed(8);
+        const salePrice = (tx.main_currency_price_per_btc || tx.original_price_per_btc).toFixed(2);
+        const saleProceeds = (tx.main_currency_total_amount || tx.original_total_amount).toFixed(2);
+        
+        // Use average cost basis (FIFO/LIFO would require more complex tracking)
+        const costBasisPerBtc = avgCostBasis.toFixed(2);
+        const totalCostBasis = (tx.btc_amount * avgCostBasis).toFixed(2);
+        const capitalGain = ((tx.main_currency_total_amount || tx.original_total_amount) - (tx.btc_amount * avgCostBasis)).toFixed(2);
+        
+        const currency = mainCurrency;
+        const notes = (tx.notes || '').replace(/"/g, '""'); // Escape quotes
+        
+        return `"${date}","${btcAmount}","${salePrice}","${saleProceeds}","${costBasisPerBtc}","${totalCostBasis}","${capitalGain}","${currency}","${notes}"`;
+      }).join('\n');
+      
+      // Add summary row
+      const totalSaleProceeds = sellTransactions.reduce((sum, tx) => sum + (tx.main_currency_total_amount || tx.original_total_amount), 0);
+      const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btc_amount, 0);
+      const totalCostBasis = totalBtcSold * avgCostBasis;
+      const totalCapitalGain = totalSaleProceeds - totalCostBasis;
+      
+      const summaryRow = `\n"TOTAL","${totalBtcSold.toFixed(8)}","","${totalSaleProceeds.toFixed(2)}","","${totalCostBasis.toFixed(2)}","${totalCapitalGain.toFixed(2)}","${mainCurrency}","Summary of all sales"`;
+      
+      // Add metadata
+      const metadata = `"Tax Report for ${new Date().getFullYear()}"\n"Generated on: ${new Date().toLocaleString('en-US')}"\n"Cost Basis Method: Average Cost"\n"Currency: ${mainCurrency}"\n\n`;
+      
+      const csvContent = metadata + csvHeader + csvRows + summaryRow;
+      
+      // Create and download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `btc-capital-gains-tax-report-${new Date().getFullYear()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      alert('Failed to export CSV');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -126,131 +219,285 @@ export default function AnalyticsPage() {
             </ThemedText>
           </div>
           
-          {/* Time Range Selector */}
+          {/* Actions */}
           <div className="flex gap-2">
-            {(['1M', '3M', '6M', '1Y', 'ALL'] as const).map(range => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                  timeRange === range
-                    ? 'bg-bitcoin text-white'
-                    : 'bg-btc-bg-tertiary text-btc-text-secondary hover:bg-btc-bg-secondary'
-                }`}
-              >
-                {range}
-              </button>
-            ))}
+            <button
+              onClick={exportToCSV}
+              disabled={exporting}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition-colors text-sm font-medium flex items-center space-x-2"
+            >
+              <span>{exporting ? '⏳' : '📊'}</span>
+              <span>{exporting ? 'Exporting...' : 'Sell Report'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Average Buy Price</ThemedText>
-              <div className="text-2xl font-bold text-btc-text-primary mt-1">
-                ${analyticsData?.avgBuyPrice.toLocaleString() || '0'}
+        {/* Performance Overview - Top Row */}
+        <div>
+          <h2 className="text-lg font-semibold text-btc-text-primary mb-3">Performance Overview</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Total P&L</ThemedText>
+                <div className={`text-2xl font-bold ${analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
+                  {analyticsData?.totalPnL ? `${analyticsData.totalPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.totalPnL))}` : formatCurrency(0)}
+                </div>
+                <ThemedText variant="muted" size="xs" className={`mt-1 font-medium ${analyticsData?.roi && analyticsData.roi > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {analyticsData?.roi ? `${analyticsData.roi > 0 ? '+' : ''}${analyticsData.roi.toFixed(2)}% ROI` : '0% ROI'}
+                </ThemedText>
               </div>
-              <ThemedText variant="muted" size="xs" className={`mt-1 ${analyticsData?.roi && analyticsData.roi > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {analyticsData?.roi ? `${analyticsData.roi > 0 ? '+' : ''}${analyticsData.roi.toFixed(2)}% ROI` : 'Loading...'}
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Unrealized P&L</ThemedText>
+                <div className={`text-2xl font-bold ${analyticsData?.unrealizedPnL && analyticsData.unrealizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
+                  {analyticsData?.unrealizedPnL ? `${analyticsData.unrealizedPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.unrealizedPnL))}` : formatCurrency(0)}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Current holdings
+                </ThemedText>
+              </div>
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Realized P&L</ThemedText>
+                <div className={`text-2xl font-bold ${analyticsData?.realizedPnL && analyticsData.realizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
+                  {analyticsData?.realizedPnL ? `${analyticsData.realizedPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.realizedPnL))}` : formatCurrency(0)}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Closed positions
+                </ThemedText>
+              </div>
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Annualized Return</ThemedText>
+                <div className={`text-2xl font-bold ${analyticsData?.annualizedReturn && analyticsData.annualizedReturn > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
+                  {analyticsData?.annualizedReturn ? `${analyticsData.annualizedReturn >= 0 ? '+' : ''}${analyticsData.annualizedReturn.toFixed(2)}%` : '0%'}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Yearly average
+                </ThemedText>
+              </div>
+            </ThemedCard>
+          </div>
+        </div>
+
+        {/* Portfolio Metrics - Second Row */}
+        <div>
+          <h2 className="text-lg font-semibold text-btc-text-primary mb-3">Portfolio Metrics</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Average Buy Price</ThemedText>
+                <div className="text-xl font-bold text-btc-text-primary mt-1">
+                  {formatCurrency(analyticsData?.avgBuyPrice)}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Cost basis
+                </ThemedText>
+              </div>
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Current BTC Price</ThemedText>
+                <div className="text-xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+                  {formatCurrency(analyticsData?.currentBtcPrice)}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Live price
+                </ThemedText>
+              </div>
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Current Holdings</ThemedText>
+                <div className="text-xl font-bold text-btc-text-primary mt-1">
+                  {analyticsData?.statistics.currentHoldings ? `${analyticsData.statistics.currentHoldings.toFixed(8)} ₿` : '0 ₿'}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  Total BTC owned
+                </ThemedText>
+              </div>
+            </ThemedCard>
+
+            <ThemedCard>
+              <div className="p-4">
+                <ThemedText variant="muted" size="sm">Win Rate</ThemedText>
+                <div className="text-xl font-bold text-btc-text-primary mt-1">
+                  {analyticsData?.winRate ? `${analyticsData.winRate.toFixed(0)}%` : '0%'}
+                </div>
+                <ThemedText variant="muted" size="xs" className="mt-1">
+                  {analyticsData?.statistics ? `${analyticsData.statistics.totalSells} trades` : 'No trades'}
+                </ThemedText>
+              </div>
+            </ThemedCard>
+          </div>
+        </div>
+
+        {/* Charts Section - Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Monthly Purchase Impact Chart */}
+          <ThemedCard>
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-btc-text-primary mb-2">
+                Monthly Purchase Performance
+              </h2>
+              <ThemedText variant="muted" size="xs" className="mb-4">
+                How each month&apos;s purchases perform at current BTC price
               </ThemedText>
+              
+              {/* Dynamic bar chart */}
+              <div className="h-64 flex items-end justify-between gap-1">
+                {(() => {
+                  const currentBtcPrice = analyticsData?.currentBtcPrice || 0;
+                  const monthlyImpact = analyticsData?.monthlyBreakdown?.map(month => {
+                    const monthAvgPrice = month?.avgBuyPrice || 0;
+                    const monthBtcBought = month?.netBtc || 0;
+                    const currentValue = monthBtcBought * currentBtcPrice;
+                    const costBasis = monthBtcBought * monthAvgPrice;
+                    const impact = currentValue - costBasis;
+                    
+                    return {
+                      ...month,
+                      impact: (month?.buys || 0) > 0 ? impact : 0,
+                      percentGain: monthAvgPrice > 0 ? ((currentBtcPrice - monthAvgPrice) / monthAvgPrice) * 100 : 0,
+                      btcAmount: monthBtcBought,
+                      avgBuyPrice: monthAvgPrice || month?.avgBuyPrice || 0,
+                      monthName: month?.monthName || 'Unknown'
+                    };
+                  }).filter(m => m && m.buys > 0);
+                  
+                  if (!monthlyImpact || monthlyImpact.length === 0) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ThemedText variant="muted">No purchase data available</ThemedText>
+                      </div>
+                    );
+                  }
+                  
+                  const last12Months = monthlyImpact.slice(-12);
+                  const impacts = last12Months.map(m => Math.abs(m.impact || 0));
+                  const maxImpact = Math.max(...impacts);
+                  const minImpact = Math.min(...impacts.filter(i => i > 0));
+                  
+                  return last12Months.map((month, i) => {
+                    const impactValue = Math.abs(month.impact || 0);
+                    let heightPixels = 20;
+                    
+                    if (maxImpact > 0 && impactValue > 0) {
+                      const range = maxImpact - minImpact;
+                      if (range > 0) {
+                        const normalized = (impactValue - minImpact) / range;
+                        heightPixels = 20 + (normalized * 160);
+                      } else {
+                        heightPixels = 100;
+                      }
+                    }
+                    
+                    const isProfit = month.impact >= 0;
+                    
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center justify-end">
+                        <div className="text-center mb-2 h-12 flex flex-col justify-end">
+                          <ThemedText variant="muted" size="xs" className={`font-semibold ${isProfit ? 'text-green-500' : 'text-red-500'} block`}>
+                            {month.percentGain ? `${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%` : ''}
+                          </ThemedText>
+                        </div>
+                        <div 
+                          className={`w-full rounded-t transition-all hover:opacity-80 ${
+                            isProfit ? 'bg-green-500' : 'bg-red-500'
+                          }`}
+                          style={{ height: `${heightPixels}px`, minHeight: '10px' }}
+                          title={`${month.monthName}: ${month.btcAmount?.toFixed(8) || '0'} BTC @ ${formatCurrency(month.avgBuyPrice)}`}
+                        />
+                        <ThemedText variant="muted" size="xs" className="mt-1">
+                          {month.monthName ? month.monthName.substring(0, 3) : ''}
+                        </ThemedText>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+              
+              <div className="mt-4 flex justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded"></div>
+                  <ThemedText variant="muted" size="xs">Profitable</ThemedText>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded"></div>
+                  <ThemedText variant="muted" size="xs">Underwater</ThemedText>
+                </div>
+              </div>
             </div>
           </ThemedCard>
 
+          {/* Trading Statistics */}
           <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Total P&L</ThemedText>
-              <div className={`text-2xl font-bold ${analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.totalPnL ? `${analyticsData.totalPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.totalPnL).toLocaleString()}` : '$0'}
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-btc-text-primary mb-4">
+                Trading Statistics
+              </h2>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Total Transactions</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold">
+                    {analyticsData?.statistics.totalTransactions || 0}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Total Buys</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold text-green-600 dark:text-green-400">
+                    {analyticsData?.statistics.totalBuys || 0}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Total Sells</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold text-red-600 dark:text-red-400">
+                    {analyticsData?.statistics.totalSells || 0}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Holding Period</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold">
+                    {analyticsData?.statistics.avgHoldTime ? `${analyticsData.statistics.avgHoldTime} days` : 'N/A'}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Largest Purchase</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold">
+                    {analyticsData?.statistics.largestPurchase ? `${analyticsData.statistics.largestPurchase.toFixed(8)} ₿` : '0 ₿'}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700">
+                  <ThemedText variant="muted">Average Buy Amount</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold">
+                    {analyticsData?.statistics.avgBuyAmount ? `${analyticsData.statistics.avgBuyAmount.toFixed(8)} ₿` : '0 ₿'}
+                  </ThemedText>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <ThemedText variant="muted">Total BTC Bought</ThemedText>
+                  <ThemedText variant="primary" className="font-semibold">
+                    {analyticsData?.statistics.totalBtcBought ? `${analyticsData.statistics.totalBtcBought.toFixed(8)} ₿` : '0 ₿'}
+                  </ThemedText>
+                </div>
               </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Realized + Unrealized
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Win Rate</ThemedText>
-              <div className="text-2xl font-bold text-btc-text-primary mt-1">
-                {analyticsData?.winRate ? `${analyticsData.winRate.toFixed(0)}%` : '0%'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                {analyticsData?.statistics ? `${analyticsData.statistics.totalSells} trades` : 'No trades'}
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Best Trade</ThemedText>
-              <div className="text-2xl font-bold text-profit mt-1">
-                {analyticsData?.bestTrade ? `+$${analyticsData.bestTrade.profit.toLocaleString()}` : '$0'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                {analyticsData?.bestTrade ? new Date(analyticsData.bestTrade.date).toLocaleDateString() : 'N/A'}
-              </ThemedText>
             </div>
           </ThemedCard>
         </div>
 
-        {/* Professional Metrics Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Annualized Return</ThemedText>
-              <div className={`text-2xl font-bold ${analyticsData?.annualizedReturn && analyticsData.annualizedReturn > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.annualizedReturn ? `${analyticsData.annualizedReturn.toFixed(2)}%` : '0%'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Rate of Return (RoR)
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Sharpe Ratio</ThemedText>
-              <div className="text-2xl font-bold text-btc-text-primary mt-1">
-                {analyticsData?.sharpeRatio ? analyticsData.sharpeRatio.toFixed(2) : '0.00'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Risk-adjusted returns
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Unrealized P&L</ThemedText>
-              <div className={`text-2xl font-bold ${analyticsData?.unrealizedPnL && analyticsData.unrealizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.unrealizedPnL ? `${analyticsData.unrealizedPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.unrealizedPnL).toLocaleString()}` : '$0'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Current holdings
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-4">
-              <ThemedText variant="muted" size="sm">Realized P&L</ThemedText>
-              <div className={`text-2xl font-bold ${analyticsData?.realizedPnL && analyticsData.realizedPnL >= 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                {analyticsData?.realizedPnL ? `${analyticsData.realizedPnL >= 0 ? '+' : ''}$${Math.abs(analyticsData.realizedPnL).toLocaleString()}` : '$0'}
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Closed positions
-              </ThemedText>
-            </div>
-          </ThemedCard>
-        </div>
-
-        {/* HODLing Milestones - Gamification */}
+        {/* HODLing Milestones - Full Width */}
         <ThemedCard>
           <div className="p-6">
             <h2 className="text-lg font-semibold text-btc-text-primary mb-4">
-              🏆 HODLing Milestones
+              HODLing Milestones
             </h2>
             
             {(() => {
@@ -265,7 +512,6 @@ export default function AnalyticsPage() {
                 { amount: 100, label: 'Satoshi Nakamoto?', icon: '🧘', color: 'bg-red-500' }
               ];
               
-              // Find current milestone and next milestone
               let currentMilestoneIndex = -1;
               let nextMilestone = milestones[0];
               
@@ -277,7 +523,6 @@ export default function AnalyticsPage() {
                 }
               }
               
-              // Calculate progress to next milestone
               const currentMilestone = currentMilestoneIndex >= 0 ? milestones[currentMilestoneIndex] : null;
               const progressToNext = currentMilestone 
                 ? Math.min(100, ((currentHoldings - currentMilestone.amount) / (nextMilestone.amount - currentMilestone.amount)) * 100)
@@ -290,20 +535,15 @@ export default function AnalyticsPage() {
                     <div className="text-5xl mb-3">
                       {currentMilestone ? currentMilestone.icon : '🎯'}
                     </div>
-                    <div className="space-y-2">
-                      <ThemedText variant="primary" className="text-xl font-bold block">
-                        {currentMilestone ? currentMilestone.label : 'Starting Your Journey'}
-                      </ThemedText>
-                      <ThemedText variant="muted" size="sm" className="block">
-                        Current Holdings
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-lg font-semibold block">
-                        {currentHoldings.toFixed(8)} BTC
-                      </ThemedText>
-                    </div>
+                    <ThemedText variant="primary" className="text-xl font-bold block">
+                      {currentMilestone ? currentMilestone.label : 'Starting Your Journey'}
+                    </ThemedText>
+                    <ThemedText variant="primary" className="text-lg font-semibold block mt-2">
+                      {currentHoldings.toFixed(8)} BTC
+                    </ThemedText>
                   </div>
                   
-                  {/* Progress to Next Milestone */}
+                  {/* Progress to Next */}
                   {nextMilestone && currentMilestoneIndex < milestones.length - 1 && (
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
@@ -314,9 +554,9 @@ export default function AnalyticsPage() {
                           {progressToNext.toFixed(1)}%
                         </ThemedText>
                       </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                         <div 
-                          className={`h-full transition-all duration-500 ${nextMilestone.color}`}
+                          className={`h-full transition-all duration-500 rounded-full ${nextMilestone.color}`}
                           style={{ width: `${progressToNext}%` }}
                         />
                       </div>
@@ -327,7 +567,7 @@ export default function AnalyticsPage() {
                   )}
                   
                   {/* All Milestones */}
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {milestones.map((milestone, index) => {
                       const isAchieved = currentHoldings >= milestone.amount;
                       const isCurrent = index === currentMilestoneIndex;
@@ -336,12 +576,12 @@ export default function AnalyticsPage() {
                         <div 
                           key={milestone.amount}
                           className={`
-                            relative p-4 rounded-lg text-center transition-all min-h-[140px] flex flex-col justify-center
+                            relative p-3 rounded-lg text-center transition-all flex flex-col justify-center
                             ${isAchieved 
                               ? 'bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-500' 
                               : 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 opacity-50'
                             }
-                            ${isCurrent ? 'ring-2 ring-orange-400 ring-offset-2 dark:ring-offset-gray-900' : ''}
+                            ${isCurrent ? 'ring-2 ring-orange-400' : ''}
                           `}
                         >
                           {isAchieved && (
@@ -349,259 +589,27 @@ export default function AnalyticsPage() {
                               ✓
                             </div>
                           )}
-                          <div className="text-3xl mb-2">{milestone.icon}</div>
-                          <div className="space-y-1">
-                            <ThemedText 
-                              variant={isAchieved ? "primary" : "muted"} 
-                              size="xs" 
-                              className="font-semibold block"
-                            >
-                              {milestone.amount} BTC
-                            </ThemedText>
-                            <ThemedText 
-                              variant={isAchieved ? "primary" : "muted"} 
-                              size="xs" 
-                              className="block text-xs"
-                            >
-                              {milestone.label}
-                            </ThemedText>
-                          </div>
+                          <div className="text-2xl mb-1">{milestone.icon}</div>
+                          <ThemedText 
+                            variant={isAchieved ? "primary" : "muted"} 
+                            size="xs" 
+                            className="font-semibold"
+                          >
+                            {milestone.amount} BTC
+                          </ThemedText>
+                          <ThemedText 
+                            variant={isAchieved ? "primary" : "muted"} 
+                            size="xs"
+                          >
+                            {milestone.label}
+                          </ThemedText>
                         </div>
                       );
                     })}
                   </div>
-                  
-                  {/* Achievement Stats */}
-                  <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <div className="text-center space-y-1">
-                      <ThemedText variant="muted" size="xs" className="block">
-                        Milestones Achieved
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-2xl font-bold block">
-                        {milestones.filter(m => currentHoldings >= m.amount).length}
-                      </ThemedText>
-                    </div>
-                    <div className="text-center space-y-1">
-                      <ThemedText variant="muted" size="xs" className="block">
-                        Completion
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-2xl font-bold block">
-                        {((milestones.filter(m => currentHoldings >= m.amount).length / milestones.length) * 100).toFixed(0)}%
-                      </ThemedText>
-                    </div>
-                    <div className="text-center space-y-1">
-                      <ThemedText variant="muted" size="xs" className="block">
-                        Current Level
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-2xl font-bold block">
-                        {currentMilestoneIndex >= 0 ? currentMilestoneIndex + 1 : 0}
-                      </ThemedText>
-                    </div>
-                  </div>
                 </div>
               );
             })()}
-          </div>
-        </ThemedCard>
-
-        {/* Monthly Purchase Impact Chart */}
-        <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-btc-text-primary mb-2">
-              Monthly Purchase Impact
-            </h2>
-            <ThemedText variant="muted" size="xs" className="mb-4">
-              How your monthly purchases are performing at current BTC price
-            </ThemedText>
-            
-            {/* Dynamic bar chart showing purchase performance */}
-            <div className="h-64 flex items-end justify-between gap-1 px-2">
-              {(() => {
-                // Calculate monthly purchase impact
-                const currentBtcPrice = analyticsData?.currentBtcPrice || 0;
-                const monthlyImpact = analyticsData?.monthlyBreakdown?.map(month => {
-                  // For each month, calculate if purchases are in profit
-                  const monthAvgPrice = month?.avgBuyPrice || 0;
-                  const monthBtcBought = month?.netBtc || 0;
-                  const currentValue = monthBtcBought * currentBtcPrice;
-                  const costBasis = monthBtcBought * monthAvgPrice;
-                  const impact = currentValue - costBasis;
-                  
-                  
-                  return {
-                    ...month,
-                    impact: (month?.buys || 0) > 0 ? impact : 0,
-                    percentGain: monthAvgPrice > 0 ? ((currentBtcPrice - monthAvgPrice) / monthAvgPrice) * 100 : 0,
-                    btcAmount: monthBtcBought,
-                    avgBuyPrice: monthAvgPrice || month?.avgBuyPrice || 0, // Ensure this field exists
-                    monthName: month?.monthName || 'Unknown'
-                  };
-                }).filter(m => m && m.buys > 0); // Only show months with purchases
-                
-                if (!monthlyImpact || monthlyImpact.length === 0) {
-                  return (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ThemedText variant="muted">No purchase data available for selected period</ThemedText>
-                    </div>
-                  );
-                }
-                
-                const last12Months = monthlyImpact.slice(-12);
-                
-                // Find the max and min impact for proper scaling
-                const impacts = last12Months.map(m => Math.abs(m.impact || 0));
-                const maxImpact = Math.max(...impacts);
-                const minImpact = Math.min(...impacts.filter(i => i > 0));
-                
-                return last12Months.map((month, i) => {
-                  // Scale height based on relative impact
-                  const impactValue = Math.abs(month.impact || 0);
-                  let heightPixels = 20; // minimum height
-                  
-                  if (maxImpact > 0 && impactValue > 0) {
-                    // Normalize between min and max for better visual distribution
-                    // Use logarithmic scale if the range is too large
-                    const range = maxImpact - minImpact;
-                    if (range > 0) {
-                      const normalized = (impactValue - minImpact) / range;
-                      // Scale from 20px (minimum) to 180px (maximum)
-                      heightPixels = 20 + (normalized * 160);
-                    } else {
-                      // All values are the same, use medium height
-                      heightPixels = 100;
-                    }
-                  }
-                  
-                  const isProfit = month.impact >= 0;
-                  
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end">
-                      {/* Single label above bar with all info */}
-                      <div className="text-center mb-2 h-12 flex flex-col justify-end">
-                        <ThemedText variant="muted" size="xs" className={`font-semibold ${isProfit ? 'text-green-500' : 'text-red-500'} block`}>
-                          {month.percentGain ? `${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%` : ''}
-                        </ThemedText>
-                        <ThemedText variant="muted" size="xs" className="block">
-                          {month.impact ? `$${Math.abs(month.impact).toFixed(0)}` : ''}
-                        </ThemedText>
-                      </div>
-                      <div 
-                        className={`w-full rounded-t transition-all hover:opacity-80 relative ${
-                          isProfit ? 'bg-green-500' : 'bg-red-500'
-                        }`}
-                        style={{ height: `${heightPixels}px`, minHeight: '10px' }}
-                        title={`${month.monthName}: Bought ${month.btcAmount?.toFixed(8) || '0'} BTC at avg $${month.avgBuyPrice && month.avgBuyPrice > 0 ? month.avgBuyPrice.toFixed(0) : 'calculating...'}`}
-                      >
-                      </div>
-                      <ThemedText variant="muted" size="xs" className="mt-1">
-                        {month.monthName ? month.monthName.substring(0, 3) : ''}
-                      </ThemedText>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-            
-            <div className="mt-4 flex justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-500 rounded"></div>
-                <ThemedText variant="muted" size="xs">Profitable purchases</ThemedText>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded"></div>
-                <ThemedText variant="muted" size="xs">Underwater purchases</ThemedText>
-              </div>
-            </div>
-          </div>
-        </ThemedCard>
-
-        {/* Tax Report Section */}
-        <ThemedCard>
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-btc-text-primary">
-                Tax Report
-              </h2>
-              <button
-                onClick={exportToCSV}
-                className="px-4 py-2 bg-bitcoin text-white rounded hover:bg-bitcoin-dark transition-colors text-sm font-medium"
-              >
-                Export CSV
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <ThemedText variant="muted" size="sm">Short-term Gains</ThemedText>
-                <div className={`text-xl font-semibold ${analyticsData?.taxReport.shortTermGains && analyticsData.taxReport.shortTermGains > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                  ${analyticsData?.taxReport.shortTermGains ? Math.abs(analyticsData.taxReport.shortTermGains).toLocaleString() : '0'}
-                </div>
-              </div>
-              <div>
-                <ThemedText variant="muted" size="sm">Long-term Gains</ThemedText>
-                <div className={`text-xl font-semibold ${analyticsData?.taxReport.longTermGains && analyticsData.taxReport.longTermGains > 0 ? 'text-profit' : 'text-loss'} mt-1`}>
-                  ${analyticsData?.taxReport.longTermGains ? Math.abs(analyticsData.taxReport.longTermGains).toLocaleString() : '0'}
-                </div>
-              </div>
-              <div>
-                <ThemedText variant="muted" size="sm">Total Taxable</ThemedText>
-                <div className="text-xl font-semibold text-btc-text-primary mt-1">
-                  ${analyticsData?.taxReport.totalTaxable ? Math.abs(analyticsData.taxReport.totalTaxable).toLocaleString() : '0'}
-                </div>
-              </div>
-            </div>
-            
-            <ThemedText variant="muted" size="xs" className="mt-4">
-              * Consult with a tax professional. This is for informational purposes only.
-            </ThemedText>
-          </div>
-        </ThemedCard>
-
-        {/* Transaction Statistics */}
-        <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-btc-text-primary mb-4">
-              Trading Statistics
-            </h2>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Total Transactions</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.totalTransactions || 0}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Average Hold Time</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.avgHoldTime ? `${analyticsData.statistics.avgHoldTime} days` : 'N/A'}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Most Active Month</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.mostActiveMonth || 'N/A'}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Largest Purchase</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.largestPurchase ? `${analyticsData.statistics.largestPurchase.toFixed(8)} BTC` : '0 BTC'}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Average Buy Amount</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.avgBuyAmount ? `${analyticsData.statistics.avgBuyAmount.toFixed(8)} BTC` : '0 BTC'}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between">
-                <ThemedText variant="muted">Current Holdings</ThemedText>
-                <ThemedText variant="primary" className="font-medium">
-                  {analyticsData?.statistics.currentHoldings ? `${analyticsData.statistics.currentHoldings.toFixed(8)} BTC` : '0 BTC'}
-                </ThemedText>
-              </div>
-            </div>
           </div>
         </ThemedCard>
       </div>

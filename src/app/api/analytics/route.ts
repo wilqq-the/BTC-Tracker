@@ -164,11 +164,17 @@ export async function GET(request: NextRequest) {
     let winningTrades = 0;
     let losingTrades = 0;
     allSellTransactions.forEach((tx: any) => {
-      // Find average buy price before this sell from ALL buy transactions
+      // Find volume-weighted average buy price before this sell from ALL buy transactions
       const buysBeforeSell = allBuyTransactions.filter((b: any) => b.transactionDate < tx.transactionDate);
-      const avgBuyBeforeSell = buysBeforeSell.length > 0
-        ? buysBeforeSell.reduce((sum: number, b: any) => sum + b.originalPricePerBtc, 0) / buysBeforeSell.length
-        : 0;
+      
+      let weightedPriceSum = 0;
+      let totalVolume = 0;
+      buysBeforeSell.forEach((b: any) => {
+        weightedPriceSum += b.originalPricePerBtc * b.btcAmount;
+        totalVolume += b.btcAmount;
+      });
+      
+      const avgBuyBeforeSell = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
       
       if (tx.originalPricePerBtc > avgBuyBeforeSell) {
         winningTrades++;

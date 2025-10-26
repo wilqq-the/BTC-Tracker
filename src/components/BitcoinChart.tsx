@@ -58,7 +58,7 @@ interface TransactionGroup {
 }
 
 type ChartType = 'candlestick' | 'line' | 'area';
-type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | 'ALL';
+type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
 
 // Global cache to prevent repeated API calls across component instances
 let globalChartDataCache: ChartData[] = [];
@@ -780,6 +780,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
       case '3M': return 90;
       case '6M': return 180;
       case '1Y': return 365;
+      case '3Y': return 365 * 3;
+      case '5Y': return 365 * 5;
       case 'ALL': return 1000;
       default: return 30;
     }
@@ -1029,7 +1031,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     
     setIsLoadingTransactions(true);
     try {
-      const response = await fetch('/api/transactions');
+      // Fetch all transactions for the chart (use high limit)
+      const response = await fetch('/api/transactions?limit=10000');
       const result = await response.json();
       
       if (result.success && result.data) {
@@ -1193,22 +1196,25 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
            </div>
          `;
              } else {
-         // Multiple transactions grouped
-         const groupDate = formatDate(closeGroup.time);
-         
-         // Calculate converted average price and total value using pre-converted prices
-         let convertedTotalValue = 0;
-         let convertedAvgPrice = 0;
-         
-         for (const tx of closeGroup.transactions) {
-           const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
-           convertedTotalValue += tx.btc_amount * convertedPrice;
-           convertedAvgPrice += convertedPrice;
-         }
-         convertedAvgPrice = convertedAvgPrice / closeGroup.transactions.length;
-         
-         const avgPrice = formatPrice(convertedAvgPrice);
-         const totalValue = formatPrice(convertedTotalValue);
+        // Multiple transactions grouped
+        const groupDate = formatDate(closeGroup.time);
+        
+        // Calculate volume-weighted average price and total value using pre-converted prices
+        let convertedTotalValue = 0;
+        let weightedPriceSum = 0;
+        let totalVolume = 0;
+        
+        for (const tx of closeGroup.transactions) {
+          const convertedPrice = tx.converted_price_per_btc || tx.original_price_per_btc;
+          convertedTotalValue += tx.btc_amount * convertedPrice;
+          // Volume-weighted average: sum of (price × volume)
+          weightedPriceSum += convertedPrice * tx.btc_amount;
+          totalVolume += tx.btc_amount;
+        }
+        const convertedAvgPrice = totalVolume > 0 ? weightedPriceSum / totalVolume : 0;
+        
+        const avgPrice = formatPrice(convertedAvgPrice);
+        const totalValue = formatPrice(convertedTotalValue);
 
          // Calculate P&L for grouped transactions using pre-converted prices
          let totalPnL = 0;
@@ -1314,6 +1320,8 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     { label: '3M', value: '3M' },
     { label: '6M', value: '6M' },
     { label: '1Y', value: '1Y' },
+    { label: '3Y', value: '3Y' },
+    { label: '5Y', value: '5Y' },
     { label: 'ALL', value: 'ALL' },
   ];
 

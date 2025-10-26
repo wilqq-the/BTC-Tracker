@@ -55,15 +55,16 @@ const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD')
   }
 };
 
-// GET - Fetch all transactions with optional filtering
+// GET - Fetch all transactions with optional filtering and pagination
 export async function GET(request: NextRequest) {
   return withAuth(request, async (userId, user) => {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const dateFrom = searchParams.get('date_from');
     const dateTo = searchParams.get('date_to');
-    const limit = parseInt(searchParams.get('limit') || '100');
-    const offset = parseInt(searchParams.get('offset') || '0');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = parseInt(searchParams.get('page') || '1');
+    const offset = (page - 1) * limit;
 
     // Get user's currency settings (TODO: Make user-specific)
     const settings = await SettingsService.getSettings();
@@ -90,6 +91,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Get total count for pagination
+    const totalCount = await prisma.bitcoinTransaction.count({
+      where: whereClause
+    });
+
     // Get transactions for this user only
     const transactions = await prisma.bitcoinTransaction.findMany({
       where: whereClause,
@@ -112,13 +118,19 @@ export async function GET(request: NextRequest) {
       original_total_amount: tx.originalTotalAmount,
       fees_currency: tx.feesCurrency,
       notes: tx.notes || '',
+      tags: (tx as any).tags || '',
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));
 
     // Get current Bitcoin price and exchange rates for secondary currency calculations
-    const currentBtcPrice = await getCurrentBitcoinPrice();
-    const mainToSecondaryRate = await ExchangeRateService.getExchangeRate(mainCurrency, secondaryCurrency);
+    const currentBtcPriceUSD = await getCurrentBitcoinPrice(); // This is always in USD
+    const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
+    const usdToSecondaryRate = await ExchangeRateService.getExchangeRate('USD', secondaryCurrency);
+    
+    // Convert BTC price to user's currencies
+    const currentBtcPriceInMain = currentBtcPriceUSD * usdToMainRate;
+    const currentBtcPriceInSecondary = currentBtcPriceUSD * usdToSecondaryRate;
 
     // Enhance transactions with dynamically calculated currency values
     const enhancedTransactions = await Promise.all(formattedTransactions.map(async (transaction) => {
@@ -134,9 +146,7 @@ export async function GET(request: NextRequest) {
       const secondaryCurrencyPrice = transaction.original_price_per_btc * originalToSecondaryRate;
       const secondaryCurrencyTotal = transaction.original_total_amount * originalToSecondaryRate;
       
-      // Calculate current value and P&L in both currencies
-      const currentBtcPriceInMain = currentBtcPrice; // Assuming currentBtcPrice is in main currency
-      const currentBtcPriceInSecondary = currentBtcPrice * (await ExchangeRateService.getExchangeRate(mainCurrency, secondaryCurrency));
+      // Calculate current value and P&L in both currencies (using pre-converted prices)
       
       const currentValueMain = transaction.btc_amount * currentBtcPriceInMain;
       const currentValueSecondary = transaction.btc_amount * currentBtcPriceInSecondary;
@@ -171,11 +181,20 @@ export async function GET(request: NextRequest) {
     // Calculate summary statistics for this user
     const summary = await calculateTransactionSummary(userId);
 
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalCount / limit);
+
     const response: TransactionResponse = {
       success: true,
       data: enhancedTransactions as any, // Type assertion for compatibility
       summary,
-      message: `Retrieved ${transactions.length} transactions with ${secondaryCurrency} display values`
+      pagination: {
+        total: totalCount,
+        page: page,
+        limit: limit,
+        totalPages: totalPages
+      },
+      message: `Retrieved ${transactions.length} of ${totalCount} transactions with ${secondaryCurrency} display values`
     };
 
     return NextResponse.json(response);
@@ -201,11 +220,12 @@ export async function POST(request: NextRequest) {
     const pricePerBtc = parseFloat(formData.price_per_btc);
     const fees = parseFloat(formData.fees || '0');
 
-    if (isNaN(btcAmount) || isNaN(pricePerBtc) || btcAmount <= 0 || pricePerBtc <= 0) {
+    // Allow zero price for mining/gifts/airdrops (but not negative)
+    if (isNaN(btcAmount) || isNaN(pricePerBtc) || btcAmount <= 0 || pricePerBtc < 0) {
       return NextResponse.json({
         success: false,
         error: 'Invalid numeric values',
-        message: 'BTC amount and price must be positive numbers'
+        message: 'BTC amount must be positive, price cannot be negative'
       } as TransactionResponse, { status: 400 });
     }
 
@@ -224,8 +244,9 @@ export async function POST(request: NextRequest) {
         fees: fees,
         feesCurrency: formData.currency, // fees currency same as transaction currency
         transactionDate: new Date(formData.transaction_date),
-        notes: formData.notes || ''
-      }
+        notes: formData.notes || '',
+        tags: formData.tags || null
+      } as any
     });
 
     // Format the transaction to match expected format
@@ -239,6 +260,7 @@ export async function POST(request: NextRequest) {
       original_total_amount: newTransaction.originalTotalAmount,
       fees_currency: newTransaction.feesCurrency,
       notes: newTransaction.notes || '',
+      tags: (newTransaction as any).tags || '',
       created_at: newTransaction.createdAt,
       updated_at: newTransaction.updatedAt
     };
@@ -283,10 +305,8 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
 
       let totalInvested = 0;
       let totalReceived = 0;
-      let totalBuyValue = 0;
-      let totalSellValue = 0;
-      let buyCount = 0;
-      let sellCount = 0;
+      let weightedBuyPriceSum = 0;
+      let weightedSellPriceSum = 0;
 
       // Calculate totals by converting each transaction to main currency
       for (const tx of allTransactions) {
@@ -296,12 +316,12 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
 
         if (tx.type === 'BUY') {
           totalInvested += mainCurrencyTotal + (tx.fees || 0);
-          totalBuyValue += mainCurrencyPrice;
-          buyCount++;
+          // Volume-weighted average: sum of (price × volume)
+          weightedBuyPriceSum += mainCurrencyPrice * tx.btcAmount;
         } else {
           totalReceived += mainCurrencyTotal - (tx.fees || 0);
-          totalSellValue += mainCurrencyPrice;
-          sellCount++;
+          // Volume-weighted average: sum of (price × volume)
+          weightedSellPriceSum += mainCurrencyPrice * tx.btcAmount;
         }
       }
 
@@ -324,8 +344,9 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
         total_usd_invested: totalInvested,
         total_usd_received: totalReceived,
         total_fees_paid: totalFeesPaid,
-        average_buy_price: buyCount > 0 ? totalBuyValue / buyCount : 0,
-        average_sell_price: sellCount > 0 ? totalSellValue / sellCount : 0,
+        // Volume-weighted average prices
+        average_buy_price: totalBtcBought > 0 ? weightedBuyPriceSum / totalBtcBought : 0,
+        average_sell_price: totalBtcSold > 0 ? weightedSellPriceSum / totalBtcSold : 0,
         realized_pnl: 0, // Simplified for now
         unrealized_pnl: unrealizedPnl,
         total_pnl: totalPnl,

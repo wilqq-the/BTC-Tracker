@@ -118,4 +118,10 @@ public/uploads/avatars/*
 # Development files
 README.md
 PRODUCTION_DEPLOYMENT.md
+
 *.md 
+
+# Images
+*.png
+*.jpg
+*.svg

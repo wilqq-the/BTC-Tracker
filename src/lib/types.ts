@@ -47,6 +47,7 @@ export interface TransactionFormData {
   fees: string;
   transaction_date: string;
   notes: string;
+  tags?: string;
 }
 
 export interface TransactionSummary {
@@ -117,6 +118,12 @@ export interface TransactionResponse {
   success: boolean;
   data?: BitcoinTransaction | BitcoinTransaction[];
   summary?: TransactionSummary;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
   message: string;
   error?: string;
 }

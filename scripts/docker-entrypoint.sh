@@ -54,6 +54,11 @@ chown -R nextjs:nodejs /app/data /app/public/uploads 2>/dev/null || true
 echo "[DB] Setting up database schema..."
 npx prisma db push --skip-generate
 
+# Fix npm cache ownership (prevents EACCES errors during runtime)
+echo "[NPM] Fixing npm cache ownership..."
+chown -R nextjs:nodejs /tmp/.npm 2>/dev/null || true
+mkdir -p /root/.npm && chown -R nextjs:nodejs /root/.npm 2>/dev/null || true
+
 echo "[START] Starting Next.js application as user $(id -u nextjs):$(id -g nextjs)"
 
 # Switch to app user and start the application

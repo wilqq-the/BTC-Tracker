@@ -127,6 +127,14 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
             </ThemedButton>
             
             <ThemedButton 
+              variant={pathname === '/goals' ? "primary" : "ghost"}
+              size="sm"
+              onClick={() => window.location.href = '/goals'}
+            >
+              Goals
+            </ThemedButton>
+            
+            <ThemedButton 
               variant={pathname === '/profile' ? "primary" : "ghost"}
               size="sm"
               onClick={() => window.location.href = '/profile'}
@@ -226,6 +234,20 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
                 }`}
               >
                 Analytics
+              </button>
+              
+              <button
+                onClick={() => {
+                  window.location.href = '/goals';
+                  setIsMobileMenuOpen(false);
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  pathname === '/goals' 
+                    ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                }`}
+              >
+                Goals
               </button>
               
               <button

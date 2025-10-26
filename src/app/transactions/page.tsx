@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import AppLayout from '@/components/AppLayout';
+import AddTransactionModal from '@/components/AddTransactionModal';
+import TransactionTags from '@/components/TransactionTags';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
 
@@ -23,6 +25,7 @@ interface BitcoinTransaction {
   fees_currency: string;
   transaction_date: string;
   notes: string;
+  tags?: string; // Comma-separated tags
   created_at: string;
   updated_at: string;
   
@@ -36,34 +39,13 @@ interface BitcoinTransaction {
   pnl_main?: number;
 }
 
-interface TransactionFormData {
-  type: 'BUY' | 'SELL';
-  btc_amount: string;
-  price_per_btc: string;
-  currency: string;
-  fees: string;
-  transaction_date: string;
-  notes: string;
-}
-
-const initialFormData: TransactionFormData = {
-  type: 'BUY',
-  btc_amount: '',
-  price_per_btc: '',
-  currency: 'USD',
-  fees: '0',
-  transaction_date: new Date().toISOString().split('T')[0],
-  notes: ''
-};
-
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<BitcoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BitcoinTransaction | null>(null);
-  const [formData, setFormData] = useState<TransactionFormData>(initialFormData);
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
-  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentBtcPrice, setCurrentBtcPrice] = useState(105000); // Fallback price
   const [showImportModal, setShowImportModal] = useState(false);
@@ -72,23 +54,301 @@ export default function TransactionsPage() {
   const [dragActive, setDragActive] = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
+  
+  // Duplicate detection settings
+  type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+  const [duplicateCheckMode, setDuplicateCheckMode] = useState<DuplicateCheckMode>('standard');
+  const [showDuplicateSettings, setShowDuplicateSettings] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // Summary statistics for current filter (all transactions, not just current page)
+  const [summaryStats, setSummaryStats] = useState({
+    totalBtcBought: 0,
+    totalBtcSold: 0,
+    buyTransactionCount: 0,
+    sellTransactionCount: 0,
+    totalInvested: 0,
+    totalPnL: 0,
+    mainCurrency: 'USD'
+  });
+  
+  // New: Date range filter
+  const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | '3m' | '1y' | 'custom'>('all');
+  const [customDateFrom, setCustomDateFrom] = useState<string>('');
+  const [customDateTo, setCustomDateTo] = useState<string>('');
+  
+  // New: Search filter
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  // New: Tag management
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [showTagInput, setShowTagInput] = useState(false);
+  const [newTag, setNewTag] = useState('');
+  
+  // New: Bulk actions
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
+  const [bulkActionMode, setBulkActionMode] = useState(false);
+  
 
   useEffect(() => {
     loadTransactions();
     loadCurrentBitcoinPrice();
   }, []);
 
-  const loadTransactions = async () => {
+  // Reload transactions when pagination changes
+  useEffect(() => {
+    if (!loading) {
+      loadTransactions(currentPage, itemsPerPage);
+    }
+  }, [currentPage, itemsPerPage]);
+
+  // Reload transactions when filters change (and reset to page 1)
+  useEffect(() => {
+    if (currentPage === 1) {
+      loadTransactions(1, itemsPerPage);
+    } else {
+      setCurrentPage(1);
+    }
+  }, [filterType, dateRange, customDateFrom, customDateTo]);
+  
+  // Helper: Get date range boundaries
+  const getDateRangeBoundaries = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    switch (dateRange) {
+      case '7d':
+        return { from: new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000), to: now };
+      case '30d':
+        return { from: new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000), to: now };
+      case '3m':
+        return { from: new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000), to: now };
+      case '1y':
+        return { from: new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000), to: now };
+      case 'custom':
+        return {
+          from: customDateFrom ? new Date(customDateFrom) : new Date(0),
+          to: customDateTo ? new Date(customDateTo) : now,
+        };
+      case 'all':
+      default:
+        return null;
+    }
+  };
+  
+  // Helper: Get all unique tags from transactions
+  const getAllTags = (): string[] => {
+    const tagSet = new Set<string>();
+    transactions.forEach(t => {
+      if (t.tags) {
+        t.tags.split(',').forEach(tag => tagSet.add(tag.trim()));
+      }
+    });
+    return Array.from(tagSet).sort();
+  };
+  
+  // Helper: Add tag to transaction
+  const addTagToTransaction = async (transactionId: number, tag: string) => {
     try {
-      const response = await fetch('/api/transactions');
+      const transaction = transactions.find(t => t.id === transactionId);
+      if (!transaction) return;
+      
+      const existingTags = transaction.tags ? transaction.tags.split(',').map(t => t.trim()) : [];
+      if (existingTags.includes(tag)) return; // Already has this tag
+      
+      const newTags = [...existingTags, tag].join(',');
+      
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...transaction, tags: newTags }),
+      });
+      
+      if (response.ok) {
+        await loadTransactions();
+      }
+    } catch (error) {
+      console.error('Error adding tag:', error);
+    }
+  };
+  
+  // Helper: Remove tag from transaction
+  const removeTagFromTransaction = async (transactionId: number, tagToRemove: string) => {
+    try {
+      const transaction = transactions.find(t => t.id === transactionId);
+      if (!transaction) return;
+      
+      const existingTags = transaction.tags ? transaction.tags.split(',').map(t => t.trim()) : [];
+      const newTags = existingTags.filter(t => t !== tagToRemove).join(',');
+      
+      const response = await fetch(`/api/transactions/${transactionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...transaction, tags: newTags || null }),
+      });
+      
+      if (response.ok) {
+        await loadTransactions();
+      }
+    } catch (error) {
+      console.error('Error removing tag:', error);
+    }
+  };
+  
+  // Helper: Bulk delete transactions
+  const handleBulkDelete = async () => {
+    if (selectedTransactions.size === 0) return;
+    
+    const confirmed = confirm(`Delete ${selectedTransactions.size} transaction(s)?`);
+    if (!confirmed) return;
+    
+    try {
+      await Promise.all(
+        Array.from(selectedTransactions).map(id =>
+          fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+        )
+      );
+      
+      setSelectedTransactions(new Set());
+      setBulkActionMode(false);
+      await loadTransactions();
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      alert('Failed to delete transactions');
+    }
+  };
+  
+  // Helper: Bulk add tag
+  const handleBulkAddTag = async (tag: string) => {
+    if (selectedTransactions.size === 0) return;
+    
+    try {
+      await Promise.all(
+        Array.from(selectedTransactions).map(id => addTagToTransaction(id, tag))
+      );
+      
+      setSelectedTransactions(new Set());
+      setBulkActionMode(false);
+    } catch (error) {
+      console.error('Error bulk adding tag:', error);
+    }
+  };
+  
+  // Helper: Toggle transaction selection
+  const toggleTransactionSelection = (id: number) => {
+    const newSelection = new Set(selectedTransactions);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedTransactions(newSelection);
+  };
+  
+  // Helper: Select all/none
+  const toggleSelectAll = () => {
+    if (selectedTransactions.size === filteredAndSortedTransactions.length) {
+      setSelectedTransactions(new Set());
+    } else {
+      setSelectedTransactions(new Set(filteredAndSortedTransactions.map(t => t.id)));
+    }
+  };
+
+  const loadSummaryStats = async () => {
+    try {
+      // Build query parameters for fetching ALL transactions with same filters
+      const params = new URLSearchParams({
+        limit: '100000', // Very high limit to get all transactions for stats
+      });
+
+      // Add type filter if not ALL
+      if (filterType !== 'ALL') {
+        params.append('type', filterType);
+      }
+
+      // Add date range filters
+      const dateRangeBoundaries = getDateRangeBoundaries();
+      if (dateRangeBoundaries) {
+        params.append('date_from', dateRangeBoundaries.from.toISOString());
+        params.append('date_to', dateRangeBoundaries.to.toISOString());
+      }
+
+      const response = await fetch(`/api/transactions?${params}`);
+      const result = await response.json();
+      
+      if (result.success && Array.isArray(result.data)) {
+        const allTransactions = result.data;
+        
+        // Calculate summary statistics
+        const buyTxs = allTransactions.filter(t => t.type === 'BUY');
+        const sellTxs = allTransactions.filter(t => t.type === 'SELL');
+        
+        const totalBtcBought = buyTxs.reduce((sum, t) => sum + t.btc_amount, 0);
+        const totalBtcSold = sellTxs.reduce((sum, t) => sum + t.btc_amount, 0);
+        const totalInvested = buyTxs.reduce((sum, t) => sum + (t.main_currency_total_amount || 0), 0);
+        const totalPnL = allTransactions.reduce((sum, t) => sum + (t.pnl_main || 0), 0);
+        const mainCurrency = allTransactions[0]?.main_currency || 'USD';
+        
+        setSummaryStats({
+          totalBtcBought,
+          totalBtcSold,
+          buyTransactionCount: buyTxs.length,
+          sellTransactionCount: sellTxs.length,
+          totalInvested,
+          totalPnL,
+          mainCurrency
+        });
+      }
+    } catch (error) {
+      console.error('Error loading summary stats:', error);
+    }
+  };
+
+  const loadTransactions = async (page: number = currentPage, limit: number = itemsPerPage) => {
+    setLoading(true);
+    try {
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      // Add type filter if not ALL
+      if (filterType !== 'ALL') {
+        params.append('type', filterType);
+      }
+
+      // Add date range filters
+      const dateRangeBoundaries = getDateRangeBoundaries();
+      if (dateRangeBoundaries) {
+        params.append('date_from', dateRangeBoundaries.from.toISOString());
+        params.append('date_to', dateRangeBoundaries.to.toISOString());
+      }
+
+      const response = await fetch(`/api/transactions?${params}`);
       const result = await response.json();
       
       if (result.success) {
         setTransactions(Array.isArray(result.data) ? result.data : []);
+        
+        // Update pagination state from API response
+        if (result.pagination) {
+          setTotalItems(result.pagination.total);
+          setTotalPages(result.pagination.totalPages);
+          setCurrentPage(result.pagination.page);
+        }
       } else {
         console.error('Failed to load transactions:', result.error);
         setTransactions([]);
       }
+      
+      // Load summary stats whenever transactions are loaded
+      await loadSummaryStats();
     } catch (error) {
       console.error('Error loading transactions:', error);
       setTransactions([]);
@@ -112,22 +372,12 @@ export default function TransactionsPage() {
 
   const handleAddTransaction = () => {
     setEditingTransaction(null);
-    setFormData(initialFormData);
-    setShowAddForm(true);
+    setShowAddModal(true);
   };
 
   const handleEditTransaction = (transaction: BitcoinTransaction) => {
     setEditingTransaction(transaction);
-    setFormData({
-      type: transaction.type,
-      btc_amount: transaction.btc_amount.toString(),
-      price_per_btc: transaction.original_price_per_btc.toString(),
-      currency: transaction.original_currency,
-      fees: transaction.fees.toString(),
-      transaction_date: transaction.transaction_date,
-      notes: transaction.notes
-    });
-    setShowAddForm(true);
+    setShowAddModal(true);
   };
 
   const handleDeleteTransaction = async (id: number) => {
@@ -151,38 +401,6 @@ export default function TransactionsPage() {
     }
   };
 
-  const handleSubmitTransaction = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const method = editingTransaction ? 'PUT' : 'POST';
-      const url = editingTransaction 
-        ? `/api/transactions/${editingTransaction.id}` 
-        : '/api/transactions';
-      
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setShowAddForm(false);
-        setFormData(initialFormData);
-        setEditingTransaction(null);
-        loadTransactions(); // Reload transactions
-      } else {
-        alert(`Error: ${result.error || result.message}`);
-      }
-    } catch (error) {
-      console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
-    }
-  };
 
   const calculatePnL = (transaction: BitcoinTransaction) => {
     // Use API-provided P&L calculation if available (more accurate)
@@ -276,7 +494,7 @@ export default function TransactionsPage() {
     try {
       const formData = new FormData();
       formData.append('file', importFile);
-      formData.append('skip_duplicates', 'true');
+      formData.append('duplicate_check_mode', duplicateCheckMode);
 
       const response = await fetch('/api/transactions/import', {
         method: 'POST',
@@ -286,10 +504,14 @@ export default function TransactionsPage() {
       const result = await response.json();
       
       if (result.success) {
-        alert(`Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`);
+        const message = duplicateCheckMode === 'off' 
+          ? `Successfully imported ${result.imported} transactions.`
+          : `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        alert(message);
         setShowImportModal(false);
         setImportFile(null);
         setDetectedFormat(null);
+        setDuplicateCheckMode('standard'); // Reset to default
         loadTransactions(); // Reload transactions
       } else {
         alert(`Import failed: ${result.error || result.message}`);
@@ -330,10 +552,35 @@ export default function TransactionsPage() {
     }
   };
 
+  // Client-side filtering and sorting for the current page's transactions
   const filteredAndSortedTransactions = transactions
-    .filter(t => filterType === 'ALL' || t.type === filterType)
+    .filter(t => {
+      // Tag filter (client-side)
+      if (selectedTags.length > 0) {
+        const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
+        const hasSelectedTag = selectedTags.some(selectedTag => txTags.includes(selectedTag));
+        if (!hasSelectedTag) return false;
+      }
+      
+      // Search filter (client-side)
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesNotes = t.notes?.toLowerCase().includes(query);
+        const matchesAmount = t.btc_amount.toString().includes(query);
+        const matchesCurrency = t.original_currency?.toLowerCase().includes(query);
+        const matchesDate = t.transaction_date.includes(query);
+        const matchesPrice = t.original_price_per_btc.toString().includes(query);
+        const matchesTags = t.tags?.toLowerCase().includes(query);
+        
+        if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
+          return false;
+        }
+      }
+      
+      return true;
+    })
     .sort((a, b) => {
-      let aValue, bValue;
+      let aValue: any, bValue: any;
       
       switch (sortBy) {
         case 'date':
@@ -348,10 +595,26 @@ export default function TransactionsPage() {
           aValue = calculatePnL(a);
           bValue = calculatePnL(b);
           break;
+        case 'price':
+          aValue = a.main_currency_price_per_btc || a.original_price_per_btc;
+          bValue = b.main_currency_price_per_btc || b.original_price_per_btc;
+          break;
+        case 'type':
+          aValue = a.type;
+          bValue = b.type;
+          break;
         default:
           return 0;
       }
       
+      // Handle string comparison for type
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' 
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      // Handle numeric comparison
       return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
     });
 
@@ -377,9 +640,16 @@ export default function TransactionsPage() {
               </h1>
               <div className="bg-btc-bg-tertiary px-2 py-1 rounded-md inline-block">
                 <ThemedText variant="secondary" size="sm">
-                  {filteredAndSortedTransactions.length} 
-                  {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
-                  {filteredAndSortedTransactions.length === 1 ? ' transaction' : ' transactions'}
+                  {totalItems > 0 ? (
+                    <>
+                      Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+                      {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
+                      {' transaction'}
+                      {totalItems !== 1 ? 's' : ''}
+                    </>
+                  ) : (
+                    'No transactions'
+                  )}
                 </ThemedText>
               </div>
             </div>
@@ -388,6 +658,16 @@ export default function TransactionsPage() {
             </ThemedText>
           </div>
           <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:space-x-3">
+            <ThemedButton
+              variant={bulkActionMode ? 'primary' : 'secondary'}
+              onClick={() => {
+                setBulkActionMode(!bulkActionMode);
+                setSelectedTransactions(new Set());
+              }}
+              className="text-xs sm:text-sm"
+            >
+              {bulkActionMode ? '✓ Bulk Mode' : '☑ Select'}
+            </ThemedButton>
             <ThemedButton
               variant="secondary"
               onClick={() => setShowImportModal(true)}
@@ -413,60 +693,175 @@ export default function TransactionsPage() {
           </div>
         </div>
 
-        {/* Filters and Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
-          {/* Quick Stats */}
-          <ThemedCard>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-btc-text-primary">
-                {transactions.length}
+        {/* Bulk Actions Bar */}
+        {bulkActionMode && (
+          <ThemedCard className="mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={toggleSelectAll}
+                  className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium"
+                >
+                  {selectedTransactions.size === filteredAndSortedTransactions.length ? 'Deselect All' : 'Select All'}
+                </button>
+                <span className="text-xs text-btc-text-muted">
+                  {selectedTransactions.size} selected
+                </span>
               </div>
-              <ThemedText variant="secondary" size="sm">
-                Total Transactions
-              </ThemedText>
+              
+              {selectedTransactions.size > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="px-4 py-2 bg-loss hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md"
+                >
+                  🗑️ Delete {selectedTransactions.size} Transaction{selectedTransactions.size > 1 ? 's' : ''}
+                </button>
+              )}
+            </div>
+          </ThemedCard>
+        )}
+
+        {/* Enhanced Quick Stats Summary */}
+        <ThemedCard className="mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {/* Total BTC Bought */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">BTC Bought</div>
+              <div className="text-lg font-bold text-profit">
+                {summaryStats.totalBtcBought.toFixed(6)} ₿
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                {summaryStats.buyTransactionCount} txs
+            </div>
+            </div>
+
+            {/* Total BTC Sold */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">BTC Sold</div>
+              <div className="text-lg font-bold text-loss">
+                {summaryStats.totalBtcSold.toFixed(6)} ₿
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                {summaryStats.sellTransactionCount} txs
+            </div>
+            </div>
+
+            {/* Net Position */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">Net Position</div>
+              <div className="text-lg font-bold text-bitcoin">
+                {(summaryStats.totalBtcBought - summaryStats.totalBtcSold).toFixed(6)} ₿
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                {dateRange !== 'all' ? 'Period holdings' : 'Current holdings'}
+              </div>
+            </div>
+
+            {/* Total Invested */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">Total Invested</div>
+              <div className="text-lg font-bold text-btc-text-primary">
+                {formatCurrency(summaryStats.totalInvested, summaryStats.mainCurrency)}
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                Buy volume
+              </div>
+            </div>
+
+            {/* Average Buy Price */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">Avg Buy Price</div>
+              <div className="text-lg font-bold text-btc-text-primary">
+                {summaryStats.totalBtcBought > 0 
+                  ? formatCurrency(summaryStats.totalInvested / summaryStats.totalBtcBought, summaryStats.mainCurrency)
+                  : '--'
+                }
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                Per BTC
+              </div>
+            </div>
+
+            {/* Total P&L */}
+            <div className="text-center">
+              <div className="text-xs text-btc-text-muted mb-1">Total P&L</div>
+              <div className={`text-lg font-bold ${
+                summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss'
+              }`}>
+                {(summaryStats.totalPnL >= 0 ? '+' : '') + formatCurrency(summaryStats.totalPnL, summaryStats.mainCurrency)}
+              </div>
+              <div className="text-xs text-btc-text-secondary mt-1">
+                Unrealized
+              </div>
+            </div>
             </div>
           </ThemedCard>
 
-          <ThemedCard>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-profit">
-                {transactions.filter(t => t.type === 'BUY').length}
-              </div>
-              <ThemedText variant="secondary" size="sm">
-                Buy Transactions
-              </ThemedText>
+        {/* Tag Filter */}
+        {getAllTags().length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="text-xs text-btc-text-muted">Filter by tags:</span>
+              {getAllTags().map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => {
+                    if (selectedTags.includes(tag)) {
+                      setSelectedTags(selectedTags.filter(t => t !== tag));
+                    } else {
+                      setSelectedTags([...selectedTags, tag]);
+                    }
+                  }}
+                  className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
+                    selectedTags.includes(tag)
+                      ? 'bg-bitcoin text-white shadow-md'
+                      : 'bg-btc-bg-tertiary text-btc-text-secondary hover:bg-btc-border-primary'
+                  }`}
+                >
+                  {tag} {selectedTags.includes(tag) && '✓'}
+                </button>
+              ))}
+              {selectedTags.length > 0 && (
+                <button
+                  onClick={() => setSelectedTags([])}
+                  className="px-2 py-1 text-xs text-loss hover:underline"
+                >
+                  Clear
+                </button>
+              )}
             </div>
-          </ThemedCard>
+          </div>
+        )}
 
-          <ThemedCard>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-loss">
-                {transactions.filter(t => t.type === 'SELL').length}
-              </div>
-              <ThemedText variant="secondary" size="sm">
-                Sell Transactions
-              </ThemedText>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-btc-text-primary">
-                {formatCurrency(transactions.reduce((sum, t) => sum + (t.main_currency_total_amount || t.usd_total_amount), 0), transactions[0]?.main_currency || 'USD')}
-              </div>
-              <ThemedText variant="secondary" size="sm">
-                Total Volume
-              </ThemedText>
-            </div>
-          </ThemedCard>
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search transactions (notes, amount, currency, date, tags...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary placeholder-btc-text-muted focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-btc-text-secondary hover:text-btc-text-primary"
+              >
+                ✕
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Filters and Controls */}
         <ThemedCard className="mb-6">
+          <div className="space-y-4">
+            {/* Row 1: Type Filter & Date Range */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Type Filter */}
             <div className="flex items-center space-x-2">
-              <ThemedText variant="secondary" size="sm">Filter:</ThemedText>
+                <ThemedText variant="secondary" size="sm">Type:</ThemedText>
               <div className="flex space-x-1">
                 {(['ALL', 'BUY', 'SELL'] as const).map((type) => (
                   <button
@@ -489,45 +884,219 @@ export default function TransactionsPage() {
               </div>
             </div>
 
-            {/* Sort Controls */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <ThemedText variant="secondary" size="sm">Sort by:</ThemedText>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-                >
-                  <option value="date">Date</option>
-                  <option value="amount">Amount</option>
-                  <option value="pnl">P&L</option>
-                </select>
+              {/* Date Range Filter */}
+              <div className="flex items-center space-x-2 flex-wrap">
+                <ThemedText variant="secondary" size="sm">Period:</ThemedText>
+                <div className="flex space-x-1">
+                  {[
+                    { value: 'all', label: 'All' },
+                    { value: '7d', label: '7D' },
+                    { value: '30d', label: '30D' },
+                    { value: '3m', label: '3M' },
+                    { value: '1y', label: '1Y' },
+                    { value: 'custom', label: 'Custom' },
+                  ].map((range) => (
+                    <button
+                      key={range.value}
+                      onClick={() => setDateRange(range.value as any)}
+                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
+                        dateRange === range.value
+                          ? 'bg-bitcoin text-white shadow-md'
+                          : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary hover:bg-btc-border-primary'
+                      }`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
               </div>
+            </div>
 
-              <button
-                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                className={`px-3 py-1 rounded text-xs transition-all duration-200 flex items-center space-x-1 ${
-                  sortOrder === 'desc' 
-                    ? 'bg-bitcoin text-white shadow-md' 
-                    : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary'
-                }`}
-              >
-                <span>{sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}</span>
-                {sortOrder === 'desc' && (
-                  <div className="w-1 h-1 bg-white rounded-full opacity-75"></div>
-                )}
-              </button>
+            {/* Row 2: Custom Date Range (if selected) */}
+            {dateRange === 'custom' && (
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-2 border-t border-btc-border-primary">
+                <ThemedText variant="secondary" size="sm">From:</ThemedText>
+                <input
+                  type="date"
+                  value={customDateFrom}
+                  onChange={(e) => setCustomDateFrom(e.target.value)}
+                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin"
+                />
+                <ThemedText variant="secondary" size="sm">To:</ThemedText>
+                <input
+                  type="date"
+                  value={customDateTo}
+                  onChange={(e) => setCustomDateTo(e.target.value)}
+                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin"
+                />
+              </div>
+            )}
+
+            {/* Row 3: Sort Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-btc-border-primary">
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <ThemedText variant="secondary" size="sm">Sort by:</ThemedText>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
+                  >
+                    <option value="date">Date</option>
+                    <option value="type">Type</option>
+                    <option value="amount">Amount</option>
+                    <option value="price">Price</option>
+                    <option value="pnl">P&L</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  className={`px-3 py-1 rounded text-xs transition-all duration-200 flex items-center space-x-1 ${
+                    sortOrder === 'desc' 
+                      ? 'bg-bitcoin text-white shadow-md' 
+                      : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary border border-btc-border-primary'
+                  }`}
+                >
+                  <span>{sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}</span>
+                </button>
+              </div>
+              
+
             </div>
           </div>
         </ThemedCard>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Items per page selector */}
+            <div className="flex items-center space-x-2">
+              <ThemedText variant="secondary" size="sm">Show:</ThemedText>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(parseInt(e.target.value));
+                  setCurrentPage(1); // Reset to first page
+                }}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
+              >
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+              <ThemedText variant="secondary" size="sm">per page</ThemedText>
+            </div>
+
+            {/* Page navigation */}
+            <div className="flex items-center space-x-2">
+              {/* First page */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                ««
+              </button>
+
+              {/* Previous page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                ‹
+              </button>
+
+              {/* Page numbers */}
+              <div className="flex items-center space-x-1">
+                {(() => {
+                  const pages = [];
+                  const maxVisible = 5;
+                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+                  
+                  if (endPage - startPage < maxVisible - 1) {
+                    startPage = Math.max(1, endPage - maxVisible + 1);
+                  }
+
+                  if (startPage > 1) {
+                    pages.push(
+                      <span key="start-ellipsis" className="px-2 text-btc-text-muted">...</span>
+                    );
+                  }
+
+                  for (let i = startPage; i <= endPage; i++) {
+                    pages.push(
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(i)}
+                        className={`px-3 py-1 rounded text-xs transition-all ${
+                          currentPage === i
+                            ? 'bg-bitcoin text-white font-semibold shadow-md'
+                            : 'bg-btc-bg-tertiary text-btc-text-primary hover:bg-btc-border-primary border border-btc-border-primary'
+                        }`}
+                      >
+                        {i}
+                      </button>
+                    );
+                  }
+
+                  if (endPage < totalPages) {
+                    pages.push(
+                      <span key="end-ellipsis" className="px-2 text-btc-text-muted">...</span>
+                    );
+                  }
+
+                  return pages;
+                })()}
+              </div>
+
+              {/* Next page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                ›
+              </button>
+
+              {/* Last page */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                »»
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Transactions Table */}
         <ThemedCard padding={false}>
           <div className="overflow-x-auto">
             {/* Table Header - Desktop Only */}
             <div className="hidden lg:block bg-btc-bg-tertiary px-6 py-3 border-b border-btc-border-primary">
-              <div className="grid grid-cols-10 gap-4 text-xs font-medium text-btc-text-secondary uppercase tracking-wider">
-                <button 
+              <div className={`grid gap-4 text-xs font-medium text-btc-text-secondary uppercase tracking-wider ${bulkActionMode ? 'grid-cols-11' : 'grid-cols-10'}`}>
+                {/* Bulk Select Checkbox */}
+                {bulkActionMode && (
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.size === filteredAndSortedTransactions.length && filteredAndSortedTransactions.length > 0}
+                      onChange={toggleSelectAll}
+                      className="rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
+                    />
+                  </div>
+                )}
+                <button
                   onClick={() => {
                     if (sortBy === 'date') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -545,8 +1114,25 @@ export default function TransactionsPage() {
                     </span>
                   )}
                 </button>
-                <div>Type</div>
-                <button 
+                <button
+                  onClick={() => {
+                    if (sortBy === 'type') {
+                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('type');
+                      setSortOrder('desc');
+                    }
+                  }}
+                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
+                >
+                  <span>Type</span>
+                  {sortBy === 'type' && (
+                    <span className="text-bitcoin">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={() => {
                     if (sortBy === 'amount') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -564,12 +1150,29 @@ export default function TransactionsPage() {
                     </span>
                   )}
                 </button>
-                <div>Original Price</div>
+                <button
+                  onClick={() => {
+                    if (sortBy === 'price') {
+                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                    } else {
+                      setSortBy('price');
+                      setSortOrder('desc');
+                    }
+                  }}
+                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
+                >
+                  <span>Original Price</span>
+                  {sortBy === 'price' && (
+                    <span className="text-bitcoin">
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </span>
+                  )}
+                </button>
                 <div>Total (Main)</div>
                 <div>Total (Display)</div>
                 <div>Fees</div>
                 <div>Current Value</div>
-                <button 
+                <button
                   onClick={() => {
                     if (sortBy === 'pnl') {
                       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -616,7 +1219,19 @@ export default function TransactionsPage() {
                     <div key={transaction.id}>
                       {/* Desktop View */}
                       <div className="hidden lg:block px-6 py-4 hover:bg-btc-bg-tertiary transition-colors">
-                        <div className="grid grid-cols-10 gap-4 items-center">
+                        <div className={`grid gap-4 items-center ${bulkActionMode ? 'grid-cols-11' : 'grid-cols-10'}`}>
+                        {/* Bulk Select Checkbox */}
+                        {bulkActionMode && (
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={selectedTransactions.has(transaction.id)}
+                              onChange={() => toggleTransactionSelection(transaction.id)}
+                              className="rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </div>
+                        )}
                         {/* Date */}
                         <div className="text-sm">
                           <div className="text-btc-text-primary font-medium">
@@ -759,6 +1374,16 @@ export default function TransactionsPage() {
                         <div className="space-y-3">
                           {/* Header Row */}
                           <div className="flex justify-between items-start">
+                            {/* Checkbox for bulk mode */}
+                            {bulkActionMode && (
+                              <input
+                                type="checkbox"
+                                checked={selectedTransactions.has(transaction.id)}
+                                onChange={() => toggleTransactionSelection(transaction.id)}
+                                className="mt-1 mr-2 rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            )}
                             <div>
                               <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                                 transaction.type === 'BUY' 
@@ -832,157 +1457,78 @@ export default function TransactionsPage() {
           </div>
         </ThemedCard>
 
-        {/* Add/Edit Transaction Modal */}
-        {showAddForm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
-              <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
-                {editingTransaction ? 'Edit Transaction' : 'Add New Transaction'}
-              </h3>
+        {/* Bottom Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Page info */}
+            <ThemedText variant="secondary" size="sm">
+              Page {currentPage} of {totalPages}
+            </ThemedText>
 
-              <form onSubmit={handleSubmitTransaction} className="space-y-4">
-                {/* Transaction Type */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Transaction Type
-                  </label>
-                  <div className="flex space-x-2">
-                    {(['BUY', 'SELL'] as const).map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, type }))}
-                        className={`flex-1 py-2 px-4 rounded transition-colors font-medium ${
-                          formData.type === type
-                            ? type === 'BUY' ? 'bg-profit text-white' : 'bg-loss text-white'
-                            : 'bg-btc-bg-secondary text-btc-text-primary hover:bg-btc-bg-primary border border-btc-border-secondary'
-                        }`}
-                      >
-                        {type}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+            {/* Page navigation */}
+            <div className="flex items-center space-x-2">
+              {/* First page */}
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="First page"
+              >
+                ««
+              </button>
 
-                {/* BTC Amount */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    BTC Amount
-                  </label>
-                  <input
-                    type="number"
-                    step="0.00000001"
-                    value={formData.btc_amount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="0.00000000"
-                    required
-                  />
-                </div>
+              {/* Previous page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Previous page"
+              >
+                ‹ Previous
+              </button>
 
-                {/* Price per BTC */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Price per BTC
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_btc}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="105000.00"
-                    required
-                  />
-                </div>
+              {/* Next page */}
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Next page"
+              >
+                Next ›
+              </button>
 
-                {/* Currency */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Currency
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData(prev => ({ ...prev, currency: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                  >
-                    <option value="USD">USD - US Dollar</option>
-                    <option value="EUR">EUR - Euro</option>
-                    <option value="PLN">PLN - Polish Złoty</option>
-                    <option value="GBP">GBP - British Pound</option>
-                  </select>
-                </div>
-
-                {/* Fees */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Fees
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.fees}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="0.00"
-                  />
-                </div>
-
-                {/* Transaction Date */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Transaction Date
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.transaction_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    required
-                  />
-                </div>
-
-                {/* Notes */}
-                <div>
-                  <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                    Notes (Optional)
-                  </label>
-                  <textarea
-                    value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-primary"
-                    placeholder="Add any notes about this transaction..."
-                    rows={3}
-                  />
-                </div>
-
-                {/* Form Actions */}
-                <div className="flex space-x-3 pt-4">
-                  <ThemedButton
-                    type="submit"
-                    variant="primary"
-                    className="flex-1 bg-btc-orange hover:bg-btc-orange-dark"
-                  >
-                    {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
-                  </ThemedButton>
-                  <ThemedButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => setShowAddForm(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </ThemedButton>
-                </div>
-              </form>
+              {/* Last page */}
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Last page"
+              >
+                »»
+              </button>
             </div>
           </div>
         )}
 
+        {/* Add/Edit Transaction Modal */}
+        <AddTransactionModal
+          isOpen={showAddModal}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingTransaction(null);
+          }}
+          onSuccess={() => {
+            setShowAddModal(false);
+            setEditingTransaction(null);
+            loadTransactions();
+          }}
+          editingTransaction={editingTransaction}
+        />
+
         {/* Import Modal */}
         {showImportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-8">
+            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 my-auto">
               <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
                 Import Transactions
               </h3>
@@ -1063,6 +1609,75 @@ export default function TransactionsPage() {
                   )}
                 </div>
 
+                {/* Duplicate Detection Settings */}
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium text-btc-text-primary">
+                      Duplicate Detection
+                    </h4>
+                    <button
+                      onClick={() => setShowDuplicateSettings(!showDuplicateSettings)}
+                      className="text-xs text-bitcoin hover:text-bitcoin-dark underline"
+                    >
+                      {showDuplicateSettings ? 'Hide details' : 'Show details'}
+                    </button>
+                  </div>
+                  
+                  {/* Mode Selection */}
+                  <div className="space-y-2">
+                    {[
+                      { 
+                        value: 'strict' as DuplicateCheckMode, 
+                        label: 'Strict', 
+                        desc: 'All fields must match (date, amount, price, fees, currency, notes)'
+                      },
+                      { 
+                        value: 'standard' as DuplicateCheckMode, 
+                        label: 'Standard (Recommended)', 
+                        desc: 'Core fields must match (date, amount, price, type)'
+                      },
+                      { 
+                        value: 'loose' as DuplicateCheckMode, 
+                        label: 'Loose', 
+                        desc: 'Only date and amount must match'
+                      },
+                      { 
+                        value: 'off' as DuplicateCheckMode, 
+                        label: 'Off', 
+                        desc: 'Import all transactions, including duplicates'
+                      }
+                    ].map((mode) => (
+                      <label
+                        key={mode.value}
+                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                          duplicateCheckMode === mode.value
+                            ? 'border-bitcoin bg-bitcoin/5'
+                            : 'border-btc-border-primary hover:border-bitcoin/30'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="duplicateMode"
+                          value={mode.value}
+                          checked={duplicateCheckMode === mode.value}
+                          onChange={(e) => setDuplicateCheckMode(e.target.value as DuplicateCheckMode)}
+                          className="mt-0.5 mr-3 text-bitcoin focus:ring-bitcoin"
+                        />
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-btc-text-primary">
+                            {mode.label}
+                          </div>
+                          {showDuplicateSettings && (
+                            <div className="text-xs text-btc-text-secondary mt-1">
+                              {mode.desc}
+                            </div>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Supported Formats Info */}
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
                   <h4 className="text-sm font-medium text-btc-text-primary">
@@ -1071,7 +1686,6 @@ export default function TransactionsPage() {
                   <ul className="text-xs text-btc-text-secondary space-y-1">
                     <li>• <strong>CSV:</strong> Standard format, Legacy format, Binance SPOT export</li>
                     <li>• <strong>JSON:</strong> Our export format or custom array</li>
-                    <li>• Duplicate transactions will be automatically skipped</li>
                   </ul>
                 </div>
 

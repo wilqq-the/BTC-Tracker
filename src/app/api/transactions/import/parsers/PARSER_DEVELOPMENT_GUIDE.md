@@ -59,7 +59,7 @@ import { ImportTransaction } from '../types';
 
 export interface ExchangeNameTransaction {
   // Define the raw format from the exchange
-  date: string;
+  date: string;q
   pair: string;
   type: string;
   amount: string;

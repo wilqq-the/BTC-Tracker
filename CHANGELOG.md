@@ -5,6 +5,50 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2025-10-21
+
+### ✨ New Features
+- **Zero-Cost Transaction Support** - Can now record Bitcoin received for free (mining rewards, gifts, airdrops, faucets)
+  - Enter `0` for price when adding transactions
+  - Cost basis correctly calculated as $0
+  - Works with CSV import/export
+  - UI helper text guides users
+- **Configurable Duplicate Detection for CSV Import** - Added flexible duplicate detection system with 4 modes:
+  - **Strict Mode**: All fields must match (date, amount, price, fees, currency, notes)
+  - **Standard Mode** (Recommended): Core fields must match (date, type, amount, price)
+  - **Loose Mode**: Only date and amount must match
+  - **Off**: Import all transactions, including duplicates
+- Enhanced import modal UI with expandable duplicate detection settings
+- Better support for manual transaction entries and varied data formats
+- Added 5 comprehensive CSV test files with documentation for testing duplicate detection modes
+- Added customizable dashboard with drag-and-drop widgets (5 widgets: Chart, Transactions, Goals, Portfolio, DCA)
+- Added Multi-Timeframe Performance widget
+- Added Monthly Summary widget
+- Added Bitcoin Goals & DCA Calculator with scenario projections
+- Added DCA Performance Analysis with timing/consistency scoring
+- Redesigned Analytics page with professional layout
+- Added working CSV export for sell transactions (capital gains report)
+
+### 🔧 Bug Fixes
+- Fixed DCA analysis "What-If" scenarios crashing when zero-cost transactions (mining/gifts) are present - now correctly handles division by zero
+- Fixed duplicate detection being too strict - was skipping legitimate transactions with same date/amount but different fees or notes
+- Import now properly handles transactions recorded in separate rows with slight variations
+- Fixed Goals page crash when accessing `is_on_track` property after importing transactions - added proper null checks for achieved/expired goals
+- **Fixed average buy/sell price calculations to use volume-weighted averages** - Critical accuracy fix affecting:
+  - Portfolio summary and widgets (was using simple average, now uses volume-weighted)
+  - Transaction summary statistics (was using simple average, now uses volume-weighted)
+  - Analytics win rate calculations (now correctly weights by transaction volume)
+  - Chart tooltip for grouped transactions (now shows volume-weighted average price)
+  - **Impact:** Fixes significant errors in P&L, ROI, and cost basis calculations, especially for users with varied transaction sizes
+- Fixed mobile PIN login missing submit button and infinite retry loop
+- Fixed currency conversion bugs in portfolio and transaction P&L calculations
+- Fixed 24h portfolio change showing €0.00
+- Fixed goals recalculation using wrong scenario growth rates
+- Fixed DCA timing score being too harsh (38% below avg now scores 8.7/10 instead of 3.8/10)
+- Fixed portfolio summary widget not showing unrealized P&L
+- **Transaction History page does not show all transactions (#108)** - Added pagination system with configurable items per page
+- **Current price data is not recalculated to main currency in DCA Calculator (#111)** - BTC price now converts from USD to user's main currency
+
 ## [0.6.0] - 2025-09-17
 
 ### 🚀 Complete Rewrite - Next.js Migration

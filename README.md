@@ -1,5 +1,10 @@
 # BTC Tracker
 
+![Docker Pulls](https://img.shields.io/docker/pulls/thewilqq/btc-tracker?style=flat-square&logo=docker&label=Docker%20Pulls)
+![Docker Image Size](https://img.shields.io/docker/image-size/thewilqq/btc-tracker/stable?style=flat-square&logo=docker&label=Image%20Size)
+![GitHub Stars](https://img.shields.io/github/stars/wilqq-the/BTC-Tracker?style=flat-square&logo=github&label=Stars)
+![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+
 **Self-hosted Bitcoin portfolio tracker - that's it.**
 
 Track your Bitcoin investments privately on your own PC. Import transactions from exchanges or add them manually. Multi-user support with admin controls. Your data never leaves your server, period.

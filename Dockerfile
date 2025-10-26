@@ -47,6 +47,9 @@ ENV NODE_ENV="production"
 # Uncomment the following line in case you want to disable telemetry during runtime.
 # ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install su-exec for secure user switching in entrypoint script
+RUN apk add --no-cache su-exec
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
@@ -64,7 +67,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy Prisma schema for runtime generation
 COPY --from=builder /app/prisma ./prisma
-# NOTE: .prisma and @prisma will be generated at runtime
+# NOTE: Prisma CLI will be auto-downloaded by npx at runtime (cached in /tmp/.npm)
+# This is simpler and more reliable than trying to copy all dependencies
 
 # Copy database and scripts for initialization
 COPY --from=builder /app/scripts ./scripts
@@ -83,7 +87,6 @@ RUN chown -R nextjs:nodejs /app/public/uploads /app/data
 # Ensure the nextjs user can write to the app directory for database
 RUN chown -R nextjs:nodejs /app
 
-USER nextjs
 
 EXPOSE 3000
 

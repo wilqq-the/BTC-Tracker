@@ -231,7 +231,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
         <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800 rounded-b-xl">
           <div className="flex items-center justify-between">
             <ThemedText variant="muted" size="xs">
-              Bitcoin Tracker v{process.env.npm_package_version || '0.6.0'} • Open Source
+              Bitcoin Tracker v{process.env.npm_package_version || '0.6.2'} • Open Source
             </ThemedText>
             <ThemedText variant="muted" size="xs">
               Made with ❤️ for the Bitcoin community

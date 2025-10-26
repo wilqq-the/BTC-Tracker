@@ -485,8 +485,7 @@ export class BitcoinPriceService {
 
       // Calculate totals using batched exchange rates
       let totalInvestedUSD = 0;
-      let totalBuyValueUSD = 0;
-      let buyCount = 0;
+      let weightedBuyPriceSumUSD = 0;
 
       for (const tx of buyTransactions) {
         const exchangeRate = currencyToRateMap[tx.originalCurrency] || 1.0;
@@ -494,11 +493,12 @@ export class BitcoinPriceService {
         const usdPrice = tx.originalPricePerBtc * exchangeRate;
 
         totalInvestedUSD += usdTotal;
-        totalBuyValueUSD += usdPrice;
-        buyCount++;
+        // Volume-weighted average: sum of (price × volume)
+        weightedBuyPriceSumUSD += usdPrice * tx.btcAmount;
       }
 
-      const avgBuyPriceUSD = buyCount > 0 ? totalBuyValueUSD / buyCount : 0;
+      // Volume-weighted average price: total weighted sum / total volume
+      const avgBuyPriceUSD = totalBTC > 0 ? weightedBuyPriceSumUSD / totalBTC : 0;
       
       // Convert to main currency
       const totalInvestedMain = totalInvestedUSD * usdToMainRate;

@@ -30,6 +30,7 @@ model BitcoinTransaction {
   feesCurrency          String   @default("USD") @map("fees_currency")
   transactionDate       DateTime @map("transaction_date")
   notes                 String?
+  tags                  String?  // Comma-separated tags: "DCA,Long-term,Dip Buy"
   
   // Tracking
   createdAt             DateTime @default(now()) @map("created_at")
@@ -110,6 +111,8 @@ model User {
   settings          AppSettings[]
   customCurrencies  CustomCurrency[]
   portfolioSummary  PortfolioSummary?
+  goals             Goal[]
+  dashboardLayout   DashboardLayout?
 
   @@map("users")
 }
@@ -182,5 +185,58 @@ model PortfolioSummary {
   lastPriceUpdate             DateTime @default(now()) @map("last_price_update")
 
   @@map("portfolio_summary")
+  @@index([userId])
+}
+
+// Bitcoin savings goals
+model Goal {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @map("user_id")
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Goal details
+  name              String   @default("Bitcoin Savings Goal")
+  targetBtcAmount   Float    @map("target_btc_amount")
+  targetDate        DateTime @map("target_date")
+  currentHoldings   Float    @default(0) @map("current_holdings")
+  monthlyBudget     Float?   @map("monthly_budget")
+  currency          String   @default("EUR")
+  
+  // Price scenario
+  priceScenario     String   @default("stable") @map("price_scenario") // bear, conservative, stable, moderate, bull
+  scenarioGrowthRate Float   @default(0.0) @map("scenario_growth_rate") // Annual growth rate
+  
+  // Calculated values (stored for performance)
+  monthlyBtcNeeded  Float    @map("monthly_btc_needed")
+  monthlyFiatNeeded Float    @map("monthly_fiat_needed")
+  totalFiatNeeded   Float    @default(0) @map("total_fiat_needed") // Total projected cost
+  totalMonths       Int      @map("total_months")
+  initialBtcPrice   Float    @default(0) @map("initial_btc_price") // BTC price when goal was created
+  finalBtcPrice     Float    @default(0) @map("final_btc_price") // Projected BTC price at target date
+  
+  // Status
+  isActive          Boolean  @default(true) @map("is_active")
+  isCompleted       Boolean  @default(false) @map("is_completed")
+  completedAt       DateTime? @map("completed_at")
+  
+  // Tracking
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("goals")
+  @@index([userId])
+  @@index([isActive])
+}
+
+// Dashboard layout configuration for customizable widget positions
+model DashboardLayout {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  layout    String   @map("layout") // JSON string storing widget positions and sizes
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("dashboard_layouts")
   @@index([userId])
 }

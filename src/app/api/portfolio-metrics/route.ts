@@ -21,14 +21,18 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    // Get current BTC price
+    // Get current BTC price (always in USD)
     const currentPriceData = await BitcoinPriceService.getCurrentPrice();
-    const currentPrice = currentPriceData?.price || 100000;
+    const currentPriceUSD = currentPriceData?.price || 100000;
     
     // Get user settings (TODO: Make this user-specific)
     const settings = await SettingsService.getSettings();
     const mainCurrency = settings.currency.mainCurrency;
     const secondaryCurrency = settings.currency.secondaryCurrency;
+    
+    // Convert BTC price from USD to main currency
+    const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
+    const currentPrice = currentPriceUSD * usdToMainRate;
     
     // Separate buy and sell transactions
     const buyTransactions = allTransactions.filter(tx => tx.type === 'BUY');
@@ -88,7 +92,21 @@ export async function GET(request: NextRequest) {
     // Calculate ROI
     const roi = totalInvestedMain > 0 ? ((currentValue + totalReceivedMain - totalInvestedMain) / totalInvestedMain) * 100 : 0;
     
-    // Calculate 24h changes (from stored portfolio summary for this user)
+    // Calculate 24h portfolio change based on BTC price change
+    let portfolioChange24h = 0;
+    let portfolioChange24hPercent = 0;
+    
+    if (currentPriceData?.priceChange24h && currentHoldings > 0) {
+      // Calculate the portfolio value change based on BTC price change
+      const btcPriceChange24hInMain = currentPriceData.priceChange24h * usdToMainRate;
+      portfolioChange24h = currentHoldings * btcPriceChange24hInMain;
+      
+      // Calculate percentage based on portfolio value 24h ago
+      const portfolioValue24hAgo = currentValue - portfolioChange24h;
+      portfolioChange24hPercent = portfolioValue24hAgo > 0 ? (portfolioChange24h / portfolioValue24hAgo) * 100 : 0;
+    }
+    
+    // Get stored portfolio summary for this user (for future use)
     const portfolioSummary = await prisma.portfolioSummary.findUnique({
       where: { userId: userId }
     });
@@ -99,9 +117,9 @@ export async function GET(request: NextRequest) {
       totalBtc: currentHoldings,
       totalSatoshis: Math.round(currentHoldings * 100000000),
       
-      // Current values
-      currentBtcPrice: currentPrice,
-      portfolioValue: currentValue,
+      // Current values (in main currency)
+      currentBtcPrice: currentPrice, // BTC price in main currency
+      portfolioValue: currentValue, // Portfolio value in main currency
       
       // Average prices
       avgBuyPrice,
@@ -117,9 +135,9 @@ export async function GET(request: NextRequest) {
       totalInvested: totalInvestedMain,
       totalReceived: totalReceivedMain,
       
-      // 24h changes
-      portfolioChange24h: portfolioSummary?.portfolioChange24h || 0,
-      portfolioChange24hPercent: portfolioSummary?.portfolioChange24hPercent || 0,
+      // 24h changes (calculated in real-time)
+      portfolioChange24h,
+      portfolioChange24hPercent,
       priceChange24h: currentPriceData?.priceChange24h || 0,
       priceChangePercent24h: currentPriceData?.priceChangePercent24h || 0,
       
