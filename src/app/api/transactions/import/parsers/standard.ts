@@ -103,8 +103,9 @@ export class StandardParser extends BaseParser {
       '';
     
     // If we couldn't extract essential data, skip this transaction
-    if (btcAmount === 0 || pricePerBtc === 0 || totalAmount === 0) {
-      console.warn('Standard parser: Missing essential data, skipping transaction');
+    // Allow zero price/total for mining/gifts (as long as BTC amount exists)
+    if (btcAmount === 0) {
+      console.warn('Standard parser: Missing BTC amount, skipping transaction');
       return null;
     }
     

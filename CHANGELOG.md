@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.2] - 2025-10-21
 
 ### ✨ New Features
+- **Zero-Cost Transaction Support** - Can now record Bitcoin received for free (mining rewards, gifts, airdrops, faucets)
+  - Enter `0` for price when adding transactions
+  - Cost basis correctly calculated as $0
+  - Works with CSV import/export
+  - UI helper text guides users
 - **Configurable Duplicate Detection for CSV Import** - Added flexible duplicate detection system with 4 modes:
   - **Strict Mode**: All fields must match (date, amount, price, fees, currency, notes)
   - **Standard Mode** (Recommended): Core fields must match (date, type, amount, price)
@@ -25,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added working CSV export for sell transactions (capital gains report)
 
 ### 🔧 Bug Fixes
+- Fixed DCA analysis "What-If" scenarios crashing when zero-cost transactions (mining/gifts) are present - now correctly handles division by zero
 - Fixed duplicate detection being too strict - was skipping legitimate transactions with same date/amount but different fees or notes
 - Import now properly handles transactions recorded in separate rows with slight variations
 - Fixed Goals page crash when accessing `is_on_track` property after importing transactions - added proper null checks for achieved/expired goals

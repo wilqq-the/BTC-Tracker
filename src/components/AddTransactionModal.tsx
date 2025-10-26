@@ -364,6 +364,10 @@ export default function AddTransactionModal({
               placeholder="105000.00"
               required
             />
+            <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <span className="text-bitcoin">💡</span>
+              <span>Enter 0 for mining rewards, gifts, or airdrops</span>
+            </div>
           </div>
 
           {/* Currency */}

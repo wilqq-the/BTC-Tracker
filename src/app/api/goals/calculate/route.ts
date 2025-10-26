@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const { target_btc, current_holdings, target_date, selected_scenario, custom_growth_rate } = body;
+    const { target_btc, current_holdings, target_date, selected_scenario, custom_growth_rate, frequency } = body;
     
     // Validate inputs
     if (!target_btc || !target_date) {
@@ -56,11 +56,13 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    // Calculate all scenarios
+    // Calculate all scenarios with frequency support
+    const dcaFrequency = frequency || 'monthly';
     const allScenarios = await BTCProjectionService.calculateAllScenarios(
       currentBtcPrice,
       btcNeeded,
-      monthsDiff
+      monthsDiff,
+      dcaFrequency
     );
     
     // Find selected scenario or default to stable
@@ -73,12 +75,13 @@ export async function POST(request: NextRequest) {
       customScenario.scenario.annualGrowthRate = custom_growth_rate;
       customScenario.scenario.basis = `Custom: ${custom_growth_rate >= 0 ? '+' : ''}${(custom_growth_rate * 100).toFixed(0)}%/yr`;
       
-      // Recalculate with custom rate
+      // Recalculate with custom rate and frequency
       selectedScen = BTCProjectionService.calculateScenarioProjection(
         customScenario.scenario,
         currentBtcPrice,
         btcNeeded,
-        monthsDiff
+        monthsDiff,
+        dcaFrequency
       );
     }
     

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import AppLayout from '@/components/AppLayout';
 import { formatCurrency } from '@/lib/theme';
+import DCABacktestSimulator from '@/components/DCABacktestSimulator';
 
 interface PriceScenario {
   id: string;
@@ -166,9 +167,22 @@ export default function GoalsPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('stable');
   const [customGrowthRate, setCustomGrowthRate] = useState<string>('20');
   
+  // DCA Frequency
+  type DCAFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+  const [dcaFrequency, setDcaFrequency] = useState<DCAFrequency>('monthly');
+  
   // Calculation results
   const [calculation, setCalculation] = useState<DCACalculation | null>(null);
   const [calculating, setCalculating] = useState(false);
+  
+  // Backtesting
+  const [showBacktest, setShowBacktest] = useState(false);
+  const [backtestStartDate, setBacktestStartDate] = useState<string>('2020-01-01');
+  const [backtestEndDate, setBacktestEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [backtestAmount, setBacktestAmount] = useState<number>(100);
+  const [backtestFrequency, setBacktestFrequency] = useState<DCAFrequency>('monthly');
+  const [backtestResult, setBacktestResult] = useState<any>(null);
+  const [backtesting, setBacktesting] = useState(false);
   
   // Dynamic goal tracking
   const [goalRecalculations, setGoalRecalculations] = useState<Map<number, GoalRecalculation>>(new Map());
@@ -491,7 +505,8 @@ export default function GoalsPage() {
           current_holdings: currentHoldings || '0',
           target_date: calculatedTargetDate,
           selected_scenario: selectedScenarioId,
-          custom_growth_rate: selectedScenarioId === 'custom' ? (parseFloat(customGrowthRate) / 100) : undefined
+          custom_growth_rate: selectedScenarioId === 'custom' ? (parseFloat(customGrowthRate) / 100) : undefined,
+          frequency: dcaFrequency
         })
       });
       
@@ -576,6 +591,38 @@ export default function GoalsPage() {
       });
     } finally {
       setCalculating(false);
+    }
+  };
+
+  const runBacktest = async () => {
+    setBacktesting(true);
+    setBacktestResult(null);
+    
+    try {
+      const response = await fetch('/api/dca-backtest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startDate: backtestStartDate,
+          endDate: backtestEndDate,
+          investmentAmount: backtestAmount,
+          frequency: backtestFrequency,
+          currency: selectedCurrency
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setBacktestResult(result.data);
+      } else {
+        alert(result.error || 'Failed to run backtest');
+      }
+    } catch (error) {
+      console.error('Backtest error:', error);
+      alert('Error running backtest. Please try again.');
+    } finally {
+      setBacktesting(false);
     }
   };
 
@@ -1030,6 +1077,26 @@ export default function GoalsPage() {
                     <span>{formatCurrency(5000, selectedCurrency)}</span>
                   </div>
                 </div>
+
+                {/* DCA Frequency */}
+                <div>
+                  <label className="block text-sm font-medium text-btc-text-primary mb-2">
+                    DCA Frequency
+                  </label>
+                  <select
+                    value={dcaFrequency}
+                    onChange={(e) => setDcaFrequency(e.target.value as 'daily' | 'weekly' | 'biweekly' | 'monthly')}
+                    className="w-full px-4 py-3 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+                  >
+                    <option value="monthly">Monthly</option>
+                    <option value="biweekly">Bi-weekly (every 2 weeks)</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="daily">Daily</option>
+                  </select>
+                  <ThemedText variant="muted" className="text-xs mt-1">
+                    How often you plan to buy Bitcoin
+                  </ThemedText>
+                </div>
               </div>
 
               <div className="flex justify-end mt-6">
@@ -1187,6 +1254,11 @@ export default function GoalsPage() {
               )}
             </div>
           </ThemedCard>
+        </section>
+
+        {/* Historical DCA Backtest Simulator */}
+        <section>
+          <DCABacktestSimulator defaultCurrency={selectedCurrency} />
         </section>
 
         {/* DCA Performance Analysis Section */}

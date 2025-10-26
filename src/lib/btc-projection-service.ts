@@ -9,6 +9,8 @@ import { prisma } from './prisma';
  * 3. Rolling averages (1yr, 2yr, 4yr cycles)
  */
 
+export type DCAFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+
 export interface PriceScenario {
   id: string;
   name: string;
@@ -33,6 +35,8 @@ export interface ScenarioCalculation {
   averageMonthlyFiat: number;
   finalProjectedPrice: number;
   totalBtcNeeded: number;
+  frequency?: DCAFrequency; // Added for frequency support
+  totalPeriods?: number; // Total number of purchase periods
 }
 
 export class BTCProjectionService {
@@ -242,41 +246,73 @@ export class BTCProjectionService {
   }
   
   /**
-   * Calculate DCA projections for a specific scenario
+   * Get periods per year for a given frequency
+   */
+  static getPeriodsPerYear(frequency: DCAFrequency): number {
+    switch (frequency) {
+      case 'daily': return 365;
+      case 'weekly': return 52;
+      case 'biweekly': return 26;
+      case 'monthly': return 12;
+      default: return 12;
+    }
+  }
+
+  /**
+   * Calculate DCA projections for a specific scenario with frequency support
    */
   static calculateScenarioProjection(
     scenario: PriceScenario,
     currentBtcPrice: number,
     btcNeeded: number,
-    totalMonths: number
+    totalMonths: number,
+    frequency: DCAFrequency = 'monthly'
   ): ScenarioCalculation {
     const monthlyProjections: MonthlyProjection[] = [];
     let totalFiatNeeded = 0;
     
-    // Calculate monthly growth rate from annual rate
-    // Formula: (1 + annualRate)^(1/12) - 1
-    const monthlyGrowthRate = Math.pow(1 + scenario.annualGrowthRate, 1 / 12) - 1;
+    // Calculate periods based on frequency
+    const periodsPerYear = this.getPeriodsPerYear(frequency);
+    const totalPeriods = Math.ceil((totalMonths / 12) * periodsPerYear);
     
-    // BTC to buy each month (equal DCA)
-    const btcPerMonth = btcNeeded / totalMonths;
+    // Calculate growth rate per period from annual rate
+    // Formula: (1 + annualRate)^(1/periodsPerYear) - 1
+    const periodGrowthRate = Math.pow(1 + scenario.annualGrowthRate, 1 / periodsPerYear) - 1;
     
-    // Calculate for each month
-    for (let month = 1; month <= totalMonths; month++) {
-      // Project BTC price for this month
-      // Formula: currentPrice * (1 + monthlyRate)^month
-      const projectedPrice = currentBtcPrice * Math.pow(1 + monthlyGrowthRate, month);
+    // BTC to buy each period (equal DCA)
+    const btcPerPeriod = btcNeeded / totalPeriods;
+    
+    // Calculate for each period (but aggregate by month for display)
+    let currentMonth = 1;
+    let monthlyBtc = 0;
+    let monthlyFiat = 0;
+    const periodsPerMonth = periodsPerYear / 12;
+    
+    for (let period = 1; period <= totalPeriods; period++) {
+      // Project BTC price for this period
+      // Formula: currentPrice * (1 + periodRate)^period
+      const projectedPrice = currentBtcPrice * Math.pow(1 + periodGrowthRate, period);
       
-      // Fiat needed this month
-      const fiatNeeded = btcPerMonth * projectedPrice;
+      // Fiat needed this period
+      const fiatNeeded = btcPerPeriod * projectedPrice;
       
-      monthlyProjections.push({
-        month,
-        projectedPrice,
-        btcToBuy: btcPerMonth,
-        fiatNeeded
-      });
-      
+      monthlyBtc += btcPerPeriod;
+      monthlyFiat += fiatNeeded;
       totalFiatNeeded += fiatNeeded;
+      
+      // Every month (or at the end), push the aggregated data
+      if (period % periodsPerMonth === 0 || period === totalPeriods) {
+        monthlyProjections.push({
+          month: currentMonth,
+          projectedPrice,
+          btcToBuy: monthlyBtc,
+          fiatNeeded: monthlyFiat
+        });
+        
+        currentMonth++;
+        monthlyBtc = 0;
+        monthlyFiat = 0;
+      }
     }
     
     const averageMonthlyFiat = totalFiatNeeded / totalMonths;
@@ -288,22 +324,25 @@ export class BTCProjectionService {
       totalFiatNeeded,
       averageMonthlyFiat,
       finalProjectedPrice,
-      totalBtcNeeded: btcNeeded
+      totalBtcNeeded: btcNeeded,
+      frequency,
+      totalPeriods
     };
   }
   
   /**
-   * Calculate all 5 scenarios at once for comparison
+   * Calculate all 6 scenarios at once for comparison
    */
   static async calculateAllScenarios(
     currentBtcPrice: number,
     btcNeeded: number,
-    totalMonths: number
+    totalMonths: number,
+    frequency: DCAFrequency = 'monthly'
   ): Promise<ScenarioCalculation[]> {
     const scenarios = await this.getScenarios();
     
     return scenarios.map(scenario => 
-      this.calculateScenarioProjection(scenario, currentBtcPrice, btcNeeded, totalMonths)
+      this.calculateScenarioProjection(scenario, currentBtcPrice, btcNeeded, totalMonths, frequency)
     );
   }
 }
