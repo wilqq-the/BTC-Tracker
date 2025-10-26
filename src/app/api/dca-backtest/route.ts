@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       const frequency = body.frequency;
 
       // Get user settings for currency
-      const settings = await SettingsService.getSettings(userId);
+      const settings = await SettingsService.getSettings();
       const mainCurrency = body.currency || settings.currency.mainCurrency;
 
       // Get exchange rate if needed (convert investment to USD for historical lookup)
