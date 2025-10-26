@@ -220,11 +220,12 @@ export async function POST(request: NextRequest) {
     const pricePerBtc = parseFloat(formData.price_per_btc);
     const fees = parseFloat(formData.fees || '0');
 
-    if (isNaN(btcAmount) || isNaN(pricePerBtc) || btcAmount <= 0 || pricePerBtc <= 0) {
+    // Allow zero price for mining/gifts/airdrops (but not negative)
+    if (isNaN(btcAmount) || isNaN(pricePerBtc) || btcAmount <= 0 || pricePerBtc < 0) {
       return NextResponse.json({
         success: false,
         error: 'Invalid numeric values',
-        message: 'BTC amount and price must be positive numbers'
+        message: 'BTC amount must be positive, price cannot be negative'
       } as TransactionResponse, { status: 400 });
     }
 

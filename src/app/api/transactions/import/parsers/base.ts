@@ -71,16 +71,18 @@ export abstract class BaseParser implements Parser {
       throw new Error(`Invalid BTC amount: ${transaction.btc_amount}`);
     }
     
-    if (isNaN(transaction.original_price_per_btc) || transaction.original_price_per_btc <= 0) {
-      throw new Error(`Invalid price per BTC: ${transaction.original_price_per_btc}`);
+    // Allow zero price for mining/gifts/airdrops (but not negative)
+    if (isNaN(transaction.original_price_per_btc) || transaction.original_price_per_btc < 0) {
+      throw new Error(`Invalid price per BTC: ${transaction.original_price_per_btc}. Cannot be negative.`);
     }
     
     if (!transaction.original_currency || transaction.original_currency.length < 2) {
       throw new Error(`Invalid currency: ${transaction.original_currency}`);
     }
     
-    if (isNaN(transaction.original_total_amount) || transaction.original_total_amount <= 0) {
-      throw new Error(`Invalid total amount: ${transaction.original_total_amount}`);
+    // Allow zero total for mining/gifts/airdrops (but not negative)
+    if (isNaN(transaction.original_total_amount) || transaction.original_total_amount < 0) {
+      throw new Error(`Invalid total amount: ${transaction.original_total_amount}. Cannot be negative.`);
     }
     
     // Validate date format

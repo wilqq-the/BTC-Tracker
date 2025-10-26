@@ -408,21 +408,28 @@ export class DCAAnalysisService {
     
     // Actual DCA
     const actualPnL = currentValue - totalInvested;
-    const actualPnLPercent = (actualPnL / totalInvested) * 100;
+    const actualPnLPercent = totalInvested > 0 ? (actualPnL / totalInvested) * 100 : 0;
 
     // Scenario 1: Lump Sum at first purchase date
-    const firstTx = transactions[0];
-    const lumpSumBtc = totalInvested / firstTx.originalPricePerBtc;
+    // Find first transaction with non-zero price (skip mining/gifts)
+    const firstPaidTx = transactions.find(tx => tx.originalPricePerBtc > 0) || transactions[0];
+    const lumpSumBtc = firstPaidTx.originalPricePerBtc > 0 
+      ? totalInvested / firstPaidTx.originalPricePerBtc
+      : totalBtc; // If all transactions are free, use actual BTC
     const lumpSumValue = lumpSumBtc * currentPrice;
     const lumpSumPnL = lumpSumValue - totalInvested;
-    const lumpSumPnLPercent = (lumpSumPnL / totalInvested) * 100;
+    const lumpSumPnLPercent = totalInvested > 0 ? (lumpSumPnL / totalInvested) * 100 : 0;
 
-    // Scenario 2: Perfect Timing (lowest 3 prices)
-    const sortedByPrice = [...transactions].sort((a, b) => a.originalPricePerBtc - b.originalPricePerBtc);
-    const perfectBtc = totalInvested / sortedByPrice[0].originalPricePerBtc;
+    // Scenario 2: Perfect Timing (lowest non-zero price)
+    const paidTransactions = transactions.filter(tx => tx.originalPricePerBtc > 0);
+    const sortedByPrice = [...paidTransactions].sort((a, b) => a.originalPricePerBtc - b.originalPricePerBtc);
+    const lowestPriceTx = sortedByPrice[0];
+    const perfectBtc = lowestPriceTx && lowestPriceTx.originalPricePerBtc > 0
+      ? totalInvested / lowestPriceTx.originalPricePerBtc
+      : totalBtc; // If no paid transactions, use actual BTC
     const perfectValue = perfectBtc * currentPrice;
     const perfectPnL = perfectValue - totalInvested;
-    const perfectPnLPercent = (perfectPnL / totalInvested) * 100;
+    const perfectPnLPercent = totalInvested > 0 ? (perfectPnL / totalInvested) * 100 : 0;
 
     return [
       {
@@ -437,7 +444,7 @@ export class DCAAnalysisService {
       },
       {
         name: 'Lump Sum',
-        description: `All money invested on ${firstTx.transactionDate.toLocaleDateString()}`,
+        description: `All money invested on ${firstPaidTx.transactionDate.toLocaleDateString()}`,
         totalInvested,
         btcHoldings: lumpSumBtc,
         currentValue: lumpSumValue,
