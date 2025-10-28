@@ -5,9 +5,10 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.2] - 2025-10-21
+## [0.6.2] - 2025-10-28
 
 ### ✨ New Features
+- **GitHub Issue Template for New Import Parsers** - Simplified template for requesting support for new exchanges/sources
 - **Zero-Cost Transaction Support** - Can now record Bitcoin received for free (mining rewards, gifts, airdrops, faucets)
   - Enter `0` for price when adding transactions
   - Cost basis correctly calculated as $0
@@ -30,6 +31,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added working CSV export for sell transactions (capital gains report)
 
 ### 🔧 Bug Fixes
+- **Fixed Docker permissions for Umbrel and non-root environments** - Entrypoint script now detects if running as root or non-root user and adapts accordingly
+  - Fixes "Operation not permitted" and "Permission denied" errors in Umbrel
+  - Uses `/tmp` for npm cache when running as non-root
+  - Runs as root initially, drops privileges after setup
+  - Compatible with Docker, Umbrel, Kubernetes, and other orchestrators
+- Fixed DCA backtest API using incorrect `SettingsService.getSettings()` signature
 - Fixed DCA analysis "What-If" scenarios crashing when zero-cost transactions (mining/gifts) are present - now correctly handles division by zero
 - Fixed duplicate detection being too strict - was skipping legitimate transactions with same date/amount but different fees or notes
 - Import now properly handles transactions recorded in separate rows with slight variations
