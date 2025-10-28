@@ -87,12 +87,15 @@ RUN chown -R nextjs:nodejs /app/public/uploads /app/data
 # Ensure the nextjs user can write to the app directory for database
 RUN chown -R nextjs:nodejs /app
 
-
 EXPOSE 3000
 
 ENV PORT="3000"
 # set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
+
+# Run as root initially to allow entrypoint script to handle permission setup
+# The entrypoint will drop privileges appropriately based on environment
+USER root
 
 # Use entrypoint script for dynamic database setup
 CMD ["./scripts/docker-entrypoint.sh"] 
