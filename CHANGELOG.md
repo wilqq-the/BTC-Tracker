@@ -5,6 +5,17 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.4] - 2025-11-07
+
+### ✨ New Features
+- **Bitcoin Transfer Tracking** - Track BTC transfers between hot/cold wallets with network fees in BTC ([#122](https://github.com/wilqq-the/BTC-Tracker/issues/122))
+
+### 🎨 UI Improvements
+- Redesigned Profile page - 50% more compact layout
+
+### 🔧 Bug Fixes
+- Fixed negative zero display in wallet balances and transfer fee calculations
+
 ## [0.6.2] - 2025-10-28
 
 ### ✨ New Features

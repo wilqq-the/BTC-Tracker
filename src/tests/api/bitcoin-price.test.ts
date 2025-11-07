@@ -106,6 +106,10 @@ describe('Bitcoin Price API', () => {
         totalBTC: 0.5,
         totalTransactions: 3,
         totalSatoshis: 50000000,
+        // Wallet distribution
+        coldWalletBTC: 0.3,
+        hotWalletBTC: 0.2,
+        totalFeesBTC: 0.001,
         mainCurrency: 'USD',
         totalInvestedMain: 25000,
         totalFeesMain: 150,
@@ -369,6 +373,10 @@ describe('Bitcoin Price API', () => {
         totalBTC: 0.5,
         totalTransactions: 3,
         totalSatoshis: 50000000,
+        // Wallet distribution
+        coldWalletBTC: 0.3,
+        hotWalletBTC: 0.2,
+        totalFeesBTC: 0.001,
         mainCurrency: 'USD',
         totalInvestedMain: 25000,
         totalFeesMain: 150,

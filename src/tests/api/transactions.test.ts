@@ -131,7 +131,7 @@ describe.skip('Transactions API', () => {
       // Check transaction structure
       const transaction = data.data[0]
       expect(transaction.id).toBeDefined()
-      expect(transaction.type).toMatch(/^(BUY|SELL)$/)
+      expect(transaction.type).toMatch(/^(BUY|SELL|TRANSFER)$/)
       expect(transaction.btc_amount).toBeDefined()
       expect(transaction.original_price_per_btc).toBeDefined()
       expect(transaction.original_currency).toBeDefined()
@@ -305,6 +305,35 @@ describe.skip('Transactions API', () => {
       expect(data.data.original_price_per_btc).toBe(53000)
       expect(data.data.original_currency).toBe('EUR')
       expect(data.data.original_total_amount).toBe(1060) // 0.02 * 53000
+    })
+
+    it('should create a new TRANSFER transaction', async () => {
+      const newTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.5',
+        price_per_btc: '0',
+        currency: 'USD',
+        fees: '0.00001',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-19',
+        notes: 'Transfer to cold wallet',
+        tags: 'cold-storage',
+        transfer_type: 'TO_COLD_WALLET',
+        destination_address: 'bc1q...'
+      }
+
+      const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', newTransaction)
+      const response = await transactionsPOST(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(data.data.type).toBe('TRANSFER')
+      expect(data.data.btc_amount).toBe(0.5)
+      expect(data.data.fees).toBe(0.00001)
+      expect(data.data.fees_currency).toBe('BTC')
+      expect(data.data.transfer_type).toBe('TO_COLD_WALLET')
+      expect(data.data.destination_address).toBe('bc1q...')
     })
 
     it('should calculate total amount automatically', async () => {
@@ -592,17 +621,19 @@ describe.skip('Transactions API', () => {
 
   describe('Transaction Validation', () => {
     it('should accept valid transaction types', async () => {
-      const validTypes = ['BUY', 'SELL']
+      const validTypes = ['BUY', 'SELL', 'TRANSFER']
       
       for (const type of validTypes) {
         const transaction: TransactionFormData = {
-          type: type as 'BUY' | 'SELL',
+          type: type as 'BUY' | 'SELL' | 'TRANSFER',
           btc_amount: '0.1',
-          price_per_btc: '50000',
+          price_per_btc: type === 'TRANSFER' ? '0' : '50000',
           currency: 'USD',
-          fees: '0',
+          fees: type === 'TRANSFER' ? '0.00001' : '0',
+          fees_currency: type === 'TRANSFER' ? 'BTC' : undefined,
           transaction_date: '2024-01-15',
-          notes: ''
+          notes: '',
+          transfer_type: type === 'TRANSFER' ? 'TO_COLD_WALLET' : undefined
         }
 
         const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', transaction)

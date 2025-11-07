@@ -13,7 +13,7 @@ datasource db {
 // Bitcoin transactions table - stores only original transaction data
 model BitcoinTransaction {
   id                    Int      @id @default(autoincrement())
-  type                  String   // 'BUY' or 'SELL'
+  type                  String   // 'BUY', 'SELL', or 'TRANSFER'
   btcAmount             Float    @map("btc_amount")
   
   // User relationship
@@ -21,9 +21,10 @@ model BitcoinTransaction {
   user                  User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   // Original transaction data (what user actually entered)
-  originalPricePerBtc   Float    @map("original_price_per_btc")
+  // For TRANSFER: these fields can be 0 or null since no buying/selling occurs
+  originalPricePerBtc   Float    @default(0) @map("original_price_per_btc")
   originalCurrency      String   @map("original_currency")
-  originalTotalAmount   Float    @map("original_total_amount")
+  originalTotalAmount   Float    @default(0) @map("original_total_amount")
   
   // Fees and metadata
   fees                  Float    @default(0)
@@ -32,12 +33,18 @@ model BitcoinTransaction {
   notes                 String?
   tags                  String?  // Comma-separated tags: "DCA,Long-term,Dip Buy"
   
+  // Transfer-specific fields
+  transferType          String?  @map("transfer_type") // 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS'
+  destinationAddress    String?  @map("destination_address") // Optional: wallet address for tracking
+  
   // Tracking
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("bitcoin_transactions")
   @@index([userId])
+  @@index([type])
+  @@index([transferType])
 }
 
 // Historical Bitcoin prices (daily OHLC data for long-term trends)
@@ -158,9 +165,14 @@ model PortfolioSummary {
   totalBtc                    Float    @default(0) @map("total_btc")
   totalTransactions           Int      @default(0) @map("total_transactions")
   
+  // Cold/Hot Wallet Distribution
+  coldWalletBtc               Float    @default(0) @map("cold_wallet_btc")
+  hotWalletBtc                Float    @default(0) @map("hot_wallet_btc")
+  
   // Investment (in user's main currency)
   totalInvested               Float    @default(0) @map("total_invested")
   totalFees                   Float    @default(0) @map("total_fees")
+  totalFeesBtc                Float    @default(0) @map("total_fees_btc") // Fees paid in BTC
   averageBuyPrice             Float    @default(0) @map("average_buy_price")
   mainCurrency                String   @default("USD") @map("main_currency")
   

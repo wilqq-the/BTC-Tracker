@@ -1,19 +1,27 @@
 // Bitcoin Transaction Types (Database Schema)
 export interface BitcoinTransaction {
   id: number;
-  type: 'BUY' | 'SELL';
-  btc_amount: number; // Amount of BTC bought/sold
+  type: 'BUY' | 'SELL' | 'TRANSFER';
+  btc_amount: number; // For BUY/SELL: amount bought/sold. For TRANSFER: total amount LEAVING source wallet
   
   // Original transaction data (what user actually entered)
+  // For TRANSFER: these fields can be 0 since no buying/selling occurs
   original_price_per_btc: number; // Price per BTC in original currency
   original_currency: string; // Currency used for transaction (USD, EUR, PLN, INR, etc.)
   original_total_amount: number; // Total amount in original currency
   
   // Fees and metadata
-  fees: number; // Transaction fees
-  fees_currency: string; // Currency of fees
+  fees: number; // Transaction fees (always in BTC for transfers!)
+  fees_currency: string; // Currency of fees (always 'BTC' for TRANSFER type)
   transaction_date: string; // Date of transaction (YYYY-MM-DD)
   notes: string; // Optional notes
+  tags?: string; // Optional tags
+  
+  // Transfer-specific fields
+  // IMPORTANT: For transfers, btc_amount = total leaving source, fees = network fee
+  // Amount arriving at destination = btc_amount - fees
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | null;
+  destination_address?: string | null; // Optional: wallet address for tracking
   
   // Tracking
   created_at: string; // When record was created
@@ -40,41 +48,50 @@ export interface EnhancedTransaction extends BitcoinTransaction {
 }
 
 export interface TransactionFormData {
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: string;
   price_per_btc: string;
   currency: string;
   fees: string;
+  fees_currency?: string; // For specifying BTC fees on transfers
   transaction_date: string;
   notes: string;
   tags?: string;
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS';
+  destination_address?: string;
 }
 
 export interface TransactionSummary {
   total_transactions: number;
   total_buy_transactions: number;
   total_sell_transactions: number;
+  total_transfer_transactions: number;
   total_btc_bought: number;
   total_btc_sold: number;
+  total_btc_transferred: number;
   current_btc_holdings: number;
   total_usd_invested: number;
   total_usd_received: number;
   total_fees_paid: number;
+  total_fees_btc: number; // Fees paid in BTC
   average_buy_price: number;
   average_sell_price: number;
   realized_pnl: number;
   unrealized_pnl: number;
   total_pnl: number;
   roi_percentage: number;
+  cold_wallet_btc: number;
+  hot_wallet_btc: number;
 }
 
 export interface TransactionFilters {
-  type?: 'ALL' | 'BUY' | 'SELL';
+  type?: 'ALL' | 'BUY' | 'SELL' | 'TRANSFER';
   date_from?: string;
   date_to?: string;
   currency?: string;
   min_amount?: number;
   max_amount?: number;
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS';
 }
 
 export interface TransactionSort {
@@ -179,9 +196,16 @@ export interface PortfolioSummary {
   unrealized_pnl_percentage: number;
   main_currency: string;
   
+  // Cold/Hot Wallet Distribution
+  cold_wallet_btc: number;
+  hot_wallet_btc: number;
+  
   // Secondary currency display
   secondary_currency: string;
   current_value_secondary: number;
+  
+  // Fees tracking
+  total_fees_btc: number; // Total fees paid in BTC
   
   // Legacy fields (for backward compatibility)
   average_buy_price_usd?: number;
