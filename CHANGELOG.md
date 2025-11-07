@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redesigned Profile page - 50% more compact layout
 
 ### 🔧 Bug Fixes
+- Fixed transaction modal scrolling on small screens - modal now scrolls independently with sticky header/footer ([#121](https://github.com/wilqq-the/BTC-Tracker/issues/121))
 - Fixed negative zero display in wallet balances and transfer fee calculations
 
 ## [0.6.2] - 2025-10-28
