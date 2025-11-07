@@ -277,18 +277,18 @@ export default function AddTransactionModal({
   // Use portal to render modal at document root level (outside sidebar)
   const modalContent = (
     <div 
-      className={`fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity duration-200 ${
+      className={`fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 transition-opacity duration-200 p-4 overflow-y-auto ${
         isAnimating ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={onClose}
     >
       <div 
-        className={`bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ${
+        className={`bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 max-h-[calc(100vh-4rem)] flex flex-col ${
           isAnimating ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 flex-shrink-0">
           <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
           </h3>
@@ -302,7 +302,8 @@ export default function AddTransactionModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2 -mr-2">
           {/* Transaction Type */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
@@ -633,9 +634,10 @@ export default function AddTransactionModal({
               Separate multiple tags with commas
             </p>
           </div>
+          </div>
 
-          {/* Form Actions */}
-          <div className="flex space-x-3 pt-6">
+          {/* Form Actions - Sticky at bottom */}
+          <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <ThemedButton
               type="button"
               variant="secondary"
