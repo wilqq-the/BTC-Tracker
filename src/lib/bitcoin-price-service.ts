@@ -13,6 +13,11 @@ export interface PortfolioSummaryData {
   totalTransactions: number;
   totalSatoshis: number;
   
+  // Wallet distribution
+  coldWalletBTC: number;
+  hotWalletBTC: number;
+  totalFeesBTC: number;
+  
   // Main currency values (based on user settings)
   mainCurrency: string;
   totalInvestedMain: number;
@@ -577,7 +582,7 @@ export class BitcoinPriceService {
         totalSatoshis,
         totalTransactions: aggregateData._count.id || 0,
         
-        // Cold/Hot Wallet Distribution
+        // Cold/Hot Wallet Distribution  
         coldWalletBTC,
         hotWalletBTC,
         totalFeesBTC,
@@ -782,6 +787,11 @@ export class BitcoinPriceService {
           totalBTC: record.totalBtc || 0,
           totalSatoshis,
           totalTransactions: record.totalTransactions || 0,
+          
+          // Cold/Hot Wallet Distribution
+          coldWalletBTC: record.coldWalletBtc || 0,
+          hotWalletBTC: record.hotWalletBtc || 0,
+          totalFeesBTC: record.totalBtc ? ((record.totalBtc || 0) - (record.coldWalletBtc || 0) - (record.hotWalletBtc || 0)) : 0,
           
           // Main currency values (stored directly in DB)
           mainCurrency: storedMainCurrency,
