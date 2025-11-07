@@ -207,20 +207,40 @@ export async function POST(request: NextRequest) {
     const formData: TransactionFormData = await request.json();
 
     // Validate required fields
-    if (!formData.type || !formData.btc_amount || !formData.price_per_btc || !formData.transaction_date) {
+    const isTransfer = formData.type === 'TRANSFER';
+    
+    if (!formData.type || !formData.btc_amount || !formData.transaction_date) {
       return NextResponse.json({
         success: false,
         error: 'Missing required fields',
-        message: 'Type, BTC amount, price, and date are required'
+        message: 'Type, BTC amount, and date are required'
+      } as TransactionResponse, { status: 400 });
+    }
+    
+    // For non-TRANSFER transactions, price is required
+    if (!isTransfer && !formData.price_per_btc) {
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields',
+        message: 'Price is required for BUY/SELL transactions'
+      } as TransactionResponse, { status: 400 });
+    }
+    
+    // For TRANSFER transactions, transfer_type is required
+    if (isTransfer && !formData.transfer_type) {
+      return NextResponse.json({
+        success: false,
+        error: 'Missing required fields',
+        message: 'Transfer type is required for TRANSFER transactions'
       } as TransactionResponse, { status: 400 });
     }
 
     // Convert string values to numbers
     const btcAmount = parseFloat(formData.btc_amount);
-    const pricePerBtc = parseFloat(formData.price_per_btc);
+    const pricePerBtc = isTransfer ? 0 : parseFloat(formData.price_per_btc);
     const fees = parseFloat(formData.fees || '0');
 
-    // Allow zero price for mining/gifts/airdrops (but not negative)
+    // Allow zero price for mining/gifts/airdrops/transfers (but not negative)
     if (isNaN(btcAmount) || isNaN(pricePerBtc) || btcAmount <= 0 || pricePerBtc < 0) {
       return NextResponse.json({
         success: false,
@@ -231,6 +251,9 @@ export async function POST(request: NextRequest) {
 
     // Calculate original total amount
     const originalTotalAmount = btcAmount * pricePerBtc;
+    
+    // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
+    const feesCurrency = isTransfer ? 'BTC' : formData.currency;
 
     // Insert transaction using Prisma - only store original data with user association
     const newTransaction = await prisma.bitcoinTransaction.create({
@@ -242,17 +265,19 @@ export async function POST(request: NextRequest) {
         originalCurrency: formData.currency,
         originalTotalAmount: originalTotalAmount,
         fees: fees,
-        feesCurrency: formData.currency, // fees currency same as transaction currency
+        feesCurrency: feesCurrency,
         transactionDate: new Date(formData.transaction_date),
         notes: formData.notes || '',
-        tags: formData.tags || null
+        tags: formData.tags || null,
+        transferType: isTransfer ? formData.transfer_type : null,
+        destinationAddress: isTransfer ? (formData.destination_address || null) : null
       } as any
     });
 
     // Format the transaction to match expected format
     const formattedTransaction = {
       ...newTransaction,
-      type: newTransaction.type as 'BUY' | 'SELL',
+      type: newTransaction.type as 'BUY' | 'SELL' | 'TRANSFER',
       transaction_date: newTransaction.transactionDate.toISOString().split('T')[0],
       btc_amount: newTransaction.btcAmount,
       original_price_per_btc: newTransaction.originalPricePerBtc,
@@ -261,6 +286,8 @@ export async function POST(request: NextRequest) {
       fees_currency: newTransaction.feesCurrency,
       notes: newTransaction.notes || '',
       tags: (newTransaction as any).tags || '',
+      transfer_type: (newTransaction as any).transferType || null,
+      destination_address: (newTransaction as any).destinationAddress || null,
       created_at: newTransaction.createdAt,
       updated_at: newTransaction.updatedAt
     };

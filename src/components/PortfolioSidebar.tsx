@@ -381,6 +381,40 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             </div>
           </div>
           
+          {/* Cold/Hot Wallet Distribution */}
+          {(portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
+            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+              <ThemedText variant="muted" size="xs" className="uppercase tracking-wide mb-2">
+                Wallet Distribution
+              </ThemedText>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <ThemedText variant="muted" size="xs">Cold Wallet</ThemedText>
+                </div>
+                <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {portfolioData.coldWalletBtc.toFixed(8)} ₿
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <ThemedText variant="muted" size="xs">Hot Wallet</ThemedText>
+                </div>
+                <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿
+                </div>
+              </div>
+              {portfolioData.coldWalletBtc > 0 && (
+                <div className="pt-1">
+                  <ThemedText variant="muted" size="xs">
+                    {((portfolioData.coldWalletBtc / convertedData.totalBTC) * 100).toFixed(1)}% in cold storage
+                  </ThemedText>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Average Price */}
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">

@@ -1247,10 +1247,17 @@ export default function TransactionsPage() {
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             transaction.type === 'BUY' 
                               ? 'bg-profit text-white' 
-                              : 'bg-loss text-white'
+                              : transaction.type === 'SELL'
+                              ? 'bg-loss text-white'
+                              : 'bg-blue-500 text-white'
                           }`}>
                             {transaction.type}
                           </span>
+                          {transaction.type === 'TRANSFER' && transaction.transfer_type && (
+                            <div className="text-xs text-btc-text-muted mt-1">
+                              {transaction.transfer_type.replace(/_/g, ' ')}
+                            </div>
+                          )}
                         </div>
 
                         {/* BTC Amount */}
@@ -1265,13 +1272,21 @@ export default function TransactionsPage() {
 
                         {/* Original Price */}
                         <div className="text-sm">
-                          <div className="text-btc-text-primary font-medium">
-                            {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
-                          </div>
-                          {transaction.original_currency !== (transaction.main_currency || 'USD') && (
-                            <div className="text-btc-text-muted text-xs opacity-70">
-                              {formatCurrency(transaction.main_currency_price_per_btc || transaction.usd_price_per_btc, transaction.main_currency || 'USD')}
+                          {transaction.type === 'TRANSFER' ? (
+                            <div className="text-btc-text-muted text-xs">
+                              N/A (Transfer)
                             </div>
+                          ) : (
+                            <>
+                              <div className="text-btc-text-primary font-medium">
+                                {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
+                              </div>
+                              {transaction.original_currency !== (transaction.main_currency || 'USD') && (
+                                <div className="text-btc-text-muted text-xs opacity-70">
+                                  {formatCurrency(transaction.main_currency_price_per_btc || transaction.usd_price_per_btc, transaction.main_currency || 'USD')}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
 

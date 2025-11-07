@@ -7,14 +7,17 @@ import { SupportedCurrency } from '@/lib/types';
 import currencies from '@/data/currencies.json';
 
 interface TransactionFormData {
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: string;
   price_per_btc: string;
   currency: string;
   fees: string;
+  fees_currency?: string;
   transaction_date: string;
   notes: string;
   tags: string;
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS';
+  destination_address?: string;
 }
 
 interface AddTransactionModalProps {
@@ -30,9 +33,12 @@ const initialFormData: TransactionFormData = {
   price_per_btc: '',
   currency: 'USD',
   fees: '0',
+  fees_currency: 'BTC', // Default to BTC for transfers
   transaction_date: new Date().toISOString().split('T')[0],
   notes: '',
-  tags: ''
+  tags: '',
+  transfer_type: 'TO_COLD_WALLET',
+  destination_address: ''
 };
 
 export default function AddTransactionModal({ 
@@ -48,9 +54,12 @@ export default function AddTransactionModal({
       price_per_btc: editingTransaction.original_price_per_btc.toString(),
       currency: editingTransaction.original_currency,
       fees: editingTransaction.fees.toString(),
+      fees_currency: editingTransaction.fees_currency || 'USD',
       transaction_date: editingTransaction.transaction_date,
       notes: editingTransaction.notes || '',
-      tags: editingTransaction.tags || ''
+      tags: editingTransaction.tags || '',
+      transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+      destination_address: editingTransaction.destination_address || ''
     } : initialFormData
   );
   
@@ -77,9 +86,12 @@ export default function AddTransactionModal({
         price_per_btc: editingTransaction.original_price_per_btc.toString(),
         currency: editingTransaction.original_currency,
         fees: editingTransaction.fees.toString(),
+        fees_currency: editingTransaction.fees_currency || 'USD',
         transaction_date: editingTransaction.transaction_date,
         notes: editingTransaction.notes || '',
-        tags: editingTransaction.tags || ''
+        tags: editingTransaction.tags || '',
+        transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+        destination_address: editingTransaction.destination_address || ''
       });
       setCurrencySearch('');
     } else {
@@ -296,17 +308,24 @@ export default function AddTransactionModal({
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
               Transaction Type
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              {(['BUY', 'SELL'] as const).map((type) => (
+            <div className="grid grid-cols-3 gap-3">
+              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => (
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, type }))}
+                  onClick={() => setFormData(prev => ({ 
+                    ...prev, 
+                    type,
+                    // Always set fees_currency to BTC for transfers (Bitcoin network fees are always paid in BTC)
+                    fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
+                  }))}
                   className={`relative py-2.5 px-4 rounded-lg font-medium transition-colors ${
                     formData.type === type
                       ? type === 'BUY' 
                         ? 'bg-green-500 text-white' 
-                        : 'bg-red-500 text-white'
+                        : type === 'SELL'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-blue-500 text-white'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
@@ -319,7 +338,7 @@ export default function AddTransactionModal({
           {/* BTC Amount */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              BTC Amount
+              {formData.type === 'TRANSFER' ? 'BTC Amount to Send' : 'BTC Amount'}
             </label>
             <div className="relative">
               <input
@@ -336,113 +355,178 @@ export default function AddTransactionModal({
                   = {sats.toLocaleString()} sats
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Price per BTC */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Price per BTC
-              </label>
-              {currentBtcPrice && (
-                <button
-                  type="button"
-                  onClick={useCurrentPrice}
-                  className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium transition-colors"
-                >
-                  Use current: ${currentBtcPrice.toLocaleString()}
-                </button>
+              {formData.type === 'TRANSFER' && (
+                <div className="mt-1.5 space-y-1">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    <span>💡</span>
+                    <span>Enter the <strong>total amount leaving</strong> your source wallet</span>
+                  </div>
+                  {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
+                    <div className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1.5 rounded font-mono border border-green-200 dark:border-green-800">
+                      ✅ Will arrive at destination: {(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC
+                    </div>
+                  )}
+                </div>
               )}
             </div>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.price_per_btc}
-              onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
-              placeholder="105000.00"
-              required
-            />
-            <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-              <span className="text-bitcoin">💡</span>
-              <span>Enter 0 for mining rewards, gifts, or airdrops</span>
-            </div>
           </div>
 
-          {/* Currency */}
-          <div className="relative">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Currency
-            </label>
-            <input
-              type="text"
-              value={currencySearch}
-              onChange={(e) => {
-                setCurrencySearch(e.target.value);
-                setShowCurrencySuggestions(true);
-              }}
-              onFocus={() => {
-                if (!currencySearch) {
-                  setCurrencySearch('');
-                }
-                setShowCurrencySuggestions(true);
-              }}
-              onBlur={() => setTimeout(() => setShowCurrencySuggestions(false), 200)}
-              placeholder={formData.currency ? `${currencyInfo.symbol} ${formData.currency}` : "Type to search currencies..."}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-            />
-            
-            {/* Suggestions dropdown */}
-            {showCurrencySuggestions && filteredCurrencies.length > 0 && (
-              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                {filteredCurrencies.map((currency) => (
+          {/* Transfer Type (only for TRANSFER) */}
+          {formData.type === 'TRANSFER' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Transfer Direction
+              </label>
+              <select
+                value={formData.transfer_type}
+                onChange={(e) => setFormData(prev => ({ ...prev, transfer_type: e.target.value as any }))}
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+                required
+              >
+                <option value="TO_COLD_WALLET">To Cold Wallet</option>
+                <option value="FROM_COLD_WALLET">From Cold Wallet</option>
+                <option value="BETWEEN_WALLETS">Between Wallets</option>
+              </select>
+            </div>
+          )}
+
+          {/* Price per BTC (hidden for TRANSFER) */}
+          {formData.type !== 'TRANSFER' && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Price per BTC
+                </label>
+                {currentBtcPrice && (
                   <button
-                    key={currency.code}
                     type="button"
-                    onClick={() => {
-                      setFormData(prev => ({ ...prev, currency: currency.code }));
-                      setCurrencySearch('');
-                      setShowCurrencySuggestions(false);
-                    }}
-                    className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                    onClick={useCurrentPrice}
+                    className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium transition-colors"
                   >
-                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                      {currency.symbol} {currency.code}
-                    </span>
-                    <span className="text-gray-500 dark:text-gray-400 ml-2">
-                      {currency.name}
-                    </span>
+                    Use current: ${currentBtcPrice.toLocaleString()}
                   </button>
-                ))}
+                )}
               </div>
-            )}
-            
-            {/* Show current selection when not searching */}
-            {!currencySearch && formData.currency && (
-              <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                Selected: {currencyInfo.symbol} {formData.currency} - {currencyInfo.name}
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price_per_btc}
+                onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
+                placeholder="105000.00"
+                required
+              />
+              <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <span className="text-bitcoin">💡</span>
+                <span>Enter 0 for mining rewards, gifts, or airdrops</span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Currency (hidden for TRANSFER since no fiat is involved) */}
+          {formData.type !== 'TRANSFER' && (
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Currency
+              </label>
+              <input
+                type="text"
+                value={currencySearch}
+                onChange={(e) => {
+                  setCurrencySearch(e.target.value);
+                  setShowCurrencySuggestions(true);
+                }}
+                onFocus={() => {
+                  if (!currencySearch) {
+                    setCurrencySearch('');
+                  }
+                  setShowCurrencySuggestions(true);
+                }}
+                onBlur={() => setTimeout(() => setShowCurrencySuggestions(false), 200)}
+                placeholder={formData.currency ? `${currencyInfo.symbol} ${formData.currency}` : "Type to search currencies..."}
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+              />
+              
+              {/* Suggestions dropdown */}
+              {showCurrencySuggestions && filteredCurrencies.length > 0 && (
+                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {filteredCurrencies.map((currency) => (
+                    <button
+                      key={currency.code}
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, currency: currency.code }));
+                        setCurrencySearch('');
+                        setShowCurrencySuggestions(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
+                    >
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {currency.symbol} {currency.code}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400 ml-2">
+                        {currency.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              
+              {/* Show current selection when not searching */}
+              {!currencySearch && formData.currency && (
+                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  Selected: {currencyInfo.symbol} {formData.currency} - {currencyInfo.name}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Fees */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Fees
+              {formData.type === 'TRANSFER' ? 'Network Fees (in BTC)' : 'Fees'}
             </label>
-            <input
-              type="number"
-              step="0.01"
-              value={formData.fees}
-              onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
-              placeholder="0.00"
-            />
+            <div className="flex gap-2">
+              <input
+                type="number"
+                step={formData.type === 'TRANSFER' ? '0.00000001' : '0.01'}
+                value={formData.fees}
+                onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
+                className="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
+                placeholder={formData.type === 'TRANSFER' ? '0.00001' : '0.00'}
+              />
+              {formData.type === 'TRANSFER' && (
+                <div className="w-24 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 flex items-center justify-center font-medium">
+                  BTC
+                </div>
+              )}
+            </div>
+            {formData.type === 'TRANSFER' && parseFloat(formData.fees || '0') > 0 && (
+              <div className="mt-1.5 text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                <span>⚠️</span>
+                <span>Network fees are deducted from your total holdings</span>
+              </div>
+            )}
           </div>
 
+          {/* Destination Address (only for TRANSFER) */}
+          {formData.type === 'TRANSFER' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Destination Address (Optional)
+              </label>
+              <input
+                type="text"
+                value={formData.destination_address}
+                onChange={(e) => setFormData(prev => ({ ...prev, destination_address: e.target.value }))}
+                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono text-sm"
+                placeholder="bc1q... (optional for tracking)"
+              />
+            </div>
+          )}
+
           {/* Cost Breakdown */}
-          {totals.subtotal > 0 && (
+          {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
             <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2 border border-gray-200 dark:border-gray-700">
               <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
                 Cost Breakdown
@@ -467,6 +551,41 @@ export default function AddTransactionModal({
                   {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
+            </div>
+          )}
+
+          {/* Transfer Summary (only for TRANSFER) */}
+          {formData.type === 'TRANSFER' && parseFloat(formData.btc_amount || '0') > 0 && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-2 border-2 border-blue-300 dark:border-blue-700">
+              <div className="text-xs font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-2">
+                📊 Transfer Breakdown
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-blue-600 dark:text-blue-400">📤 Amount leaving source</span>
+                <span className="font-mono text-red-600 dark:text-red-400 font-bold">
+                  -{parseFloat(formData.btc_amount).toFixed(8)} BTC
+                </span>
+              </div>
+              {parseFloat(formData.fees || '0') > 0 && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-600 dark:text-blue-400">⛏️ Network fee (to miners)</span>
+                    <span className="font-mono text-orange-600 dark:text-orange-400">
+                      -{parseFloat(formData.fees).toFixed(8)} BTC
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 border-t border-blue-300 dark:border-blue-600">
+                    <span className="text-blue-700 dark:text-blue-300 font-semibold">✅ Arrives at destination</span>
+                    <span className="font-mono text-green-600 dark:text-green-400 font-bold">
+                      +{(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
+                    </span>
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700 text-xs text-blue-700 dark:text-blue-300">
+                    <strong>✨ Easy!</strong> If you had exactly {parseFloat(formData.btc_amount).toFixed(8)} BTC in your source wallet, 
+                    after this transfer it will be empty (0 BTC), and your destination will have {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC.
+                  </div>
+                </>
+              )}
             </div>
           )}
 

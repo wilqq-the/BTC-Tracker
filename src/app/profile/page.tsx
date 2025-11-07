@@ -16,6 +16,8 @@ interface UserStats {
   preferredCurrency: string;
   totalBtcBought: number;
   totalBtcSold: number;
+  coldWalletBtc: number;
+  hotWalletBtc: number;
 }
 
 export default function ProfilePage() {
@@ -67,7 +69,9 @@ export default function ProfilePage() {
           lastTransaction: null, // Would need to fetch from transactions
           preferredCurrency: result.data.mainCurrency || 'USD',
           totalBtcBought: result.data.totalBtcBought || 0,
-          totalBtcSold: result.data.totalBtcSold || 0
+          totalBtcSold: result.data.totalBtcSold || 0,
+          coldWalletBtc: result.data.coldWalletBtc || 0,
+          hotWalletBtc: result.data.hotWalletBtc || 0
         });
       }
     } catch (error) {
@@ -254,110 +258,105 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="p-4 lg:p-6 space-y-8">
+      <div className="p-4 lg:p-6 space-y-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-btc-text-primary mb-2">
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold text-btc-text-primary mb-1">
             Profile
           </h1>
-          <ThemedText variant="muted" size="lg">
+          <ThemedText variant="muted" size="sm">
             Manage your account and preferences
           </ThemedText>
         </div>
 
         {/* User Card */}
         <ThemedCard>
-          <div className="p-8">
-            <div className="flex flex-col md:flex-row items-center md:items-start space-y-6 md:space-y-0 md:space-x-8">
+          <div className="p-4">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
               {/* Avatar Section */}
-              <div className="flex flex-col items-center space-y-4">
+              <div className="flex flex-col items-center gap-2">
                 <div className="relative">
                   {userData?.profilePicture ? (
                     <img 
                       src={userData.profilePicture} 
                       alt="Profile" 
-                      className="h-24 w-24 rounded-full object-cover shadow-lg border-2 border-btc-border-secondary"
+                      className="h-16 w-16 rounded-full object-cover border-2 border-btc-border-secondary"
                     />
                   ) : (
-                    <div className="h-24 w-24 bg-gradient-to-br from-btc-500 to-btc-600 rounded-full flex items-center justify-center shadow-lg">
-                      <span className="text-white text-3xl font-bold">
+                    <div className="h-16 w-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xl font-bold">
                         {session?.user?.name?.[0] || session?.user?.email?.[0]?.toUpperCase() || 'U'}
                       </span>
                     </div>
                   )}
                   <button 
                     onClick={handleAvatarChange}
-                    className="absolute -bottom-2 -right-2 h-8 w-8 bg-btc-bg-primary border-2 border-btc-border-secondary rounded-full flex items-center justify-center hover:bg-btc-bg-secondary transition-colors"
+                    className="absolute -bottom-1 -right-1 h-6 w-6 bg-btc-bg-primary border border-btc-border-secondary rounded-full flex items-center justify-center hover:bg-btc-bg-secondary transition-colors"
                   >
-                    <span className="text-btc-text-secondary text-xs">✏️</span>
+                    <span className="text-xs">✏️</span>
                   </button>
                 </div>
                 <ThemedButton 
                   variant="ghost" 
                   size="sm" 
-                  className="text-btc-text-muted"
+                  className="text-xs text-btc-text-muted py-1"
                   onClick={handleAvatarChange}
                 >
-                  Change Avatar
+                  Change
                 </ThemedButton>
               </div>
 
               {/* User Info */}
-              <div className="flex-1 space-y-6">
-                <div className="space-y-3">
-                  <ThemedText variant="primary" className="text-2xl font-bold">
+              <div className="flex-1 space-y-3">
+                <div>
+                  <ThemedText variant="primary" className="text-xl font-bold">
                     {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
                   </ThemedText>
-                  <ThemedText variant="muted" size="sm" className="block">
+                  <ThemedText variant="muted" size="xs" className="block">
                     {session?.user?.email || 'Not available'}
                   </ThemedText>
                 </div>
 
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="p-4 bg-btc-bg-secondary/30 rounded-lg">
-                      <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-3">
-                        Member Since
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-xl font-bold block">
-                        {userStats ? new Date(userStats.memberSince).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        }) : 'N/A'}
-                      </ThemedText>
-                    </div>
-                    
-                    <div className="p-4 bg-btc-bg-secondary/30 rounded-lg">
-                      <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-3">
-                        Account Type
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-xl font-bold block">
-                        Self-Hosted
-                      </ThemedText>
-                    </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
+                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
+                      Joined
+                    </ThemedText>
+                    <ThemedText variant="primary" size="sm" className="font-semibold block">
+                      {userStats ? new Date(userStats.memberSince).toLocaleDateString('en-US', { 
+                        year: 'numeric', 
+                        month: 'short'
+                      }) : 'N/A'}
+                    </ThemedText>
+                  </div>
+                  
+                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
+                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
+                      Currency
+                    </ThemedText>
+                    <ThemedText variant="primary" size="sm" className="font-semibold block">
+                      {userStats?.preferredCurrency || 'USD'}
+                    </ThemedText>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="p-4 bg-btc-bg-secondary/30 rounded-lg">
-                      <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-3">
-                        Preferred Currency
-                      </ThemedText>
-                      <ThemedText variant="primary" className="text-xl font-bold block">
-                        {userStats?.preferredCurrency || 'USD'}
-                      </ThemedText>
-                    </div>
+                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
+                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
+                      Type
+                    </ThemedText>
+                    <ThemedText variant="primary" size="sm" className="font-semibold block">
+                      Self-Hosted
+                    </ThemedText>
+                  </div>
 
-                    <div className="p-4 bg-btc-bg-secondary/30 rounded-lg">
-                      <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-3">
-                        Status
+                  <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
+                      Status
+                    </ThemedText>
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <ThemedText variant="primary" size="sm" className="font-semibold text-green-600 dark:text-green-400">
+                        Active
                       </ThemedText>
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <ThemedText variant="primary" className="text-xl font-bold text-green-600 dark:text-green-400">
-                          Active
-                        </ThemedText>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -368,111 +367,146 @@ export default function ProfilePage() {
 
         {/* Trading Statistics */}
         <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
+          <div className="p-4">
+            <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
               Trading Statistics
             </h2>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center p-8 bg-btc-bg-secondary rounded-xl border border-btc-border-secondary">
-                <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-4">
-                  Total Transactions
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
+                  Transactions
                 </ThemedText>
-                <ThemedText variant="primary" className="text-4xl font-bold block">
+                <ThemedText variant="primary" className="text-2xl font-bold block">
                   {userStats?.totalTransactions || 0}
                 </ThemedText>
               </div>
               
-              <div className="text-center p-8 bg-btc-bg-secondary rounded-xl border border-btc-border-secondary">
-                <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-4">
-                  BTC Bought
+              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
+                  Bought
                 </ThemedText>
-                <ThemedText variant="primary" className="text-2xl font-bold block">
-                  {userStats?.totalBtcBought.toFixed(8) || '0.00000000'}
-                </ThemedText>
-              </div>
-              
-              <div className="text-center p-8 bg-btc-bg-secondary rounded-xl border border-btc-border-secondary">
-                <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-4">
-                  BTC Sold
-                </ThemedText>
-                <ThemedText variant="primary" className="text-2xl font-bold block">
-                  {userStats?.totalBtcSold.toFixed(8) || '0.00000000'}
+                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
+                  {userStats?.totalBtcBought.toFixed(4) || '0.0000'}
                 </ThemedText>
               </div>
               
-              <div className="text-center p-8 bg-btc-bg-secondary rounded-xl border border-btc-border-secondary">
-                <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block mb-4">
+              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
+                  Sold
+                </ThemedText>
+                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
+                  {userStats?.totalBtcSold.toFixed(4) || '0.0000'}
+                </ThemedText>
+              </div>
+              
+              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
                   Net Holdings
                 </ThemedText>
-                <ThemedText variant="primary" className="text-2xl font-bold block">
-                  {((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)).toFixed(8)}
+                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
+                  {((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)).toFixed(4)}
                 </ThemedText>
               </div>
             </div>
+            
+            {/* Cold/Hot Wallet Distribution */}
+            {(userStats?.coldWalletBtc || 0) > 0 && (
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                      <ThemedText variant="muted" size="xs" className="uppercase tracking-wide text-blue-700 dark:text-blue-300">
+                        Cold Wallet
+                      </ThemedText>
+                    </div>
+                    <ThemedText variant="muted" size="xs" className="text-blue-600 dark:text-blue-400">
+                      {((userStats?.coldWalletBtc || 0) / ((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)) * 100).toFixed(0)}%
+                    </ThemedText>
+                  </div>
+                  <ThemedText variant="primary" className="text-base font-bold font-mono text-blue-600 dark:text-blue-400">
+                    {userStats?.coldWalletBtc.toFixed(8)} ₿
+                  </ThemedText>
+                </div>
+                
+                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                      <ThemedText variant="muted" size="xs" className="uppercase tracking-wide text-orange-700 dark:text-orange-300">
+                        Hot Wallet
+                      </ThemedText>
+                    </div>
+                    <ThemedText variant="muted" size="xs" className="text-orange-600 dark:text-orange-400">
+                      {(Math.abs(userStats?.hotWalletBtc || 0) / ((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)) * 100).toFixed(0)}%
+                    </ThemedText>
+                  </div>
+                  <ThemedText variant="primary" className="text-base font-bold font-mono text-orange-600 dark:text-orange-400">
+                    {Math.abs(userStats?.hotWalletBtc || 0).toFixed(8)} ₿
+                  </ThemedText>
+                </div>
+              </div>
+            )}
           </div>
         </ThemedCard>
 
-        {/* Security Settings */}
-        <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-              Security
-            </h2>
+        {/* Security & Data */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Security Settings */}
+          <ThemedCard>
+            <div className="p-4">
+              <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
+                Security
+              </h2>
             
             {!isChangingPassword ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                  <div>
-                    <div className="mb-2">
-                      <ThemedText variant="primary" className="font-semibold text-lg">
-                        Password
-                      </ThemedText>
-                    </div>
-                    <div>
-                      <ThemedText variant="muted" size="sm">
-                        Last changed: Never tracked
-                      </ThemedText>
-                    </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                  <div className="flex-1 min-w-0">
+                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
+                      Password
+                    </ThemedText>
+                    <ThemedText variant="muted" size="xs" className="block">
+                      Last changed: Never tracked
+                    </ThemedText>
                   </div>
                   <ThemedButton
                     variant="secondary"
                     size="sm"
                     onClick={() => setIsChangingPassword(true)}
+                    className="text-xs py-1 px-3 flex-shrink-0"
                   >
-                    Change Password
+                    Change
                   </ThemedButton>
                 </div>
                 
-                <div className="flex items-center justify-between p-4 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                  <div>
-                    <div className="mb-2">
-                      <ThemedText variant="primary" className="font-semibold text-lg">
-                        PIN Authentication
-                      </ThemedText>
-                    </div>
-                    <div>
-                      <ThemedText variant="muted" size="sm">
-                        {userData?.hasPin ? 'PIN is set' : 'No PIN set'}
-                      </ThemedText>
-                    </div>
+                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                  <div className="flex-1 min-w-0">
+                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
+                      PIN Authentication
+                    </ThemedText>
+                    <ThemedText variant="muted" size="xs" className="block">
+                      {userData?.hasPin ? 'PIN is set' : 'No PIN set'}
+                    </ThemedText>
                   </div>
-                  <div className="flex space-x-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     <ThemedButton
                       variant="secondary"
                       size="sm"
                       onClick={() => setIsChangingPin(true)}
+                      className="text-xs py-1 px-3"
                     >
-                      {userData?.hasPin ? 'Change PIN' : 'Set PIN'}
+                      {userData?.hasPin ? 'Change' : 'Set'}
                     </ThemedButton>
                     {userData?.hasPin && (
                       <ThemedButton
                         variant="ghost"
                         size="sm"
                         onClick={handleRemovePin}
-                        className="text-red-500 hover:text-red-600"
+                        className="text-red-500 hover:text-red-600 text-xs py-1 px-2"
                       >
-                        Remove PIN
+                        Remove
                       </ThemedButton>
                     )}
                   </div>
@@ -634,102 +668,65 @@ export default function ProfilePage() {
           </div>
         </ThemedCard>
 
-        {/* Data Management */}
-        <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-              Data Management
-            </h2>
-            
-            <div className="space-y-6">
-              <div className="flex items-center justify-between p-4 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                <div>
-                  <div className="mb-2">
-                    <ThemedText variant="primary" className="font-semibold text-lg">
-                      Export Your Data
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="muted" size="sm">
-                      Download all your transactions and settings
-                    </ThemedText>
-                  </div>
-                </div>
-                <ThemedButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={exportUserData}
-                >
-                  Export JSON
-                </ThemedButton>
-              </div>
+          {/* Data Management */}
+          <ThemedCard>
+            <div className="p-4">
+              <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
+                Data & Session
+              </h2>
               
-              <div className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                <div>
-                  <div className="mb-2">
-                    <ThemedText variant="primary" className="font-semibold text-lg text-red-700 dark:text-red-300">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
+                  <div className="flex-1 min-w-0">
+                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
+                      Export Data
+                    </ThemedText>
+                    <ThemedText variant="muted" size="xs" className="block">
+                      Download transactions & settings
+                    </ThemedText>
+                  </div>
+                  <ThemedButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={exportUserData}
+                    className="text-xs py-1 px-3 flex-shrink-0"
+                  >
+                    Export
+                  </ThemedButton>
+                </div>
+                
+                <div className="flex items-center justify-between gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="flex-1 min-w-0">
+                    <ThemedText variant="primary" className="font-semibold text-sm text-red-700 dark:text-red-300 block mb-1">
                       Delete Account
                     </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="text-red-600 dark:text-red-400">
-                      Permanently delete your account and all data
+                    <ThemedText variant="muted" size="xs" className="text-red-600 dark:text-red-400 block">
+                      Permanently delete all data
                     </ThemedText>
                   </div>
+                  <ThemedButton
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 text-xs py-1 px-3 flex-shrink-0"
+                  >
+                    Delete
+                  </ThemedButton>
                 </div>
-                <ThemedButton
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30"
-                >
-                  Delete Account
-                </ThemedButton>
-              </div>
-            </div>
-          </div>
-        </ThemedCard>
-
-        {/* Session Information */}
-        <ThemedCard>
-          <div className="p-6">
-            <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-              Session Information
-            </h2>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-2">
-                <ThemedText variant="muted" size="sm" className="font-medium">Current Session</ThemedText>
-                <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <ThemedText variant="primary" size="sm" className="font-semibold text-green-600 dark:text-green-400">Active</ThemedText>
+                
+                <div className="pt-3 border-t border-btc-border-secondary">
+                  <ThemedButton
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => window.location.href = '/api/auth/signout'}
+                    className="w-full"
+                  >
+                    Sign Out
+                  </ThemedButton>
                 </div>
               </div>
-              <div className="flex justify-between items-center py-2">
-                <ThemedText variant="muted" size="sm" className="font-medium">Session Started</ThemedText>
-                <ThemedText variant="primary" size="sm" className="font-semibold">
-                  {new Date().toLocaleString()}
-                </ThemedText>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <ThemedText variant="muted" size="sm" className="font-medium">Browser</ThemedText>
-                <ThemedText variant="primary" size="sm" className="font-semibold">
-                  {typeof window !== 'undefined' ? navigator.userAgent.split(' ').slice(-2).join(' ') : 'Unknown'}
-                </ThemedText>
-              </div>
             </div>
-            
-            <div className="mt-6 pt-6 border-t border-btc-border-secondary">
-              <ThemedButton
-                variant="secondary"
-                size="md"
-                onClick={() => window.location.href = '/api/auth/signout'}
-                className="w-full"
-              >
-                Sign Out
-              </ThemedButton>
-            </div>
-          </div>
-        </ThemedCard>
+          </ThemedCard>
+        </div>
       </div>
     </AppLayout>
   );

@@ -34,14 +34,39 @@ export async function GET(request: NextRequest) {
     const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
     const currentPrice = currentPriceUSD * usdToMainRate;
     
-    // Separate buy and sell transactions
+    // Separate buy, sell, and transfer transactions
     const buyTransactions = allTransactions.filter(tx => tx.type === 'BUY');
     const sellTransactions = allTransactions.filter(tx => tx.type === 'SELL');
+    const transferTransactions = allTransactions.filter(tx => tx.type === 'TRANSFER');
     
-    // Calculate total BTC
+    // Calculate BTC fees from transfer transactions
+    // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
+    // Amount arriving at destination = btcAmount - fees
+    let totalFeesBTC = 0;
+    let coldWalletBTC = 0;
+    
+    for (const tx of transferTransactions) {
+      // If fees are paid in BTC, reduce total holdings (burned, gone forever)
+      if (tx.feesCurrency.toUpperCase() === 'BTC') {
+        totalFeesBTC += tx.fees;
+      }
+      
+      // Track cold wallet movements
+      // btcAmount is total leaving source, so destination gets (btcAmount - fees)
+      if (tx.transferType === 'TO_COLD_WALLET') {
+        // Amount received in cold wallet = sent amount - fees
+        coldWalletBTC += (tx.btcAmount - tx.fees);
+      } else if (tx.transferType === 'FROM_COLD_WALLET') {
+        // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
+        coldWalletBTC -= tx.btcAmount;
+      }
+    }
+    
+    // Calculate total BTC (BUY - SELL - BTC_FEES)
     const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-    const currentHoldings = totalBtcBought - totalBtcSold;
+    const currentHoldings = totalBtcBought - totalBtcSold - totalFeesBTC;
+    const hotWalletBTC = currentHoldings - coldWalletBTC;
     
     // Get exchange rates for all currencies
     const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency))) as string[];
@@ -116,6 +141,8 @@ export async function GET(request: NextRequest) {
       // Holdings
       totalBtc: currentHoldings,
       totalSatoshis: Math.round(currentHoldings * 100000000),
+      coldWalletBtc: coldWalletBTC,
+      hotWalletBtc: hotWalletBTC,
       
       // Current values (in main currency)
       currentBtcPrice: currentPrice, // BTC price in main currency
@@ -135,6 +162,9 @@ export async function GET(request: NextRequest) {
       totalInvested: totalInvestedMain,
       totalReceived: totalReceivedMain,
       
+      // Fees tracking
+      totalFeesBTC,
+      
       // 24h changes (calculated in real-time)
       portfolioChange24h,
       portfolioChange24hPercent,
@@ -145,6 +175,7 @@ export async function GET(request: NextRequest) {
       totalTransactions: allTransactions.length,
       totalBuys: buyTransactions.length,
       totalSells: sellTransactions.length,
+      totalTransfers: transferTransactions.length,
       
       // Currency info
       mainCurrency,
