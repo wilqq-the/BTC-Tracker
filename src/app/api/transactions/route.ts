@@ -319,16 +319,38 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
       const mainCurrency = settings.currency.mainCurrency;
 
       // Get transaction statistics using Prisma aggregations for this user
-      const [totalTransactions, buyTransactions, sellTransactions, allTransactions] = await Promise.all([
+      const [totalTransactions, buyTransactions, sellTransactions, transferTransactions, allTransactions] = await Promise.all([
         prisma.bitcoinTransaction.count({ where: { userId } }),
         prisma.bitcoinTransaction.findMany({ where: { userId, type: 'BUY' } }),
         prisma.bitcoinTransaction.findMany({ where: { userId, type: 'SELL' } }),
+        prisma.bitcoinTransaction.findMany({ where: { userId, type: 'TRANSFER' } }),
         prisma.bitcoinTransaction.findMany({ where: { userId } })
       ]);
 
       const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
       const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
+      const totalBtcTransferred = transferTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
       const totalFeesPaid = allTransactions.reduce((sum, tx) => sum + tx.fees, 0);
+      
+      // Calculate BTC fees and wallet distribution
+      let totalFeesBTC = 0;
+      let coldWalletBTC = 0;
+      
+      for (const tx of transferTransactions) {
+        if (tx.feesCurrency.toUpperCase() === 'BTC') {
+          totalFeesBTC += tx.fees;
+        }
+        
+        const txWithTransfer = tx as any; // Type assertion for new fields
+        if (txWithTransfer.transferType === 'TO_COLD_WALLET') {
+          coldWalletBTC += (tx.btcAmount - tx.fees);
+        } else if (txWithTransfer.transferType === 'FROM_COLD_WALLET') {
+          coldWalletBTC -= tx.btcAmount;
+        }
+      }
+      
+      const currentBtcHoldingsAfterFees = totalBtcBought - totalBtcSold - totalFeesBTC;
+      const hotWalletBTC = currentBtcHoldingsAfterFees - coldWalletBTC;
 
       let totalInvested = 0;
       let totalReceived = 0;
@@ -353,8 +375,7 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
       }
 
       const currentBtcPrice = await getCurrentBitcoinPrice();
-      const currentBtcHoldings = totalBtcBought - totalBtcSold;
-      const currentValue = currentBtcHoldings * currentBtcPrice;
+      const currentValue = currentBtcHoldingsAfterFees * currentBtcPrice;
       
       // Calculate P&L
       const unrealizedPnl = currentValue - totalInvested + totalReceived;
@@ -365,19 +386,24 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
         total_transactions: totalTransactions,
         total_buy_transactions: buyTransactions.length,
         total_sell_transactions: sellTransactions.length,
+        total_transfer_transactions: transferTransactions.length,
         total_btc_bought: totalBtcBought,
         total_btc_sold: totalBtcSold,
-        current_btc_holdings: currentBtcHoldings,
+        total_btc_transferred: totalBtcTransferred,
+        current_btc_holdings: currentBtcHoldingsAfterFees,
         total_usd_invested: totalInvested,
         total_usd_received: totalReceived,
         total_fees_paid: totalFeesPaid,
+        total_fees_btc: totalFeesBTC,
         // Volume-weighted average prices
         average_buy_price: totalBtcBought > 0 ? weightedBuyPriceSum / totalBtcBought : 0,
         average_sell_price: totalBtcSold > 0 ? weightedSellPriceSum / totalBtcSold : 0,
         realized_pnl: 0, // Simplified for now
         unrealized_pnl: unrealizedPnl,
         total_pnl: totalPnl,
-        roi_percentage: roiPercentage
+        roi_percentage: roiPercentage,
+        cold_wallet_btc: coldWalletBTC,
+        hot_wallet_btc: hotWalletBTC
       };
 
       resolve(summary);
