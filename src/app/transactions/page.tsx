@@ -10,7 +10,7 @@ import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
 
 interface BitcoinTransaction {
   id: number;
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: number;
   original_price_per_btc: number;
   original_currency: string;
@@ -29,6 +29,10 @@ interface BitcoinTransaction {
   created_at: string;
   updated_at: string;
   
+  // Transfer-specific fields
+  transfer_type?: string;
+  destination_address?: string;
+  
   // Secondary currency display values (added by API)
   secondary_currency?: string;
   secondary_currency_price_per_btc?: number;
@@ -44,7 +48,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BitcoinTransaction | null>(null);
-  const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL' | 'TRANSFER'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentBtcPrice, setCurrentBtcPrice] = useState(105000); // Fallback price
