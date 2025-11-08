@@ -2,21 +2,57 @@
  * Tests for Recurring Transactions (Auto DCA) API
  */
 
+// Mock services
+jest.mock('../../lib/settings-service', () => ({
+  SettingsService: {
+    getSettings: jest.fn().mockResolvedValue({
+      currency: {
+        mainCurrency: 'USD',
+        secondaryCurrency: 'EUR'
+      }
+    })
+  }
+}));
+
+jest.mock('../../lib/exchange-rate-service', () => ({
+  ExchangeRateService: {
+    getExchangeRate: jest.fn().mockResolvedValue(1.0)
+  }
+}));
+
+jest.mock('../../lib/bitcoin-price-service', () => ({
+  BitcoinPriceService: {
+    getCurrentPrice: jest.fn().mockResolvedValue({ price: 50000 }),
+    calculateAndStorePortfolioSummary: jest.fn().mockResolvedValue(undefined)
+  }
+}));
+
+// Mock auth helpers
+let mockUserId: number = 1;
+jest.mock('../../lib/auth-helpers', () => ({
+  withAuth: jest.fn((request: any, handler: Function) => {
+    return handler(mockUserId);
+  })
+}));
+
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/recurring-transactions/route';
 import { GET as GET_BY_ID, PUT, DELETE } from '@/app/api/recurring-transactions/[id]/route';
-import { setupTestDb, cleanupTestDb, createTestUser } from '../test-helpers';
+import { testDb, setupTestDatabase, cleanTestDatabase } from '../test-db';
+import { createTestUser } from '../test-helpers';
 
 describe('Recurring Transactions API', () => {
   let testUserId: number;
 
   beforeAll(async () => {
-    await setupTestDb();
-    testUserId = await createTestUser();
+    await setupTestDatabase();
+    const user = await createTestUser();
+    testUserId = user.id;
+    mockUserId = user.id; // Update mock userId
   });
 
   afterAll(async () => {
-    await cleanupTestDb();
+    await cleanTestDatabase();
   });
 
   describe('POST /api/recurring-transactions', () => {
