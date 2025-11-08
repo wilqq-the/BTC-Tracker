@@ -1,4 +1,5 @@
 import { PriceScheduler } from './price-scheduler';
+import { DCAScheduler } from './dca-scheduler';
 import { ExchangeRateService } from './exchange-rate-service';
 import { HistoricalDataService } from './historical-data-service';
 import { SettingsService } from './settings-service';
@@ -143,7 +144,19 @@ export class AppInitializationService {
         exchangeRateActive: status.exchangeRateActive
       });
 
-      // 6. Setup graceful shutdown handlers
+      // 6. Start DCA Scheduler (automatic recurring transactions)
+      console.log('[DCA] Starting DCA scheduler...');
+      await DCAScheduler.start();
+      const dcaStatus = DCAScheduler.getStatus();
+      const dcaStats = await DCAScheduler.getStatistics();
+      console.log('[DCA] ✅ DCA scheduler started', {
+        isRunning: dcaStatus.isRunning,
+        checkIntervalMinutes: dcaStatus.checkIntervalMinutes,
+        activeRecurring: dcaStats.active,
+        totalExecutions: dcaStats.totalExecutions
+      });
+
+      // 7. Setup graceful shutdown handlers
       this.setupShutdownHandlers();
 
     } catch (error) {
@@ -165,6 +178,7 @@ export class AppInitializationService {
     const cleanup = () => {
       console.log('[STOP] Shutting down BTC Tracker services...');
       PriceScheduler.stop();
+      DCAScheduler.stop();
       console.log('[OK] Services stopped gracefully');
     };
 

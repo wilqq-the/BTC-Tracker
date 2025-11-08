@@ -9,13 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### ✨ New Features
 - **Bitcoin Transfer Tracking** - Track BTC transfers between hot/cold wallets with network fees in BTC ([#122](https://github.com/wilqq-the/BTC-Tracker/issues/122))
+- **Automatic DCA (Dollar-Cost Averaging)** - Schedule recurring Bitcoin purchases (daily/weekly/monthly) that execute automatically ([#119](https://github.com/wilqq-the/BTC-Tracker/issues/119))
 
 ### 🎨 UI Improvements
-- Redesigned Profile page - 50% more compact layout
+- Redesigned Profile page - more compact layout
+- Restructured Goals page with tab navigation
+- Simplified transfer breakdown display
 
 ### 🔧 Bug Fixes
 - Fixed transaction modal scrolling on small screens - modal now scrolls independently with sticky header/footer ([#121](https://github.com/wilqq-the/BTC-Tracker/issues/121))
 - Fixed negative zero display in wallet balances and transfer fee calculations
+- Fixed BTC fee display precision (now shows 8 decimals instead of truncating to 0.00)
+- Fixed P&L display for TRANSFER transactions (now shows "N/A" instead of misleading values)
+- Fixed multiple SIGINT messages during shutdown in development mode
 
 ## [0.6.2] - 2025-10-28
 

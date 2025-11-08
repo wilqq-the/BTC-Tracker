@@ -114,12 +114,13 @@ model User {
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
   // Relations
-  transactions      BitcoinTransaction[]
-  settings          AppSettings[]
-  customCurrencies  CustomCurrency[]
-  portfolioSummary  PortfolioSummary?
-  goals             Goal[]
-  dashboardLayout   DashboardLayout?
+  transactions          BitcoinTransaction[]
+  settings              AppSettings[]
+  customCurrencies      CustomCurrency[]
+  portfolioSummary      PortfolioSummary?
+  goals                 Goal[]
+  dashboardLayout       DashboardLayout?
+  recurringTransactions RecurringTransaction[]
 
   @@map("users")
 }
@@ -234,6 +235,9 @@ model Goal {
   // Tracking
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  recurringTransactions RecurringTransaction[]
 
   @@map("goals")
   @@index([userId])
@@ -251,4 +255,52 @@ model DashboardLayout {
 
   @@map("dashboard_layouts")
   @@index([userId])
+}
+
+// Recurring transactions for automatic DCA (Dollar-Cost Averaging)
+model RecurringTransaction {
+  id              Int       @id @default(autoincrement())
+  userId          Int       @map("user_id")
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Transaction details
+  name            String    // e.g., "Daily DCA $10"
+  type            String    @default("BUY") // BUY, SELL (mostly BUY for DCA)
+  amount          Float     // Fixed amount in specified currency
+  currency        String    @default("USD") // Currency for the amount
+  fees            Float     @default(0)
+  feesCurrency    String    @default("USD") @map("fees_currency")
+  
+  // Scheduling
+  frequency       String    // 'daily', 'weekly', 'biweekly', 'monthly'
+  startDate       DateTime  @map("start_date")
+  endDate         DateTime? @map("end_date") // Optional end date
+  maxOccurrences  Int?      @map("max_occurrences") // Optional: stop after N executions
+  lastExecuted    DateTime? @map("last_executed")
+  executionCount  Int       @default(0) @map("execution_count")
+  
+  // Next execution (calculated)
+  nextExecution   DateTime  @map("next_execution")
+  
+  // Status
+  isActive        Boolean   @default(true) @map("is_active")
+  isPaused        Boolean   @default(false) @map("is_paused")
+  
+  // Tracking
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  
+  // Optional: link to goals
+  goalId          Int?      @map("goal_id")
+  goal            Goal?     @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  
+  // Notes and tags
+  notes           String?   @default("")
+  tags            String?   @default("") // e.g., "DCA,Auto"
+
+  @@map("recurring_transactions")
+  @@index([userId])
+  @@index([isActive])
+  @@index([nextExecution])
+  @@index([goalId])
 }

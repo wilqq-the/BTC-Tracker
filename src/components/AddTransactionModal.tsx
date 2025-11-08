@@ -555,38 +555,15 @@ export default function AddTransactionModal({
             </div>
           )}
 
-          {/* Transfer Summary (only for TRANSFER) */}
-          {formData.type === 'TRANSFER' && parseFloat(formData.btc_amount || '0') > 0 && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 space-y-2 border-2 border-blue-300 dark:border-blue-700">
-              <div className="text-xs font-medium text-blue-700 dark:text-blue-300 uppercase tracking-wide mb-2">
-                📊 Transfer Breakdown
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-blue-600 dark:text-blue-400">📤 Amount leaving source</span>
-                <span className="font-mono text-red-600 dark:text-red-400 font-bold">
-                  -{parseFloat(formData.btc_amount).toFixed(8)} BTC
+          {/* Transfer Summary (only for TRANSFER) - Simplified */}
+          {formData.type === 'TRANSFER' && parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 border border-green-200 dark:border-green-800">
+              <div className="flex justify-between text-sm items-center">
+                <span className="text-green-700 dark:text-green-300 text-xs">Arrives</span>
+                <span className="font-mono text-green-600 dark:text-green-400 font-bold">
+                  {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
                 </span>
               </div>
-              {parseFloat(formData.fees || '0') > 0 && (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-blue-600 dark:text-blue-400">⛏️ Network fee (to miners)</span>
-                    <span className="font-mono text-orange-600 dark:text-orange-400">
-                      -{parseFloat(formData.fees).toFixed(8)} BTC
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm pt-2 border-t border-blue-300 dark:border-blue-600">
-                    <span className="text-blue-700 dark:text-blue-300 font-semibold">✅ Arrives at destination</span>
-                    <span className="font-mono text-green-600 dark:text-green-400 font-bold">
-                      +{(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
-                    </span>
-                  </div>
-                  <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700 text-xs text-blue-700 dark:text-blue-300">
-                    <strong>✨ Easy!</strong> If you had exactly {parseFloat(formData.btc_amount).toFixed(8)} BTC in your source wallet, 
-                    after this transfer it will be empty (0 BTC), and your destination will have {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC.
-                  </div>
-                </>
-              )}
             </div>
           )}
 
