@@ -186,7 +186,7 @@ export async function POST(
             monthly_fiat_needed: goalScenarioProjection.averageMonthlyFiat,
             monthly_change_percent: monthlyChange,
             total_fiat_needed: goalScenarioProjection.totalFiatNeeded,
-            final_btc_price: goalScenarioProjection.finalBtcPrice, // Projected price based on scenario
+            final_btc_price: goalScenarioProjection.finalProjectedPrice, // Projected price based on scenario
             scenario: goalScenario // Keep original scenario for reference
           },
           // Recommendations

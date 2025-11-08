@@ -136,6 +136,9 @@ describe('Recurring Transactions API', () => {
     });
 
     it('should reject invalid frequency', async () => {
+      // Suppress expected console.error
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      
       const request = new NextRequest('http://localhost:3000/api/recurring-transactions', {
         method: 'POST',
         headers: {
@@ -156,9 +159,14 @@ describe('Recurring Transactions API', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
+      
+      consoleError.mockRestore();
     });
 
     it('should reject negative amount', async () => {
+      // Suppress expected console.error
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      
       const request = new NextRequest('http://localhost:3000/api/recurring-transactions', {
         method: 'POST',
         headers: {
@@ -179,6 +187,8 @@ describe('Recurring Transactions API', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
+      
+      consoleError.mockRestore();
     });
   });
 
@@ -312,6 +322,9 @@ describe('Recurring Transactions API', () => {
     });
 
     it('should return 404 for non-existent transaction', async () => {
+      // Suppress expected console.error
+      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      
       const request = new NextRequest('http://localhost:3000/api/recurring-transactions/99999', {
         method: 'DELETE'
       });
@@ -321,6 +334,8 @@ describe('Recurring Transactions API', () => {
 
       expect(response.status).toBe(404);
       expect(data.success).toBe(false);
+      
+      consoleError.mockRestore();
     });
   });
 
