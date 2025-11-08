@@ -11,7 +11,7 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 ## Install on Umbrel
 
-[![Available on Umbrel App Store](umbrel.svg)](https://apps.umbrel.com/app/btctracker)
+[![Available on Umbrel App Store](public/umbrel.svg)](https://apps.umbrel.com/app/btctracker)
 
 **Special thanks to [@dennysubke](https://github.com/dennysubke) for helping bring BTC Tracker to Umbrel!**
 

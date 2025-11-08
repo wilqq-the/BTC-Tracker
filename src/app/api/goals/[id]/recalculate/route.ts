@@ -98,8 +98,29 @@ export async function POST(
         });
       }
 
-      // For "Current Status", calculate what's needed at CURRENT price (no growth projection)
-      // This shows the realistic monthly amount needed if price stays the same
+      // Get the goal's original scenario for projection
+      const scenarios = await BTCProjectionService.getScenarios();
+      let goalScenario = scenarios.find(s => s.id === goal.priceScenario) || scenarios.find(s => s.id === 'stable')!;
+
+      // If custom scenario, use the stored growth rate from the goal
+      if (goal.priceScenario === 'custom') {
+        goalScenario = {
+          ...goalScenario,
+          annualGrowthRate: goal.scenarioGrowthRate,
+          basis: `Custom: ${goal.scenarioGrowthRate >= 0 ? '+' : ''}${(goal.scenarioGrowthRate * 100).toFixed(0)}%/yr`
+        };
+      }
+      
+      // Calculate monthly needed using the GOAL'S scenario (not current price)
+      // This maintains consistency with how the goal was originally calculated
+      const goalScenarioProjection = BTCProjectionService.calculateScenarioProjection(
+        goalScenario,
+        currentBtcPrice,
+        btcStillNeeded,
+        remainingMonths
+      );
+      
+      // Also calculate at current price for reference (0% growth baseline)
       const stableScenario = {
         id: 'stable',
         name: 'Current Price',
@@ -116,19 +137,6 @@ export async function POST(
         btcStillNeeded,
         remainingMonths
       );
-      
-      // Also get the original scenario for reference
-      const scenarios = await BTCProjectionService.getScenarios();
-      let goalScenario = scenarios.find(s => s.id === goal.priceScenario) || scenarios.find(s => s.id === 'stable')!;
-
-      // If custom scenario, use the stored growth rate from the goal
-      if (goal.priceScenario === 'custom') {
-        goalScenario = {
-          ...goalScenario,
-          annualGrowthRate: goal.scenarioGrowthRate,
-          basis: `Custom: ${goal.scenarioGrowthRate >= 0 ? '+' : ''}${(goal.scenarioGrowthRate * 100).toFixed(0)}%/yr`
-        };
-      }
 
       // Calculate progress
       const progressPercent = ((currentHoldings / goal.targetBtcAmount) * 100);
@@ -147,8 +155,8 @@ export async function POST(
       // Convert goal's original monthly amount to current main currency for accurate comparison
       const originalMonthlyInMain = goal.monthlyFiatNeeded * goalCurrencyToMainRate;
       
-      // Use CURRENT PRICE projection for comparison (not scenario-based projection)
-      const monthlyChange = ((currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain) / originalMonthlyInMain) * 100;
+      // Use GOAL'S SCENARIO projection to maintain consistency with original calculation
+      const monthlyChange = ((goalScenarioProjection.averageMonthlyFiat - originalMonthlyInMain) / originalMonthlyInMain) * 100;
       
       return NextResponse.json({
         success: true,
@@ -173,12 +181,12 @@ export async function POST(
             expected_holdings: expectedHoldings,
             is_on_track: isOnTrack
           },
-          // New projection (based on current price, no growth assumptions)
+          // New projection (based on goal's scenario with updated price)
           projection: {
-            monthly_fiat_needed: currentPriceProjection.averageMonthlyFiat,
+            monthly_fiat_needed: goalScenarioProjection.averageMonthlyFiat,
             monthly_change_percent: monthlyChange,
-            total_fiat_needed: currentPriceProjection.totalFiatNeeded,
-            final_btc_price: currentBtcPrice, // Current price (stable)
+            total_fiat_needed: goalScenarioProjection.totalFiatNeeded,
+            final_btc_price: goalScenarioProjection.finalBtcPrice, // Projected price based on scenario
             scenario: goalScenario // Keep original scenario for reference
           },
           // Recommendations
