@@ -21,6 +21,7 @@ interface BitcoinChartProps {
   height?: number;
   showVolume?: boolean;
   showTransactions?: boolean;
+  showTitle?: boolean; // Whether to show the title inside the chart
 }
 
 interface ChartData {
@@ -69,7 +70,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes cache
 let globalExchangeRateCache: Map<string, { rate: number; timestamp: number }> = new Map();
 const EXCHANGE_RATE_CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
 
-export default function BitcoinChart({ height = 400, showVolume = true, showTransactions = false }: BitcoinChartProps) {
+export default function BitcoinChart({ height = 400, showVolume = true, showTransactions = false, showTitle = true }: BitcoinChartProps) {
   const { theme: currentTheme } = useTheme();
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -1335,28 +1336,30 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     <ThemedCard padding={false} className="overflow-hidden">
       {/* Chart Header */}
       <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 md:mb-4">
-          <div className="mb-2 sm:mb-0">
-            <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Bitcoin Price Chart
-            </h3>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1">
-              <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-                ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </div>
-              <div className={`text-xs md:text-sm ${priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% 
-                <span className="hidden sm:inline"> ({priceChange24h >= 0 ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
+        {showTitle && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-3 md:mb-4">
+            <div className="mb-2 sm:mb-0">
+              <h3 className="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Bitcoin Price Chart
+              </h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-4 mt-1">
+                <div className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </div>
+                <div className={`text-xs md:text-sm ${priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  {priceChangePercent24h >= 0 ? '+' : ''}{priceChangePercent24h.toFixed(2)}% 
+                  <span className="hidden sm:inline"> ({priceChange24h >= 0 ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })})</span>
+                </div>
               </div>
             </div>
+            
+            {loading && (
+              <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+                Loading...
+              </div>
+            )}
           </div>
-          
-          {loading && (
-            <div className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-              Loading...
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Chart Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">

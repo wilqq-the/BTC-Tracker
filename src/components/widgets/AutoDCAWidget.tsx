@@ -133,64 +133,71 @@ export default function AutoDCAWidget({ id, isEditMode, onRefresh }: WidgetProps
 
   if (error) {
     return (
-      <ThemedCard>
-        <div className="p-4">
-          <ThemedText variant="secondary" className="text-center py-8">
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            🤖 Auto DCA
+          </h3>
+        </div>
+        <ThemedCard className="flex-1 flex items-center justify-center">
+          <ThemedText variant="secondary" className="text-center">
             {error}
           </ThemedText>
-        </div>
-      </ThemedCard>
+        </ThemedCard>
+      </div>
     );
   }
 
   // Empty state
   if (transactions.length === 0) {
     return (
-      <ThemedCard>
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-btc-text-primary">
-              🤖 Auto DCA
-            </h3>
-          </div>
-          
-          <div className="text-center py-6">
-            <div className="text-4xl mb-2">🤖</div>
-            <ThemedText variant="secondary" size="sm" className="mb-3">
-              No recurring purchases set up yet
-            </ThemedText>
-            <ThemedButton
-              variant="primary"
-              size="sm"
-              onClick={() => router.push('/goals?tab=auto-dca')}
-              className="bg-bitcoin hover:bg-bitcoin-dark"
-            >
-              Set Up Auto DCA
-            </ThemedButton>
-          </div>
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            🤖 Auto DCA
+          </h3>
         </div>
-      </ThemedCard>
+        
+        <ThemedCard className="flex-1">
+          <div className="p-4 h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-4xl mb-2">🤖</div>
+              <ThemedText variant="secondary" size="sm" className="mb-3">
+                No recurring purchases set up yet
+              </ThemedText>
+              <ThemedButton
+                variant="primary"
+                size="sm"
+                onClick={() => router.push('/goals?tab=auto-dca')}
+                className="bg-bitcoin hover:bg-bitcoin-dark"
+              >
+                Set Up Auto DCA
+              </ThemedButton>
+            </div>
+          </div>
+        </ThemedCard>
+      </div>
     );
   }
 
   return (
-    <ThemedCard>
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🤖</span>
-            <h3 className="text-base font-semibold text-btc-text-primary">
-              Auto DCA
-            </h3>
-          </div>
-          <button
-            onClick={() => router.push('/goals?tab=auto-dca')}
-            className="text-xs text-bitcoin hover:text-bitcoin-dark transition-colors"
-          >
-            View All →
-          </button>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Title */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          🤖 Auto DCA
+        </h3>
+        <button
+          onClick={() => router.push('/goals?tab=auto-dca')}
+          className="text-xs text-bitcoin hover:text-bitcoin-dark transition-colors"
+          title="View all recurring purchases"
+        >
+          View All →
+        </button>
+      </div>
+
+      <ThemedCard className="flex-1">
+        <div className="p-4 h-full flex flex-col">
 
         {/* Quick Stats Bar */}
         <div className="flex items-center gap-4 mb-3 pb-3 border-b border-btc-border-secondary">
@@ -297,8 +304,9 @@ export default function AutoDCAWidget({ id, isEditMode, onRefresh }: WidgetProps
             Manage Schedules →
           </button>
         </div>
-      </div>
-    </ThemedCard>
+        </div>
+      </ThemedCard>
+    </div>
   );
 }
 

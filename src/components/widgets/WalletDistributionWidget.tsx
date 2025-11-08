@@ -58,25 +58,33 @@ export default function WalletDistributionWidget({ id, isEditMode, onRefresh }: 
 
   if (loading) {
     return (
-      <ThemedCard>
-        <div className="p-4">
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bitcoin"></div>
-          </div>
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            🔐 Wallet Distribution
+          </h3>
         </div>
-      </ThemedCard>
+        <ThemedCard className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bitcoin"></div>
+        </ThemedCard>
+      </div>
     );
   }
 
   if (error || !walletData) {
     return (
-      <ThemedCard>
-        <div className="p-4">
-          <ThemedText variant="secondary" className="text-center py-8">
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            🔐 Wallet Distribution
+          </h3>
+        </div>
+        <ThemedCard className="flex-1 flex items-center justify-center">
+          <ThemedText variant="secondary" className="text-center">
             {error || 'No data available'}
           </ThemedText>
-        </div>
-      </ThemedCard>
+        </ThemedCard>
+      </div>
     );
   }
 
@@ -91,15 +99,16 @@ export default function WalletDistributionWidget({ id, isEditMode, onRefresh }: 
   const status = getSecurityStatus();
 
   return (
-    <ThemedCard>
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-lg">🔐</span>
-          <h3 className="text-base font-semibold text-btc-text-primary">
-            Wallet Distribution
-          </h3>
-        </div>
+    <div className="h-full flex flex-col">
+      {/* Title */}
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          🔐 Wallet Distribution
+        </h3>
+      </div>
+
+      <ThemedCard className="flex-1">
+        <div className="p-4 h-full flex flex-col justify-between">
 
         {/* Visual Distribution Bar */}
         <div className="mb-4">
@@ -170,8 +179,9 @@ export default function WalletDistributionWidget({ id, isEditMode, onRefresh }: 
             </div>
           </div>
         </div>
-      </div>
-    </ThemedCard>
+        </div>
+      </ThemedCard>
+    </div>
   );
 }
 

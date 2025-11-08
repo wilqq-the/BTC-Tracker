@@ -376,6 +376,7 @@ export default function DashboardGrid() {
             containerPadding={[0, 0]}
             isDraggable={isEditMode}
             isResizable={isEditMode}
+            resizeHandles={['se', 'sw', 'ne', 'nw', 'e', 'w', 's', 'n']}
             onLayoutChange={handleLayoutChange}
             compactType="vertical"
             preventCollision={false}
