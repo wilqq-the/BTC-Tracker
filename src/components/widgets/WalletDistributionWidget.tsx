@@ -150,7 +150,7 @@ export default function WalletDistributionWidget({ id, isEditMode, onRefresh }: 
                 {Math.abs(walletData.hotWalletBtc).toFixed(8)} ₿
               </div>
               <ThemedText variant="muted" size="xs">
-                {(100 - walletData.coldPercentage).toFixed(1)}%
+                {Math.abs(100 - walletData.coldPercentage).toFixed(1)}%
               </ThemedText>
             </div>
           </div>
