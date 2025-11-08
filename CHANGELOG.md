@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Redesigned Profile page - more compact layout
 - Restructured Goals page with tab navigation
 - Simplified transfer breakdown display
+- Enhanced dashboard widgets with consistent title placement and multi-directional resizing (all 8 edges/corners)
+- Added new dashboard widgets: Auto DCA status widget and Wallet Distribution widget (hot/cold storage breakdown with security status)
 
 ### 🔧 Bug Fixes
 - Fixed transaction modal scrolling on small screens - modal now scrolls independently with sticky header/footer ([#121](https://github.com/wilqq-the/BTC-Tracker/issues/121))
@@ -22,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed BTC fee display precision (now shows 8 decimals instead of truncating to 0.00)
 - Fixed P&L display for TRANSFER transactions (now shows "N/A" instead of misleading values)
 - Fixed multiple SIGINT messages during shutdown in development mode
+- Fixed goal monthly calculation to use selected scenario instead of defaulting to stable (0% growth)
 
 ## [0.6.2] - 2025-10-28
 
