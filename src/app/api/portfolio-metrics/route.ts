@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
     
     let totalReceivedMain = 0;
     let weightedSellPriceSum = 0;
+    let totalFeesMain = 0; // Total fees in main currency
     
     for (const tx of sellTransactions) {
       const exchangeRate = currencyToRateMap[tx.originalCurrency] || 1.0;
@@ -101,6 +102,28 @@ export async function GET(request: NextRequest) {
       
       totalReceivedMain += mainCurrencyTotal;
       weightedSellPriceSum += mainCurrencyPrice * tx.btcAmount;
+      
+      // Add fees from sell transactions (convert to main currency)
+      if (tx.fees && tx.feesCurrency && tx.feesCurrency.toUpperCase() !== 'BTC') {
+        const feesExchangeRate = currencyToRateMap[tx.feesCurrency] || 1.0;
+        totalFeesMain += tx.fees * feesExchangeRate;
+      }
+    }
+    
+    // Add fees from buy transactions (convert to main currency)
+    for (const tx of buyTransactions) {
+      if (tx.fees && tx.feesCurrency && tx.feesCurrency.toUpperCase() !== 'BTC') {
+        const feesExchangeRate = currencyToRateMap[tx.feesCurrency] || 1.0;
+        totalFeesMain += tx.fees * feesExchangeRate;
+      }
+    }
+    
+    // Add fees from transfer transactions (convert to main currency, excluding BTC fees which are already in totalFeesBTC)
+    for (const tx of transferTransactions) {
+      if (tx.fees && tx.feesCurrency && tx.feesCurrency.toUpperCase() !== 'BTC') {
+        const feesExchangeRate = currencyToRateMap[tx.feesCurrency] || 1.0;
+        totalFeesMain += tx.fees * feesExchangeRate;
+      }
     }
     
     // Calculate weighted average prices
@@ -164,6 +187,7 @@ export async function GET(request: NextRequest) {
       
       // Fees tracking
       totalFeesBTC,
+      totalFeesMain, // Total fees in main currency (from all transaction types)
       
       // 24h changes (calculated in real-time)
       portfolioChange24h,

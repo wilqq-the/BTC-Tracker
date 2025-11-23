@@ -93,6 +93,9 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   const [priceChangePercent24h, setPriceChangePercent24h] = useState<number>(0);
   const [showMovingAverage, setShowMovingAverage] = useState<boolean>(true);
   const maSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const [showAvgBuyPrice, setShowAvgBuyPrice] = useState<boolean>(true);
+  const avgBuyPriceSeriesRef = useRef<ISeriesApi<'Line'> | null>(null);
+  const [avgBuyPrice, setAvgBuyPrice] = useState<number>(0);
   const [chartStats, setChartStats] = useState<{
     high: number;
     low: number;
@@ -204,6 +207,11 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
     updateChartSeries();
   }, [showMovingAverage]);
 
+  // Update chart series when average buy price toggle changes
+  useEffect(() => {
+    updateChartSeries();
+  }, [showAvgBuyPrice]);
+
   // Calculate statistics when chart data or time range changes
   useEffect(() => {
     calculateChartStatistics(chartData, timeRange);
@@ -262,6 +270,44 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
   useEffect(() => {
     loadMainCurrency();
   }, []);
+
+  // Load average buy price from portfolio metrics
+  useEffect(() => {
+    loadAvgBuyPrice();
+  }, [mainCurrency]);
+
+  const loadAvgBuyPrice = async () => {
+    try {
+      const response = await fetch('/api/portfolio-metrics');
+      const result = await response.json();
+      if (result.success && result.data && result.data.avgBuyPrice) {
+        // Convert average buy price from main currency to USD (chart uses USD)
+        const avgBuyPriceMain = result.data.avgBuyPrice;
+        let avgBuyPriceUSD = avgBuyPriceMain;
+        
+        if (mainCurrency !== 'USD') {
+          // Get exchange rate from main currency to USD
+          try {
+            const rateResponse = await fetch(`/api/exchange-rates?from=${mainCurrency}&to=USD`);
+            const rateResult = await rateResponse.json();
+            if (rateResult.rate) {
+              // rateResult.rate is the conversion rate from mainCurrency to USD
+              // So: priceInUSD = priceInMainCurrency * rate
+              avgBuyPriceUSD = avgBuyPriceMain * rateResult.rate;
+              console.log(`[CHART] Converted avg buy price from ${mainCurrency} to USD: ${avgBuyPriceMain} × ${rateResult.rate} = ${avgBuyPriceUSD}`);
+            }
+          } catch (rateError) {
+            console.warn('Could not convert avg buy price to USD, using main currency value:', rateError);
+          }
+        }
+        
+        setAvgBuyPrice(avgBuyPriceUSD);
+        console.log('[CHART] Average buy price loaded (USD):', avgBuyPriceUSD);
+      }
+    } catch (error) {
+      console.error('Error loading average buy price:', error);
+    }
+  };
 
   // Load transactions when showTransactions is enabled
   useEffect(() => {
@@ -359,7 +405,7 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         setViewportToTimeRange();
       }, 200);
     }
-  }, [chartData, chartType, showMovingAverage]);
+  }, [chartData, chartType, showMovingAverage, showAvgBuyPrice, avgBuyPrice]);
 
   const updateChartSeries = () => {
     if (!chartRef.current) return;
@@ -382,6 +428,10 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
         if (maSeriesRef.current) {
           chartRef.current.removeSeries(maSeriesRef.current);
           maSeriesRef.current = null;
+        }
+        if (avgBuyPriceSeriesRef.current) {
+          chartRef.current.removeSeries(avgBuyPriceSeriesRef.current);
+          avgBuyPriceSeriesRef.current = null;
         }
         if (volumeSeriesRef.current) {
           chartRef.current.removeSeries(volumeSeriesRef.current);
@@ -427,6 +477,18 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
           lineWidth: 2,
           priceLineVisible: false,
           lastValueVisible: false,
+        });
+      }
+
+      // Add average buy price line (works for all chart types)
+      if (showAvgBuyPrice && avgBuyPrice > 0) {
+        avgBuyPriceSeriesRef.current = chartRef.current.addSeries(LineSeries, {
+          color: '#10b981', // Green color for average buy price
+          lineWidth: 2,
+          lineStyle: 2, // Dashed line
+          priceLineVisible: false,
+          lastValueVisible: true,
+          title: 'Avg Buy Price',
         });
       }
 
@@ -490,12 +552,30 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
           const maData = calculateMovingAverageData(chartData, 20);
           maSeriesRef.current.setData(maData);
         }
+
+        // Update average buy price line (horizontal line across all time)
+        if (avgBuyPriceSeriesRef.current && showAvgBuyPrice && avgBuyPrice > 0) {
+          const avgBuyPriceData: LineData[] = chartData.map(item => ({
+            time: formatTimeForChart(item.time),
+            value: avgBuyPrice,
+          }));
+          avgBuyPriceSeriesRef.current.setData(avgBuyPriceData);
+        }
       } else {
         const lineData: LineData[] = chartData.map(item => ({
           time: formatTimeForChart(item.time),
           value: item.close,
         }));
         (series as ISeriesApi<'Line'> | ISeriesApi<'Area'>).setData(lineData);
+
+        // Update average buy price line for line/area charts
+        if (avgBuyPriceSeriesRef.current && showAvgBuyPrice && avgBuyPrice > 0) {
+          const avgBuyPriceData: LineData[] = chartData.map(item => ({
+            time: formatTimeForChart(item.time),
+            value: avgBuyPrice,
+          }));
+          avgBuyPriceSeriesRef.current.setData(avgBuyPriceData);
+        }
       }
 
       // Update volume data
@@ -1406,6 +1486,19 @@ export default function BitcoinChart({ height = 400, showVolume = true, showTran
                 title="20-period Moving Average"
               >
                 MA20
+              </ThemedButton>
+            )}
+
+            {/* Average Buy Price Toggle */}
+            {avgBuyPrice > 0 && (
+              <ThemedButton
+                variant={showAvgBuyPrice ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setShowAvgBuyPrice(!showAvgBuyPrice)}
+                className={`text-xs md:text-sm ${showAvgBuyPrice ? 'bg-green-600 text-white' : ''}`}
+                title="Average Buy Price"
+              >
+                AVG
               </ThemedButton>
             )}
           </div>
