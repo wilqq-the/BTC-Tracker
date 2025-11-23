@@ -37,7 +37,7 @@ export class DCAScheduler {
       }
     }, this.CHECK_INTERVAL_MS);
 
-    console.log('[DCA] ✅ DCA scheduler started - checking every hour');
+    console.log('[DCA] DCA scheduler started - checking every hour');
   }
 
   /**
@@ -97,7 +97,7 @@ export class DCAScheduler {
         }
       }
 
-      console.log('[DCA] ✅ Batch execution completed');
+      console.log('[DCA] Batch execution completed');
     } catch (error) {
       console.error('[DCA] Error checking for due transactions:', error);
       throw error;
@@ -146,7 +146,7 @@ export class DCAScheduler {
         }
       });
 
-      console.log(`[DCA] ✅ Created transaction #${transaction.id}`);
+      console.log(`[DCA] Created transaction #${transaction.id}`);
 
       // 4. Update recurring transaction
       const nextExecution = RecurringTransactionService.calculateNextExecution(
@@ -184,7 +184,7 @@ export class DCAScheduler {
       await BitcoinPriceService.calculateAndStorePortfolioSummary(currentBTCPriceUSD);
 
       const duration = Date.now() - startTime;
-      console.log(`[DCA] ✅ Completed in ${duration}ms`);
+      console.log(`[DCA] Completed in ${duration}ms`);
 
       return {
         success: true,

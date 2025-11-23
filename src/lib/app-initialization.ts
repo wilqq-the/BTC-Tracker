@@ -149,7 +149,7 @@ export class AppInitializationService {
       await DCAScheduler.start();
       const dcaStatus = DCAScheduler.getStatus();
       const dcaStats = await DCAScheduler.getStatistics();
-      console.log('[DCA] ✅ DCA scheduler started', {
+      console.log('[DCA] DCA scheduler started', {
         isRunning: dcaStatus.isRunning,
         checkIntervalMinutes: dcaStatus.checkIntervalMinutes,
         activeRecurring: dcaStats.active,
@@ -249,7 +249,7 @@ export class AppInitializationService {
       // Run pending migrations
       console.log('[SYNC] Checking for database migrations...');
       try {
-        execSync('npx prisma migrate deploy', { 
+        execSync('npm exec prisma migrate deploy', { 
           stdio: 'pipe',
           cwd: process.cwd()
         });
@@ -287,7 +287,7 @@ export class AppInitializationService {
 
       // Push schema to database (creates tables)
       console.log('[INFO] Creating database schema...');
-      execSync('npx prisma db push --accept-data-loss', { 
+      execSync('npm exec prisma db push --accept-data-loss', { 
         stdio: 'pipe',
         cwd: process.cwd()
       });

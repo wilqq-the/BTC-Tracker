@@ -5,6 +5,11 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.5] - 2025-11-22
+
+### 🔧 Bug Fixes
+- **Fixed Prisma version compatibility issue preventing account creation** - Locked Prisma to version 6.10.1 and replaced all `npx prisma` calls with `npm exec prisma` to ensure the correct version is used instead of downloading Prisma 7.0.0 from the registry. Prisma 7 has breaking changes that are incompatible with the current schema. This fixes the issue where users couldn't create accounts on fresh installations ([#128](https://github.com/wilqq-the/BTC-Tracker/issues/128))
+
 ## [0.6.4] - 2025-11-07
 
 ### ✨ New Features
