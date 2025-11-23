@@ -242,7 +242,7 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         portfolioChange24hMain: portfolioData.portfolioChange24h || 0,
         portfolioChange24hPercentage: portfolioData.portfolioChange24hPercent || 0,
         totalInvestedMain: portfolioData.totalInvested || 0,
-        totalFeesMain: 0, // Not provided by the API, default to 0
+        totalFeesMain: portfolioData.totalFeesMain || 0, // Total fees in main currency
         
         // Secondary currency values (need to convert from main to secondary)
         secondaryCurrency,
@@ -530,6 +530,39 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         </div>
       </ThemedCard>
 
+      {/* Investment Section */}
+      <ThemedCard className="mb-3 p-3">
+        <div className="mb-2">
+          <ThemedText variant="secondary" size="sm" className="uppercase tracking-wide font-medium">
+            Investment
+          </ThemedText>
+        </div>
+        
+        <div className="space-y-2">
+          <div className="flex justify-between items-center">
+            <ThemedText variant="muted" size="sm">Total Invested</ThemedText>
+            <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+              {formatCurrency(convertedData.totalInvestedMain, convertedData.mainCurrency)}
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <ThemedText variant="muted" size="sm">Total Fees</ThemedText>
+            <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+              {formatCurrency(convertedData.totalFeesMain, convertedData.mainCurrency)}
+            </div>
+          </div>
+          
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+              <ThemedText variant="muted" size="sm" className="font-medium">Total Cost</ThemedText>
+              <div className="font-mono text-base font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(convertedData.totalInvestedMain + convertedData.totalFeesMain, convertedData.mainCurrency)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </ThemedCard>
 
       {/* Quick Actions */}
       <div className="space-y-2">
