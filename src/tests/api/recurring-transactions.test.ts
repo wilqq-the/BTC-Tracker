@@ -78,7 +78,7 @@ describe('Recurring Transactions API', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(data.success).toBe(true);
       expect(data.data).toHaveProperty('id');
       expect(data.data.name).toBe('Daily DCA $10');
@@ -105,7 +105,7 @@ describe('Recurring Transactions API', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(data.success).toBe(true);
       expect(data.data.frequency).toBe('weekly');
     });
@@ -130,7 +130,7 @@ describe('Recurring Transactions API', () => {
       const response = await POST(request);
       const data = await response.json();
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       expect(data.success).toBe(true);
       expect(data.data.maxOccurrences).toBe(12);
     });
