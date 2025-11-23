@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     // Convert Prisma results to match the expected format
     const formattedTransactions = transactions.map(tx => ({
       ...tx,
-      type: tx.type as 'BUY' | 'SELL',
+      type: tx.type as 'BUY' | 'SELL' | 'TRANSFER',
       transaction_date: tx.transactionDate.toISOString().split('T')[0], // Ensure date format
       btc_amount: tx.btcAmount,
       original_price_per_btc: tx.originalPricePerBtc,
@@ -119,6 +119,8 @@ export async function GET(request: NextRequest) {
       fees_currency: tx.feesCurrency,
       notes: tx.notes || '',
       tags: (tx as any).tags || '',
+      transfer_type: (tx as any).transferType || null,
+      destination_address: (tx as any).destinationAddress || null,
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));

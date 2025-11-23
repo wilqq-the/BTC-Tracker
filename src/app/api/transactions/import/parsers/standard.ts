@@ -94,7 +94,7 @@ export class StandardParser extends BaseParser {
       transaction.transaction_type ||
       transaction['transaction type'] ||
       'BUY'
-    ).toUpperCase() as 'BUY' | 'SELL';
+    ).toUpperCase() as 'BUY' | 'SELL' | 'TRANSFER';
     
     const notes = 
       transaction.notes ||
@@ -102,8 +102,18 @@ export class StandardParser extends BaseParser {
       transaction.description ||
       '';
     
+    // Parse transfer-specific fields
+    const transferType = transaction.transfer_type || 
+                        transaction['transfer type'] || 
+                        transaction.transferType || 
+                        null;
+    const destinationAddress = transaction.destination_address || 
+                               transaction['destination address'] || 
+                               transaction.destinationAddress || 
+                               null;
+    
     // If we couldn't extract essential data, skip this transaction
-    // Allow zero price/total for mining/gifts (as long as BTC amount exists)
+    // Allow zero price/total for mining/gifts/transfers (as long as BTC amount exists)
     if (btcAmount === 0) {
       console.warn('Standard parser: Missing BTC amount, skipping transaction');
       return null;
@@ -116,9 +126,11 @@ export class StandardParser extends BaseParser {
       original_currency: currency,
       original_total_amount: totalAmount,
       fees: fees,
-      fees_currency: transaction.fees_currency || currency,
+      fees_currency: transaction.fees_currency || (type === 'TRANSFER' ? 'BTC' : currency),
       transaction_date: transactionDate,
-      notes: notes
+      notes: notes,
+      transfer_type: type === 'TRANSFER' ? (transferType as 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | null) : null,
+      destination_address: type === 'TRANSFER' ? destinationAddress : null
     };
     
     try {

@@ -63,15 +63,17 @@ export abstract class BaseParser implements Parser {
    */
   protected validateTransaction(transaction: ImportTransaction): ImportTransaction {
     // Validation
-    if (!['BUY', 'SELL'].includes(transaction.type)) {
-      throw new Error(`Invalid transaction type: ${transaction.type}. Must be BUY or SELL.`);
+    if (!['BUY', 'SELL', 'TRANSFER'].includes(transaction.type)) {
+      throw new Error(`Invalid transaction type: ${transaction.type}. Must be BUY, SELL, or TRANSFER.`);
     }
     
     if (isNaN(transaction.btc_amount) || transaction.btc_amount <= 0) {
       throw new Error(`Invalid BTC amount: ${transaction.btc_amount}`);
     }
     
-    // Allow zero price for mining/gifts/airdrops (but not negative)
+    const isTransfer = transaction.type === 'TRANSFER';
+    
+    // Allow zero price for mining/gifts/airdrops/transfers (but not negative)
     if (isNaN(transaction.original_price_per_btc) || transaction.original_price_per_btc < 0) {
       throw new Error(`Invalid price per BTC: ${transaction.original_price_per_btc}. Cannot be negative.`);
     }
@@ -80,7 +82,7 @@ export abstract class BaseParser implements Parser {
       throw new Error(`Invalid currency: ${transaction.original_currency}`);
     }
     
-    // Allow zero total for mining/gifts/airdrops (but not negative)
+    // Allow zero total for mining/gifts/airdrops/transfers (but not negative)
     if (isNaN(transaction.original_total_amount) || transaction.original_total_amount < 0) {
       throw new Error(`Invalid total amount: ${transaction.original_total_amount}. Cannot be negative.`);
     }

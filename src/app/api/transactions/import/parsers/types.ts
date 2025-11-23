@@ -3,7 +3,7 @@
  */
 
 export interface ImportTransaction {
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: number;
   original_price_per_btc: number;
   original_currency: string;
@@ -12,6 +12,8 @@ export interface ImportTransaction {
   fees_currency: string;
   transaction_date: string;
   notes: string;
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | null;
+  destination_address?: string | null;
 }
 
 export interface ParseResult {
