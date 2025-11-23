@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { BitcoinTransaction } from '@/lib/types';
 import { withAuth } from '@/lib/auth-helpers';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
   return withAuth(request, async (userId, user) => {
     try {
       const { searchParams } = new URL(request.url);
