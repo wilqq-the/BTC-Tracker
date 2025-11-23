@@ -131,7 +131,7 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
               size="sm"
               onClick={() => window.location.href = '/goals'}
             >
-              Goals
+              Planning
             </ThemedButton>
             
             <ThemedButton 
@@ -247,7 +247,7 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                 }`}
               >
-                Goals
+                Planning
               </button>
               
               <button

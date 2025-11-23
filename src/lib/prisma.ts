@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
+  prismaShutdownHandlersSetup?: boolean
 }
 
 // Enhanced Prisma configuration for better I/O performance
@@ -26,11 +27,10 @@ const isBuildTime = () => {
 
 if (!isBuildTime()) {
   // Add graceful shutdown handling only during runtime
-  let shutdownHandlersSetup = false
-  
+  // Use global flag to prevent duplicate handlers during hot-reload
   const setupShutdownHandlers = () => {
-    if (shutdownHandlersSetup) return
-    shutdownHandlersSetup = true
+    if (globalForPrisma.prismaShutdownHandlersSetup) return
+    globalForPrisma.prismaShutdownHandlersSetup = true
     
     process.on('beforeExit', async () => {
       console.log('Disconnecting from database...')

@@ -242,7 +242,7 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         portfolioChange24hMain: portfolioData.portfolioChange24h || 0,
         portfolioChange24hPercentage: portfolioData.portfolioChange24hPercent || 0,
         totalInvestedMain: portfolioData.totalInvested || 0,
-        totalFeesMain: 0, // Not provided by the API, default to 0
+        totalFeesMain: portfolioData.totalFeesMain || 0, // Total fees in main currency
         
         // Secondary currency values (need to convert from main to secondary)
         secondaryCurrency,
@@ -381,6 +381,40 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             </div>
           </div>
           
+          {/* Cold/Hot Wallet Distribution */}
+          {(portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
+            <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+              <ThemedText variant="muted" size="xs" className="uppercase tracking-wide mb-2">
+                Wallet Distribution
+              </ThemedText>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <ThemedText variant="muted" size="xs">Cold Wallet</ThemedText>
+                </div>
+                <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {portfolioData.coldWalletBtc.toFixed(8)} ₿
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <ThemedText variant="muted" size="xs">Hot Wallet</ThemedText>
+                </div>
+                <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿
+                </div>
+              </div>
+              {portfolioData.coldWalletBtc > 0 && (
+                <div className="pt-1">
+                  <ThemedText variant="muted" size="xs">
+                    {((portfolioData.coldWalletBtc / convertedData.totalBTC) * 100).toFixed(1)}% in cold storage
+                  </ThemedText>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Average Price */}
           <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
@@ -497,7 +531,7 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
       </ThemedCard>
 
       {/* Investment Section */}
-      <ThemedCard className="mb-4 p-3">
+      <ThemedCard className="mb-3 p-3">
         <div className="mb-2">
           <ThemedText variant="secondary" size="sm" className="uppercase tracking-wide font-medium">
             Investment
@@ -505,25 +539,27 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         </div>
         
         <div className="space-y-2">
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <ThemedText variant="muted" size="sm">Total Invested</ThemedText>
-            <ThemedText variant="primary" className="font-mono">
+            <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
               {formatCurrency(convertedData.totalInvestedMain, convertedData.mainCurrency)}
-            </ThemedText>
+            </div>
           </div>
           
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <ThemedText variant="muted" size="sm">Total Fees</ThemedText>
-            <ThemedText variant="primary" className="font-mono">
+            <div className="font-mono text-sm font-medium text-gray-900 dark:text-gray-100">
               {formatCurrency(convertedData.totalFeesMain, convertedData.mainCurrency)}
-            </ThemedText>
+            </div>
           </div>
           
-          <div className="flex justify-between pt-2 border-t border-btc-border-secondary">
-            <ThemedText variant="muted" size="sm">Total Cost</ThemedText>
-            <ThemedText variant="primary" className="font-mono font-semibold">
-              {formatCurrency(convertedData.totalInvestedMain + convertedData.totalFeesMain, convertedData.mainCurrency)}
-            </ThemedText>
+          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex justify-between items-center">
+              <ThemedText variant="muted" size="sm" className="font-medium">Total Cost</ThemedText>
+              <div className="font-mono text-base font-bold text-gray-900 dark:text-gray-100">
+                {formatCurrency(convertedData.totalInvestedMain + convertedData.totalFeesMain, convertedData.mainCurrency)}
+              </div>
+            </div>
           </div>
         </div>
       </ThemedCard>

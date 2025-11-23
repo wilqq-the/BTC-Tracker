@@ -22,14 +22,14 @@ try {
 
   // Generate Prisma client for test environment (only once)
   console.log('[PRISMA] Generating Prisma client for tests...')
-  execSync('npx prisma generate', { 
+  execSync('npm exec prisma generate', { 
     stdio: 'inherit',
     env: process.env
   })
 
   // Create test database schema (skip generation since we just did it)
   console.log('[DB] Creating test database schema...')
-  execSync('npx prisma db push --force-reset --skip-generate', { 
+  execSync('npm exec prisma db push --force-reset --skip-generate', { 
     stdio: 'inherit',
     env: process.env
   })

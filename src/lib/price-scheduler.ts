@@ -57,7 +57,7 @@ export class PriceScheduler {
         }
       }, intervalMs);
     } else {
-      console.log('⏸️ Intraday data collection disabled in settings');
+      console.log('[INFO] Intraday data collection disabled in settings');
     }
 
     // Schedule historical updates once per day (24 hours)

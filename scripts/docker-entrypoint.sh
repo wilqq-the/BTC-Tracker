@@ -64,7 +64,7 @@ if [ "$CURRENT_UID" = "0" ]; then
     chown -R nextjs:nodejs "$NPM_CONFIG_CACHE" 2>/dev/null || true
     
     echo "[DB] Setting up database schema..."
-    su-exec nextjs npx prisma db push --skip-generate
+    su-exec nextjs npm exec prisma db push --skip-generate
     
     echo "[START] Starting Next.js application as user $(id -u nextjs):$(id -g nextjs)"
     exec su-exec nextjs node server.js
@@ -91,7 +91,7 @@ else
     mkdir -p "$NPM_CONFIG_CACHE" 2>/dev/null || true
     
     echo "[DB] Setting up database schema..."
-    npx prisma db push --skip-generate || echo "[WARN] Database setup failed, may need manual migration"
+    npm exec prisma db push --skip-generate || echo "[WARN] Database setup failed, may need manual migration"
     
     echo "[START] Starting Next.js application as current user"
     exec node server.js

@@ -13,6 +13,11 @@ export interface PortfolioSummaryData {
   totalTransactions: number;
   totalSatoshis: number;
   
+  // Wallet distribution
+  coldWalletBTC: number;
+  hotWalletBTC: number;
+  totalFeesBTC: number;
+  
   // Main currency values (based on user settings)
   mainCurrency: string;
   totalInvestedMain: number;
@@ -437,7 +442,7 @@ export class BitcoinPriceService {
       ]);
 
       // Get all transactions and aggregate data in parallel to reduce I/O
-      const [aggregateData, buyTransactions, sellTransactions] = await Promise.all([
+      const [aggregateData, buyTransactions, sellTransactions, transferTransactions] = await Promise.all([
         prisma.bitcoinTransaction.aggregate({
           _count: { id: true },
           _sum: {
@@ -459,13 +464,57 @@ export class BitcoinPriceService {
           select: {
             btcAmount: true
           }
+        }),
+        prisma.bitcoinTransaction.findMany({
+          where: { type: 'TRANSFER' },
+          select: {
+            btcAmount: true,
+            fees: true,
+            feesCurrency: true,
+            transferType: true
+          }
         })
       ]);
 
-      // Calculate total BTC (BUY - SELL)
+      // Calculate BTC fees from transfer transactions and track cold/hot wallet distribution
+      // 
+      // IMPORTANT: Transfer logic explanation
+      // ========================================
+      // When transferring Bitcoin:
+      //   - btcAmount = total amount LEAVING source wallet
+      //   - fees = network fees paid (always in BTC)
+      //   - Amount arriving at destination = btcAmount - fees
+      //
+      // Example: Transfer all BTC from hot to cold wallet
+      //   - Had: 0.43134872 BTC in hot wallet
+      //   - User enters: btcAmount = 0.43134872, fees = 0.00040589
+      //   - Amount received in cold: 0.43094283 BTC (0.43134872 - 0.00040589)
+      //   - Result: Hot wallet = 0 BTC, Cold wallet = 0.43094283 BTC, Total = 0.43094283 BTC
+      let totalFeesBTC = 0;
+      let coldWalletBTC = 0;
+      
+      for (const tx of transferTransactions) {
+        // Fees paid in BTC reduce total holdings (burned, gone forever)
+        if (tx.feesCurrency.toUpperCase() === 'BTC') {
+          totalFeesBTC += tx.fees;
+        }
+        
+        // Track cold wallet movements
+        // btcAmount is total leaving source, so destination gets (btcAmount - fees)
+        if (tx.transferType === 'TO_COLD_WALLET') {
+          // Amount received in cold wallet = sent amount - fees
+          coldWalletBTC += (tx.btcAmount - tx.fees);
+        } else if (tx.transferType === 'FROM_COLD_WALLET') {
+          // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
+          coldWalletBTC -= tx.btcAmount;
+        }
+      }
+
+      // Calculate total BTC (BUY - SELL - BTC_FEES)
       const totalBuyBTC = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
       const totalSellBTC = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-      const totalBTC = totalBuyBTC - totalSellBTC;
+      const totalBTC = totalBuyBTC - totalSellBTC - totalFeesBTC;
+      const hotWalletBTC = totalBTC - coldWalletBTC;
       const totalSatoshis = Math.round(totalBTC * 100000000);
       const totalFeesUSD = aggregateData._sum.fees || 0;
 
@@ -526,12 +575,17 @@ export class BitcoinPriceService {
       const currentValueEUR = currentPortfolioValueUSD * 0.85;
       const currentValuePLN = currentPortfolioValueUSD * 3.7;
 
-      console.log(`Portfolio calculated: ${totalBTC.toFixed(8)} BTC, ${buyTransactions.length} buy transactions processed`);
+      console.log(`Portfolio calculated: ${totalBTC.toFixed(8)} BTC (Cold: ${coldWalletBTC.toFixed(8)}, Hot: ${hotWalletBTC.toFixed(8)}), ${buyTransactions.length} buy transactions processed`);
 
       return {
         totalBTC,
         totalSatoshis,
         totalTransactions: aggregateData._count.id || 0,
+        
+        // Cold/Hot Wallet Distribution  
+        coldWalletBTC,
+        hotWalletBTC,
+        totalFeesBTC,
         
         // Main currency values
         mainCurrency,
@@ -571,6 +625,9 @@ export class BitcoinPriceService {
         totalBTC: 0,
         totalSatoshis: 0,
         totalTransactions: 0,
+        coldWalletBTC: 0,
+        hotWalletBTC: 0,
+        totalFeesBTC: 0,
         mainCurrency,
         totalInvestedMain: 0,
         totalFeesMain: 0,
@@ -730,6 +787,11 @@ export class BitcoinPriceService {
           totalBTC: record.totalBtc || 0,
           totalSatoshis,
           totalTransactions: record.totalTransactions || 0,
+          
+          // Cold/Hot Wallet Distribution
+          coldWalletBTC: record.coldWalletBtc || 0,
+          hotWalletBTC: record.hotWalletBtc || 0,
+          totalFeesBTC: record.totalBtc ? ((record.totalBtc || 0) - (record.coldWalletBtc || 0) - (record.hotWalletBtc || 0)) : 0,
           
           // Main currency values (stored directly in DB)
           mainCurrency: storedMainCurrency,

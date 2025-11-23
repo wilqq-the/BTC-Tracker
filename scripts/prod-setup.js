@@ -10,11 +10,11 @@ function setupProductionDatabase(options = {}) {
   try {
     // Generate Prisma client (essential for production)
     console.log('[INFO] Generating Prisma client...')
-    execSync('npx prisma generate', { stdio: 'inherit' })
+    execSync('npm exec prisma generate', { stdio: 'inherit' })
 
     // Deploy migrations (safe for production)
     console.log('[SYNC] Deploying database migrations...')
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+    execSync('npm exec prisma migrate deploy', { stdio: 'inherit' })
 
     if (!skipSeed) {
       // Run seed for initial system data only (safe - uses upsert)

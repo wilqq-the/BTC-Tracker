@@ -5,6 +5,34 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.5] - 2025-11-22
+
+### 🔧 Bug Fixes
+- **Fixed Prisma version compatibility issue preventing account creation** - Locked Prisma to version 6.10.1 and replaced all `npx prisma` calls with `npm exec prisma` to ensure the correct version is used instead of downloading Prisma 7.0.0 from the registry. Prisma 7 has breaking changes that are incompatible with the current schema. This fixes the issue where users couldn't create accounts on fresh installations ([#128](https://github.com/wilqq-the/BTC-Tracker/issues/128))
+- **Fixed transfer transaction import/export** - Transfer transactions (TRANSFER type) are now properly included in CSV/JSON exports with transfer-specific fields (`transfer_type` and `destination_address`). Import functionality now correctly handles and saves transfer transactions with their associated fields. This allows users to properly track network fees when transferring BTC between wallets ([#122](https://github.com/wilqq-the/BTC-Tracker/issues/122))
+- **Fixed Investment widget fees display** - The Investment widget in the dashboard sidebar now correctly displays total fees in the user's main currency (e.g., EUR). Previously, fees were always shown as 0.00 € even when fees were entered for transactions. The fix calculates fees from all transaction types (BUY, SELL, TRANSFER) and converts them to the user's main currency using exchange rates. Total Cost now correctly reflects Total Invested plus Total Fees ([#126](https://github.com/wilqq-the/BTC-Tracker/issues/126))
+
+## [0.6.4] - 2025-11-07
+
+### ✨ New Features
+- **Bitcoin Transfer Tracking** - Track BTC transfers between hot/cold wallets with network fees in BTC ([#122](https://github.com/wilqq-the/BTC-Tracker/issues/122))
+- **Automatic DCA (Dollar-Cost Averaging)** - Schedule recurring Bitcoin purchases (daily/weekly/monthly) that execute automatically ([#119](https://github.com/wilqq-the/BTC-Tracker/issues/119))
+
+### 🎨 UI Improvements
+- Redesigned Profile page - more compact layout
+- Restructured Goals page with tab navigation
+- Simplified transfer breakdown display
+- Enhanced dashboard widgets with consistent title placement and multi-directional resizing (all 8 edges/corners)
+- Added new dashboard widgets: Auto DCA status widget and Wallet Distribution widget (hot/cold storage breakdown with security status)
+
+### 🔧 Bug Fixes
+- Fixed transaction modal scrolling on small screens - modal now scrolls independently with sticky header/footer ([#121](https://github.com/wilqq-the/BTC-Tracker/issues/121))
+- Fixed negative zero display in wallet balances and transfer fee calculations
+- Fixed BTC fee display precision (now shows 8 decimals instead of truncating to 0.00)
+- Fixed P&L display for TRANSFER transactions (now shows "N/A" instead of misleading values)
+- Fixed multiple SIGINT messages during shutdown in development mode
+- Fixed goal monthly calculation to use selected scenario instead of defaulting to stable (0% growth)
+
 ## [0.6.2] - 2025-10-28
 
 ### ✨ New Features

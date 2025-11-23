@@ -10,7 +10,7 @@ import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
 
 interface BitcoinTransaction {
   id: number;
-  type: 'BUY' | 'SELL';
+  type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: number;
   original_price_per_btc: number;
   original_currency: string;
@@ -29,6 +29,10 @@ interface BitcoinTransaction {
   created_at: string;
   updated_at: string;
   
+  // Transfer-specific fields
+  transfer_type?: string;
+  destination_address?: string;
+  
   // Secondary currency display values (added by API)
   secondary_currency?: string;
   secondary_currency_price_per_btc?: number;
@@ -44,7 +48,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<BitcoinTransaction | null>(null);
-  const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
+  const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL' | 'TRANSFER'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentBtcPrice, setCurrentBtcPrice] = useState(105000); // Fallback price
@@ -403,6 +407,11 @@ export default function TransactionsPage() {
 
 
   const calculatePnL = (transaction: BitcoinTransaction) => {
+    // TRANSFER transactions don't have P&L
+    if (transaction.type === 'TRANSFER') {
+      return 0;
+    }
+    
     // Use API-provided P&L calculation if available (more accurate)
     if (transaction.pnl_main !== undefined) {
       return transaction.pnl_main;
@@ -422,6 +431,11 @@ export default function TransactionsPage() {
   };
 
   const calculatePnLPercent = (transaction: BitcoinTransaction) => {
+    // TRANSFER transactions don't have P&L percentage
+    if (transaction.type === 'TRANSFER') {
+      return 0;
+    }
+    
     const pnl = calculatePnL(transaction);
     const mainCurrencyTotal = transaction.main_currency_total_amount || transaction.usd_total_amount;
     const costBasis = mainCurrencyTotal + (transaction.fees || 0);
@@ -1247,10 +1261,17 @@ export default function TransactionsPage() {
                           <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                             transaction.type === 'BUY' 
                               ? 'bg-profit text-white' 
-                              : 'bg-loss text-white'
+                              : transaction.type === 'SELL'
+                              ? 'bg-loss text-white'
+                              : 'bg-blue-500 text-white'
                           }`}>
                             {transaction.type}
                           </span>
+                          {transaction.type === 'TRANSFER' && transaction.transfer_type && (
+                            <div className="text-xs text-btc-text-muted mt-1">
+                              {transaction.transfer_type.replace(/_/g, ' ')}
+                            </div>
+                          )}
                         </div>
 
                         {/* BTC Amount */}
@@ -1265,13 +1286,21 @@ export default function TransactionsPage() {
 
                         {/* Original Price */}
                         <div className="text-sm">
-                          <div className="text-btc-text-primary font-medium">
-                            {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
-                          </div>
-                          {transaction.original_currency !== (transaction.main_currency || 'USD') && (
-                            <div className="text-btc-text-muted text-xs opacity-70">
-                              {formatCurrency(transaction.main_currency_price_per_btc || transaction.usd_price_per_btc, transaction.main_currency || 'USD')}
+                          {transaction.type === 'TRANSFER' ? (
+                            <div className="text-btc-text-muted text-xs">
+                              N/A (Transfer)
                             </div>
+                          ) : (
+                            <>
+                              <div className="text-btc-text-primary font-medium">
+                                {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
+                              </div>
+                              {transaction.original_currency !== (transaction.main_currency || 'USD') && (
+                                <div className="text-btc-text-muted text-xs opacity-70">
+                                  {formatCurrency(transaction.main_currency_price_per_btc || transaction.usd_price_per_btc, transaction.main_currency || 'USD')}
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
 
@@ -1298,7 +1327,10 @@ export default function TransactionsPage() {
 
                         {/* Fees */}
                         <div className="text-sm text-btc-text-primary font-medium">
-                          {formatCurrency(transaction.fees, transaction.fees_currency)}
+                          {transaction.fees_currency === 'BTC' 
+                            ? `${transaction.fees.toFixed(8)} BTC`
+                            : formatCurrency(transaction.fees, transaction.fees_currency)
+                          }
                         </div>
 
                         {/* Current Value */}
@@ -1321,7 +1353,11 @@ export default function TransactionsPage() {
 
                         {/* P&L */}
                         <div className="text-sm">
-                          {(() => {
+                          {transaction.type === 'TRANSFER' ? (
+                            <div className="text-btc-text-muted text-xs">
+                              N/A
+                            </div>
+                          ) : (() => {
                             const mainPnL = transaction.pnl_main || pnl;
                             const secondaryPnL = transaction.secondary_currency_pnl || 0;
                             const pnlColor = mainPnL >= 0 ? 'text-profit' : 'text-loss';
@@ -1416,12 +1452,20 @@ export default function TransactionsPage() {
                             </div>
                             <div className="text-right">
                               <div className="text-xs text-btc-text-muted">P&L</div>
-                              <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
-                              </div>
-                              <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                {formatPercentage(pnlPercent)}
-                              </div>
+                              {transaction.type === 'TRANSFER' ? (
+                                <div className="text-sm text-btc-text-muted">
+                                  N/A
+                                </div>
+                              ) : (
+                                <>
+                                  <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
+                                  </div>
+                                  <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                    {formatPercentage(pnlPercent)}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                           

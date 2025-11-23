@@ -162,6 +162,7 @@ async function importTransactions(
       }
 
       // Import the transaction with user association
+      const isTransfer = transaction.type === 'TRANSFER';
       await prisma.bitcoinTransaction.create({
         data: {
           userId: userId,
@@ -173,8 +174,10 @@ async function importTransactions(
           fees: transaction.fees,
           feesCurrency: transaction.fees_currency,
           transactionDate: new Date(transaction.transaction_date),
-          notes: transaction.notes
-        }
+          notes: transaction.notes,
+          transferType: isTransfer ? (transaction.transfer_type || null) : null,
+          destinationAddress: isTransfer ? (transaction.destination_address || null) : null
+        } as any
       });
 
       result.imported++;

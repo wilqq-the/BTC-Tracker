@@ -221,7 +221,7 @@ export class YahooFinanceService {
       });
       
       if (result.count > 0) {
-        console.log(`🗑️ Cleared ${result.count} old intraday records (keeping only today's data)`);
+        console.log(`[CLEAN] Cleared ${result.count} old intraday records (keeping only today's data)`);
       }
     } catch (error) {
       console.error('Error clearing old intraday data:', error);

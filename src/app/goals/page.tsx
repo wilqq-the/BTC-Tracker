@@ -5,6 +5,8 @@ import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvi
 import AppLayout from '@/components/AppLayout';
 import { formatCurrency } from '@/lib/theme';
 import DCABacktestSimulator from '@/components/DCABacktestSimulator';
+import TabNavigation from '@/components/TabNavigation';
+import AutoDCATab from '@/components/AutoDCATab';
 
 interface PriceScenario {
   id: string;
@@ -643,14 +645,57 @@ export default function GoalsPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-btc-text-primary mb-2">
-              Bitcoin Goals & DCA Calculator
+              Goals & Strategy
             </h1>
             <ThemedText variant="secondary" className="text-sm md:text-base">
-              Set savings goals, analyze your DCA strategy, and track your progress
+              Set savings goals, automate purchases, and analyze your DCA strategy
             </ThemedText>
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <TabNavigation
+          tabs={[
+            {
+              id: 'goals',
+              label: 'My Goals',
+              badge: goals.length,
+              content: renderGoalsTab()
+            },
+            {
+              id: 'calculator',
+              label: 'DCA Calculator',
+              content: renderCalculatorTab()
+            },
+            {
+              id: 'auto-dca',
+              label: 'Auto DCA',
+              content: <AutoDCATab />
+            },
+            {
+              id: 'backtest',
+              label: 'Backtest',
+              content: renderBacktestTab()
+            },
+            {
+              id: 'analysis',
+              label: 'Analysis',
+              content: renderAnalysisTab()
+            }
+          ]}
+          initialTabId="goals"
+        />
+      </div>
+    </AppLayout>
+  );
+
+  // ============================================================
+  // TAB CONTENT RENDERERS
+  // ============================================================
+
+  function renderGoalsTab() {
+    return (
+      <div className="space-y-6">
         {/* Active Goals Section */}
         <section>
           <h2 className="text-lg font-semibold text-btc-text-primary mb-4">
@@ -868,12 +913,15 @@ export default function GoalsPage() {
             </div>
           )}
         </section>
+      </div>
+    );
+  }
 
+  function renderCalculatorTab() {
+    return (
+      <div className="space-y-6">
         {/* DCA Calculator Section */}
         <section>
-          <h2 className="text-lg font-semibold text-btc-text-primary mb-4">
-            DCA Calculator
-          </h2>
           <ThemedCard>
             <div className="space-y-4">
               <ThemedText variant="secondary" className="text-sm">
@@ -1255,12 +1303,24 @@ export default function GoalsPage() {
             </div>
           </ThemedCard>
         </section>
+      </div>
+    );
+  }
 
+  function renderBacktestTab() {
+    return (
+      <div className="space-y-6">
         {/* Historical DCA Backtest Simulator */}
         <section>
           <DCABacktestSimulator defaultCurrency={selectedCurrency} />
         </section>
+      </div>
+    );
+  }
 
+  function renderAnalysisTab() {
+    return (
+      <div className="space-y-6">
         {/* DCA Performance Analysis Section */}
         <section>
           <div className="flex justify-between items-center mb-4">
@@ -1500,7 +1560,7 @@ export default function GoalsPage() {
           )}
         </section>
       </div>
-    </AppLayout>
-  );
+    );
+  }
 }
 

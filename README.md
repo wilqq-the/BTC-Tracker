@@ -11,7 +11,7 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 ## Install on Umbrel
 
-[![Available on Umbrel App Store](umbrel.svg)](https://apps.umbrel.com/app/btctracker)
+[![Available on Umbrel App Store](public/umbrel.svg)](https://apps.umbrel.com/app/btctracker)
 
 **Special thanks to [@dennysubke](https://github.com/dennysubke) for helping bring BTC Tracker to Umbrel!**
 
@@ -76,7 +76,7 @@ docker-compose up -d
 npm install
 cp .env.example .env
 # Add NEXTAUTH_SECRET to .env
-npx prisma db push
+npm exec prisma db push
 npm run dev
 ```
 
@@ -120,7 +120,7 @@ Supports most major exchanges. If yours isn't supported, open an issue with exam
 npm run dev      # Start dev server
 npm run build    # Build for production
 npm test         # Run tests
-npx prisma studio # Database GUI
+npm exec prisma studio # Database GUI
 ```
 
 ## Why I built this?

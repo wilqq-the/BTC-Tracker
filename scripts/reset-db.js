@@ -23,7 +23,7 @@ function resetDatabase(options = {}) {
 
     // Push the schema to create fresh database
     console.log('[INFO] Creating fresh database schema...')
-    execSync('npx prisma db push --force-reset', { stdio: 'inherit' })
+    execSync('npm exec prisma db push --force-reset', { stdio: 'inherit' })
 
     if (seed) {
       // Run the seed script

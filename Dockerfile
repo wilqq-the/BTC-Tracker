@@ -34,7 +34,7 @@ ENV NODE_ENV="production"
 ENV DATABASE_URL="file:./build-dummy.db"
 
 # Generate Prisma client for build process
-RUN npx prisma generate
+RUN npm exec prisma generate
 
 # Build the application
 RUN npm run build
@@ -65,14 +65,17 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema for runtime generation
-COPY --from=builder /app/prisma ./prisma
-# NOTE: Prisma CLI will be auto-downloaded by npx at runtime (cached in /tmp/.npm)
-# This is simpler and more reliable than trying to copy all dependencies
+# Copy Prisma schema and package.json for runtime Prisma CLI execution
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+# Install Prisma CLI at the exact version (6.10.1) to prevent downloading Prisma 7.0.0
+# This is necessary because Next.js standalone output doesn't include node_modules
+RUN npm install --no-save --production=false prisma@6.10.1 && \
+    chown -R nextjs:nodejs /app/node_modules
 
 # Copy database and scripts for initialization
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/src/data ./src/data
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
 
 # Make entrypoint scripts executable
 RUN chmod +x ./scripts/docker-entrypoint.sh
@@ -81,11 +84,8 @@ RUN chmod +x ./scripts/docker-entrypoint.sh
 # The SQLite driver is embedded, so different file paths work without regeneration
 
 # Create directories for SQLite database and uploads
-RUN mkdir -p /app/public/uploads/avatars /app/data
-RUN chown -R nextjs:nodejs /app/public/uploads /app/data
-
-# Ensure the nextjs user can write to the app directory for database
-RUN chown -R nextjs:nodejs /app
+RUN mkdir -p /app/public/uploads/avatars /app/data && \
+    chown -R nextjs:nodejs /app/public/uploads /app/data
 
 EXPOSE 3000
 

@@ -11,6 +11,8 @@ import PortfolioSummaryWidget from '@/components/widgets/PortfolioSummaryWidget'
 import DCAAnalysisWidget from '@/components/widgets/DCAAnalysisWidget';
 import MultiTimeframeWidget from '@/components/widgets/MultiTimeframeWidget';
 import MonthlySummaryWidget from '@/components/widgets/MonthlySummaryWidget';
+import AutoDCAWidget from '@/components/widgets/AutoDCAWidget';
+import WalletDistributionWidget from '@/components/widgets/WalletDistributionWidget';
 
 // Map widget types to components
 export const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType<any>> = {
@@ -21,6 +23,8 @@ export const WIDGET_COMPONENTS: Record<WidgetType, React.ComponentType<any>> = {
   dca: DCAAnalysisWidget,
   timeframe: MultiTimeframeWidget,
   monthly: MonthlySummaryWidget,
+  'auto-dca': AutoDCAWidget,
+  'wallet-distribution': WalletDistributionWidget,
 };
 
 /**

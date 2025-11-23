@@ -15,7 +15,7 @@ export class HistoricalDataService {
     }
 
     try {
-      console.log('🏛️ Initializing Historical Data Service...');
+      console.log('[HIST] Initializing Historical Data Service...');
       
       // Check if we have any historical data
       const hasData = await this.checkHistoricalDataExists();
@@ -39,7 +39,7 @@ export class HistoricalDataService {
       this.setupPeriodicUpdates();
       
       this.isInitialized = true;
-      console.log('🏛️ Historical Data Service initialized successfully');
+      console.log('[HIST] Historical Data Service initialized successfully');
     } catch (error) {
       console.error('[ERROR] Failed to initialize Historical Data Service:', error);
     }
@@ -80,7 +80,7 @@ export class HistoricalDataService {
     try {
       // Clear existing data first
       await prisma.bitcoinPriceHistory.deleteMany();
-      console.log('🗑️  Cleared existing historical data');
+      console.log('[CLEAN] Cleared existing historical data');
       
       // Insert new data using Prisma createMany for efficiency
       await prisma.bitcoinPriceHistory.createMany({
@@ -94,7 +94,7 @@ export class HistoricalDataService {
         }))
       });
       
-      console.log(`💾 Saved ${historicalData.length} historical price records`);
+      console.log(`[SAVE] Saved ${historicalData.length} historical price records`);
     } catch (error) {
       console.error('Error replacing historical data:', error);
       throw error;
@@ -345,7 +345,7 @@ export class HistoricalDataService {
           }
         });
         
-        console.log(`🗑️ Cleaned up ${result.count} old historical records (older than ${retentionDays} days)`);
+        console.log(`[CLEAN] Cleaned up ${result.count} old historical records (older than ${retentionDays} days)`);
       }
     } catch (error) {
       console.error('[ERROR] Error cleaning up old historical data:', error);
