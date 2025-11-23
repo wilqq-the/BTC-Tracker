@@ -450,16 +450,20 @@ export default function AutoDCATab() {
               <h3 className="text-xl font-semibold text-btc-text-primary mb-2">
                 No Recurring Purchases Yet
               </h3>
-              <ThemedText variant="secondary" className="mb-6">
-                Set up automatic Bitcoin purchases to implement your DCA strategy
-              </ThemedText>
-              <ThemedButton
-                onClick={handleAddNew}
-                variant="primary"
-                className="bg-bitcoin hover:bg-bitcoin-dark"
-              >
-                ➕ Create Your First Recurring Purchase
-              </ThemedButton>
+              <div className="mb-6">
+                <ThemedText variant="secondary" className="block">
+                  Set up automatic Bitcoin purchases to implement your DCA strategy
+                </ThemedText>
+              </div>
+              <div className="flex justify-center">
+                <ThemedButton
+                  onClick={handleAddNew}
+                  variant="primary"
+                  className="bg-bitcoin hover:bg-bitcoin-dark"
+                >
+                  ➕ Create Your First Recurring Purchase
+                </ThemedButton>
+              </div>
             </div>
           </ThemedCard>
         )}

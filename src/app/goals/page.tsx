@@ -645,7 +645,7 @@ export default function GoalsPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-bold text-btc-text-primary mb-2">
-              Bitcoin Goals & DCA
+              Goals & Strategy
             </h1>
             <ThemedText variant="secondary" className="text-sm md:text-base">
               Set savings goals, automate purchases, and analyze your DCA strategy
@@ -659,32 +659,27 @@ export default function GoalsPage() {
             {
               id: 'goals',
               label: 'My Goals',
-              icon: '🎯',
               badge: goals.length,
               content: renderGoalsTab()
             },
             {
               id: 'calculator',
               label: 'DCA Calculator',
-              icon: '🧮',
               content: renderCalculatorTab()
             },
             {
               id: 'auto-dca',
               label: 'Auto DCA',
-              icon: '🤖',
               content: <AutoDCATab />
             },
             {
               id: 'backtest',
               label: 'Backtest',
-              icon: '📈',
               content: renderBacktestTab()
             },
             {
               id: 'analysis',
               label: 'Analysis',
-              icon: '📊',
               content: renderAnalysisTab()
             }
           ]}
