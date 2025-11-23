@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Bug Fixes
 - **Fixed Prisma version compatibility issue preventing account creation** - Locked Prisma to version 6.10.1 and replaced all `npx prisma` calls with `npm exec prisma` to ensure the correct version is used instead of downloading Prisma 7.0.0 from the registry. Prisma 7 has breaking changes that are incompatible with the current schema. This fixes the issue where users couldn't create accounts on fresh installations ([#128](https://github.com/wilqq-the/BTC-Tracker/issues/128))
+- **Fixed transfer transaction import/export** - Transfer transactions (TRANSFER type) are now properly included in CSV/JSON exports with transfer-specific fields (`transfer_type` and `destination_address`). Import functionality now correctly handles and saves transfer transactions with their associated fields. This allows users to properly track network fees when transferring BTC between wallets ([#122](https://github.com/wilqq-the/BTC-Tracker/issues/122))
+- **Fixed Investment widget fees display** - The Investment widget in the dashboard sidebar now correctly displays total fees in the user's main currency (e.g., EUR). Previously, fees were always shown as 0.00 € even when fees were entered for transactions. The fix calculates fees from all transaction types (BUY, SELL, TRANSFER) and converts them to the user's main currency using exchange rates. Total Cost now correctly reflects Total Invested plus Total Fees ([#126](https://github.com/wilqq-the/BTC-Tracker/issues/126))
 
 ## [0.6.4] - 2025-11-07
 
