@@ -407,6 +407,11 @@ export default function TransactionsPage() {
 
 
   const calculatePnL = (transaction: BitcoinTransaction) => {
+    // TRANSFER transactions don't have P&L
+    if (transaction.type === 'TRANSFER') {
+      return 0;
+    }
+    
     // Use API-provided P&L calculation if available (more accurate)
     if (transaction.pnl_main !== undefined) {
       return transaction.pnl_main;
@@ -426,6 +431,11 @@ export default function TransactionsPage() {
   };
 
   const calculatePnLPercent = (transaction: BitcoinTransaction) => {
+    // TRANSFER transactions don't have P&L percentage
+    if (transaction.type === 'TRANSFER') {
+      return 0;
+    }
+    
     const pnl = calculatePnL(transaction);
     const mainCurrencyTotal = transaction.main_currency_total_amount || transaction.usd_total_amount;
     const costBasis = mainCurrencyTotal + (transaction.fees || 0);
@@ -1317,7 +1327,10 @@ export default function TransactionsPage() {
 
                         {/* Fees */}
                         <div className="text-sm text-btc-text-primary font-medium">
-                          {formatCurrency(transaction.fees, transaction.fees_currency)}
+                          {transaction.fees_currency === 'BTC' 
+                            ? `${transaction.fees.toFixed(8)} BTC`
+                            : formatCurrency(transaction.fees, transaction.fees_currency)
+                          }
                         </div>
 
                         {/* Current Value */}
@@ -1340,7 +1353,11 @@ export default function TransactionsPage() {
 
                         {/* P&L */}
                         <div className="text-sm">
-                          {(() => {
+                          {transaction.type === 'TRANSFER' ? (
+                            <div className="text-btc-text-muted text-xs">
+                              N/A
+                            </div>
+                          ) : (() => {
                             const mainPnL = transaction.pnl_main || pnl;
                             const secondaryPnL = transaction.secondary_currency_pnl || 0;
                             const pnlColor = mainPnL >= 0 ? 'text-profit' : 'text-loss';
@@ -1435,12 +1452,20 @@ export default function TransactionsPage() {
                             </div>
                             <div className="text-right">
                               <div className="text-xs text-btc-text-muted">P&L</div>
-                              <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
-                              </div>
-                              <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                {formatPercentage(pnlPercent)}
-                              </div>
+                              {transaction.type === 'TRANSFER' ? (
+                                <div className="text-sm text-btc-text-muted">
+                                  N/A
+                                </div>
+                              ) : (
+                                <>
+                                  <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
+                                  </div>
+                                  <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                                    {formatPercentage(pnlPercent)}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </div>
                           

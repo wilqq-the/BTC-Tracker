@@ -15,7 +15,7 @@ process.env.NEXTAUTH_URL = 'http://localhost:3000'
 // Ensure Prisma client is generated for test DATABASE_URL
 console.log('[TEST] Ensuring Prisma client is generated for tests...')
 try {
-  execSync('npx prisma generate', { 
+  execSync('npm exec prisma generate', { 
     stdio: 'pipe',
     env: process.env
   })

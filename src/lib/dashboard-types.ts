@@ -13,7 +13,9 @@ export type WidgetType =
   | 'portfolio' 
   | 'dca'
   | 'timeframe'
-  | 'monthly';
+  | 'monthly'
+  | 'auto-dca'
+  | 'wallet-distribution';
 
 // Grid layout item (extends react-grid-layout's Layout)
 export interface LayoutItem extends Layout {

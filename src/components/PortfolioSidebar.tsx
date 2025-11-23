@@ -530,37 +530,6 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         </div>
       </ThemedCard>
 
-      {/* Investment Section */}
-      <ThemedCard className="mb-4 p-3">
-        <div className="mb-2">
-          <ThemedText variant="secondary" size="sm" className="uppercase tracking-wide font-medium">
-            Investment
-          </ThemedText>
-        </div>
-        
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <ThemedText variant="muted" size="sm">Total Invested</ThemedText>
-            <ThemedText variant="primary" className="font-mono">
-              {formatCurrency(convertedData.totalInvestedMain, convertedData.mainCurrency)}
-            </ThemedText>
-          </div>
-          
-          <div className="flex justify-between">
-            <ThemedText variant="muted" size="sm">Total Fees</ThemedText>
-            <ThemedText variant="primary" className="font-mono">
-              {formatCurrency(convertedData.totalFeesMain, convertedData.mainCurrency)}
-            </ThemedText>
-          </div>
-          
-          <div className="flex justify-between pt-2 border-t border-btc-border-secondary">
-            <ThemedText variant="muted" size="sm">Total Cost</ThemedText>
-            <ThemedText variant="primary" className="font-mono font-semibold">
-              {formatCurrency(convertedData.totalInvestedMain + convertedData.totalFeesMain, convertedData.mainCurrency)}
-            </ThemedText>
-          </div>
-        </div>
-      </ThemedCard>
 
       {/* Quick Actions */}
       <div className="space-y-2">

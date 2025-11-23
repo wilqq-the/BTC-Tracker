@@ -23,11 +23,11 @@ function setupDevelopmentEnvironment() {
 
     // 2. Generate Prisma client
     console.log('[INFO] Generating Prisma client...')
-    execSync('npx prisma generate', { stdio: 'inherit' })
+    execSync('npm exec prisma generate', { stdio: 'inherit' })
 
     // 3. Deploy migrations (create/update database)
     console.log('[SYNC] Setting up database...')
-    execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+    execSync('npm exec prisma migrate deploy', { stdio: 'inherit' })
 
     // 4. Seed database with default data
     console.log('[SEED] Seeding database with default data...')
