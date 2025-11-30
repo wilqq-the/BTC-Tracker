@@ -5,6 +5,12 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.6] - 2025-11-30
+
+### 🔧 Bug Fixes
+- Fixed Prisma permission errors causing "internal server error" on fresh Umbrel installs ([#133](https://github.com/wilqq-the/BTC-Tracker/issues/133))
+- Fixed app not starting after Umbrel updates ([#132](https://github.com/wilqq-the/BTC-Tracker/issues/132))
+
 ## [0.6.5] - 2025-11-22
 
 ### 🔧 Bug Fixes
