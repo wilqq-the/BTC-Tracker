@@ -1,98 +1,56 @@
 #!/bin/sh
 set -e
 
-# PUID/PGID Pattern - Industry standard for homelab/self-hosted apps
 PUID=${PUID:-1000}
 PGID=${PGID:-1000}
 
-echo "[INIT] Starting BTC Tracker with PUID=$PUID and PGID=$PGID"
+echo "Starting BTC Tracker (PUID=$PUID, PGID=$PGID)"
 
-# Validate required environment variables
-if [ -z "$DATABASE_URL" ]; then
-    echo "[ERROR] DATABASE_URL environment variable is required"
-    exit 1
-fi
+# Check required env vars
+[ -z "$DATABASE_URL" ] && echo "ERROR: DATABASE_URL required" && exit 1
+[ -z "$NEXTAUTH_SECRET" ] && echo "ERROR: NEXTAUTH_SECRET required" && exit 1
 
-if [ -z "$NEXTAUTH_SECRET" ]; then
-    echo "[ERROR] NEXTAUTH_SECRET environment variable is required"
-    exit 1
-fi
+# Setup writable cache in /tmp
+setup_cache() {
+    CACHE_DIR="/tmp/.cache-$(id -u)"
+    mkdir -p "$CACHE_DIR" "$CACHE_DIR/npm" 2>/dev/null || true
+    export HOME="$CACHE_DIR"
+    export NPM_CONFIG_CACHE="$CACHE_DIR/npm"
+}
 
-echo "[INFO] Database URL: $DATABASE_URL"
-
-# Check if we're running as root
-CURRENT_UID=$(id -u)
-echo "[INFO] Current UID: $CURRENT_UID"
-
-# Only attempt user/group modifications if running as root
-if [ "$CURRENT_UID" = "0" ]; then
-    echo "[ROOT] Running as root, setting up permissions..."
-    
-    # Modify user/group IDs if they differ from defaults
-    if [ "$PUID" != "1001" ]; then
-        echo "[PUID] Updating user ID to $PUID"
-        usermod -u "$PUID" nextjs 2>/dev/null || true
-    fi
-
-    if [ "$PGID" != "1001" ]; then
-        echo "[PGID] Updating group ID to $PGID"
-        groupmod -g "$PGID" nodejs 2>/dev/null || true
-    fi
-    
-    # For file-based databases, ensure directory exists and is writable
+# Setup database directory for SQLite
+setup_db_dir() {
     if echo "$DATABASE_URL" | grep -q "^file:"; then
-        DB_PATH=$(echo "$DATABASE_URL" | sed 's/^file://')
-        DB_DIR=$(dirname "$DB_PATH")
-        
-        echo "[INFO] Ensuring database directory exists: $DB_DIR"
+        DB_DIR=$(dirname "$(echo "$DATABASE_URL" | sed 's/^file://')")
         mkdir -p "$DB_DIR" 2>/dev/null || true
-        
-        # Fix ownership with dynamic PUID/PGID
-        chown -R nextjs:nodejs "$DB_DIR" 2>/dev/null || true
-        chmod -R 755 "$DB_DIR" 2>/dev/null || true
-        
-        echo "[OK] Database directory ready: $DB_DIR"
+        [ "$1" = "chown" ] && chown -R nextjs:nodejs "$DB_DIR" 2>/dev/null || true
     fi
+}
+
+CURRENT_UID=$(id -u)
+
+if [ "$CURRENT_UID" = "0" ]; then
+    # Running as root - configure user and drop privileges
+    [ "$PUID" != "1001" ] && usermod -u "$PUID" nextjs 2>/dev/null || true
+    [ "$PGID" != "1001" ] && groupmod -g "$PGID" nodejs 2>/dev/null || true
     
-    # Fix ownership of app directory and data directories
-    echo "[PUID] Fixing ownership of application directories..."
+    setup_db_dir "chown"
     chown -R nextjs:nodejs /app/data /app/public/uploads 2>/dev/null || true
     
-    # Setup npm cache directory for the target user
-    export NPM_CONFIG_CACHE="/tmp/.npm"
-    mkdir -p "$NPM_CONFIG_CACHE" 2>/dev/null || true
-    chown -R nextjs:nodejs "$NPM_CONFIG_CACHE" 2>/dev/null || true
+    setup_cache
+    su-exec nextjs sh -c "cd /app && HOME='$HOME' npx prisma migrate deploy" || true
     
-    echo "[DB] Setting up database schema..."
-    su-exec nextjs npm exec prisma db push --skip-generate
-    
-    echo "[START] Starting Next.js application as user $(id -u nextjs):$(id -g nextjs)"
-    exec su-exec nextjs node server.js
+    echo "Starting app as nextjs user..."
+    exec su-exec nextjs npm start
 else
-    # Not running as root - probably Umbrel or similar orchestrator
-    echo "[USER] Running as non-root user (UID: $CURRENT_UID)"
-    
-    # For file-based databases, ensure directory exists (don't try to chown)
-    if echo "$DATABASE_URL" | grep -q "^file:"; then
-        DB_PATH=$(echo "$DATABASE_URL" | sed 's/^file://')
-        DB_DIR=$(dirname "$DB_PATH")
-        
-        echo "[INFO] Ensuring database directory exists: $DB_DIR"
-        mkdir -p "$DB_DIR" 2>/dev/null || echo "[WARN] Could not create directory (may already exist)"
-        echo "[OK] Database directory ready: $DB_DIR"
-    fi
-    
-    # Ensure data directories exist (orchestrator should handle permissions)
+    # Non-root (Umbrel etc)
+    setup_db_dir
     mkdir -p /app/data /app/public/uploads 2>/dev/null || true
     
-    # Use /tmp for npm cache (user-writable)
-    export NPM_CONFIG_CACHE="/tmp/.npm-$(id -u)"
-    export npm_config_cache="$NPM_CONFIG_CACHE"
-    mkdir -p "$NPM_CONFIG_CACHE" 2>/dev/null || true
+    setup_cache
+    echo "Running migrations..."
+    npx prisma migrate deploy || true
     
-    echo "[DB] Setting up database schema..."
-    npm exec prisma db push --skip-generate || echo "[WARN] Database setup failed, may need manual migration"
-    
-    echo "[START] Starting Next.js application as current user"
-    exec node server.js
+    echo "Starting app..."
+    exec npm start
 fi

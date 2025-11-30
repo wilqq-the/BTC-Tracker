@@ -4,14 +4,15 @@ import { ExchangeRateService } from './exchange-rate-service';
 import { HistoricalDataService } from './historical-data-service';
 import { SettingsService } from './settings-service';
 import { prisma } from './prisma';
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
-import path from 'path';
 
 /**
  * App Initialization Service
  * Handles server-side initialization of background services
  * Following Next.js best practices for server startup
+ * 
+ * IMPORTANT: Database migrations are handled by docker-entrypoint.sh using
+ * 'prisma migrate deploy' which is production-safe and never causes data loss.
+ * This service only verifies the database is accessible and starts services.
  */
 export class AppInitializationService {
   private static isInitialized = false;
@@ -82,10 +83,11 @@ export class AppInitializationService {
    */
   private static async performInitialization(): Promise<void> {
     try {
-      // 1. Initialize database (ensure it exists and is up to date)
-      console.log('[CABINET] Initializing database...');
-      await this.initializeDatabase();
-      console.log('[OK] Database initialized');
+      // 1. Verify database connection and structure
+      // Note: Migrations are handled by docker-entrypoint.sh before the app starts
+      console.log('[CABINET] Verifying database connection...');
+      await this.verifyDatabase();
+      console.log('[OK] Database verified');
 
       // 2. Load application settings (with validation and fallback)
       console.log('[INFO] Loading application settings...');
@@ -234,9 +236,13 @@ export class AppInitializationService {
   }
 
   /**
-   * Initialize database - ensure it exists and run migrations
+   * Verify database connection and basic structure
+   * 
+   * IMPORTANT: This method does NOT modify the database schema.
+   * Schema migrations are handled by docker-entrypoint.sh using 'prisma migrate deploy'
+   * which is the production-safe way to apply migrations without data loss.
    */
-  private static async initializeDatabase(): Promise<void> {
+  private static async verifyDatabase(): Promise<void> {
     try {
       // Test database connection
       console.log('[SEARCH] Testing database connection...');
@@ -246,84 +252,34 @@ export class AppInitializationService {
       await prisma.$queryRaw`SELECT 1`;
       console.log('[OK] Database connection successful');
 
-      // Run pending migrations
-      console.log('[SYNC] Checking for database migrations...');
-      try {
-        execSync('npm exec prisma migrate deploy', { 
-          stdio: 'pipe',
-          cwd: process.cwd()
-        });
-        console.log('[OK] Database migrations completed');
-      } catch (migrationError) {
-        console.log('[WARN] Migration command failed, attempting database setup...');
-        
-        // If migrations fail, try to set up the database from scratch
-        await this.setupFreshDatabase();
-      }
-
-      // Verify database structure
+      // Verify core tables exist by attempting to query them
+      // This will throw if migrations haven't been applied
       console.log('[SEARCH] Verifying database structure...');
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
 
     } catch (error) {
-      console.error('[ERROR] Database initialization failed:', error);
-      
-      // Try to set up fresh database as last resort
-      console.log('[TOOL] Attempting fresh database setup...');
-      await this.setupFreshDatabase();
-    }
-  }
-
-  /**
-   * Set up a fresh database when migrations fail
-   */
-  private static async setupFreshDatabase(): Promise<void> {
-    try {
-      console.log('[TOOL] Setting up fresh database...');
-      
-      // Note: Prisma client is already generated at build time
-      console.log('[INFO] Using pre-generated Prisma client...');
-
-      // Push schema to database (creates tables)
-      console.log('[INFO] Creating database schema...');
-      execSync('npm exec prisma db push --accept-data-loss', { 
-        stdio: 'pipe',
-        cwd: process.cwd()
-      });
-
-      // Run seed data
-      console.log('Setting up initial data...');
-      try {
-        execSync('npx tsx prisma/seed.ts', { 
-          stdio: 'pipe',
-          cwd: process.cwd()
-        });
-        console.log('[OK] Initial data seeded');
-      } catch (seedError) {
-        console.warn('[WARN] Seeding failed (continuing):', seedError);
-      }
-
-      console.log('[OK] Fresh database setup completed');
-    } catch (error) {
-      console.error('[ERROR] Fresh database setup failed:', error);
-      throw new Error(`Database setup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[ERROR] Database verification failed:', error);
+      console.error('[INFO] Please ensure migrations have been applied. Run: npx prisma migrate deploy');
+      throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
    * Verify database structure is correct
+   * Only reads from database - never modifies schema
    */
   private static async verifyDatabaseStructure(): Promise<void> {
     try {
       // Test key tables exist and are accessible
+      // These queries only READ data, never modify schema
       await prisma.user.findFirst();
       await prisma.bitcoinTransaction.findFirst();
       await prisma.appSettings.findFirst();
       console.log('[OK] Core database tables verified');
     } catch (error) {
       console.error('[ERROR] Database structure verification failed:', error);
-      throw new Error('Database structure is invalid or incomplete');
+      throw new Error('Database structure is invalid or incomplete. Please ensure migrations have been applied.');
     }
   }
-} 
+}
