@@ -4,8 +4,37 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
-import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
-import { formatCurrency } from '@/lib/theme';
+import { cn } from '@/lib/utils';
+
+// shadcn/ui components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+
+// Icons
+import {
+  MailIcon,
+  DollarSignIcon,
+  ShieldCheckIcon,
+  LockIcon,
+  KeyIcon,
+  DownloadIcon,
+  TrashIcon,
+  LogOutIcon,
+  CameraIcon,
+  CheckIcon,
+  AlertCircleIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  WalletIcon,
+  SnowflakeIcon,
+  FlameIcon,
+  ArrowLeftRightIcon,
+  EditIcon,
+} from 'lucide-react';
 
 interface UserStats {
   memberSince: string;
@@ -53,20 +82,18 @@ export default function ProfilePage() {
 
   const loadUserStats = async () => {
     try {
-      // Load portfolio metrics for user stats
       const response = await fetch('/api/portfolio-metrics?detailed=true');
       const result = await response.json();
       
       if (result.success && result.data) {
-        // Get user creation date from session or set a default
         const memberSince = session?.user?.email ? new Date().toISOString() : new Date().toISOString();
         
         setUserStats({
           memberSince,
           lastLogin: new Date().toISOString(),
           totalTransactions: result.data.totalTransactions || 0,
-          firstTransaction: null, // Would need to fetch from transactions
-          lastTransaction: null, // Would need to fetch from transactions
+          firstTransaction: null,
+          lastTransaction: null,
           preferredCurrency: result.data.mainCurrency || 'USD',
           totalBtcBought: result.data.totalBtcBought || 0,
           totalBtcSold: result.data.totalBtcSold || 0,
@@ -164,7 +191,7 @@ export default function ProfilePage() {
         setPinSuccess('PIN updated successfully!');
         setPinData({ newPin: '', confirmPin: '' });
         setIsChangingPin(false);
-        loadUserData(); // Refresh user data
+        loadUserData();
       } else {
         setPinError(result.error || 'Failed to update PIN');
       }
@@ -189,7 +216,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         setPinSuccess('PIN removed successfully!');
-        loadUserData(); // Refresh user data
+        loadUserData();
       } else {
         setPinError(result.error || 'Failed to remove PIN');
       }
@@ -199,7 +226,6 @@ export default function ProfilePage() {
   };
 
   const handleAvatarChange = async () => {
-    // Create a file input element
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -220,7 +246,7 @@ export default function ProfilePage() {
         const result = await response.json();
 
         if (response.ok) {
-          loadUserData(); // Refresh user data to get new avatar
+          loadUserData();
         } else {
           console.error('Failed to upload avatar:', result.error);
         }
@@ -246,11 +272,29 @@ export default function ProfilePage() {
     }
   };
 
+  const getUserInitials = () => {
+    if (userData?.displayName) {
+      return userData.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (userData?.name) {
+      return userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (session?.user?.email) {
+      return session.user.email.substring(0, 2).toUpperCase();
+    }
+    return 'U';
+  };
+
+  const netHoldings = (userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0);
+
   if (loading || status === 'loading') {
     return (
       <AppLayout>
-        <div className="p-6 flex items-center justify-center">
-          <ThemedText>Loading profile...</ThemedText>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center space-y-3">
+            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading profile...</p>
+          </div>
         </div>
       </AppLayout>
     );
@@ -258,474 +302,411 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="p-4 lg:p-6 space-y-4">
+      <div className="p-4 lg:p-6 space-y-6 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold text-btc-text-primary mb-1">
-            Profile
-          </h1>
-          <ThemedText variant="muted" size="sm">
-            Manage your account and preferences
-          </ThemedText>
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Profile</h1>
+          <p className="text-muted-foreground">Manage your account and view your statistics</p>
         </div>
 
-        {/* User Card */}
-        <ThemedCard>
-          <div className="p-4">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
+        {/* User Profile Card */}
+        <Card>
+          <CardContent className="pt-6 pb-6">
+            <div className="flex flex-col md:flex-row gap-6">
               {/* Avatar Section */}
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center">
                 <div className="relative">
-                  {userData?.profilePicture ? (
-                    <img 
-                      src={userData.profilePicture} 
-                      alt="Profile" 
-                      className="h-16 w-16 rounded-full object-cover border-2 border-btc-border-secondary"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xl font-bold">
-                        {session?.user?.name?.[0] || session?.user?.email?.[0]?.toUpperCase() || 'U'}
-                      </span>
-                    </div>
-                  )}
+                  <Avatar className="size-24 border-4 border-muted shadow-lg">
+                    <AvatarImage src={userData?.profilePicture || ''} alt={userData?.displayName || 'User'} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                      {getUserInitials()}
+                    </AvatarFallback>
+                  </Avatar>
                   <button 
                     onClick={handleAvatarChange}
-                    className="absolute -bottom-1 -right-1 h-6 w-6 bg-btc-bg-primary border border-btc-border-secondary rounded-full flex items-center justify-center hover:bg-btc-bg-secondary transition-colors"
+                    className="absolute -bottom-1 -right-1 size-8 bg-background border border-border rounded-full flex items-center justify-center hover:bg-muted transition-colors shadow-sm"
                   >
-                    <span className="text-xs">✏️</span>
+                    <CameraIcon className="size-4 text-muted-foreground" />
                   </button>
                 </div>
-                <ThemedButton 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-xs text-btc-text-muted py-1"
-                  onClick={handleAvatarChange}
-                >
-                  Change
-                </ThemedButton>
+                <Button variant="ghost" size="sm" className="mt-2 text-xs" onClick={handleAvatarChange}>
+                  <EditIcon className="size-3 mr-1" />
+                  Change Photo
+                </Button>
               </div>
 
               {/* User Info */}
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 text-center md:text-left space-y-4">
                 <div>
-                  <ThemedText variant="primary" className="text-xl font-bold">
-                    {session?.user?.name || session?.user?.email?.split('@')[0] || 'User'}
-                  </ThemedText>
-                  <ThemedText variant="muted" size="xs" className="block">
+                  <h2 className="text-2xl font-bold">
+                    {userData?.displayName || userData?.name || session?.user?.email?.split('@')[0] || 'User'}
+                  </h2>
+                  <p className="text-muted-foreground flex items-center justify-center md:justify-start gap-1 mt-1">
+                    <MailIcon className="size-4" />
                     {session?.user?.email || 'Not available'}
-                  </ThemedText>
+                  </p>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
-                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
-                      Joined
-                    </ThemedText>
-                    <ThemedText variant="primary" size="sm" className="font-semibold block">
-                      {userStats ? new Date(userStats.memberSince).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: 'short'
-                      }) : 'N/A'}
-                    </ThemedText>
-                  </div>
-                  
-                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
-                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
-                      Currency
-                    </ThemedText>
-                    <ThemedText variant="primary" size="sm" className="font-semibold block">
-                      {userStats?.preferredCurrency || 'USD'}
-                    </ThemedText>
-                  </div>
-
-                  <div className="p-2 bg-btc-bg-secondary/30 rounded">
-                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
-                      Type
-                    </ThemedText>
-                    <ThemedText variant="primary" size="sm" className="font-semibold block">
-                      Self-Hosted
-                    </ThemedText>
-                  </div>
-
-                  <div className="p-2 bg-green-50 dark:bg-green-900/20 rounded">
-                    <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-1">
-                      Status
-                    </ThemedText>
-                    <div className="flex items-center gap-1">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <ThemedText variant="primary" size="sm" className="font-semibold text-green-600 dark:text-green-400">
-                        Active
-                      </ThemedText>
-                    </div>
-                  </div>
+                {/* Quick Stats Badges */}
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+                  <Badge variant="secondary" className="gap-1">
+                    <DollarSignIcon className="size-3" />
+                    {userStats?.preferredCurrency || 'USD'}
+                  </Badge>
+                  <Badge className="bg-profit/10 text-profit border-profit/20 gap-1">
+                    <div className="size-2 bg-profit rounded-full animate-pulse" />
+                    Active
+                  </Badge>
                 </div>
               </div>
             </div>
-          </div>
-        </ThemedCard>
+          </CardContent>
+        </Card>
 
         {/* Trading Statistics */}
-        <ThemedCard>
-          <div className="p-4">
-            <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowLeftRightIcon className="size-5" />
               Trading Statistics
-            </h2>
-            
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
-                  Transactions
-                </ThemedText>
-                <ThemedText variant="primary" className="text-2xl font-bold block">
-                  {userStats?.totalTransactions || 0}
-                </ThemedText>
+            </CardTitle>
+            <CardDescription>Your Bitcoin trading activity overview</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {/* Main Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div className="text-center p-4 bg-muted/50 rounded-xl border">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Total Transactions</p>
+                <p className="text-3xl font-bold">{userStats?.totalTransactions || 0}</p>
               </div>
               
-              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
-                  Bought
-                </ThemedText>
-                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
-                  {userStats?.totalBtcBought.toFixed(4) || '0.0000'}
-                </ThemedText>
+              <div className="text-center p-4 bg-profit/5 rounded-xl border border-profit/20">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-center gap-1">
+                  <TrendingUpIcon className="size-3 text-profit" />
+                  Total Bought
+                </p>
+                <p className="text-2xl font-bold font-mono text-profit">
+                  {userStats?.totalBtcBought.toFixed(4) || '0.0000'} <span className="text-sm">₿</span>
+                </p>
               </div>
               
-              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
-                  Sold
-                </ThemedText>
-                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
-                  {userStats?.totalBtcSold.toFixed(4) || '0.0000'}
-                </ThemedText>
+              <div className="text-center p-4 bg-loss/5 rounded-xl border border-loss/20">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-center gap-1">
+                  <TrendingDownIcon className="size-3 text-loss" />
+                  Total Sold
+                </p>
+                <p className="text-2xl font-bold font-mono text-loss">
+                  {userStats?.totalBtcSold.toFixed(4) || '0.0000'} <span className="text-sm">₿</span>
+                </p>
               </div>
               
-              <div className="text-center p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                <ThemedText variant="muted" size="xs" className="uppercase tracking-wide block mb-2">
+              <div className="text-center p-4 bg-primary/5 rounded-xl border border-primary/20">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2 flex items-center justify-center gap-1">
+                  <WalletIcon className="size-3 text-primary" />
                   Net Holdings
-                </ThemedText>
-                <ThemedText variant="primary" className="text-lg font-bold block font-mono">
-                  {((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)).toFixed(4)}
-                </ThemedText>
+                </p>
+                <p className="text-2xl font-bold font-mono text-primary">
+                  {netHoldings.toFixed(4)} <span className="text-sm">₿</span>
+                </p>
               </div>
             </div>
             
-            {/* Cold/Hot Wallet Distribution */}
-            {(userStats?.coldWalletBtc || 0) > 0 && (
-              <div className="mt-3 grid grid-cols-2 gap-3">
-                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center justify-between mb-2">
+            {/* Wallet Distribution */}
+            {(userStats?.coldWalletBtc || 0) > 0 && netHoldings > 0 && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-blue-500/5 rounded-xl border border-blue-500/20">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <ThemedText variant="muted" size="xs" className="uppercase tracking-wide text-blue-700 dark:text-blue-300">
-                        Cold Wallet
-                      </ThemedText>
+                      <SnowflakeIcon className="size-4 text-blue-500" />
+                      <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Cold Storage</span>
                     </div>
-                    <ThemedText variant="muted" size="xs" className="text-blue-600 dark:text-blue-400">
-                      {((userStats?.coldWalletBtc || 0) / ((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)) * 100).toFixed(0)}%
-                    </ThemedText>
+                    <Badge variant="outline" className="text-blue-600 border-blue-500/30">
+                      {((userStats?.coldWalletBtc || 0) / netHoldings * 100).toFixed(0)}%
+                    </Badge>
                   </div>
-                  <ThemedText variant="primary" className="text-base font-bold font-mono text-blue-600 dark:text-blue-400">
+                  <p className="text-xl font-bold font-mono text-blue-600 dark:text-blue-400">
                     {userStats?.coldWalletBtc.toFixed(8)} ₿
-                  </ThemedText>
+                  </p>
+                  {/* Progress bar */}
+                  <div className="mt-2 h-1.5 bg-blue-500/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-blue-500 rounded-full transition-all"
+                      style={{ width: `${(userStats?.coldWalletBtc || 0) / netHoldings * 100}%` }}
+                    />
+                  </div>
                 </div>
                 
-                <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                  <div className="flex items-center justify-between mb-2">
+                <div className="p-4 bg-orange-500/5 rounded-xl border border-orange-500/20">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-                      <ThemedText variant="muted" size="xs" className="uppercase tracking-wide text-orange-700 dark:text-orange-300">
-                        Hot Wallet
-                      </ThemedText>
+                      <FlameIcon className="size-4 text-orange-500" />
+                      <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Hot Wallet</span>
                     </div>
-                    <ThemedText variant="muted" size="xs" className="text-orange-600 dark:text-orange-400">
-                      {(Math.abs(userStats?.hotWalletBtc || 0) / ((userStats?.totalBtcBought || 0) - (userStats?.totalBtcSold || 0)) * 100).toFixed(0)}%
-                    </ThemedText>
+                    <Badge variant="outline" className="text-orange-600 border-orange-500/30">
+                      {(Math.abs(userStats?.hotWalletBtc || 0) / netHoldings * 100).toFixed(0)}%
+                    </Badge>
                   </div>
-                  <ThemedText variant="primary" className="text-base font-bold font-mono text-orange-600 dark:text-orange-400">
+                  <p className="text-xl font-bold font-mono text-orange-600 dark:text-orange-400">
                     {Math.abs(userStats?.hotWalletBtc || 0).toFixed(8)} ₿
-                  </ThemedText>
+                  </p>
+                  {/* Progress bar */}
+                  <div className="mt-2 h-1.5 bg-orange-500/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-orange-500 rounded-full transition-all"
+                      style={{ width: `${Math.abs(userStats?.hotWalletBtc || 0) / netHoldings * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
-          </div>
-        </ThemedCard>
+          </CardContent>
+        </Card>
 
-        {/* Security & Data */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Security & Data Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Security Settings */}
-          <ThemedCard>
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheckIcon className="size-5" />
                 Security
-              </h2>
-            
-            {!isChangingPassword ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                  <div className="flex-1 min-w-0">
-                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
-                      Password
-                    </ThemedText>
-                    <ThemedText variant="muted" size="xs" className="block">
-                      Last changed: Never tracked
-                    </ThemedText>
+              </CardTitle>
+              <CardDescription>Manage your account security settings</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Password Section */}
+              {!isChangingPassword ? (
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 bg-background rounded-full flex items-center justify-center border">
+                      <LockIcon className="size-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Password</p>
+                      <p className="text-xs text-muted-foreground">Last changed: Never tracked</p>
+                    </div>
                   </div>
-                  <ThemedButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setIsChangingPassword(true)}
-                    className="text-xs py-1 px-3 flex-shrink-0"
-                  >
+                  <Button variant="outline" size="sm" onClick={() => setIsChangingPassword(true)}>
                     Change
-                  </ThemedButton>
+                  </Button>
                 </div>
+              ) : (
+                <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
+                  <form onSubmit={handlePasswordChange} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <Input
+                        id="currentPassword"
+                        type="password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <Input
+                        id="newPassword"
+                        type="password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                      <Input
+                        id="confirmPassword"
+                        type="password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        required
+                      />
+                    </div>
+                    
+                    {passwordError && (
+                      <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                        <AlertCircleIcon className="size-4" />
+                        {passwordError}
+                      </div>
+                    )}
+                    
+                    {passwordSuccess && (
+                      <div className="flex items-center gap-2 p-3 bg-profit/10 border border-profit/20 rounded-lg text-profit text-sm">
+                        <CheckIcon className="size-4" />
+                        {passwordSuccess}
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button type="submit">Update Password</Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                          setPasswordError('');
+                          setPasswordSuccess('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
                 
-                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                  <div className="flex-1 min-w-0">
-                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
-                      PIN Authentication
-                    </ThemedText>
-                    <ThemedText variant="muted" size="xs" className="block">
-                      {userData?.hasPin ? 'PIN is set' : 'No PIN set'}
-                    </ThemedText>
+              {/* PIN Section */}
+              {!isChangingPin ? (
+                <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 bg-background rounded-full flex items-center justify-center border">
+                      <KeyIcon className="size-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">PIN Authentication</p>
+                      <p className="text-xs text-muted-foreground">
+                        {userData?.hasPin ? 'PIN is configured' : 'No PIN set'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex gap-2 flex-shrink-0">
-                    <ThemedButton
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setIsChangingPin(true)}
-                      className="text-xs py-1 px-3"
-                    >
-                      {userData?.hasPin ? 'Change' : 'Set'}
-                    </ThemedButton>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsChangingPin(true)}>
+                      {userData?.hasPin ? 'Change' : 'Set PIN'}
+                    </Button>
                     {userData?.hasPin && (
-                      <ThemedButton
+                      <Button
                         variant="ghost"
                         size="sm"
                         onClick={handleRemovePin}
-                        className="text-red-500 hover:text-red-600 text-xs py-1 px-2"
+                        className="text-destructive hover:text-destructive"
                       >
                         Remove
-                      </ThemedButton>
+                      </Button>
                     )}
                   </div>
                 </div>
-
-                {/* PIN Change Form */}
-                {isChangingPin && (
-                  <div className="p-6 bg-btc-bg-secondary/30 rounded-lg">
-                    <form onSubmit={handlePinChange} className="space-y-6">
-                      <div>
-                        <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-                          New PIN (4-6 digits)
-                        </label>
-                        <input
-                          type="password"
-                          value={pinData.newPin}
-                          onChange={(e) => setPinData({ ...pinData, newPin: e.target.value })}
-                          className="w-full px-4 py-3 bg-btc-bg-primary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                          placeholder="Enter 4-6 digit PIN"
-                          maxLength={6}
-                          pattern="[0-9]*"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-                          Confirm PIN
-                        </label>
-                        <input
-                          type="password"
-                          value={pinData.confirmPin}
-                          onChange={(e) => setPinData({ ...pinData, confirmPin: e.target.value })}
-                          className="w-full px-4 py-3 bg-btc-bg-primary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                          placeholder="Confirm PIN"
-                          maxLength={6}
-                          pattern="[0-9]*"
-                          required
-                        />
-                      </div>
-                      
-                      {pinError && (
-                        <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                          <ThemedText variant="primary" className="text-red-700 dark:text-red-300 font-medium">
-                            {pinError}
-                          </ThemedText>
-                        </div>
-                      )}
-                      
-                      {pinSuccess && (
-                        <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                          <ThemedText variant="primary" className="text-green-700 dark:text-green-300 font-medium">
-                            {pinSuccess}
-                          </ThemedText>
-                        </div>
-                      )}
-                      
-                      <div className="flex gap-4 pt-4">
-                        <ThemedButton type="submit" variant="primary" className="px-6 py-2">
-                          {userData?.hasPin ? 'Update PIN' : 'Set PIN'}
-                        </ThemedButton>
-                        <ThemedButton
-                          type="button"
-                          variant="secondary"
-                          onClick={() => {
-                            setIsChangingPin(false);
-                            setPinData({ newPin: '', confirmPin: '' });
-                            setPinError('');
-                            setPinSuccess('');
-                          }}
-                          className="px-6 py-2"
-                        >
-                          Cancel
-                        </ThemedButton>
-                      </div>
-                    </form>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="p-6 bg-btc-bg-secondary/30 rounded-lg">
-                <form onSubmit={handlePasswordChange} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordData.currentPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                      className="w-full px-4 py-3 bg-btc-bg-primary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordData.newPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                      className="w-full px-4 py-3 bg-btc-bg-primary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordData.confirmPassword}
-                      onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                      className="w-full px-4 py-3 bg-btc-bg-primary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
-                  
-                  {passwordError && (
-                    <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                      <ThemedText variant="primary" className="text-red-700 dark:text-red-300 font-medium">
-                        {passwordError}
-                      </ThemedText>
+              ) : (
+                <div className="p-4 bg-muted/30 rounded-lg border space-y-4">
+                  <form onSubmit={handlePinChange} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="newPin">New PIN (4-6 digits)</Label>
+                      <Input
+                        id="newPin"
+                        type="password"
+                        value={pinData.newPin}
+                        onChange={(e) => setPinData({ ...pinData, newPin: e.target.value })}
+                        placeholder="Enter 4-6 digit PIN"
+                        maxLength={6}
+                        className="text-center text-xl tracking-widest"
+                        required
+                      />
                     </div>
-                  )}
-                  
-                  {passwordSuccess && (
-                    <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                      <ThemedText variant="primary" className="text-green-700 dark:text-green-300 font-medium">
-                        {passwordSuccess}
-                      </ThemedText>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPin">Confirm PIN</Label>
+                      <Input
+                        id="confirmPin"
+                        type="password"
+                        value={pinData.confirmPin}
+                        onChange={(e) => setPinData({ ...pinData, confirmPin: e.target.value })}
+                        placeholder="Confirm PIN"
+                        maxLength={6}
+                        className="text-center text-xl tracking-widest"
+                        required
+                      />
                     </div>
-                  )}
-                  
-                  <div className="flex gap-4 pt-4">
-                    <ThemedButton type="submit" variant="primary" className="px-6 py-2">
-                      Update Password
-                    </ThemedButton>
-                    <ThemedButton
-                      type="button"
-                      variant="secondary"
-                      onClick={() => {
-                        setIsChangingPassword(false);
-                        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                        setPasswordError('');
-                        setPasswordSuccess('');
-                      }}
-                      className="px-6 py-2"
-                    >
-                      Cancel
-                    </ThemedButton>
-                  </div>
-                </form>
-              </div>
-            )}
-          </div>
-        </ThemedCard>
+                    
+                    {pinError && (
+                      <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                        <AlertCircleIcon className="size-4" />
+                        {pinError}
+                      </div>
+                    )}
+                    
+                    {pinSuccess && (
+                      <div className="flex items-center gap-2 p-3 bg-profit/10 border border-profit/20 rounded-lg text-profit text-sm">
+                        <CheckIcon className="size-4" />
+                        {pinSuccess}
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-2">
+                      <Button type="submit">{userData?.hasPin ? 'Update PIN' : 'Set PIN'}</Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setIsChangingPin(false);
+                          setPinData({ newPin: '', confirmPin: '' });
+                          setPinError('');
+                          setPinSuccess('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
-          {/* Data Management */}
-          <ThemedCard>
-            <div className="p-4">
-              <h2 className="text-lg font-semibold text-btc-text-primary mb-3">
+          {/* Data & Session */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DownloadIcon className="size-5" />
                 Data & Session
-              </h2>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3 p-3 bg-btc-bg-secondary rounded-lg border border-btc-border-secondary">
-                  <div className="flex-1 min-w-0">
-                    <ThemedText variant="primary" className="font-semibold text-sm block mb-1">
-                      Export Data
-                    </ThemedText>
-                    <ThemedText variant="muted" size="xs" className="block">
-                      Download transactions & settings
-                    </ThemedText>
+              </CardTitle>
+              <CardDescription>Export your data or manage your session</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Export Data */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 bg-background rounded-full flex items-center justify-center border">
+                    <DownloadIcon className="size-5 text-muted-foreground" />
                   </div>
-                  <ThemedButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={exportUserData}
-                    className="text-xs py-1 px-3 flex-shrink-0"
-                  >
-                    Export
-                  </ThemedButton>
-                </div>
-                
-                <div className="flex items-center justify-between gap-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                  <div className="flex-1 min-w-0">
-                    <ThemedText variant="primary" className="font-semibold text-sm text-red-700 dark:text-red-300 block mb-1">
-                      Delete Account
-                    </ThemedText>
-                    <ThemedText variant="muted" size="xs" className="text-red-600 dark:text-red-400 block">
-                      Permanently delete all data
-                    </ThemedText>
+                  <div>
+                    <p className="font-medium">Export Data</p>
+                    <p className="text-xs text-muted-foreground">Download all your transactions & settings</p>
                   </div>
-                  <ThemedButton
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 text-xs py-1 px-3 flex-shrink-0"
-                  >
-                    Delete
-                  </ThemedButton>
                 </div>
-                
-                <div className="pt-3 border-t border-btc-border-secondary">
-                  <ThemedButton
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => window.location.href = '/api/auth/signout'}
-                    className="w-full"
-                  >
-                    Sign Out
-                  </ThemedButton>
-                </div>
+                <Button variant="outline" size="sm" onClick={exportUserData}>
+                  Export
+                </Button>
               </div>
-            </div>
-          </ThemedCard>
+              
+              {/* Delete Account */}
+              <div className="flex items-center justify-between p-4 bg-destructive/5 rounded-lg border border-destructive/20">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 bg-destructive/10 rounded-full flex items-center justify-center">
+                    <TrashIcon className="size-5 text-destructive" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-destructive">Delete Account</p>
+                    <p className="text-xs text-muted-foreground">Permanently delete all your data</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                  Delete
+                </Button>
+              </div>
+              
+              {/* Sign Out */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => window.location.href = '/api/auth/signout'}
+                >
+                  <LogOutIcon className="size-4 mr-2" />
+                  Sign Out
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppLayout>

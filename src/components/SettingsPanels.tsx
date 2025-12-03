@@ -1,14 +1,48 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText, useTheme } from './ui/ThemeProvider';
 import { CurrencySettings, PriceDataSettings, DisplaySettings, NotificationSettings, MainCurrency, SupportedCurrency } from '@/lib/types';
-import { ThemedButton } from './ui/ThemeProvider';
 import { CustomCurrency } from '@/lib/custom-currency-service';
 import { CurrencySymbolService } from '@/lib/currency-symbol-service';
 import UserAvatar from './UserAvatar';
 import AvatarUploadModal from './AvatarUploadModal';
-import { AdjustmentsHorizontalIcon } from '@heroicons/react/24/outline';
+import SystemStatusDialog from './SystemStatusDialog';
+import { useTheme } from './ui/ThemeProvider';
+import { cn } from '@/lib/utils';
+
+// shadcn/ui components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+
+// Icons
+import { 
+  DollarSignIcon, 
+  RefreshCwIcon, 
+  PlusIcon, 
+  TrashIcon,
+  AlertTriangleIcon,
+  LightbulbIcon,
+  CheckIcon,
+  SettingsIcon,
+  SunIcon,
+  MoonIcon,
+  BellIcon,
+  BellOffIcon,
+  UserIcon,
+  LockIcon,
+  KeyIcon,
+  CameraIcon,
+  XIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ActivityIcon,
+  DatabaseIcon,
+  ClockIcon,
+  ServerIcon
+} from 'lucide-react';
 
 interface SettingsPanelProps<T> {
   settings: T;
@@ -52,13 +86,11 @@ export function CurrencySettingsPanel({
     { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
   ];
 
-  // Main currencies (only USD and EUR allowed for calculations)
   const mainCurrencies: Array<{code: MainCurrency, name: string, symbol: string}> = [
     { code: 'USD', name: 'US Dollar', symbol: '$' },
     { code: 'EUR', name: 'Euro', symbol: '€' },
   ];
 
-  // Load exchange rates and custom currencies on component mount
   useEffect(() => {
     loadExchangeRates();
     loadCustomCurrencies();
@@ -135,7 +167,6 @@ export function CurrencySettingsPanel({
         setShowAddCurrency(false);
         await loadCustomCurrencies();
         
-        // Automatically update exchange rates to include the new custom currency
         try {
           await updateExchangeRates();
           setCurrencyStatus(`${result.data.code} added successfully! Exchange rates updated.`);
@@ -151,8 +182,6 @@ export function CurrencySettingsPanel({
       setTimeout(() => setCurrencyStatus(''), 3000);
     }
   };
-
-
 
   const deleteCustomCurrency = async (id: number, code: string) => {
     if (confirm(`Are you sure you want to delete custom currency ${code}?`)) {
@@ -178,9 +207,8 @@ export function CurrencySettingsPanel({
   };
 
   const currentSupported = settings.supportedCurrencies || [];
-  const recentRates = exchangeRates.slice(0, 6); // Show first 6 rates
+  const recentRates = exchangeRates.slice(0, 6);
 
-  // Ensure main and secondary currencies are always in supported list
   const ensureRequiredCurrencies = () => {
     const required = [settings.mainCurrency, settings.secondaryCurrency];
     const allAvailableCodes = [
@@ -188,7 +216,6 @@ export function CurrencySettingsPanel({
       ...customCurrencies.map(c => c.code)
     ];
     
-    // Only add to supported if the currency actually exists (built-in or custom)
     const validRequired = required.filter(curr => allAvailableCodes.includes(curr));
     const missing = validRequired.filter(curr => !currentSupported.includes(curr));
     
@@ -198,27 +225,22 @@ export function CurrencySettingsPanel({
     }
   };
 
-  // Auto-fix supported currencies on component mount and when custom currencies change
   useEffect(() => {
     ensureRequiredCurrencies();
   }, [settings.mainCurrency, settings.secondaryCurrency, customCurrencies]);
 
-  // Get available currencies for dropdowns (major currencies should always be available)
   const getAvailableCurrencies = () => {
     const majorCurrencies = ['USD', 'EUR', 'PLN', 'GBP'];
     const availableCodes = Array.from(new Set([...currentSupported, ...majorCurrencies]));
     
-    // Include built-in currencies
     const builtInCurrencies = allCurrencies.filter(c => availableCodes.includes(c.code));
     
-    // Include custom currencies that are active
     const customCurrencyOptions = customCurrencies.map(c => ({
-      code: c.code as any, // Type assertion since custom currencies can be any valid currency code
+      code: c.code as any,
       name: c.name,
       symbol: c.symbol
     }));
     
-    // Combine and deduplicate
     const allOptions = [...builtInCurrencies, ...customCurrencyOptions];
     const uniqueOptions = allOptions.filter((currency, index, self) => 
       index === self.findIndex(c => c.code === currency.code)
@@ -228,220 +250,220 @@ export function CurrencySettingsPanel({
   };
 
   return (
-    <ThemedCard>
-      <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-        Currency Settings
-      </h2>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Currency Settings</h3>
+        <p className="text-muted-foreground">Configure currencies for your portfolio</p>
+      </div>
       
-      <div className="space-y-6">
-        {/* Main Currency */}
-        <div>
-          <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-            Main Currency (for calculations)
-          </label>
-          <select
-            value={settings.mainCurrency}
-            onChange={(e) => onUpdate({ mainCurrency: e.target.value as MainCurrency })}
-            className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange focus:border-transparent"
-            disabled={saving}
-          >
-            {mainCurrencies.map((currency) => (
-              <option key={currency.code} value={currency.code}>
-                {currency.symbol} {currency.name} ({currency.code})
-              </option>
-            ))}
-          </select>
-          <ThemedText variant="muted" size="sm" className="mt-1">
-            All calculations and database storage will use this currency. Only USD and EUR are supported for main currency.
-          </ThemedText>
-        </div>
+      {/* Main & Secondary Currency */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <DollarSignIcon className="size-4" />
+            Currency Selection
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="mainCurrency">Main Currency (for calculations)</Label>
+            <select
+              id="mainCurrency"
+              value={settings.mainCurrency}
+              onChange={(e) => onUpdate({ mainCurrency: e.target.value as MainCurrency })}
+              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={saving}
+            >
+              {mainCurrencies.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.name} ({currency.code})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              All calculations and database storage will use this currency. Only USD and EUR are supported.
+            </p>
+          </div>
 
-        {/* Secondary Currency */}
-        <div>
-          <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-            Secondary Currency (for display)
-          </label>
-          <select
-            value={settings.secondaryCurrency}
-            onChange={(e) => onUpdate({ secondaryCurrency: e.target.value as SupportedCurrency })}
-            className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange focus:border-transparent"
-            disabled={saving}
-          >
-            {getAvailableCurrencies().map((currency) => (
-              <option key={currency.code} value={currency.code}>
-                {currency.symbol} {currency.name} ({currency.code})
-              </option>
-            ))}
-          </select>
-          <ThemedText variant="muted" size="sm" className="mt-1">
-            Values will be converted and shown in this currency alongside main currency
-          </ThemedText>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="secondaryCurrency">Secondary Currency (for display)</Label>
+            <select
+              id="secondaryCurrency"
+              value={settings.secondaryCurrency}
+              onChange={(e) => onUpdate({ secondaryCurrency: e.target.value as SupportedCurrency })}
+              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              disabled={saving}
+            >
+              {getAvailableCurrencies().map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.name} ({currency.code})
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Values will be converted and shown in this currency alongside main currency
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Supported Currencies */}
-        <div>
-          <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-            Supported Currencies
-          </label>
-          <div className="grid grid-cols-2 gap-2">
+      {/* Supported Currencies */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Supported Currencies</CardTitle>
+          <CardDescription>Select currencies you want to use for transactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 gap-3">
             {allCurrencies.map((currency) => {
               const isSupported = currentSupported.includes(currency.code);
               const isRequired = currency.code === settings.mainCurrency || currency.code === settings.secondaryCurrency;
               
               return (
-                <label key={currency.code} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
+                <label 
+                  key={currency.code} 
+                  className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors",
+                    isSupported ? "border-primary/50 bg-primary/5" : "border-border hover:bg-muted/50",
+                    isRequired && "opacity-60 cursor-not-allowed"
+                  )}
+                >
+                  <Checkbox
                     checked={isSupported}
-                    onChange={() => {
+                    onCheckedChange={() => {
+                      if (isRequired) return;
                       const newSupported = isSupported 
                         ? currentSupported.filter(c => c !== currency.code) 
                         : [...currentSupported, currency.code];
                       onUpdate({ supportedCurrencies: newSupported });
                     }}
                     disabled={isRequired || saving}
-                    className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded focus:ring-btc-orange disabled:opacity-50"
                   />
-                  <span className={`text-sm ${isSupported ? 'text-btc-text-primary' : 'text-btc-text-muted'}`}>
+                  <span className="text-sm">
                     {currency.symbol} {currency.code}
                   </span>
                   {isRequired && (
-                    <span className="text-xs text-btc-orange">(required)</span>
+                    <span className="text-xs text-primary ml-auto">(required)</span>
                   )}
                 </label>
               );
             })}
           </div>
-          <ThemedText variant="muted" size="sm" className="mt-2">
-            Select currencies you want to use for transactions and display
-          </ThemedText>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Custom Currencies */}
-        <div className="pt-6 border-t border-btc-border-secondary">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-btc-text-secondary">Custom Currencies</h3>
-            <ThemedButton
-              onClick={() => setShowAddCurrency(!showAddCurrency)}
-              variant="secondary"
+      {/* Custom Currencies */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">Custom Currencies</CardTitle>
+              <CardDescription>Add currencies not in the built-in list</CardDescription>
+            </div>
+            <Button
+              variant={showAddCurrency ? "outline" : "default"}
               size="sm"
+              onClick={() => setShowAddCurrency(!showAddCurrency)}
               disabled={saving}
             >
-              {showAddCurrency ? 'Cancel' : '+ Add Currency'}
-            </ThemedButton>
+              {showAddCurrency ? (
+                <>
+                  <XIcon className="size-4 mr-1" />
+                  Cancel
+                </>
+              ) : (
+                <>
+                  <PlusIcon className="size-4 mr-1" />
+                  Add Currency
+                </>
+              )}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Warning */}
+          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+            <AlertTriangleIcon className="size-4 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              <strong>Exchange Rate Limitation:</strong> Custom currencies may not have live exchange rates. 
+              They will use fallback rates (1.0) until rates are manually added.
+            </p>
           </div>
 
-          <div className="mb-4 space-y-2">
-            <ThemedText variant="muted" size="sm">
-              Add custom currencies not available in the built-in list (e.g., INR, BRL, KRW, USDT)
-            </ThemedText>
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
-              <div className="flex items-start space-x-2">
-                <span className="text-amber-500 text-sm">[WARN]</span>
-                <div className="text-xs text-amber-600 dark:text-amber-400">
-                  <strong>Exchange Rate Limitation:</strong> Custom currencies may not have live exchange rates available. 
-                  They will use fallback rates (1.0) for conversions until rates are manually added or a compatible exchange rate source is found.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Add Currency Form */}
+          {/* Add Form */}
           {showAddCurrency && (
-            <div className="mb-4 p-4 bg-btc-bg-tertiary rounded-md border border-btc-border-primary">
-              <div className="mb-3">
-                <div className="text-xs text-btc-text-muted">
-                  [IDEA] <strong>Tip:</strong> Enter the currency code first - symbols and names will be automatically suggested from our comprehensive ISO 4217 database.
-                </div>
+            <div className="p-4 bg-muted/50 rounded-lg border">
+              <div className="flex items-start gap-2 mb-3">
+                <LightbulbIcon className="size-4 text-primary shrink-0 mt-0.5" />
+                <p className="text-xs text-muted-foreground">
+                  Enter the currency code first - symbols and names will be automatically suggested.
+                </p>
               </div>
               <form onSubmit={addCustomCurrency} className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-btc-text-secondary mb-1">
-                      Code (3-4 letters)
-                    </label>
-                    <input
-                      type="text"
+                  <div className="space-y-1">
+                    <Label className="text-xs">Code (3-4 letters)</Label>
+                    <Input
                       value={newCurrencyForm.code}
                       onChange={(e) => {
                         const code = e.target.value.toUpperCase();
                         setNewCurrencyForm(prev => ({ ...prev, code }));
                         
                         if (code.length >= 3) {
-                          // Auto-fetch symbol and name if code is 3-4 characters
                           const symbol = CurrencySymbolService.getCurrencySymbol(code);
                           const name = CurrencySymbolService.getCurrencyName(code);
                           
-                          // Only auto-fill if we found a valid currency (symbol different from code)
                           if (symbol !== code) {
                             setNewCurrencyForm(prev => ({ 
                               ...prev, 
-                              symbol: prev.symbol || symbol, // Only set if symbol is still empty
-                              name: prev.name || (name !== code ? name : '') // Only set if name is different from code
+                              symbol: prev.symbol || symbol,
+                              name: prev.name || (name !== code ? name : '')
                             }));
                           }
                         } else if (code.length === 0) {
-                          // Clear symbol and name when code is completely deleted
-                          setNewCurrencyForm(prev => ({ 
-                            ...prev, 
-                            symbol: '',
-                            name: ''
-                          }));
+                          setNewCurrencyForm(prev => ({ ...prev, symbol: '', name: '' }));
                         }
                       }}
                       placeholder="INR"
                       maxLength={4}
-                      className="w-full px-2 py-1 text-sm bg-btc-bg-primary border border-btc-border-secondary rounded text-btc-text-primary focus:outline-none focus:ring-1 focus:ring-btc-orange"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-btc-text-secondary mb-1">
-                      Name
-                    </label>
-                    <input
-                      type="text"
+                  <div className="space-y-1">
+                    <Label className="text-xs">Name</Label>
+                    <Input
                       value={newCurrencyForm.name}
                       onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Indian Rupee"
-                      className="w-full px-2 py-1 text-sm bg-btc-bg-primary border border-btc-border-secondary rounded text-btc-text-primary focus:outline-none focus:ring-1 focus:ring-btc-orange"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-btc-text-secondary mb-1">
-                      Symbol
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={newCurrencyForm.symbol}
-                        onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, symbol: e.target.value }))}
-                        placeholder={newCurrencyForm.code ? CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code) : "₹"}
-                        maxLength={5}
-                        className="w-full px-2 py-1 text-sm bg-btc-bg-primary border border-btc-border-secondary rounded text-btc-text-primary focus:outline-none focus:ring-1 focus:ring-btc-orange"
-                        required
-
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Symbol</Label>
+                    <Input
+                      value={newCurrencyForm.symbol}
+                      onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, symbol: e.target.value }))}
+                      placeholder={newCurrencyForm.code ? CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code) : "₹"}
+                      maxLength={5}
+                      required
+                    />
                     {newCurrencyForm.code && !newCurrencyForm.symbol && (
-                      <div className="mt-1 text-xs text-btc-text-muted">
+                      <p className="text-xs text-muted-foreground">
                         Suggested: {CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code)}
-                      </div>
+                      </p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <ThemedButton
-                    type="submit"
-                    variant="primary"
-                    size="sm"
-                    disabled={saving}
-                  >
+                <div className="flex items-center gap-3">
+                  <Button type="submit" size="sm" disabled={saving}>
+                    <PlusIcon className="size-4 mr-1" />
                     Add Currency
-                  </ThemedButton>
+                  </Button>
                   {currencyStatus && (
-                    <span className={`text-xs ${currencyStatus.includes('success') ? 'text-green-500' : 'text-red-500'}`}>
+                    <span className={cn(
+                      "text-xs",
+                      currencyStatus.includes('success') ? 'text-profit' : 'text-destructive'
+                    )}>
                       {currencyStatus}
                     </span>
                   )}
@@ -454,70 +476,72 @@ export function CurrencySettingsPanel({
           {customCurrencies.length > 0 ? (
             <div className="space-y-2">
               {customCurrencies.map((currency) => (
-                <div key={currency.id} className="flex items-center justify-between p-2 bg-btc-bg-tertiary rounded border border-btc-border-secondary">
-                  <div className="flex items-center space-x-3">
-                    <span className="font-mono text-sm font-medium text-btc-text-primary">
-                      {currency.code}
-                    </span>
-                    <span className="text-sm text-btc-text-secondary">
+                <div key={currency.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm font-medium">{currency.code}</span>
+                    <span className="text-sm text-muted-foreground">
                       {currency.symbol} {currency.name}
                     </span>
                   </div>
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => deleteCustomCurrency(currency.id, currency.code)}
-                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors"
                     disabled={saving}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    Delete
-                  </button>
+                    <TrashIcon className="size-4" />
+                  </Button>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-4 text-btc-text-muted text-sm">
+            <p className="text-center py-4 text-muted-foreground text-sm">
               No custom currencies added yet
-            </div>
+            </p>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Exchange Rate Settings */}
-        <div className="pt-6 border-t border-btc-border-secondary">
-          <h3 className="text-sm font-medium text-btc-text-secondary mb-4">Exchange Rate Settings</h3>
-          
-          <div className="mb-4 p-3 bg-btc-bg-tertiary rounded-md">
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-sm font-medium text-btc-text-primary">Data Source:</span>
-              <span className="text-sm text-btc-orange">ExchangeRate-API.com</span>
+      {/* Exchange Rates */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <RefreshCwIcon className="size-4" />
+            Exchange Rate Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium">Data Source:</span>
+              <span className="text-sm text-primary">ExchangeRate-API.com</span>
             </div>
-            <ThemedText variant="muted" size="sm">
-              Free, reliable exchange rates updated multiple times daily. USD ↔ EUR rates are always fetched automatically since these are the only allowed main currencies.
-            </ThemedText>
+            <p className="text-xs text-muted-foreground">
+              Free, reliable exchange rates updated multiple times daily.
+            </p>
           </div>
 
-          {/* Auto Update */}
-          <div className="flex items-center space-x-3 mb-4">
-            <input
-              type="checkbox"
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="autoUpdateRates"
               checked={settings.autoUpdateRates}
-              onChange={(e) => onUpdate({ autoUpdateRates: e.target.checked })}
+              onCheckedChange={(checked) => onUpdate({ autoUpdateRates: checked as boolean })}
               disabled={saving}
-              className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded focus:ring-btc-orange"
             />
-            <label className="text-sm font-medium text-btc-text-secondary">
+            <Label htmlFor="autoUpdateRates" className="cursor-pointer">
               Automatically update exchange rates
-            </label>
+            </Label>
           </div>
 
-          {/* Update Interval */}
           {settings.autoUpdateRates && (
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                Update Interval
-              </label>
+            <div className="space-y-2">
+              <Label htmlFor="rateUpdateInterval">Update Interval</Label>
               <select
+                id="rateUpdateInterval"
                 value={settings.rateUpdateInterval}
                 onChange={(e) => onUpdate({ rateUpdateInterval: parseInt(e.target.value) })}
-                className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange focus:border-transparent"
+                className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 disabled={saving}
               >
                 <option value={1}>Every hour</option>
@@ -528,61 +552,86 @@ export function CurrencySettingsPanel({
             </div>
           )}
 
-          {/* Manual Update */}
-          <div className="flex items-center space-x-3 mb-4">
-            <ThemedButton
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
               onClick={updateExchangeRates}
               disabled={isUpdatingRates || saving}
-              variant="secondary"
-              size="sm"
             >
-              {isUpdatingRates ? 'Updating...' : 'Update Exchange Rates Now'}
-            </ThemedButton>
+              {isUpdatingRates ? (
+                <>
+                  <RefreshCwIcon className="size-4 mr-1 animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                <>
+                  <RefreshCwIcon className="size-4 mr-1" />
+                  Update Now
+                </>
+              )}
+            </Button>
             {exchangeRateStatus && (
-              <span className={`text-sm ${exchangeRateStatus.includes('success') ? 'text-green-500' : 'text-red-500'}`}>
+              <span className={cn(
+                "text-sm",
+                exchangeRateStatus.includes('success') ? 'text-profit' : 'text-destructive'
+              )}>
                 {exchangeRateStatus}
               </span>
             )}
           </div>
 
-          {/* Current Exchange Rates Preview */}
+          {/* Current Rates */}
           {exchangeRates.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-sm font-medium text-btc-text-secondary">Current Exchange Rates</h4>
-                <button
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium">Current Exchange Rates</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setShowAllRates(!showAllRates)}
-                  className="text-xs text-btc-orange hover:text-btc-orange-light"
+                  className="text-xs"
                 >
-                  {showAllRates ? 'Show Less' : 'Show All'}
-                </button>
+                  {showAllRates ? (
+                    <>
+                      <ChevronUpIcon className="size-3 mr-1" />
+                      Show Less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDownIcon className="size-3 mr-1" />
+                      Show All
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="bg-btc-bg-tertiary rounded-md p-3 text-xs">
-                <div className="grid grid-cols-2 gap-2">
+              <div className="bg-muted/30 rounded-lg p-3">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   {(showAllRates ? exchangeRates : recentRates).map((rate, index) => (
                     <div key={index} className="flex justify-between">
-                      <span className="text-btc-text-muted">{rate.from_currency}/{rate.to_currency}:</span>
-                      <span className="text-btc-text-primary font-mono">{rate.rate.toFixed(4)}</span>
+                      <span className="text-muted-foreground">{rate.from_currency}/{rate.to_currency}:</span>
+                      <span className="font-mono">{rate.rate.toFixed(4)}</span>
                     </div>
                   ))}
                 </div>
                 {exchangeRates.length > 0 && (
-                  <div className="text-btc-text-muted mt-2 text-center">
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
                     Last updated: {new Date(exchangeRates[0].last_updated).toLocaleString()}
-                  </div>
+                  </p>
                 )}
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </ThemedCard>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
 // Price Data Settings Panel
 export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsPanelProps<PriceDataSettings>) {
   const [localSettings, setLocalSettings] = useState(settings);
+  const [showSystemStatus, setShowSystemStatus] = useState(false);
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -595,262 +644,166 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
   };
 
   return (
-    <div>
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-btc-text-primary mb-2">
-          Price Data Settings
-        </h3>
-        <ThemedText variant="secondary">
-          Configure how Bitcoin price data is collected and stored
-        </ThemedText>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Price Data Settings</h3>
+        <p className="text-muted-foreground">Configure how Bitcoin price data is collected and stored</p>
       </div>
 
-      <div className="space-y-6">
-        {/* Live Price Updates */}
-        <ThemedCard>
-          <div className="mb-4">
-            <h4 className="font-medium text-btc-text-primary mb-2">Live Price Updates</h4>
-            <ThemedText variant="muted" size="sm">
-              How often to fetch current Bitcoin price
-            </ThemedText>
+      {/* Historical Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <DatabaseIcon className="size-4" />
+            Historical Data
+          </CardTitle>
+          <CardDescription>Configure historical price data collection for charts</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="historicalDataPeriod">Historical Data Period</Label>
+            <select
+              id="historicalDataPeriod"
+              value={localSettings.historicalDataPeriod}
+              onChange={(e) => handleChange('historicalDataPeriod', e.target.value)}
+              disabled={saving}
+              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            >
+              <option value="3M">3 months</option>
+              <option value="6M">6 months</option>
+              <option value="1Y">1 year (recommended)</option>
+              <option value="2Y">2 years</option>
+              <option value="5Y">5 years</option>
+              <option value="ALL">All available data</option>
+            </select>
+            <p className="text-xs text-muted-foreground">
+              Longer periods may take more time to download initially
+            </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="pt-4 border-t flex gap-3">
+            <Button
+              size="sm"
+              onClick={() => {
+                fetch('/api/historical-data/fetch', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' }
+                }).then(response => response.json())
+                  .then(result => {
+                    if (result.success) {
+                      alert(`Successfully fetched ${result.data.recordsAdded} records of historical data`);
+                    } else {
+                      alert(`Error: ${result.error}`);
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to start historical data fetch');
+                  });
+              }}
+              disabled={saving}
+            >
+              <DatabaseIcon className="size-4 mr-1" />
+              Fetch Historical Data ({localSettings.historicalDataPeriod})
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                fetch('/api/historical-data/status')
+                  .then(response => response.json())
+                  .then(result => {
+                    if (result.success) {
+                      alert(`Historical data: ${result.data.recordCount} records, last updated: ${result.data.lastUpdate}`);
+                    }
+                  });
+              }}
+              disabled={saving}
+            >
+              Check Status
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Intraday Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ClockIcon className="size-4" />
+            Intraday Data Settings
+          </CardTitle>
+          <CardDescription>Configure detailed intraday price tracking</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="enableIntradayData"
+              checked={localSettings.enableIntradayData}
+              onCheckedChange={(checked) => handleChange('enableIntradayData', checked as boolean)}
+              disabled={saving}
+            />
             <div>
-              <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                Update Interval
-              </label>
-              <select
-                value={localSettings.liveUpdateInterval}
-                onChange={(e) => handleChange('liveUpdateInterval', parseInt(e.target.value))}
-                disabled={saving}
-                className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary disabled:opacity-50"
-              >
-                <option value={60}>1 minute</option>
-                <option value={300}>5 minutes</option>
-                <option value={600}>10 minutes</option>
-                <option value={1800}>30 minutes</option>
-                <option value={3600}>1 hour</option>
-              </select>
-            </div>
-          </div>
-        </ThemedCard>
-
-        {/* Historical Data */}
-        <ThemedCard>
-          <div className="mb-4">
-            <h4 className="font-medium text-btc-text-primary mb-2">Historical Data</h4>
-            <ThemedText variant="muted" size="sm">
-              Configure historical price data collection for charts and analysis
-            </ThemedText>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                Historical Data Period
-              </label>
-              <select
-                value={localSettings.historicalDataPeriod}
-                onChange={(e) => handleChange('historicalDataPeriod', e.target.value)}
-                disabled={saving}
-                className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary disabled:opacity-50"
-              >
-                <option value="3M">3 months</option>
-                <option value="6M">6 months</option>
-                <option value="1Y">1 year (recommended)</option>
-                <option value="2Y">2 years</option>
-                <option value="5Y">5 years</option>
-                <option value="ALL">All available data</option>
-              </select>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Longer periods may take more time to download initially
-              </ThemedText>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                Data Retention Policy
-              </label>
-              <select
-                value={localSettings.dataRetentionDays}
-                onChange={(e) => handleChange('dataRetentionDays', parseInt(e.target.value))}
-                disabled={saving}
-                className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary disabled:opacity-50"
-              >
-                <option value={365}>1 year</option>
-                <option value={730}>2 years</option>
-                <option value={1095}>3 years</option>
-                <option value={1825}>5 years</option>
-                <option value={-1}>Keep all data</option>
-              </select>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Older data will be automatically cleaned up
-              </ThemedText>
-            </div>
-
-            {/* Historical Data Actions */}
-            <div className="pt-4 border-t border-btc-border-secondary">
-              <div className="flex space-x-3">
-                <ThemedButton
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    // Trigger historical data fetch (will use current settings)
-                    fetch('/api/historical-data/fetch', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' }
-                    }).then(response => response.json())
-                      .then(result => {
-                        if (result.success) {
-                          alert(`Successfully fetched ${result.data.recordsAdded} records of historical data`);
-                        } else {
-                          alert(`Error: ${result.error}`);
-                        }
-                      })
-                      .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to start historical data fetch');
-                      });
-                  }}
-                  disabled={saving}
-                  className="bg-btc-orange hover:bg-btc-orange-dark"
-                >
-                  Fetch Historical Data ({localSettings.historicalDataPeriod})
-                </ThemedButton>
-                
-                <ThemedButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    // Check historical data status
-                    fetch('/api/historical-data/status')
-                      .then(response => response.json())
-                      .then(result => {
-                        if (result.success) {
-                          alert(`Historical data: ${result.data.recordCount} records, last updated: ${result.data.lastUpdate}`);
-                        }
-                      });
-                  }}
-                  disabled={saving}
-                >
-                  Check Data Status
-                </ThemedButton>
-              </div>
-            </div>
-          </div>
-        </ThemedCard>
-
-        {/* Intraday Settings */}
-        <ThemedCard>
-          <div className="mb-4">
-            <h4 className="font-medium text-btc-text-primary mb-2">
-              Intraday Data Settings [FAST]
-            </h4>
-            <ThemedText variant="muted" size="sm">
-              Configure detailed intraday price tracking and data collection
-            </ThemedText>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={localSettings.enableIntradayData}
-                  onChange={(e) => handleChange('enableIntradayData', e.target.checked)}
-                  disabled={saving}
-                  className="rounded border-btc-border-primary bg-btc-bg-tertiary"
-                />
-                <span className="text-sm font-medium text-btc-text-secondary">
-                  Enable Intraday Data Collection
-                </span>
-              </label>
-              <ThemedText variant="muted" size="xs" className="mt-1 ml-6">
+              <Label htmlFor="enableIntradayData" className="cursor-pointer">
+                Enable Intraday Data Collection
+              </Label>
+              <p className="text-xs text-muted-foreground">
                 Collect Bitcoin price data every few minutes for detailed charts
-              </ThemedText>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-btc-text-secondary mb-2">
-                Intraday Configuration
-              </label>
-              <div className="p-3 bg-btc-bg-tertiary border border-btc-border-primary rounded">
-                <div className="flex items-center space-x-2 text-sm">
-                  <span className="text-btc-text-primary">[UP] Hourly data collection (24 points/day)</span>
-                </div>
-                <div className="flex items-center space-x-2 text-sm mt-1">
-                  <span className="text-btc-text-secondary">🗑️ Auto-cleanup daily (current day only)</span>
-                </div>
-              </div>
-              <ThemedText variant="muted" size="xs" className="mt-1">
-                Intraday data is collected hourly and automatically cleared daily to optimize storage
-              </ThemedText>
-            </div>
-
-            {/* System Controls */}
-            <div className="pt-4 border-t border-btc-border-secondary">
-              <div className="flex space-x-3">
-                <ThemedButton
-                  variant="primary"
-                  size="sm"
-                  onClick={() => {
-                    // Trigger manual data update
-                    fetch('/api/system/scheduler', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ action: 'update' })
-                    }).then(response => response.json())
-                      .then(result => {
-                        if (result.success) {
-                          alert('Data update completed successfully!');
-                        } else {
-                          alert(`Error: ${result.error}`);
-                        }
-                      })
-                      .catch(error => {
-                        console.error('Error:', error);
-                        alert('Failed to trigger data update');
-                      });
-                  }}
-                  disabled={saving}
-                  className="bg-btc-orange hover:bg-btc-orange-dark"
-                >
-                  Update Now
-                </ThemedButton>
-                
-                <ThemedButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    // Check system status
-                    fetch('/api/system/status')
-                      .then(response => response.json())
-                      .then(result => {
-                        if (result.success) {
-                          const status = result.status;
-                          const message = `
-System Status:
-• App Initialized: ${status.app.isInitialized ? '[OK]' : '[ERROR]'}
-• Scheduler Running: ${status.app.scheduler?.isRunning ? '[OK]' : '[ERROR]'}
-• Database: ${status.database.status === 'connected' ? '[OK]' : '[ERROR]'}
-• Intraday Records: ${status.database.stats?.intradayRecords || 0}
-• Current Price: ${status.priceData.currentPrice ? '$' + status.priceData.currentPrice.price.toLocaleString() : 'No data'}
-• Last Update: ${status.priceData.currentPrice?.lastUpdate ? new Date(status.priceData.currentPrice.lastUpdate).toLocaleString() : 'Never'}
-                          `.trim();
-                          alert(message);
-                        }
-                      });
-                  }}
-                  disabled={saving}
-                >
-                  System Status
-                </ThemedButton>
-              </div>
+              </p>
             </div>
           </div>
-        </ThemedCard>
-      </div>
+
+          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+            <p className="text-sm">Hourly data collection (24 points/day)</p>
+            <p className="text-xs text-muted-foreground">Auto-cleanup daily (current day only)</p>
+          </div>
+
+          <div className="pt-4 border-t flex gap-3">
+            <Button
+              size="sm"
+              onClick={() => {
+                fetch('/api/system/scheduler', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ action: 'update' })
+                }).then(response => response.json())
+                  .then(result => {
+                    if (result.success) {
+                      alert('Data update completed successfully!');
+                    } else {
+                      alert(`Error: ${result.error}`);
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to trigger data update');
+                  });
+              }}
+              disabled={saving}
+            >
+              <RefreshCwIcon className="size-4 mr-1" />
+              Update Now
+            </Button>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSystemStatus(true)}
+              disabled={saving}
+            >
+              <ServerIcon className="size-4 mr-1" />
+              System Status
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* System Status Dialog */}
+      <SystemStatusDialog 
+        open={showSystemStatus} 
+        onOpenChange={setShowSystemStatus} 
+      />
     </div>
   );
 }
@@ -866,40 +819,64 @@ export function DisplaySettingsPanel({
   saving: boolean;
 }) {
   const { theme, setTheme } = useTheme();
+  
   return (
-    <ThemedCard>
-      <div className="flex items-center space-x-3 mb-6">
-        <AdjustmentsHorizontalIcon className="h-6 w-6 text-btc-500" />
-        <h2 className="text-xl font-semibold text-btc-text-primary">
-          Display Settings
-        </h2>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Display Settings</h3>
+        <p className="text-muted-foreground">Customize the appearance of your tracker</p>
       </div>
-      
-      <div className="space-y-6">
-        {/* Currently Implemented */}
-        <div>
-          <label className="block text-sm font-medium text-btc-text-secondary mb-2">
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <SettingsIcon className="size-4" />
             Theme
-          </label>
-          <select
-            value={theme}
-            onChange={(e) => {
-              const newTheme = e.target.value as 'dark' | 'light';
-              setTheme(newTheme);
-              onUpdate({ theme: newTheme });
-            }}
-            className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange focus:border-transparent"
-            disabled={saving}
-          >
-            <option value="dark">🌙 Dark Mode</option>
-            <option value="light">☀️ Light Mode</option>
-          </select>
-          <ThemedText variant="muted" size="sm" className="mt-1">
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => {
+                setTheme('light');
+                onUpdate({ theme: 'light' });
+              }}
+              disabled={saving}
+              className={cn(
+                "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
+                theme === 'light' 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              )}
+            >
+              <SunIcon className="size-5" />
+              <span className="font-medium">Light</span>
+              {theme === 'light' && <CheckIcon className="size-4 text-primary" />}
+            </button>
+            <button
+              onClick={() => {
+                setTheme('dark');
+                onUpdate({ theme: 'dark' });
+              }}
+              disabled={saving}
+              className={cn(
+                "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
+                theme === 'dark' 
+                  ? "border-primary bg-primary/5" 
+                  : "border-border hover:border-primary/50"
+              )}
+            >
+              <MoonIcon className="size-5" />
+              <span className="font-medium">Dark</span>
+              {theme === 'dark' && <CheckIcon className="size-4 text-primary" />}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
             Theme changes are saved automatically and persist across sessions
-          </ThemedText>
-        </div>
-      </div>
-    </ThemedCard>
+          </p>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -914,102 +891,71 @@ export function NotificationSettingsPanel({
   saving: boolean;
 }) {
   return (
-    <ThemedCard>
-      <h2 className="text-xl font-semibold text-btc-text-primary mb-6">
-        [ALERT] Notification Settings
-      </h2>
-      
-      <div className="space-y-6">
-        {/* Future Features - Coming Soon */}
-        <div className="text-center py-8">
-          <div className="text-4xl mb-4">🚧</div>
-          <h3 className="text-lg font-medium text-btc-text-secondary mb-2">
-            Notifications Coming Soon
-          </h3>
-          <ThemedText variant="muted">
-            Price alerts, portfolio notifications, and email/push notifications will be available in a future update.
-          </ThemedText>
-        </div>
-
-        <div className="opacity-50 space-y-6">
-          <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <input
-                type="checkbox"
-                disabled
-                className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-              />
-              <label className="text-sm font-medium text-btc-text-muted">
-                Enable price alerts
-              </label>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 ml-7">
-              <div>
-                <label className="block text-xs font-medium text-btc-text-muted mb-1">
-                  High Price Alert ($)
-                </label>
-                <input
-                  type="number"
-                  disabled
-                  value="120000"
-                  className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-xs font-medium text-btc-text-muted mb-1">
-                  Low Price Alert ($)
-                </label>
-                <input
-                  type="number"
-                  disabled
-                  value="80000"
-                  className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded-md text-btc-text-muted cursor-not-allowed"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center space-x-3 mb-4">
-              <input
-                type="checkbox"
-                disabled
-                className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-              />
-              <label className="text-sm font-medium text-btc-text-muted">
-                Enable portfolio performance alerts
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                disabled
-                className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-              />
-              <label className="text-sm font-medium text-btc-text-muted">
-                Email notifications
-              </label>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                disabled
-                className="w-4 h-4 text-btc-orange bg-btc-bg-tertiary border-btc-border-primary rounded cursor-not-allowed"
-              />
-              <label className="text-sm font-medium text-btc-text-muted">
-                Browser push notifications
-              </label>
-            </div>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Notification Settings</h3>
+        <p className="text-muted-foreground">Configure alerts and notifications</p>
       </div>
-    </ThemedCard>
+
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center space-y-4">
+            <div className="size-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+              <BellOffIcon className="size-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h4 className="font-medium mb-1">Notifications Coming Soon</h4>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Price alerts, portfolio notifications, and email/push notifications will be available in a future update.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview of upcoming features */}
+      <Card className="opacity-50">
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <BellIcon className="size-4" />
+            Price Alerts (Coming Soon)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Checkbox disabled />
+            <Label className="text-muted-foreground">Enable price alerts</Label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs">High Price Alert ($)</Label>
+              <Input disabled value="120000" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-muted-foreground text-xs">Low Price Alert ($)</Label>
+              <Input disabled value="80000" />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Checkbox disabled />
+            <Label className="text-muted-foreground">Enable portfolio performance alerts</Label>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Checkbox disabled />
+              <Label className="text-muted-foreground">Email notifications</Label>
+            </div>
+            <div className="flex items-center gap-3">
+              <Checkbox disabled />
+              <Label className="text-muted-foreground">Browser push notifications</Label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -1022,7 +968,6 @@ export function UserAccountSettingsPanel() {
   const [showAvatarModal, setShowAvatarModal] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
-  // Form states
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
@@ -1252,271 +1197,268 @@ export function UserAccountSettingsPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-btc-orange"></div>
+      <div className="flex items-center justify-center py-12">
+        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h3 className="text-xl font-semibold text-btc-text-primary mb-2">
-          Account Settings
-        </h3>
-        <ThemedText variant="secondary">
-          Manage your account information and security settings
-        </ThemedText>
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Account Settings</h3>
+        <p className="text-muted-foreground">Manage your account information and security</p>
       </div>
 
       {message && (
-        <div className={`p-4 rounded-lg ${
+        <div className={cn(
+          "p-4 rounded-lg border",
           message.type === 'success' 
-            ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800' 
-            : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border border-red-200 dark:border-red-800'
-        }`}>
+            ? 'bg-profit/10 text-profit border-profit/20' 
+            : 'bg-destructive/10 text-destructive border-destructive/20'
+        )}>
           {message.text}
         </div>
       )}
 
-      {/* Profile & Account Information */}
-      <ThemedCard>
-        <h4 className="font-medium text-btc-text-primary mb-4">Profile & Account Information</h4>
-        
-        <div className="space-y-6">
-          {/* Profile Picture Section */}
+      {/* Profile Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <UserIcon className="size-4" />
+            Profile Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Profile Picture */}
           <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-3">
-              Profile Picture
-            </label>
-            <div className="flex items-center space-x-4">
+            <Label className="mb-3 block">Profile Picture</Label>
+            <div className="flex items-center gap-4">
               <UserAvatar 
                 src={userData?.profilePicture}
                 name={userData?.displayName || userData?.name}
                 email={userData?.email}
                 size="lg"
               />
-                             <div className="flex-1">
-                 <div className="flex space-x-2 mb-2">
-                   <ThemedButton
-                     variant="secondary"
-                     size="sm"
-                     onClick={() => setShowAvatarModal(true)}
-                     disabled={uploading}
-                   >
-                     {uploading ? 'Uploading...' : 'Upload Picture'}
-                   </ThemedButton>
-                   {userData?.profilePicture && (
-                     <ThemedButton
-                       variant="secondary"
-                       size="sm"
-                       onClick={handleRemoveAvatar}
-                       disabled={saving}
-                       className="text-red-600 hover:text-red-700"
-                     >
-                       Remove
-                     </ThemedButton>
-                   )}
-                 </div>
-                 <ThemedText variant="muted" size="xs">
-                   JPG, PNG, or WebP. Max 5MB.
-                 </ThemedText>
-               </div>
+              <div>
+                <div className="flex gap-2 mb-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAvatarModal(true)}
+                    disabled={uploading}
+                  >
+                    <CameraIcon className="size-4 mr-1" />
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </Button>
+                  {userData?.profilePicture && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveAvatar}
+                      disabled={saving}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <TrashIcon className="size-4 mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG, or WebP. Max 5MB.
+                </p>
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Email Address
-            </label>
-            <input
+          {/* Email */}
+          <div className="space-y-2">
+            <Label>Email Address</Label>
+            <Input
               type="email"
               value={userData?.email || ''}
               disabled
-              className="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-btc-border-primary rounded text-btc-text-muted cursor-not-allowed"
+              className="opacity-60"
             />
-            <ThemedText variant="muted" size="xs" className="mt-1">
-              Email cannot be changed
-            </ThemedText>
+            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
           </div>
 
-          <form onSubmit={handleUpdateDisplayName}>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Display Name
-            </label>
-            <div className="flex space-x-2">
-              <input
-                type="text"
+          {/* Display Name */}
+          <form onSubmit={handleUpdateDisplayName} className="space-y-2">
+            <Label htmlFor="displayName">Display Name</Label>
+            <div className="flex gap-2">
+              <Input
+                id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="flex-1 px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange"
                 placeholder="Enter a personalized display name"
               />
-              <ThemedButton
+              <Button
                 type="submit"
-                variant="secondary"
-                size="sm"
+                variant="outline"
                 disabled={saving || displayName.trim() === (userData?.displayName || '')}
               >
                 {saving ? 'Saving...' : 'Update'}
-              </ThemedButton>
+              </Button>
             </div>
-            <ThemedText variant="muted" size="xs" className="mt-1">
+            <p className="text-xs text-muted-foreground">
               This is how you&apos;ll appear throughout the app
-            </ThemedText>
+            </p>
           </form>
 
-          <form onSubmit={handleUpdateName}>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Full Name
-            </label>
-            <div className="flex space-x-2">
-              <input
-                type="text"
+          {/* Full Name */}
+          <form onSubmit={handleUpdateName} className="space-y-2">
+            <Label htmlFor="fullName">Full Name</Label>
+            <div className="flex gap-2">
+              <Input
+                id="fullName"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="flex-1 px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange"
                 placeholder="Enter your full name"
               />
-              <ThemedButton
+              <Button
                 type="submit"
-                variant="secondary"
-                size="sm"
+                variant="outline"
                 disabled={saving || !name.trim() || name === userData?.name}
               >
                 {saving ? 'Saving...' : 'Update'}
-              </ThemedButton>
+              </Button>
             </div>
           </form>
 
-          <div className="text-xs text-btc-text-muted">
+          <p className="text-xs text-muted-foreground">
             Member since: {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}
-          </div>
-        </div>
-      </ThemedCard>
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Change Password */}
-      <ThemedCard>
-        <h4 className="font-medium text-btc-text-primary mb-4">Change Password</h4>
-        
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Current Password
-            </label>
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange"
-              placeholder="Enter current password"
-            />
-          </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <LockIcon className="size-4" />
+            Change Password
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current Password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              New Password
-            </label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange"
-              placeholder="Enter new password"
-              minLength={6}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">New Password</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                minLength={6}
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Confirm New Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange"
-              placeholder="Confirm new password"
-              minLength={6}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                minLength={6}
+              />
+            </div>
 
-          <ThemedButton
-            type="submit"
-            variant="primary"
-            disabled={saving || !currentPassword || !newPassword || !confirmPassword}
-          >
-            {saving ? 'Changing Password...' : 'Change Password'}
-          </ThemedButton>
-        </form>
-      </ThemedCard>
+            <Button
+              type="submit"
+              disabled={saving || !currentPassword || !newPassword || !confirmPassword}
+            >
+              {saving ? 'Changing Password...' : 'Change Password'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* PIN Settings */}
-      <ThemedCard>
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h4 className="font-medium text-btc-text-primary">PIN Authentication</h4>
-            <ThemedText variant="muted" size="sm">
-              {userData?.hasPin ? 'PIN is currently set' : 'No PIN set'}
-            </ThemedText>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <KeyIcon className="size-4" />
+                PIN Authentication
+              </CardTitle>
+              <CardDescription>
+                {userData?.hasPin ? 'PIN is currently set' : 'No PIN set'}
+              </CardDescription>
+            </div>
+            {userData?.hasPin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRemovePin}
+                disabled={saving}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <TrashIcon className="size-4 mr-1" />
+                Remove PIN
+              </Button>
+            )}
           </div>
-          {userData?.hasPin && (
-            <ThemedButton
-              variant="secondary"
-              size="sm"
-              onClick={handleRemovePin}
-              disabled={saving}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSetPin} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPin">
+                {userData?.hasPin ? 'New PIN (4-6 digits)' : 'Set PIN (4-6 digits)'}
+              </Label>
+              <Input
+                id="newPin"
+                type="password"
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="••••"
+                minLength={4}
+                maxLength={6}
+                className="text-center text-xl tracking-widest"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPin">Confirm PIN</Label>
+              <Input
+                id="confirmPin"
+                type="password"
+                value={confirmPin}
+                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="••••"
+                minLength={4}
+                maxLength={6}
+                className="text-center text-xl tracking-widest"
+              />
+            </div>
+
+            <Button
+              type="submit"
+              disabled={saving || !newPin || !confirmPin || newPin.length < 4}
             >
-              Remove PIN
-            </ThemedButton>
-          )}
-        </div>
+              {saving ? 'Setting PIN...' : (userData?.hasPin ? 'Update PIN' : 'Set PIN')}
+            </Button>
+          </form>
 
-        <form onSubmit={handleSetPin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              {userData?.hasPin ? 'New PIN (4-6 digits)' : 'Set PIN (4-6 digits)'}
-            </label>
-            <input
-              type="password"
-              value={newPin}
-              onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange text-center text-xl tracking-widest"
-              placeholder="••••"
-              minLength={4}
-              maxLength={6}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-              Confirm PIN
-            </label>
-            <input
-              type="password"
-              value={confirmPin}
-              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              className="w-full px-3 py-2 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary focus:outline-none focus:ring-2 focus:ring-btc-orange text-center text-xl tracking-widest"
-              placeholder="••••"
-              minLength={4}
-              maxLength={6}
-            />
-          </div>
-
-          <ThemedButton
-            type="submit"
-            variant="primary"
-            disabled={saving || !newPin || !confirmPin || newPin.length < 4}
-          >
-            {saving ? 'Setting PIN...' : (userData?.hasPin ? 'Update PIN' : 'Set PIN')}
-          </ThemedButton>
-        </form>
-
-        <ThemedText variant="muted" size="xs" className="mt-2">
-          PIN allows for quick access to your account. Use 4-6 digits that you can easily remember.
-        </ThemedText>
-      </ThemedCard>
+          <p className="text-xs text-muted-foreground mt-4">
+            PIN allows for quick access to your account. Use 4-6 digits that you can easily remember.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Avatar Upload Modal */}
       <AvatarUploadModal
@@ -1529,4 +1471,4 @@ export function UserAccountSettingsPanel() {
       />
     </div>
   )
-} 
+}
