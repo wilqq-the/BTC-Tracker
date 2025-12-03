@@ -2,21 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-/* React Grid Layout styles */
-@import 'react-grid-layout/css/styles.css';
-@import 'react-resizable/css/styles.css';
+@layer base {
+  :root {
+    /* Light Mode - Clean & Professional */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    
+    /* Bitcoin Orange Primary */
+    --primary: 24 94% 53%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 9%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 24 94% 53%;
+    
+    /* Chart colors */
+    --chart-1: 24 94% 53%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 0 84% 60%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 262 83% 58%;
+    
+    --radius: 0.5rem;
+    
+    /* Sidebar */
+    --sidebar: 0 0% 98%;
+    --sidebar-foreground: 0 0% 9%;
+    --sidebar-primary: 24 94% 53%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 24 94% 53%;
+  }
 
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
-  20%, 40%, 60%, 80% { transform: translateX(4px); }
+  .dark {
+    /* Dark Mode - Neutral charcoal, NO blue tint */
+    --background: 0 0% 4%;              /* #0a0a0a - true black */
+    --foreground: 0 0% 95%;             /* #f2f2f2 */
+    
+    --card: 0 0% 7%;                    /* #121212 - elevated surface */
+    --card-foreground: 0 0% 95%;
+    
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    
+    /* Bitcoin Orange Primary - slightly brighter for dark bg */
+    --primary: 24 95% 55%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 0 0% 12%;              /* #1f1f1f */
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 0 0% 12%;                  /* #1f1f1f */
+    --muted-foreground: 0 0% 55%;       /* #8c8c8c */
+    
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 95%;
+    
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 0 0% 15%;                 /* #262626 */
+    --input: 0 0% 15%;
+    --ring: 24 95% 55%;
+    
+    /* Chart colors - optimized for dark */
+    --chart-1: 24 95% 55%;
+    --chart-2: 142 71% 45%;
+    --chart-3: 0 72% 51%;
+    --chart-4: 43 96% 60%;
+    --chart-5: 262 80% 65%;
+    
+    /* Sidebar */
+    --sidebar: 0 0% 5%;                 /* #0d0d0d */
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 24 95% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 24 95% 55%;
+  }
 }
 
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Prevent scrollbar from causing layout shift */
+  html {
+    overflow-y: scroll;
+  }
 }
 
-/* Custom grid layout styles */
+/* React Grid Layout Styles */
 .react-grid-layout {
   position: relative;
   transition: height 200ms ease;
@@ -27,100 +130,128 @@
   transition-property: left, top, width, height;
 }
 
-.react-grid-item.cssTransforms {
-  transition-property: transform, width, height;
-}
-
-.react-grid-item.resizing {
-  transition: none;
-  z-index: 100;
-}
-
-.react-grid-item.react-draggable-dragging {
-  transition: none;
-  z-index: 100;
-}
-
-.react-grid-item.dropping {
-  visibility: hidden;
-}
-
-.react-grid-item.react-grid-placeholder {
-  background: rgba(249, 115, 22, 0.2);
-  opacity: 0.2;
-  transition-duration: 100ms;
-  z-index: 2;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  -o-user-select: none;
+.react-grid-item img {
+  pointer-events: none;
   user-select: none;
-  border-radius: 0.5rem;
 }
 
-.react-resizable-handle {
+.react-grid-item > .react-resizable-handle {
   position: absolute;
   width: 20px;
   height: 20px;
 }
 
-.react-resizable-handle-sw {
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+
+.react-resizable-hide > .react-resizable-handle {
+  display: none;
+}
+
+.react-grid-item > .react-resizable-handle.react-resizable-handle-sw {
   bottom: 0;
   left: 0;
   cursor: sw-resize;
   transform: rotate(90deg);
 }
 
-.react-resizable-handle-se {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
   bottom: 0;
   right: 0;
   cursor: se-resize;
 }
 
-.react-resizable-handle-nw {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-nw {
   top: 0;
   left: 0;
   cursor: nw-resize;
   transform: rotate(180deg);
 }
 
-.react-resizable-handle-ne {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-ne {
   top: 0;
   right: 0;
   cursor: ne-resize;
   transform: rotate(270deg);
 }
 
-.react-resizable-handle-w,
-.react-resizable-handle-e {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e {
   top: 50%;
   margin-top: -10px;
   cursor: ew-resize;
 }
 
-.react-resizable-handle-w {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-w {
   left: 0;
   transform: rotate(135deg);
 }
 
-.react-resizable-handle-e {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-e {
   right: 0;
   transform: rotate(315deg);
 }
 
-.react-resizable-handle-n,
-.react-resizable-handle-s {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n,
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
   left: 50%;
   margin-left: -10px;
   cursor: ns-resize;
 }
 
-.react-resizable-handle-n {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-n {
   top: 0;
   transform: rotate(225deg);
 }
 
-.react-resizable-handle-s {
+.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
   bottom: 0;
   transform: rotate(45deg);
-} 
+}
+
+/* Dark mode resize handles */
+.dark .react-grid-item > .react-resizable-handle::after {
+  border-right-color: rgba(255, 255, 255, 0.3);
+  border-bottom-color: rgba(255, 255, 255, 0.3);
+}
+
+.react-grid-item.react-grid-placeholder {
+  background: hsl(24, 94%, 53%);
+  opacity: 0.2;
+  transition-duration: 100ms;
+  z-index: 2;
+  user-select: none;
+  border-radius: var(--radius);
+}
+
+/* Custom scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(0 0% 7%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 20%);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(0 0% 30%);
+}
+
+/* Selection color */
+::selection {
+  background: hsl(24 94% 53% / 0.3);
+}
