@@ -1,10 +1,33 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { ThemedButton } from './ui/ThemeProvider';
 import { SupportedCurrency } from '@/lib/types';
 import currencies from '@/data/currencies.json';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
+import { TagsInput } from '@/components/ui/tags-input';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, CalendarIcon, TagIcon, FileTextIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TransactionFormData {
   type: 'BUY' | 'SELL' | 'TRANSFER';
@@ -66,10 +89,7 @@ export default function AddTransactionModal({
   const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>(['USD', 'EUR', 'PLN', 'GBP']);
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
   const [allAvailableCurrencies, setAllAvailableCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [showCurrencySuggestions, setShowCurrencySuggestions] = useState(false);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   
   // Helper function to get currency info from currencies.json
   const getCurrencyInfo = (code: string) => {
@@ -93,10 +113,8 @@ export default function AddTransactionModal({
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
         destination_address: editingTransaction.destination_address || ''
       });
-      setCurrencySearch('');
     } else {
       setFormData(initialFormData);
-      setCurrencySearch('');
     }
   }, [editingTransaction]);
 
@@ -184,10 +202,6 @@ export default function AddTransactionModal({
     if (isOpen) {
       loadCurrencies();
       loadCurrentBitcoinPrice();
-      setIsAnimating(true);
-    } else {
-      setIsAnimating(false);
-      setCurrencySearch('');
     }
   }, [isOpen]);
 
@@ -219,15 +233,6 @@ export default function AddTransactionModal({
     const btcNum = parseFloat(btc) || 0;
     return Math.round(btcNum * 100000000);
   };
-
-  // Filter currencies based on search
-  const filteredCurrencies = allAvailableCurrencies.filter(currency => {
-    const searchLower = currencySearch.toLowerCase();
-    return (
-      currency.code.toLowerCase().includes(searchLower) ||
-      currency.name.toLowerCase().includes(searchLower)
-    );
-  }).slice(0, 6); // Limit to 6 suggestions
 
   // Use current BTC price
   const useCurrentPrice = () => {
@@ -268,376 +273,346 @@ export default function AddTransactionModal({
     }
   };
 
-  if (!isOpen) return null;
-
   const totals = calculateTotal();
   const sats = btcToSats(formData.btc_amount);
   const currencyInfo = getCurrencyInfo(formData.currency);
 
-  // Use portal to render modal at document root level (outside sidebar)
-  const modalContent = (
-    <div 
-      className={`fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 transition-opacity duration-200 p-4 overflow-y-auto ${
-        isAnimating ? 'opacity-100' : 'opacity-0'
-      }`}
-      onClick={onClose}
-    >
-      <div 
-        className={`bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 max-h-[calc(100vh-4rem)] flex flex-col ${
-          isAnimating ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-6 flex-shrink-0">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+  // Get icon and color for transaction type
+  const getTransactionTypeConfig = (type: 'BUY' | 'SELL' | 'TRANSFER') => {
+    switch (type) {
+      case 'BUY':
+        return { icon: ArrowDownIcon, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-800' };
+      case 'SELL':
+        return { icon: ArrowUpIcon, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800' };
+      case 'TRANSFER':
+        return { icon: ArrowLeftRightIcon, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800' };
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-2xl">
+            <CoinsIcon className="size-6 text-btc-500" />
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+          </DialogTitle>
+          <DialogDescription>
+            {editingTransaction 
+              ? 'Update the details of your Bitcoin transaction' 
+              : 'Record a new Bitcoin transaction to track your portfolio'}
+          </DialogDescription>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="space-y-4 overflow-y-auto flex-1 pr-2 -mr-2">
+          <div className="space-y-6 overflow-y-auto flex-1 pr-2">
           {/* Transaction Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Transaction Type
-            </label>
+          <div className="space-y-3">
+            <Label className="text-base font-semibold">Transaction Type</Label>
             <div className="grid grid-cols-3 gap-3">
-              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ 
-                    ...prev, 
-                    type,
-                    // Always set fees_currency to BTC for transfers (Bitcoin network fees are always paid in BTC)
-                    fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
-                  }))}
-                  className={`relative py-2.5 px-4 rounded-lg font-medium transition-colors ${
-                    formData.type === type
-                      ? type === 'BUY' 
-                        ? 'bg-green-500 text-white' 
-                        : type === 'SELL'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
+              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => {
+                const config = getTransactionTypeConfig(type);
+                const Icon = config.icon;
+                const isSelected = formData.type === type;
+                return (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      type,
+                      fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
+                    }))}
+                    className={cn(
+                      "flex flex-col gap-2 h-auto py-4",
+                      isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
+                      isSelected && type === 'SELL' && "bg-red-500 hover:bg-red-600",
+                      isSelected && type === 'TRANSFER' && "bg-blue-500 hover:bg-blue-600"
+                    )}
+                  >
+                    <Icon className={cn("size-5", isSelected ? "text-white" : config.color)} />
+                    <span className="font-semibold">{type}</span>
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
           {/* BTC Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="btc_amount" className="text-base">
               {formData.type === 'TRANSFER' ? 'BTC Amount to Send' : 'BTC Amount'}
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.00000001"
-                value={formData.btc_amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
-                placeholder="0.00000000"
-                required
-              />
-              {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
-                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-mono">
-                  = {sats.toLocaleString()} sats
+            </Label>
+            <Input
+              id="btc_amount"
+              type="number"
+              step="0.00000001"
+              value={formData.btc_amount}
+              onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
+              placeholder="0.00000000"
+              className="font-mono text-base"
+              required
+            />
+            {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
+              <p className="text-sm text-muted-foreground font-mono">
+                = {sats.toLocaleString()} sats
+              </p>
+            )}
+            {formData.type === 'TRANSFER' && (
+              <div className="space-y-2 mt-2">
+                <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800">
+                  <InfoIcon className="size-4 flex-shrink-0" />
+                  <span>Enter the <strong>total amount leaving</strong> your source wallet</span>
                 </div>
-              )}
-              {formData.type === 'TRANSFER' && (
-                <div className="mt-1.5 space-y-1">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                    <span>💡</span>
-                    <span>Enter the <strong>total amount leaving</strong> your source wallet</span>
-                  </div>
-                  {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-                    <div className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1.5 rounded font-mono border border-green-200 dark:border-green-800">
-                      ✅ Will arrive at destination: {(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+                {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
+                  <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-green-700 dark:text-green-300">Will arrive at destination:</span>
+                        <span className="font-mono font-bold text-green-600 dark:text-green-400">
+                          {(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Transfer Type (only for TRANSFER) */}
           {formData.type === 'TRANSFER' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Transfer Direction
-              </label>
-              <select
-                value={formData.transfer_type}
-                onChange={(e) => setFormData(prev => ({ ...prev, transfer_type: e.target.value as any }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-                required
+            <div className="space-y-2">
+              <Label htmlFor="transfer_type" className="text-base">Transfer Direction</Label>
+              <Select 
+                value={formData.transfer_type} 
+                onValueChange={(value) => setFormData(prev => ({ ...prev, transfer_type: value as any }))}
               >
-                <option value="TO_COLD_WALLET">To Cold Wallet</option>
-                <option value="FROM_COLD_WALLET">From Cold Wallet</option>
-                <option value="BETWEEN_WALLETS">Between Wallets</option>
-              </select>
+                <SelectTrigger id="transfer_type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TO_COLD_WALLET">To Cold Wallet</SelectItem>
+                  <SelectItem value="FROM_COLD_WALLET">From Cold Wallet</SelectItem>
+                  <SelectItem value="BETWEEN_WALLETS">Between Wallets</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           )}
 
           {/* Price per BTC (hidden for TRANSFER) */}
           {formData.type !== 'TRANSFER' && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Price per BTC
-                </label>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="price_per_btc" className="text-base">Price per BTC</Label>
                 {currentBtcPrice && (
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    size="sm"
                     onClick={useCurrentPrice}
-                    className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium transition-colors"
+                    className="h-auto p-0 text-btc-500 hover:text-btc-600"
                   >
                     Use current: ${currentBtcPrice.toLocaleString()}
-                  </button>
+                  </Button>
                 )}
               </div>
-              <input
+              <Input
+                id="price_per_btc"
                 type="number"
                 step="0.01"
                 value={formData.price_per_btc}
                 onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
                 placeholder="105000.00"
+                className="font-mono text-base"
                 required
               />
-              <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <span className="text-bitcoin">💡</span>
+              <p className="text-xs text-muted-foreground flex items-center gap-2">
+                <InfoIcon className="size-3 flex-shrink-0" />
                 <span>Enter 0 for mining rewards, gifts, or airdrops</span>
-              </div>
+              </p>
             </div>
           )}
 
           {/* Currency (hidden for TRANSFER since no fiat is involved) */}
           {formData.type !== 'TRANSFER' && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Currency
-              </label>
-              <input
-                type="text"
-                value={currencySearch}
-                onChange={(e) => {
-                  setCurrencySearch(e.target.value);
-                  setShowCurrencySuggestions(true);
-                }}
-                onFocus={() => {
-                  if (!currencySearch) {
-                    setCurrencySearch('');
-                  }
-                  setShowCurrencySuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowCurrencySuggestions(false), 200)}
-                placeholder={formData.currency ? `${currencyInfo.symbol} ${formData.currency}` : "Type to search currencies..."}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
+            <div className="space-y-2">
+              <Label htmlFor="currency" className="text-base">Currency</Label>
+              <CurrencySelector
+                id="currency"
+                value={formData.currency}
+                currencies={allAvailableCurrencies}
+                onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                placeholder="Select currency..."
+                searchPlaceholder="Search currency..."
               />
-              
-              {/* Suggestions dropdown */}
-              {showCurrencySuggestions && filteredCurrencies.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredCurrencies.map((currency) => (
-                    <button
-                      key={currency.code}
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, currency: currency.code }));
-                        setCurrencySearch('');
-                        setShowCurrencySuggestions(false);
-                      }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
-                    >
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {currency.symbol} {currency.code}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400 ml-2">
-                        {currency.name}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Show current selection when not searching */}
-              {!currencySearch && formData.currency && (
-                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  Selected: {currencyInfo.symbol} {formData.currency} - {currencyInfo.name}
-                </div>
-              )}
             </div>
           )}
 
           {/* Fees */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="fees" className="text-base">
               {formData.type === 'TRANSFER' ? 'Network Fees (in BTC)' : 'Fees'}
-            </label>
+            </Label>
             <div className="flex gap-2">
-              <input
+              <Input
+                id="fees"
                 type="number"
                 step={formData.type === 'TRANSFER' ? '0.00000001' : '0.01'}
                 value={formData.fees}
                 onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-                className="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
                 placeholder={formData.type === 'TRANSFER' ? '0.00001' : '0.00'}
+                className="flex-1 font-mono text-base"
               />
               {formData.type === 'TRANSFER' && (
-                <div className="w-24 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 flex items-center justify-center font-medium">
+                <div className="w-20 flex items-center justify-center px-3 py-2 bg-muted border rounded-md text-muted-foreground font-medium text-sm">
                   BTC
                 </div>
               )}
             </div>
             {formData.type === 'TRANSFER' && parseFloat(formData.fees || '0') > 0 && (
-              <div className="mt-1.5 text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                <span>⚠️</span>
+              <p className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-2">
+                <AlertTriangleIcon className="size-3 flex-shrink-0" />
                 <span>Network fees are deducted from your total holdings</span>
-              </div>
+              </p>
             )}
           </div>
 
           {/* Destination Address (only for TRANSFER) */}
           {formData.type === 'TRANSFER' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Destination Address (Optional)
-              </label>
-              <input
+            <div className="space-y-2">
+              <Label htmlFor="destination_address" className="text-base">
+                Destination Address <span className="text-muted-foreground font-normal">(Optional)</span>
+              </Label>
+              <Input
+                id="destination_address"
                 type="text"
                 value={formData.destination_address}
                 onChange={(e) => setFormData(prev => ({ ...prev, destination_address: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono text-sm"
                 placeholder="bc1q... (optional for tracking)"
+                className="font-mono text-sm"
               />
             </div>
           )}
 
           {/* Cost Breakdown */}
           {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2 border border-gray-200 dark:border-gray-700">
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                Cost Breakdown
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-mono text-gray-900 dark:text-gray-100">
-                  {currencyInfo.symbol}{totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              {totals.fees > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Fees</span>
-                  <span className="font-mono text-gray-900 dark:text-gray-100">
-                    {currencyInfo.symbol}{totals.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
+            <Card className="border-btc-200 dark:border-btc-800 bg-btc-50 dark:bg-btc-900/10">
+              <CardContent className="p-4 space-y-3">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                  Cost Breakdown
                 </div>
-              )}
-              <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-200 dark:border-gray-700">
-                <span className="text-gray-900 dark:text-gray-100">Total Cost</span>
-                <span className="font-mono text-gray-900 dark:text-gray-100">
-                  {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="font-mono font-medium">
+                      {currencyInfo.symbol}{totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {totals.fees > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Fees</span>
+                      <span className="font-mono font-medium">
+                        {currencyInfo.symbol}{totals.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-bold pt-2 border-t">
+                    <span>Total Cost</span>
+                    <span className="font-mono text-btc-600 dark:text-btc-400">
+                      {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Transfer Summary (only for TRANSFER) - Simplified */}
           {formData.type === 'TRANSFER' && parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 border border-green-200 dark:border-green-800">
-              <div className="flex justify-between text-sm items-center">
-                <span className="text-green-700 dark:text-green-300 text-xs">Arrives</span>
-                <span className="font-mono text-green-600 dark:text-green-400 font-bold">
-                  {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
-                </span>
-              </div>
-            </div>
+            <Card className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">Arrives at destination</span>
+                  <span className="font-mono text-lg font-bold text-green-600 dark:text-green-400">
+                    {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Transaction Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <div className="space-y-2">
+            <Label htmlFor="transaction_date" className="text-base flex items-center gap-2">
+              <CalendarIcon className="size-4" />
               Transaction Date
-            </label>
-            <input
-              type="date"
-              value={formData.transaction_date}
-              onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-              required
+            </Label>
+            <DatePicker
+              id="transaction_date"
+              value={formData.transaction_date ? new Date(formData.transaction_date) : undefined}
+              onChange={(date) => setFormData(prev => ({ 
+                ...prev, 
+                transaction_date: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+              }))}
+              placeholder="Select date"
             />
           </div>
 
           {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
+          <div className="space-y-2">
+            <Label htmlFor="notes" className="text-base flex items-center gap-2">
+              <FileTextIcon className="size-4" />
+              Notes <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <Textarea
+              id="notes"
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all resize-none"
               placeholder="Add any notes about this transaction..."
               rows={3}
+              className="resize-none"
             />
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tags (Optional)
-            </label>
-            <input
-              type="text"
-              value={formData.tags}
-              onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-              placeholder="e.g. DCA, Long-term, Dip Buy (comma-separated)"
+          <div className="space-y-2">
+            <Label htmlFor="tags" className="text-base flex items-center gap-2">
+              <TagIcon className="size-4" />
+              Tags <span className="text-muted-foreground font-normal">(Optional)</span>
+            </Label>
+            <TagsInput
+              id="tags"
+              value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
+              onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
+              placeholder="Type tag and press Enter"
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Separate multiple tags with commas
+            <p className="text-xs text-muted-foreground">
+              Press Enter to add a tag. Click X to remove.
             </p>
           </div>
           </div>
 
-          {/* Form Actions - Sticky at bottom */}
-          <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <ThemedButton
+          <DialogFooter className="mt-6 pt-6 border-t">
+            <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={onClose}
-              className="flex-1"
             >
               Cancel
-            </ThemedButton>
-            <ThemedButton
+            </Button>
+            <Button
               type="submit"
-              variant="primary"
-              className="flex-1 bg-bitcoin hover:bg-bitcoin-dark"
+              variant="default"
+              className="bg-btc-500 hover:bg-btc-600"
             >
-              {editingTransaction ? 'Update' : 'Add Transaction'}
-            </ThemedButton>
-          </div>
+              {editingTransaction ? 'Update Transaction' : 'Add Transaction'}
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-
-  // Render modal content using portal to document.body
-  return typeof document !== 'undefined' 
-    ? createPortal(modalContent, document.body)
-    : null;
 } 
