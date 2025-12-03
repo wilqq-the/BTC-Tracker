@@ -18,14 +18,17 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      {/* Use CSS variables from globals.css - no hardcoded colors */}
+      <div className="min-h-screen bg-background text-foreground">
         {children}
       </div>
     </NextThemesProvider>
   );
 }
 
-// Utility component for consistent card styling
+// Legacy components kept for backward compatibility
+// These should be replaced with shadcn/ui components
+
 export function ThemedCard({ 
   children, 
   className = '', 
@@ -39,8 +42,8 @@ export function ThemedCard({
   return (
     <div
       className={`
-        bg-gray-50 dark:bg-gray-900 
-        border border-gray-200 dark:border-gray-800 
+        bg-card text-card-foreground
+        border border-border 
         rounded-lg 
         ${padding ? 'p-6' : ''}
         ${className}
@@ -52,7 +55,6 @@ export function ThemedCard({
   );
 }
 
-// Utility component for text with consistent styling
 export function ThemedText({ 
   children, 
   variant = 'primary',
@@ -67,9 +69,9 @@ export function ThemedText({
 } & React.HTMLAttributes<HTMLSpanElement>) {
   
   const variantClasses = {
-    primary: 'text-gray-900 dark:text-gray-100',
-    secondary: 'text-gray-600 dark:text-gray-400',
-    muted: 'text-gray-500 dark:text-gray-500',
+    primary: 'text-foreground',
+    secondary: 'text-muted-foreground',
+    muted: 'text-muted-foreground/70',
   };
   
   const sizeClasses = {
@@ -97,7 +99,6 @@ export function ThemedText({
   );
 }
 
-// Utility component for buttons with theme
 export function ThemedButton({ 
   children, 
   variant = 'primary',
@@ -111,12 +112,12 @@ export function ThemedButton({
   className?: string;
 } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   
-  const baseClasses = 'font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-btc-500';
+  const baseClasses = 'font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring';
   
   const variantClasses = {
-    primary: 'bg-btc-500 hover:bg-btc-600 text-white',
-    secondary: 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600',
-    ghost: 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100',
+    primary: 'bg-primary hover:bg-primary/90 text-primary-foreground',
+    secondary: 'bg-secondary hover:bg-secondary/80 text-secondary-foreground border border-border',
+    ghost: 'hover:bg-accent text-muted-foreground hover:text-foreground',
   };
   
   const sizeClasses = {
@@ -138,4 +139,4 @@ export function ThemedButton({
       {children}
     </button>
   );
-} 
+}
