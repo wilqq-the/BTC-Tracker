@@ -4,8 +4,17 @@ import { useState, useEffect } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ThemedButton, ThemedText } from '@/components/ui/ThemeProvider'
 import PinKeypad from '@/components/PinKeypad'
+import { cn } from '@/lib/utils'
+
+// shadcn/ui
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+
+// Icons
+import { LockIcon, KeyIcon, MailIcon, AlertCircleIcon } from 'lucide-react'
 
 export default function SignInPage() {
   const [email, setEmail] = useState('')
@@ -21,44 +30,33 @@ export default function SignInPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const router = useRouter()
 
-  // Load user info on component mount
   useEffect(() => {
     const loadUserInfo = async () => {
       try {
         const response = await fetch('/api/auth/check-user')
         const data = await response.json()
         
-        // Handle error responses
         if (!response.ok) {
           if (data.temporary) {
-            // Temporary error - retry after a moment
-            console.log('Temporary database issue, retrying...')
-            setTimeout(() => {
-              loadUserInfo() // Retry
-            }, 2000)
+            setTimeout(() => loadUserInfo(), 2000)
             return
           }
-          console.error('Error from check-user API:', data.error)
           setError('Database connection issue. Please refresh the page.')
           setInitialLoading(false)
           return
         }
         
-        // Only redirect to signup if we're certain no users exist
         if (!data.error && data.hasOwnProperty('noUsers') && data.noUsers === true) {
-          console.log('No users found, redirecting to registration...')
           router.push('/auth/signup')
           return
         }
         
         setUserInfo(data)
         
-        // Auto-fill email if single user
         if (data.singleUser && data.email) {
           setEmail(data.email)
         }
         
-        // Set default login mode based on PIN availability
         if (data.singleUser && data.hasPin) {
           setLoginMode('pin')
         }
@@ -131,89 +129,99 @@ export default function SignInPage() {
 
   if (initialLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-btc-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center space-y-4">
+          <div className="size-12 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <div className="w-16 h-16 bg-btc-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-2xl">₿</span>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Background decoration */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-1/4 -left-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
+      </div>
+
+      <Card className="w-full max-w-md border-border/50 shadow-xl">
+        <CardHeader className="text-center pb-2">
+          {/* Logo */}
+          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-2xl flex items-center justify-center shadow-lg shadow-btc-500/20">
+            <span className="text-white font-bold text-3xl">₿</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-            Welcome Back
-          </h2>
-          <ThemedText variant="secondary" className="mt-2">
-            {userInfo?.singleUser && userInfo.email ? (
-              <>Sign in as {userInfo.email}</>
-            ) : (
-              <>Sign in to your Bitcoin tracker</>
-            )}
-          </ThemedText>
-        </div>
+          <CardTitle className="text-2xl">Welcome back</CardTitle>
+          <CardDescription>
+            {userInfo?.singleUser && userInfo.email 
+              ? `Sign in as ${userInfo.email}`
+              : 'Sign in to your Bitcoin tracker'
+            }
+          </CardDescription>
+        </CardHeader>
 
-        {/* Login Mode Toggle - Only show if user has both password and PIN, or multiple users */}
-        {(!userInfo?.singleUser || (userInfo?.singleUser && userInfo?.hasPin)) && (
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('password')
-                setError('')
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginMode === 'password'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              Password
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setLoginMode('pin')
-                setError('')
-              }}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-                loginMode === 'pin'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-              }`}
-            >
-              PIN
-            </button>
-          </div>
-        )}
+        <CardContent className="space-y-6">
+          {/* Login Mode Toggle */}
+          {(!userInfo?.singleUser || (userInfo?.singleUser && userInfo?.hasPin)) && (
+            <div className="flex bg-muted rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => { setLoginMode('password'); setError(''); }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all",
+                  loginMode === 'password'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <LockIcon className="size-4" />
+                Password
+              </button>
+              <button
+                type="button"
+                onClick={() => { setLoginMode('pin'); setError(''); }}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all",
+                  loginMode === 'pin'
+                    ? 'bg-background shadow-sm text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <KeyIcon className="size-4" />
+                PIN
+              </button>
+            </div>
+          )}
 
-        {loginMode === 'pin' ? (
-          /* PIN Login */
-          <div className="space-y-6">
-            {/* Email field for PIN login (only show if not single user) */}
-            {!userInfo?.singleUser && (
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email Address
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                  placeholder="your@email.com"
-                />
-              </div>
-            )}
+          {/* Error Message */}
+          {error && (
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+              <AlertCircleIcon className="size-4 shrink-0" />
+              {error}
+            </div>
+          )}
 
-            {/* PIN Keypad */}
-            <div className="flex justify-center">
+          {loginMode === 'pin' ? (
+            /* PIN Login */
+            <div className="space-y-6">
+              {!userInfo?.singleUser && (
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              )}
+
               <PinKeypad
                 onPinComplete={handlePinComplete}
                 loading={loading}
@@ -221,84 +229,69 @@ export default function SignInPage() {
                 maxLength={6}
               />
             </div>
-          </div>
-        ) : (
-          /* Password Login */
-          <form onSubmit={handlePasswordSubmit} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <ThemedText variant="primary" className="text-red-600 dark:text-red-400 text-sm">
-                  {error}
-                </ThemedText>
+          ) : (
+            /* Password Login */
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <div className="relative">
+                  <MailIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={userInfo?.singleUser}
+                    placeholder="your@email.com"
+                    className={cn("pl-9", userInfo?.singleUser && "opacity-60")}
+                  />
+                </div>
+                {userInfo?.singleUser && (
+                  <p className="text-xs text-muted-foreground">Auto-detected account</p>
+                )}
               </div>
-            )}
 
-            {/* Email field - auto-filled for single user */}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={userInfo?.singleUser}
-                className={`w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-btc-500 focus:border-transparent ${
-                  userInfo?.singleUser 
-                    ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed' 
-                    : 'bg-white dark:bg-gray-800'
-                }`}
-                placeholder="your@email.com"
-              />
-              {userInfo?.singleUser && (
-                <ThemedText variant="muted" size="xs" className="mt-1">
-                  Auto-detected user account
-                </ThemedText>
-              )}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    placeholder="••••••••"
+                    className="pl-9"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-btc-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
-            </div>
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? (
+                  <>
+                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+          )}
 
-            <ThemedButton
-              type="submit"
-              variant="primary"
-              size="lg"
-              className="w-full"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign In with Password'}
-            </ThemedButton>
-          </form>
-        )}
-
-        {/* Sign Up Link */}
-        <div className="text-center">
-          <ThemedText variant="secondary" size="sm">
-            Don&apos;t have an account?{' '}
-            <Link 
-              href="/auth/signup" 
-              className="font-medium text-btc-500 hover:text-btc-600 transition-colors"
-            >
-              Create one here
-            </Link>
-          </ThemedText>
-        </div>
-      </div>
+          {/* Sign Up Link */}
+          <div className="text-center pt-2">
+            <p className="text-sm text-muted-foreground">
+              Don&apos;t have an account?{' '}
+              <Link href="/auth/signup" className="font-medium text-primary hover:underline">
+                Create one
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
-} 
+}
