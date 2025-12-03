@@ -5,6 +5,19 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] - 2025-12-03
+
+### ✨ New Features
+- **System Status Dialog** - View all background services status in Settings → Price Data
+
+### 🔧 Improvements
+- Price scheduler now fetches every 5 minutes (was stuck at 1 hour)
+- Removed unused settings (Live Update Interval, Data Retention Policy)
+- Fixed version display in Settings
+
+### 🎨 UI
+- Migrated to shadcn/ui components
+
 ## [0.6.6] - 2025-11-30
 
 ### 🔧 Bug Fixes
