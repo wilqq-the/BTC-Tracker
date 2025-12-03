@@ -23,23 +23,23 @@ export class PriceScheduler {
 
     console.log('Starting Bitcoin price scheduler...');
 
-    // Load settings to configure intervals
+    // Load settings to check if intraday is enabled
     const settings = await SettingsService.getSettings();
-    console.log(`[INFO] Using settings: intraday ${settings.priceData.enableIntradayData ? 'enabled' : 'disabled'}, interval: ${settings.priceData.liveUpdateInterval}s`);
+    console.log(`[INFO] Intraday data collection: ${settings.priceData.enableIntradayData ? 'enabled' : 'disabled'}`);
 
     this.isRunning = true;
 
     // Initial fetch on startup
     this.fetchInitialData();
 
-    // Schedule intraday updates every hour
+    // Schedule intraday updates every 5 minutes
     if (settings.priceData.enableIntradayData) {
-      const intervalMs = 60 * 60 * 1000; // 1 hour in milliseconds
-      console.log(`[TIME] Scheduling hourly intraday updates (every hour)`);
+      const intervalMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+      console.log(`[TIME] Scheduling price updates (every 5 minutes)`);
       
       this.intradayInterval = setInterval(async () => {
         try {
-          console.log('[DATA] Fetching hourly intraday Bitcoin data...');
+          console.log('[SYNC] Fetching Bitcoin price data...');
           const intradayData = await YahooFinanceService.fetchIntradayData();
           
           if (intradayData.length > 0) {
