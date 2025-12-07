@@ -258,17 +258,20 @@ export default function ProfilePage() {
     input.click();
   };
 
-  const exportUserData = async () => {
+  const exportTransactions = async () => {
     try {
-      const response = await fetch('/api/user/export');
+      const response = await fetch('/api/transactions/export');
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `btc-tracker-data-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `bitcoin-transactions-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
-      console.error('Error exporting data:', error);
+      console.error('Error exporting transactions:', error);
     }
   };
 
@@ -659,21 +662,21 @@ export default function ProfilePage() {
                 <DownloadIcon className="size-5" />
                 Data & Session
               </CardTitle>
-              <CardDescription>Export your data or manage your session</CardDescription>
+              <CardDescription>Export transactions or manage your account</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Export Data */}
+              {/* Export Transactions */}
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
                 <div className="flex items-center gap-3">
                   <div className="size-10 bg-background rounded-full flex items-center justify-center border">
                     <DownloadIcon className="size-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <p className="font-medium">Export Data</p>
-                    <p className="text-xs text-muted-foreground">Download all your transactions & settings</p>
+                    <p className="font-medium">Export Transactions</p>
+                    <p className="text-xs text-muted-foreground">Download all your transactions as CSV</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={exportUserData}>
+                <Button variant="outline" size="sm" onClick={exportTransactions}>
                   Export
                 </Button>
               </div>

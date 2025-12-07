@@ -230,30 +230,21 @@ export default function TransactionsPage() {
 
   const loadSummaryStats = async () => {
     try {
-      const params = new URLSearchParams({ limit: '100000' });
-      if (filterType !== 'ALL') params.append('type', filterType);
-      const dateRangeBoundaries = getDateRangeBoundaries();
-      if (dateRangeBoundaries) {
-        params.append('date_from', dateRangeBoundaries.from.toISOString());
-        params.append('date_to', dateRangeBoundaries.to.toISOString());
-      }
-
-      const response = await fetch(`/api/transactions?${params}`);
+      // Use portfolio-metrics API for consistent P&L calculation with sidebar
+      const response = await fetch('/api/portfolio-metrics');
       const result = await response.json();
       
-      if (result.success && Array.isArray(result.data)) {
-        const allTransactions = result.data;
-        const buyTxs = allTransactions.filter((t: BitcoinTransaction) => t.type === 'BUY');
-        const sellTxs = allTransactions.filter((t: BitcoinTransaction) => t.type === 'SELL');
+      if (result.success && result.data) {
+        const metrics = result.data;
         
         setSummaryStats({
-          totalBtcBought: buyTxs.reduce((sum: number, t: BitcoinTransaction) => sum + t.btc_amount, 0),
-          totalBtcSold: sellTxs.reduce((sum: number, t: BitcoinTransaction) => sum + t.btc_amount, 0),
-          buyTransactionCount: buyTxs.length,
-          sellTransactionCount: sellTxs.length,
-          totalInvested: buyTxs.reduce((sum: number, t: BitcoinTransaction) => sum + (t.main_currency_total_amount || 0), 0),
-          totalPnL: allTransactions.reduce((sum: number, t: BitcoinTransaction) => sum + (t.pnl_main || 0), 0),
-          mainCurrency: allTransactions[0]?.main_currency || 'USD'
+          totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0), // Approximate from holdings
+          totalBtcSold: 0, // Will be calculated from transactions if needed
+          buyTransactionCount: metrics.totalBuys || 0,
+          sellTransactionCount: metrics.totalSells || 0,
+          totalInvested: metrics.totalInvested || 0,
+          totalPnL: metrics.unrealizedPnL || 0,
+          mainCurrency: metrics.mainCurrency || 'USD'
         });
       }
     } catch (error) {

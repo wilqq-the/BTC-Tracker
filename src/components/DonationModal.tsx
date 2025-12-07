@@ -23,6 +23,7 @@ import {
   HeartHandshakeIcon
 } from 'lucide-react';
 import packageJson from '../../package.json';
+import Image from 'next/image';
 
 interface DonationModalProps {
   isOpen: boolean;
@@ -104,7 +105,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-center">
                     <div className="bg-white dark:bg-card p-4 rounded-lg border">
-                      <img 
+                      <Image
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bitcoin:${bitcoinAddress}`}
                         alt="Bitcoin QR Code"
                         className="w-48 h-48"
@@ -137,7 +138,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-center">
                     <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                      <img 
+                      <Image
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + lightningAddress)}`}
                         alt="Lightning QR Code"
                         className="w-48 h-48"
@@ -227,7 +228,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
               <CardContent className="p-6 space-y-6">
                 <div className="flex justify-center">
                   <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                    <img 
+                    <Image
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(coffeeUrl)}`}
                       alt="Coffee Page QR Code"
                       className="w-40 h-40"

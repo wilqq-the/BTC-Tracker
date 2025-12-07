@@ -2,7 +2,7 @@
   "name": "btc-tracker",
   "version": "0.6.7",
   "description": "100% Private, Self-Hosted Bitcoin Portfolio Tracker",
-  "author": "BTC Tracker Contributors",
+  "author": "wilqq-the",
   "license": "MIT",
   "private": true,
   "engines": {
@@ -29,9 +29,6 @@
     "auth:generate-jwt": "node scripts/generate-jwt.js"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
     "@heroicons/react": "^2.2.0",
     "@internationalized/date": "^3.8.2",
     "@prisma/client": "6.16.2",
@@ -77,7 +74,7 @@
     "jsonwebtoken": "^9.0.2",
     "lightweight-charts": "^5.0.7",
     "lucide-react": "^0.518.0",
-    "next": "^15.3.4",
+    "next": "^15.3.6",
     "next-auth": "^4.24.11",
     "next-swagger-doc": "^0.4.1",
     "next-themes": "^0.4.6",
@@ -100,6 +97,7 @@
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/supertest": "^6.0.0",
+    "baseline-browser-mapping": "^2.9.4",
     "jest": "^29.7.0",
     "jest-environment-node": "^29.7.0",
     "shadcn": "^3.5.1",

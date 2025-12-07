@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import BitcoinChartNew from '@/components/BitcoinChartNew';
+import BitcoinChart from '@/components/BitcoinChart';
 import { WidgetProps } from '@/lib/dashboard-types';
 
 /**
@@ -9,5 +9,5 @@ import { WidgetProps } from '@/lib/dashboard-types';
  * Modern shadcn/ui chart with beautiful tooltips and responsive design
  */
 export default function BitcoinChartWidget({ id, onRefresh }: WidgetProps) {
-  return <BitcoinChartNew showTitle={true} />;
+  return <BitcoinChart showTitle={true} showTransactions={true} />;
 }

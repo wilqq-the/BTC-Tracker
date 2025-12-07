@@ -430,7 +430,7 @@ export default function AnalyticsPage() {
               <CardDescription>How each month&apos;s purchases perform at current price</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-56 flex items-end justify-between gap-1">
+              <div className="h-56 flex flex-col">
                 {(() => {
                   const currentBtcPrice = analyticsData?.currentBtcPrice || 0;
                   const monthlyImpact = analyticsData?.monthlyBreakdown?.map(month => {
@@ -459,38 +459,78 @@ export default function AnalyticsPage() {
                   }
                   
                   const last12Months = monthlyImpact.slice(-12);
-                  const impacts = last12Months.map(m => Math.abs(m.impact || 0));
-                  const maxImpact = Math.max(...impacts);
+                  const percentGains = last12Months.map(m => m.percentGain || 0);
+                  const maxGain = Math.max(...percentGains, 0);
+                  const minGain = Math.min(...percentGains, 0);
+                  const maxAbsolute = Math.max(Math.abs(maxGain), Math.abs(minGain), 10); // At least 10% scale
                   
-                  return last12Months.map((month, i) => {
-                    const impactValue = Math.abs(month.impact || 0);
-                    const heightPercent = maxImpact > 0 ? Math.max(10, (impactValue / maxImpact) * 100) : 10;
-                    const isProfit = month.impact >= 0;
-                    
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center justify-end group">
-                        <div className="text-center mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <p className={cn(
-                            "text-xs font-semibold",
-                            isProfit ? 'text-profit' : 'text-loss'
-                          )}>
-                            {month.percentGain >= 0 ? '+' : ''}{month.percentGain.toFixed(0)}%
-                          </p>
-                        </div>
-                        <div 
-                          className={cn(
-                            "w-full rounded-t transition-all cursor-pointer",
-                            isProfit ? 'bg-profit hover:bg-profit/80' : 'bg-loss hover:bg-loss/80'
-                          )}
-                          style={{ height: `${heightPercent}%`, minHeight: '8px' }}
-                          title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${formatCurrency(month.avgBuyPrice)}`}
-                        />
-                        <p className="text-[10px] text-muted-foreground mt-1.5 font-medium">
-                          {month.monthName?.substring(0, 3)}
-                        </p>
+                  return (
+                    <>
+                      {/* Profit bars (top half) */}
+                      <div className="flex-1 flex items-end justify-between gap-1 border-b border-border/50">
+                        {last12Months.map((month, i) => {
+                          const isProfit = month.percentGain >= 0;
+                          const heightPercent = isProfit ? Math.max(5, (month.percentGain / maxAbsolute) * 100) : 0;
+                          
+                          return (
+                            <div key={`top-${i}`} className="flex-1 flex flex-col items-center justify-end group h-full">
+                              <div className="text-center mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <p className={cn(
+                                  "text-[10px] font-semibold",
+                                  isProfit ? 'text-profit' : 'text-loss'
+                                )}>
+                                  {month.percentGain >= 0 ? '+' : ''}{month.percentGain.toFixed(0)}%
+                                </p>
+                              </div>
+                              {isProfit && (
+                                <div 
+                                  className="w-full bg-profit hover:bg-profit/80 rounded-t transition-all cursor-pointer"
+                                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
+                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${formatCurrency(month.avgBuyPrice)} (${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%)`}
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  });
+                      
+                      {/* Loss bars (bottom half) */}
+                      <div className="flex-1 flex items-start justify-between gap-1">
+                        {last12Months.map((month, i) => {
+                          const isLoss = month.percentGain < 0;
+                          const heightPercent = isLoss ? Math.max(5, (Math.abs(month.percentGain) / maxAbsolute) * 100) : 0;
+                          
+                          return (
+                            <div key={`bottom-${i}`} className="flex-1 flex flex-col items-center justify-start group h-full">
+                              {isLoss && (
+                                <div 
+                                  className="w-full bg-loss hover:bg-loss/80 rounded-b transition-all cursor-pointer"
+                                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
+                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${formatCurrency(month.avgBuyPrice)} (${month.percentGain.toFixed(1)}%)`}
+                                />
+                              )}
+                              <div className="text-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {isLoss && (
+                                  <p className="text-[10px] font-semibold text-loss">
+                                    {month.percentGain.toFixed(0)}%
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Month labels */}
+                      <div className="flex justify-between gap-1 pt-1">
+                        {last12Months.map((month, i) => (
+                          <p key={`label-${i}`} className="flex-1 text-center text-[10px] text-muted-foreground font-medium">
+                            {month.monthName?.substring(0, 3)}
+                          </p>
+                        ))}
+                      </div>
+                    </>
+                  );
                 })()}
               </div>
               

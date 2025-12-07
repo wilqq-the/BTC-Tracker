@@ -106,7 +106,7 @@ export default function MainContent() {
     <div className="p-4 md:p-6">
       {/* Bitcoin Chart */}
       <div className="mb-6">
-        <BitcoinChart height={400} showVolume={true} showTransactions={true} />
+        <BitcoinChart showTitle={true} showTransactions={true} />
       </div>
 
       {/* Latest Activities */}
