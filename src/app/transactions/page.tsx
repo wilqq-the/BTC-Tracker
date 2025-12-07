@@ -921,10 +921,18 @@ export default function TransactionsPage() {
                               "font-semibold",
                               transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
                               transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
-                              transaction.type === 'TRANSFER' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
+                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
+                              transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
                             )}
                           >
-                            {transaction.type}
+                            {transaction.type === 'TRANSFER' 
+                              ? transaction.transfer_type === 'TRANSFER_IN' 
+                                ? 'IN' 
+                                : transaction.transfer_type === 'TRANSFER_OUT' 
+                                  ? 'OUT' 
+                                  : 'TRANSFER'
+                              : transaction.type}
                           </Badge>
                         </div>
                         <div className={cn(bulkActionMode ? "col-span-2" : "col-span-2")}>
@@ -932,9 +940,21 @@ export default function TransactionsPage() {
                           <p className="text-xs text-muted-foreground font-mono">{(transaction.btc_amount * 100000000).toLocaleString()} sats</p>
                         </div>
                         <div className="col-span-2">
-                          {transaction.type === 'TRANSFER' ? (
+                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                            // External transfers show reference price
+                            transaction.original_price_per_btc > 0 ? (
+                              <>
+                                <p className="font-medium text-muted-foreground">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
+                                <p className="text-xs text-muted-foreground/70">ref. price</p>
+                              </>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )
+                          ) : transaction.type === 'TRANSFER' ? (
+                            // Internal transfers have no price
                             <span className="text-muted-foreground">—</span>
                           ) : (
+                            // BUY/SELL show actual price
                             <>
                               <p className="font-medium">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
                               {transaction.original_currency !== transaction.main_currency && (
@@ -1009,10 +1029,18 @@ export default function TransactionsPage() {
                                   "font-semibold mb-1",
                                   transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
                                   transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
-                                  transaction.type === 'TRANSFER' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
                                 )}
                               >
-                                {transaction.type}
+                                {transaction.type === 'TRANSFER' 
+                                  ? transaction.transfer_type === 'TRANSFER_IN' 
+                                    ? 'IN' 
+                                    : transaction.transfer_type === 'TRANSFER_OUT' 
+                                      ? 'OUT' 
+                                      : 'TRANSFER'
+                                  : transaction.type}
                               </Badge>
                               <p className="text-sm text-muted-foreground">{new Date(transaction.transaction_date).toLocaleDateString()}</p>
                             </div>
@@ -1022,7 +1050,7 @@ export default function TransactionsPage() {
                             <p className="text-sm text-muted-foreground">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
                           </div>
                         </div>
-                        {transaction.type !== 'TRANSFER' && (
+                        {(transaction.type === 'BUY' || transaction.type === 'SELL') && (
                           <div className="flex items-center justify-between pt-2 border-t">
                             <p className="text-sm text-muted-foreground">P&L</p>
                             <div className="text-right">

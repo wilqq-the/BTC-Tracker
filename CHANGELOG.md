@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed npm audit vulnerabilities by adding `baseline-browser-mapping@2.9.4`
 
 ### ✨ New Features
+- **External Transfer Tracking** - Track BTC transfers in/out of portfolio without affecting P&L ([#138](https://github.com/wilqq-the/BTC-Tracker/issues/138))
+  - Transfer In: Add BTC from gifts, mining rewards, payments received
+  - Transfer Out: Remove BTC for donations, payments sent, gifts given
+  - External transfers change holdings but don't affect cost basis or P&L calculations
 - **System Status Dialog** - View all background services status in Settings → Price Data
 - **Transaction markers on chart** - Buy/sell dots on price chart with tooltips showing transaction details
 

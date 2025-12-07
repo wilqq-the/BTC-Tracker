@@ -26,7 +26,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TagsInput } from '@/components/ui/tags-input';
 import { CurrencySelector } from '@/components/ui/currency-selector';
-import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, CalendarIcon, TagIcon, FileTextIcon, InfoIcon, AlertTriangleIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, CalendarIcon, TagIcon, FileTextIcon, InfoIcon, AlertTriangleIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TransactionFormData {
@@ -39,7 +39,8 @@ interface TransactionFormData {
   transaction_date: string;
   notes: string;
   tags: string;
-  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS';
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
+  transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
   destination_address?: string;
 }
 
@@ -61,6 +62,7 @@ const initialFormData: TransactionFormData = {
   notes: '',
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
+  transfer_category: 'INTERNAL',
   destination_address: ''
 };
 
@@ -70,6 +72,14 @@ export default function AddTransactionModal({
   onSuccess,
   editingTransaction 
 }: AddTransactionModalProps) {
+  // Helper to determine transfer category from transfer_type
+  const getTransferCategory = (transferType?: string): 'INTERNAL' | 'EXTERNAL' => {
+    if (transferType === 'TRANSFER_IN' || transferType === 'TRANSFER_OUT') {
+      return 'EXTERNAL';
+    }
+    return 'INTERNAL';
+  };
+
   const [formData, setFormData] = useState<TransactionFormData>(
     editingTransaction ? {
       type: editingTransaction.type,
@@ -82,6 +92,7 @@ export default function AddTransactionModal({
       notes: editingTransaction.notes || '',
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+      transfer_category: getTransferCategory(editingTransaction.transfer_type),
       destination_address: editingTransaction.destination_address || ''
     } : initialFormData
   );
@@ -111,6 +122,7 @@ export default function AddTransactionModal({
         notes: editingTransaction.notes || '',
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+        transfer_category: getTransferCategory(editingTransaction.transfer_type),
         destination_address: editingTransaction.destination_address || ''
       });
     } else {
@@ -343,7 +355,13 @@ export default function AddTransactionModal({
           {/* BTC Amount */}
           <div className="space-y-2">
             <Label htmlFor="btc_amount" className="text-base">
-              {formData.type === 'TRANSFER' ? 'BTC Amount to Send' : 'BTC Amount'}
+              {formData.type === 'TRANSFER' 
+                ? (formData.transfer_type === 'TRANSFER_IN' 
+                    ? 'BTC Amount Received' 
+                    : formData.transfer_type === 'TRANSFER_OUT' 
+                      ? 'BTC Amount Sent'
+                      : 'BTC Amount to Send')
+                : 'BTC Amount'}
             </Label>
             <Input
               id="btc_amount"
@@ -360,7 +378,7 @@ export default function AddTransactionModal({
                 = {sats.toLocaleString()} sats
               </p>
             )}
-            {formData.type === 'TRANSFER' && (
+            {formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL' && (
               <div className="space-y-2 mt-2">
                 <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-2 rounded-md border border-blue-200 dark:border-blue-800">
                   <InfoIcon className="size-4 flex-shrink-0" />
@@ -380,33 +398,173 @@ export default function AddTransactionModal({
                 )}
               </div>
             )}
+            {formData.type === 'TRANSFER' && formData.transfer_category === 'EXTERNAL' && (
+              <div className="mt-2">
+                {formData.transfer_type === 'TRANSFER_IN' ? (
+                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-2 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-md border border-green-200 dark:border-green-800">
+                    <ArrowDownIcon className="size-4 flex-shrink-0" />
+                    <span>This amount will be <strong>added</strong> to your portfolio holdings</span>
+                  </div>
+                ) : (
+                  <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-md border border-red-200 dark:border-red-800">
+                    <ArrowUpIcon className="size-4 flex-shrink-0" />
+                    <span>This amount will be <strong>removed</strong> from your portfolio holdings</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Transfer Type (only for TRANSFER) */}
+          {/* Transfer Type (only for TRANSFER) - Two Step Selection */}
           {formData.type === 'TRANSFER' && (
-            <div className="space-y-2">
-              <Label htmlFor="transfer_type" className="text-base">Transfer Direction</Label>
-              <Select 
-                value={formData.transfer_type} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, transfer_type: value as any }))}
-              >
-                <SelectTrigger id="transfer_type" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="TO_COLD_WALLET">To Cold Wallet</SelectItem>
-                  <SelectItem value="FROM_COLD_WALLET">From Cold Wallet</SelectItem>
-                  <SelectItem value="BETWEEN_WALLETS">Between Wallets</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              {/* Step 1: Internal vs External */}
+              <div className="space-y-2">
+                <Label className="text-base">Transfer Type</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    type="button"
+                    variant={formData.transfer_category === 'INTERNAL' ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      transfer_category: 'INTERNAL',
+                      transfer_type: 'TO_COLD_WALLET' // Default internal type
+                    }))}
+                    className={cn(
+                      "flex flex-col gap-1 h-auto py-3",
+                      formData.transfer_category === 'INTERNAL' && "bg-blue-500 hover:bg-blue-600"
+                    )}
+                  >
+                    <RefreshCwIcon className={cn("size-5", formData.transfer_category === 'INTERNAL' ? "text-white" : "text-blue-500")} />
+                    <span className="font-semibold text-sm">Internal</span>
+                    <span className={cn("text-xs", formData.transfer_category === 'INTERNAL' ? "text-blue-100" : "text-muted-foreground")}>Between your wallets</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.transfer_category === 'EXTERNAL' ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      transfer_category: 'EXTERNAL',
+                      transfer_type: 'TRANSFER_IN' // Default external type
+                    }))}
+                    className={cn(
+                      "flex flex-col gap-1 h-auto py-3",
+                      formData.transfer_category === 'EXTERNAL' && "bg-purple-500 hover:bg-purple-600"
+                    )}
+                  >
+                    <ArrowLeftRightIcon className={cn("size-5", formData.transfer_category === 'EXTERNAL' ? "text-white" : "text-purple-500")} />
+                    <span className="font-semibold text-sm">External</span>
+                    <span className={cn("text-xs", formData.transfer_category === 'EXTERNAL' ? "text-purple-100" : "text-muted-foreground")}>In/out of portfolio</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Step 2: Specific direction based on category */}
+              <div className="space-y-2">
+                <Label className="text-base">Direction</Label>
+                
+                {/* Internal Transfer Options */}
+                {formData.transfer_category === 'INTERNAL' && (
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'TO_COLD_WALLET' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TO_COLD_WALLET' }))}
+                      className={cn(
+                        "flex flex-col gap-1 h-auto py-2",
+                        formData.transfer_type === 'TO_COLD_WALLET' && "bg-blue-500 hover:bg-blue-600"
+                      )}
+                    >
+                      <ArrowDownToLineIcon className="size-4" />
+                      <span className="text-xs">To Cold</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'FROM_COLD_WALLET' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'FROM_COLD_WALLET' }))}
+                      className={cn(
+                        "flex flex-col gap-1 h-auto py-2",
+                        formData.transfer_type === 'FROM_COLD_WALLET' && "bg-blue-500 hover:bg-blue-600"
+                      )}
+                    >
+                      <ArrowUpFromLineIcon className="size-4" />
+                      <span className="text-xs">From Cold</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'BETWEEN_WALLETS' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'BETWEEN_WALLETS' }))}
+                      className={cn(
+                        "flex flex-col gap-1 h-auto py-2",
+                        formData.transfer_type === 'BETWEEN_WALLETS' && "bg-blue-500 hover:bg-blue-600"
+                      )}
+                    >
+                      <RefreshCwIcon className="size-4" />
+                      <span className="text-xs">Between</span>
+                    </Button>
+                  </div>
+                )}
+
+                {/* External Transfer Options */}
+                {formData.transfer_category === 'EXTERNAL' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN' }))}
+                      className={cn(
+                        "flex flex-col gap-1 h-auto py-3",
+                        formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600"
+                      )}
+                    >
+                      <ArrowDownIcon className={cn("size-5", formData.transfer_type === 'TRANSFER_IN' ? "text-white" : "text-green-500")} />
+                      <span className="font-semibold text-sm">Transfer In</span>
+                      <span className={cn("text-xs", formData.transfer_type === 'TRANSFER_IN' ? "text-green-100" : "text-muted-foreground")}>Receive BTC</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT' }))}
+                      className={cn(
+                        "flex flex-col gap-1 h-auto py-3",
+                        formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600"
+                      )}
+                    >
+                      <ArrowUpIcon className={cn("size-5", formData.transfer_type === 'TRANSFER_OUT' ? "text-white" : "text-red-500")} />
+                      <span className="font-semibold text-sm">Transfer Out</span>
+                      <span className={cn("text-xs", formData.transfer_type === 'TRANSFER_OUT' ? "text-red-100" : "text-muted-foreground")}>Send BTC</span>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Info box for external transfers */}
+                {formData.transfer_category === 'EXTERNAL' && (
+                  <div className="text-xs text-purple-600 dark:text-purple-400 flex items-start gap-2 bg-purple-50 dark:bg-purple-900/20 px-3 py-2 rounded-md border border-purple-200 dark:border-purple-800 mt-2">
+                    <InfoIcon className="size-4 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <strong>External transfers</strong> change your portfolio balance but <strong>do not affect P&L</strong>. 
+                      Use for gifts, donations, payments, or mining rewards.
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* Price per BTC (hidden for TRANSFER) */}
-          {formData.type !== 'TRANSFER' && (
+          {/* Price per BTC (hidden for internal transfers, shown for BUY/SELL and external transfers) */}
+          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="price_per_btc" className="text-base">Price per BTC</Label>
+                <Label htmlFor="price_per_btc" className="text-base">
+                  {formData.transfer_category === 'EXTERNAL' ? 'Reference Price per BTC' : 'Price per BTC'}
+                </Label>
                 {currentBtcPrice && (
                   <Button
                     type="button"
@@ -427,19 +585,28 @@ export default function AddTransactionModal({
                 onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
                 placeholder="105000.00"
                 className="font-mono text-base"
-                required
+                required={formData.type !== 'TRANSFER'}
               />
-              <p className="text-xs text-muted-foreground flex items-center gap-2">
-                <InfoIcon className="size-3 flex-shrink-0" />
-                <span>Enter 0 for mining rewards, gifts, or airdrops</span>
-              </p>
+              {formData.transfer_category === 'EXTERNAL' ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <InfoIcon className="size-3 flex-shrink-0" />
+                  <span>Track the BTC value at time of transfer (for reference only, does not affect P&L)</span>
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <InfoIcon className="size-3 flex-shrink-0" />
+                  <span>Enter 0 for mining rewards, gifts, or airdrops</span>
+                </p>
+              )}
             </div>
           )}
 
-          {/* Currency (hidden for TRANSFER since no fiat is involved) */}
-          {formData.type !== 'TRANSFER' && (
+          {/* Currency (hidden for internal transfers, shown for BUY/SELL and external transfers) */}
+          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
             <div className="space-y-2">
-              <Label htmlFor="currency" className="text-base">Currency</Label>
+              <Label htmlFor="currency" className="text-base">
+                {formData.transfer_category === 'EXTERNAL' ? 'Reference Currency' : 'Currency'}
+              </Label>
               <CurrencySelector
                 id="currency"
                 value={formData.currency}
