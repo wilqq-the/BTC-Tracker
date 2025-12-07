@@ -1,13 +1,34 @@
-/**
- * Auto DCA Tab Component
- * Displays and manages recurring Bitcoin purchases
- */
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import RecurringTransactionModal from './RecurringTransactionModal';
+import { cn } from '@/lib/utils';
+
+// shadcn/ui components
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+
+// Icons
+import {
+  BotIcon,
+  PlusIcon,
+  PlayIcon,
+  PauseIcon,
+  EditIcon,
+  TrashIcon,
+  ZapIcon,
+  CalendarIcon,
+  RepeatIcon,
+  TargetIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  AlertCircleIcon,
+  InfoIcon,
+  TrendingUpIcon,
+  CoinsIcon,
+  HistoryIcon,
+} from 'lucide-react';
 
 interface RecurringTransaction {
   id: number;
@@ -55,7 +76,6 @@ export default function AutoDCATab() {
   const [showModal, setShowModal] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<RecurringTransaction | null>(null);
   const [recentExecutions, setRecentExecutions] = useState<ExecutionHistoryItem[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
 
   useEffect(() => {
     loadRecurringTransactions();
@@ -85,14 +105,10 @@ export default function AutoDCATab() {
 
   const loadExecutionHistory = async () => {
     try {
-      setLoadingHistory(true);
-      
-      // Load recent transactions with "Auto-DCA" or "Automatic" tags
       const response = await fetch('/api/transactions?limit=10');
       const result = await response.json();
       
       if (result.success && result.data) {
-        // Filter for auto-generated transactions
         const autoTransactions = result.data.filter((tx: any) => 
           tx.tags && (tx.tags.includes('Automatic') || tx.tags.includes('DCA')) ||
           tx.notes && tx.notes.includes('Auto-DCA')
@@ -101,8 +117,6 @@ export default function AutoDCATab() {
       }
     } catch (err) {
       console.error('Error loading execution history:', err);
-    } finally {
-      setLoadingHistory(false);
     }
   };
 
@@ -128,15 +142,10 @@ export default function AutoDCATab() {
   };
 
   const deleteTransaction = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
-      return;
-    }
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
 
     try {
-      const response = await fetch(`/api/recurring-transactions/${id}`, {
-        method: 'DELETE'
-      });
-
+      const response = await fetch(`/api/recurring-transactions/${id}`, { method: 'DELETE' });
       const result = await response.json();
       
       if (result.success) {
@@ -151,22 +160,18 @@ export default function AutoDCATab() {
   };
 
   const executeNow = async (id: number, name: string) => {
-    if (!confirm(`Execute "${name}" now? This will create a transaction immediately.`)) {
-      return;
-    }
+    if (!confirm(`Execute "${name}" now? This will create a transaction immediately.`)) return;
 
     try {
-      const response = await fetch(`/api/recurring-transactions/${id}/execute`, {
-        method: 'POST'
-      });
-
+      const response = await fetch(`/api/recurring-transactions/${id}/execute`, { method: 'POST' });
       const result = await response.json();
       
       if (result.success) {
-        alert('✅ Transaction executed successfully!');
+        alert('Transaction executed successfully!');
         await loadRecurringTransactions();
+        await loadExecutionHistory();
       } else {
-        alert('❌ Failed to execute: ' + result.error);
+        alert('Failed to execute: ' + result.error);
       }
     } catch (err) {
       console.error('Error executing:', err);
@@ -190,23 +195,9 @@ export default function AutoDCATab() {
     const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
     
-    if (date.toDateString() === now.toDateString()) {
-      return 'Today';
-    }
-    if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow';
-    }
+    if (date.toDateString() === now.toDateString()) return 'Today';
+    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  };
-
-  const getFrequencyIcon = (freq: string) => {
-    const icons: Record<string, string> = {
-      'daily': '📅',
-      'weekly': '📆',
-      'biweekly': '🗓️',
-      'monthly': '🌙'
-    };
-    return icons[freq] || '🔄';
   };
 
   const handleAddNew = () => {
@@ -234,22 +225,25 @@ export default function AutoDCATab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <ThemedText variant="secondary">Loading recurring transactions...</ThemedText>
+        <div className="text-center space-y-3">
+          <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading recurring transactions...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <ThemedCard>
-        <div className="text-center py-8">
-          <div className="text-4xl mb-4">⚠️</div>
-          <ThemedText variant="secondary" className="mb-4">{error}</ThemedText>
-          <ThemedButton onClick={loadRecurringTransactions}>
-            Try Again
-          </ThemedButton>
-        </div>
-      </ThemedCard>
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center space-y-4">
+            <AlertCircleIcon className="size-12 text-destructive mx-auto" />
+            <p className="text-muted-foreground">{error}</p>
+            <Button onClick={loadRecurringTransactions}>Try Again</Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -259,337 +253,305 @@ export default function AutoDCATab() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-btc-text-primary mb-2">
-              🤖 Automatic DCA
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <BotIcon className="size-6" />
+              Automatic DCA
             </h2>
-            <ThemedText variant="secondary" className="text-sm">
+            <p className="text-muted-foreground text-sm mt-1">
               Set up recurring Bitcoin purchases that execute automatically
-            </ThemedText>
+            </p>
           </div>
-          <ThemedButton
-            onClick={handleAddNew}
-            variant="primary"
-            className="bg-bitcoin hover:bg-bitcoin-dark flex-shrink-0"
-          >
-            ➕ Add Recurring Purchase
-          </ThemedButton>
+          <Button onClick={handleAddNew}>
+            <PlusIcon className="size-4 mr-2" />
+            Add Recurring Purchase
+          </Button>
         </div>
 
-        {/* Active Recurring Transactions */}
+        {/* Active Transactions */}
         {activeTransactions.length > 0 && (
-          <section>
-            <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
+          <div className="space-y-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <PlayIcon className="size-4 text-profit" />
               Active ({activeTransactions.length})
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {activeTransactions.map((tx) => (
-                <ThemedCard key={tx.id}>
-                  <div className="space-y-4">
-                    {/* Header */}
+                <Card key={tx.id}>
+                  <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-lg font-semibold text-btc-text-primary truncate">
-                          {tx.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-bitcoin/10 text-bitcoin rounded-md text-xs font-medium">
-                            {getFrequencyIcon(tx.frequency)} {formatFrequency(tx.frequency)}
-                          </span>
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg">{tx.name}</CardTitle>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" className="gap-1">
+                            <RepeatIcon className="size-3" />
+                            {formatFrequency(tx.frequency)}
+                          </Badge>
                           {tx.goal && (
-                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/10 text-blue-400 rounded-md text-xs font-medium">
-                              🎯 {tx.goal.name}
-                            </span>
+                            <Badge variant="outline" className="gap-1 text-blue-600 border-blue-500/30">
+                              <TargetIcon className="size-3" />
+                              {tx.goal.name}
+                            </Badge>
                           )}
                         </div>
                       </div>
                     </div>
-
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     {/* Amount & Stats */}
-                    <div className="flex items-center justify-between py-3 border-y border-btc-border-primary">
+                    <div className="flex items-center justify-between py-3 border-y">
                       <div>
-                        <div className="text-2xl font-bold text-btc-text-primary">
-                          {tx.currency} {tx.amount.toFixed(2)}
-                        </div>
-                        <ThemedText variant="muted" size="sm">
+                        <p className="text-2xl font-bold">{tx.currency} {tx.amount.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">
                           per {tx.frequency === 'biweekly' ? '2 weeks' : tx.frequency.replace('ly', '')}
-                        </ThemedText>
+                        </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-semibold text-btc-text-secondary">
-                          {tx.executionCount}x
-                        </div>
-                        <ThemedText variant="muted" size="sm">
-                          executed
-                        </ThemedText>
+                        <p className="text-lg font-semibold text-muted-foreground">{tx.executionCount}x</p>
+                        <p className="text-xs text-muted-foreground">executed</p>
                       </div>
                     </div>
 
                     {/* Next Execution */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <ThemedText variant="muted" size="sm" className="mb-1">
-                          Next Purchase
-                        </ThemedText>
-                        <div className="text-sm font-medium text-btc-text-primary">
-                          📅 {formatDate(tx.nextExecution)}
-                        </div>
+                        <p className="text-xs text-muted-foreground mb-1">Next Purchase</p>
+                        <p className="text-sm font-medium flex items-center gap-1">
+                          <CalendarIcon className="size-3" />
+                          {formatDate(tx.nextExecution)}
+                        </p>
                       </div>
                       {tx.maxOccurrences && (
                         <div className="text-right">
-                          <ThemedText variant="muted" size="sm" className="mb-1">
-                            Remaining
-                          </ThemedText>
-                          <div className="text-sm font-medium text-btc-text-primary">
-                            {tx.maxOccurrences - tx.executionCount} left
-                          </div>
+                          <p className="text-xs text-muted-foreground mb-1">Remaining</p>
+                          <p className="text-sm font-medium">{tx.maxOccurrences - tx.executionCount} left</p>
                         </div>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 pt-2">
-                      <ThemedButton
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => togglePause(tx.id, tx.isPaused)}
-                        variant="secondary"
-                        size="sm"
                         className="flex-1"
                       >
-                        ⏸️ Pause
-                      </ThemedButton>
-                      <ThemedButton
+                        <PauseIcon className="size-4 mr-1" />
+                        Pause
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleEdit(tx)}
-                        variant="secondary"
-                        size="sm"
                         className="flex-1"
                       >
-                        ✏️ Edit
-                      </ThemedButton>
-                      <ThemedButton
-                        onClick={() => executeNow(tx.id, tx.name)}
+                        <EditIcon className="size-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
-                        className="flex-1 text-bitcoin hover:text-bitcoin-dark"
+                        onClick={() => executeNow(tx.id, tx.name)}
+                        className="flex-1 text-primary"
                       >
-                        ⚡ Run Now
-                      </ThemedButton>
-                      <button
+                        <ZapIcon className="size-4 mr-1" />
+                        Run Now
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => deleteTransaction(tx.id, tx.name)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-colors"
-                        title="Delete"
+                        className="text-destructive hover:text-destructive"
                       >
-                        🗑️
-                      </button>
+                        <TrashIcon className="size-4" />
+                      </Button>
                     </div>
-                  </div>
-                </ThemedCard>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </section>
+          </div>
         )}
 
         {/* Paused Transactions */}
         {pausedTransactions.length > 0 && (
-          <section>
-            <h3 className="text-lg font-semibold text-btc-text-secondary mb-4">
+          <div className="space-y-4">
+            <h3 className="font-semibold flex items-center gap-2 text-muted-foreground">
+              <PauseIcon className="size-4" />
               Paused ({pausedTransactions.length})
             </h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {pausedTransactions.map((tx) => (
-                <ThemedCard key={tx.id} className="opacity-60">
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-btc-text-primary truncate">
-                          {tx.name}
-                        </h4>
-                        <div className="text-sm text-btc-text-secondary mt-1">
+                <Card key={tx.id} className="opacity-60">
+                  <CardContent className="py-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold">{tx.name}</p>
+                        <p className="text-sm text-muted-foreground">
                           {tx.currency} {tx.amount.toFixed(2)} · {formatFrequency(tx.frequency)}
-                        </div>
+                        </p>
                       </div>
-                      <span className="px-2 py-1 bg-orange-500/10 text-orange-400 rounded-md text-xs font-medium">
-                        ⏸️ Paused
-                      </span>
+                      <Badge variant="outline" className="text-amber-600 border-amber-500/30">
+                        <PauseIcon className="size-3 mr-1" />
+                        Paused
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <ThemedButton
-                        onClick={() => togglePause(tx.id, tx.isPaused)}
-                        variant="secondary"
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        variant="outline"
                         size="sm"
+                        onClick={() => togglePause(tx.id, tx.isPaused)}
                         className="flex-1"
                       >
-                        ▶️ Resume
-                      </ThemedButton>
-                      <ThemedButton
-                        onClick={() => handleEdit(tx)}
+                        <PlayIcon className="size-4 mr-1" />
+                        Resume
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => handleEdit(tx)}
                         className="flex-1"
                       >
-                        ✏️ Edit
-                      </ThemedButton>
-                      <button
+                        <EditIcon className="size-4 mr-1" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => deleteTransaction(tx.id, tx.name)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md transition-colors"
-                        title="Delete"
+                        className="text-destructive hover:text-destructive"
                       >
-                        🗑️
-                      </button>
+                        <TrashIcon className="size-4" />
+                      </Button>
                     </div>
-                  </div>
-                </ThemedCard>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </section>
+          </div>
         )}
 
         {/* Empty State */}
         {transactions.length === 0 && (
-          <ThemedCard>
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🤖</div>
-              <h3 className="text-xl font-semibold text-btc-text-primary mb-2">
-                No Recurring Purchases Yet
-              </h3>
-              <div className="mb-6">
-                <ThemedText variant="secondary" className="block">
-                  Set up automatic Bitcoin purchases to implement your DCA strategy
-                </ThemedText>
+          <Card>
+            <CardContent className="py-16">
+              <div className="text-center space-y-4">
+                <div className="size-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
+                  <BotIcon className="size-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold mb-1">No Recurring Purchases Yet</h3>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    Set up automatic Bitcoin purchases to implement your DCA strategy
+                  </p>
+                </div>
+                <Button onClick={handleAddNew}>
+                  <PlusIcon className="size-4 mr-2" />
+                  Create Your First Recurring Purchase
+                </Button>
               </div>
-              <div className="flex justify-center">
-                <ThemedButton
-                  onClick={handleAddNew}
-                  variant="primary"
-                  className="bg-bitcoin hover:bg-bitcoin-dark"
-                >
-                  ➕ Create Your First Recurring Purchase
-                </ThemedButton>
-              </div>
-            </div>
-          </ThemedCard>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Execution History */}
+        {/* Recent Executions */}
         {recentExecutions.length > 0 && (
-          <section>
-            <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
-              📜 Recent Auto-Purchases
-            </h3>
-            <ThemedCard>
-              <div className="divide-y divide-btc-border-primary">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <HistoryIcon className="size-4" />
+                Recent Auto-Purchases
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="divide-y">
                 {recentExecutions.map((exec) => {
                   const date = new Date(exec.transactionDate);
                   const formattedDate = date.toLocaleDateString('en-US', { 
-                    month: 'short', 
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                   });
                   
                   return (
                     <div key={exec.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">✅</span>
+                        <CheckCircleIcon className="size-5 text-profit" />
                         <div>
-                          <div className="text-sm font-medium text-btc-text-primary">
+                          <p className="text-sm font-medium">
                             Bought <span className="font-mono font-bold">{exec.btcAmount.toFixed(8)} BTC</span>
-                          </div>
-                          <ThemedText variant="muted" size="sm">
-                            {formattedDate}
-                          </ThemedText>
+                          </p>
+                          <p className="text-xs text-muted-foreground">{formattedDate}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm font-semibold text-btc-text-primary">
-                          {exec.originalCurrency} {exec.originalTotalAmount.toFixed(2)}
-                        </div>
-                        <ThemedText variant="muted" size="sm">
-                          Automatic
-                        </ThemedText>
+                        <p className="text-sm font-semibold">{exec.originalCurrency} {exec.originalTotalAmount.toFixed(2)}</p>
+                        <p className="text-xs text-muted-foreground">Automatic</p>
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </ThemedCard>
-          </section>
+            </CardContent>
+          </Card>
         )}
 
         {/* Statistics */}
         {transactions.length > 0 && (
-          <section>
-            <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
-              📊 Statistics
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <ThemedCard>
-                <div className="text-center p-4">
-                  <div className="text-3xl font-bold text-bitcoin mb-1">
-                    {activeTransactions.length}
-                  </div>
-                  <ThemedText variant="muted" size="sm">
-                    Active
-                  </ThemedText>
-                </div>
-              </ThemedCard>
-              <ThemedCard>
-                <div className="text-center p-4">
-                  <div className="text-3xl font-bold text-orange-400 mb-1">
-                    {pausedTransactions.length}
-                  </div>
-                  <ThemedText variant="muted" size="sm">
-                    Paused
-                  </ThemedText>
-                </div>
-              </ThemedCard>
-              <ThemedCard>
-                <div className="text-center p-4">
-                  <div className="text-3xl font-bold text-green-400 mb-1">
-                    {transactions.reduce((sum, tx) => sum + tx.executionCount, 0)}
-                  </div>
-                  <ThemedText variant="muted" size="sm">
-                    Total Purchases
-                  </ThemedText>
-                </div>
-              </ThemedCard>
-              <ThemedCard>
-                <div className="text-center p-4">
-                  <div className="text-3xl font-bold text-blue-400 mb-1">
-                    {new Set(transactions.map(tx => tx.frequency)).size}
-                  </div>
-                  <ThemedText variant="muted" size="sm">
-                    Frequencies
-                  </ThemedText>
-                </div>
-              </ThemedCard>
-            </div>
-          </section>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-3xl font-bold text-primary">{activeTransactions.length}</p>
+                <p className="text-xs text-muted-foreground">Active</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-3xl font-bold text-amber-500">{pausedTransactions.length}</p>
+                <p className="text-xs text-muted-foreground">Paused</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-3xl font-bold text-profit">
+                  {transactions.reduce((sum, tx) => sum + tx.executionCount, 0)}
+                </p>
+                <p className="text-xs text-muted-foreground">Total Purchases</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="py-4 text-center">
+                <p className="text-3xl font-bold text-blue-500">
+                  {new Set(transactions.map(tx => tx.frequency)).size}
+                </p>
+                <p className="text-xs text-muted-foreground">Frequencies</p>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Info Box */}
-        <ThemedCard className="bg-blue-500/5 border-blue-500/20">
-          <div className="flex gap-3">
-            <div className="text-2xl flex-shrink-0">💡</div>
-            <div>
-              <h4 className="text-sm font-semibold text-btc-text-primary mb-1">
-                How It Works
-              </h4>
-              <ThemedText variant="secondary" size="sm">
-                Your recurring purchases execute automatically at the scheduled time. 
-                The system fetches the current Bitcoin price and creates a transaction for you. 
-                You can pause, edit, or delete at any time.
-              </ThemedText>
+        <Card className="bg-blue-500/5 border-blue-500/20">
+          <CardContent className="py-4">
+            <div className="flex gap-3">
+              <InfoIcon className="size-5 text-blue-500 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold mb-1">How It Works</h4>
+                <p className="text-sm text-muted-foreground">
+                  Your recurring purchases execute automatically at the scheduled time. 
+                  The system fetches the current Bitcoin price and creates a transaction for you. 
+                  You can pause, edit, or delete at any time.
+                </p>
+              </div>
             </div>
-          </div>
-        </ThemedCard>
+          </CardContent>
+        </Card>
       </div>
 
-    <RecurringTransactionModal
-      isOpen={showModal}
-      onClose={handleModalClose}
-      onSuccess={handleModalSuccess}
-      editingTransaction={editingTransaction}
-    />
+      <RecurringTransactionModal
+        isOpen={showModal}
+        onClose={handleModalClose}
+        onSuccess={handleModalSuccess}
+        editingTransaction={editingTransaction}
+      />
     </>
   );
 }
-

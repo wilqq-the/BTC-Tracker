@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import Navigation from './Navigation';
 import PortfolioSidebar from './PortfolioSidebar';
 import DonationModal from './DonationModal';
-import { ThemedText } from './ui/ThemeProvider';
+import { Button } from './ui/button';
+import { Separator } from './ui/separator';
+import { HeartHandshakeIcon } from 'lucide-react';
 import packageJson from '../../package.json';
 
 interface AppLayoutProps {
@@ -16,7 +18,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-btc-bg-primary flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation Header */}
       <Navigation onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       
@@ -44,27 +46,32 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
         
         {/* Main Content Area */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-y-scroll">
           {children}
         </div>
       </div>
 
-      {/* Subtle Footer */}
-      <footer className="h-auto md:h-10 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2 md:py-0 space-y-1 md:space-y-0">
-        <ThemedText variant="muted" size="xs" className="text-center md:text-left">
-          BTC Tracker v{packageJson.version}
-        </ThemedText>
+      {/* Footer */}
+      <footer className="h-auto md:h-10 bg-background border-t flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2 md:py-0 gap-2 md:gap-0">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-medium">BTC Tracker</span>
+          <Separator orientation="vertical" className="h-4 hidden sm:block" />
+          <span className="hidden sm:block">v{packageJson.version}</span>
+        </div>
         
-        <div className="flex items-center space-x-2 md:space-x-4">
-          <ThemedText variant="muted" size="xs" className="hidden sm:block">
-            Made with ❤️ for the Bitcoin community
-          </ThemedText>
-          <button
+        <div className="flex items-center gap-2 md:gap-4">
+          <span className="text-xs text-muted-foreground hidden sm:flex items-center gap-1.5">
+            <HeartHandshakeIcon className="size-3.5 text-btc-500" />
+            <span>Made for the Bitcoin community</span>
+          </span>
+          <Button
+            variant="link"
+            size="sm"
             onClick={() => setIsDonationModalOpen(true)}
-            className="text-xs text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium transition-colors hover:underline"
+            className="h-auto p-0 text-xs text-btc-500 hover:text-btc-600"
           >
-            Support
-          </button>
+            Support Project
+          </Button>
         </div>
       </footer>
 

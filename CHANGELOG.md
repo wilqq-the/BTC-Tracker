@@ -5,6 +5,39 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.7] - 2025-12-07
+
+### 🔒 Security
+- **Two-Factor Authentication (2FA)** - Secure your account with TOTP-based 2FA
+  - Works with Google Authenticator, Authy, and other authenticator apps
+  - 10 backup codes generated for account recovery
+  - Enable/disable from Profile → Two-Factor Authentication
+- **Critical:** Updated Next.js from 15.3.4 to 15.3.6 to fix CVE-2025-66478 (CVSS 10.0) - Remote Code Execution vulnerability in React Server Components ([Details](https://nextjs.org/blog/CVE-2025-66478))
+- Fixed npm audit vulnerabilities by adding `baseline-browser-mapping@2.9.4`
+
+### ✨ New Features
+- **External Transfer Tracking** - Track BTC transfers in/out of portfolio without affecting P&L ([#138](https://github.com/wilqq-the/BTC-Tracker/issues/138))
+  - Transfer In: Add BTC from gifts, mining rewards, payments received
+  - Transfer Out: Remove BTC for donations, payments sent, gifts given
+  - External transfers change holdings but don't affect cost basis or P&L calculations
+- **System Status Dialog** - View all background services status in Settings → Price Data
+- **Transaction markers on chart** - Buy/sell dots on price chart with tooltips showing transaction details
+
+### 🔧 Improvements
+- Price scheduler now fetches every 5 minutes (was stuck at 1 hour)
+- Removed unused settings (Live Update Interval, Data Retention Policy)
+- Fixed version display in Settings
+- Chart stats grid now responsive (1 column on mobile)
+
+### 🐛 Bug Fixes
+- Fixed P&L calculation on Transactions page to match sidebar and analytics
+- Fixed Monthly Purchase Performance chart - bars now scale correctly, colors match actual gains/losses
+- Fixed Profile export button - now exports transactions CSV (was broken)
+
+### 🎨 UI
+- Migrated to shadcn/ui components
+- Consolidated BitcoinChart components (removed BitcoinChartNew.tsx)
+
 ## [0.6.6] - 2025-11-30
 
 ### 🔧 Bug Fixes

@@ -127,7 +127,9 @@ export async function PUT(
 
     // Convert string values to numbers
     const btcAmount = parseFloat(formData.btc_amount);
-    const pricePerBtc = isTransfer ? 0 : parseFloat(formData.price_per_btc);
+    // For external transfers (TRANSFER_IN/OUT), allow reference price; internal transfers have no price
+    const isExternalTransfer = isTransfer && (formData.transfer_type === 'TRANSFER_IN' || formData.transfer_type === 'TRANSFER_OUT');
+    const pricePerBtc = isTransfer && !isExternalTransfer ? 0 : parseFloat(formData.price_per_btc || '0');
     const fees = parseFloat(formData.fees || '0');
 
     // Allow zero price for mining/gifts/airdrops/transfers (but not negative)

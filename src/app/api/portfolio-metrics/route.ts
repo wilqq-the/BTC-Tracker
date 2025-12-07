@@ -39,13 +39,22 @@ export async function GET(request: NextRequest) {
     const sellTransactions = allTransactions.filter(tx => tx.type === 'SELL');
     const transferTransactions = allTransactions.filter(tx => tx.type === 'TRANSFER');
     
+    // Separate internal transfers (no balance change) from external transfers (change balance)
+    const internalTransfers = transferTransactions.filter(tx => 
+      tx.transferType === 'TO_COLD_WALLET' || 
+      tx.transferType === 'FROM_COLD_WALLET' || 
+      tx.transferType === 'BETWEEN_WALLETS'
+    );
+    const transfersIn = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_IN');
+    const transfersOut = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_OUT');
+    
     // Calculate BTC fees from transfer transactions
     // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
     // Amount arriving at destination = btcAmount - fees
     let totalFeesBTC = 0;
     let coldWalletBTC = 0;
     
-    for (const tx of transferTransactions) {
+    for (const tx of internalTransfers) {
       // If fees are paid in BTC, reduce total holdings (burned, gone forever)
       if (tx.feesCurrency.toUpperCase() === 'BTC') {
         totalFeesBTC += tx.fees;
@@ -62,10 +71,21 @@ export async function GET(request: NextRequest) {
       }
     }
     
-    // Calculate total BTC (BUY - SELL - BTC_FEES)
+    // Handle external transfer fees
+    for (const tx of [...transfersIn, ...transfersOut]) {
+      if (tx.feesCurrency.toUpperCase() === 'BTC') {
+        totalFeesBTC += tx.fees;
+      }
+    }
+    
+    // Calculate external transfer amounts (adds/removes from portfolio without affecting P&L)
+    const totalBtcTransferredIn = transfersIn.reduce((sum, tx) => sum + tx.btcAmount, 0);
+    const totalBtcTransferredOut = transfersOut.reduce((sum, tx) => sum + tx.btcAmount, 0);
+    
+    // Calculate total BTC (BUY - SELL + TRANSFER_IN - TRANSFER_OUT - BTC_FEES)
     const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-    const currentHoldings = totalBtcBought - totalBtcSold - totalFeesBTC;
+    const currentHoldings = totalBtcBought - totalBtcSold + totalBtcTransferredIn - totalBtcTransferredOut - totalFeesBTC;
     const hotWalletBTC = currentHoldings - coldWalletBTC;
     
     // Get exchange rates for all currencies
@@ -131,13 +151,29 @@ export async function GET(request: NextRequest) {
     const avgSellPrice = totalBtcSold > 0 ? weightedSellPriceSum / totalBtcSold : 0;
     
     // Calculate P&L
+    // IMPORTANT: Only BUY transactions affect cost basis, not TRANSFER_IN
+    // TRANSFER_IN/OUT change holdings but NOT P&L or cost basis
     const currentValue = currentHoldings * currentPrice;
-    const costBasis = currentHoldings * avgBuyPrice;
-    const unrealizedPnL = currentValue - costBasis;
+    
+    // Cost basis only for BTC acquired via BUY (not transferred in)
+    // We need to track how much BTC came from buys vs transfers
+    const btcFromBuys = totalBtcBought - totalBtcSold; // Net BTC from buy/sell activity
+    const btcFromTransfers = totalBtcTransferredIn - totalBtcTransferredOut; // Net BTC from transfers
+    
+    // Cost basis applies only to BTC acquired via buys
+    // If we have more holdings than bought (due to transfers in), only bought amount has cost basis
+    const btcWithCostBasis = Math.max(0, Math.min(currentHoldings, btcFromBuys - totalFeesBTC));
+    const costBasis = btcWithCostBasis * avgBuyPrice;
+    
+    // Unrealized P&L = current value of BTC with cost basis - cost basis
+    // BTC from transfers has no cost basis, so it's "free" in P&L terms
+    const valueOfBtcWithCostBasis = btcWithCostBasis * currentPrice;
+    const unrealizedPnL = valueOfBtcWithCostBasis - costBasis;
+    
     const realizedPnL = totalReceivedMain - (totalBtcSold * avgBuyPrice);
     const totalPnL = unrealizedPnL + realizedPnL;
     
-    // Calculate ROI
+    // Calculate ROI (based on invested amount only, transfers don't count as investment)
     const roi = totalInvestedMain > 0 ? ((currentValue + totalReceivedMain - totalInvestedMain) / totalInvestedMain) * 100 : 0;
     
     // Calculate 24h portfolio change based on BTC price change
@@ -200,6 +236,13 @@ export async function GET(request: NextRequest) {
       totalBuys: buyTransactions.length,
       totalSells: sellTransactions.length,
       totalTransfers: transferTransactions.length,
+      totalTransfersIn: transfersIn.length,
+      totalTransfersOut: transfersOut.length,
+      totalInternalTransfers: internalTransfers.length,
+      
+      // BTC from transfers (for info display)
+      totalBtcTransferredIn,
+      totalBtcTransferredOut,
       
       // Currency info
       mainCurrency,
@@ -303,13 +346,15 @@ export async function GET(request: NextRequest) {
           holdingDays,
           
           // Additional stats
-          totalBtcBought,
-          totalBtcSold,
-          largestPurchase: buyTransactions.reduce((max, tx) => 
-            tx.btcAmount > (max?.btcAmount || 0) ? tx : max, 
-            buyTransactions[0]
-          )?.btcAmount || 0,
-          avgBuyAmount: totalBtcBought / (buyTransactions.length || 1)
+        totalBtcBought,
+        totalBtcSold,
+        totalBtcTransferredIn,
+        totalBtcTransferredOut,
+        largestPurchase: buyTransactions.reduce((max, tx) => 
+          tx.btcAmount > (max?.btcAmount || 0) ? tx : max, 
+          buyTransactions[0]
+        )?.btcAmount || 0,
+        avgBuyAmount: totalBtcBought / (buyTransactions.length || 1)
         }
       });
     }

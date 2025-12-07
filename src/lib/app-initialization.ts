@@ -111,10 +111,16 @@ export class AppInitializationService {
   private static shutdownHandlersSetup = false;
 
   static getStatus() {
+    // Always try to get scheduler status - it manages its own state
+    const schedulerStatus = PriceScheduler.getStatus();
+    
     return {
       isInitialized: this.isInitialized,
       isInitializing: this.initPromise !== null && !this.isInitialized,
-      schedulerStatus: this.isInitialized ? PriceScheduler.getStatus() : null
+      schedulerStatus,
+      // Include process info for debugging worker isolation issues
+      processId: process.pid,
+      uptime: process.uptime()
     };
   }
 
@@ -128,7 +134,8 @@ export class AppInitializationService {
   }
 
   static async triggerDataUpdate(): Promise<void> {
-    if (!this.isInitialized) throw new Error('Not initialized');
+    // Direct price update - doesn't need scheduler to be running
+    // PriceScheduler.updateNow() just fetches and saves data directly
     console.log('[SYNC] Updating data...');
     await PriceScheduler.updateNow();
     console.log('[OK] Updated');

@@ -110,6 +110,12 @@ model User {
   pinHash      String?  @map("pin_hash") // Added for PIN authentication
   isAdmin      Boolean  @default(false) @map("is_admin") // Admin role (first user is auto-admin)
   isActive     Boolean  @default(true) @map("is_active") // Allow admin to deactivate users
+  
+  // Two-Factor Authentication (2FA/TOTP)
+  twoFactorSecret      String?  @map("two_factor_secret") // TOTP secret key (encrypted)
+  twoFactorEnabled     Boolean  @default(false) @map("two_factor_enabled")
+  twoFactorBackupCodes String?  @map("two_factor_backup_codes") // JSON array of hashed backup codes
+  
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 

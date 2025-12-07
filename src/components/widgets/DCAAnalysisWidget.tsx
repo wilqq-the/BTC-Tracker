@@ -1,8 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText } from '@/components/ui/ThemeProvider';
+import { WidgetCard, WidgetEmptyState } from '@/components/ui/widget-card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { WidgetProps } from '@/lib/dashboard-types';
+import { TrendingUpIcon, TargetIcon, ExternalLinkIcon } from 'lucide-react';
+import Link from 'next/link';
 
 interface DCAAnalysis {
   score: {
@@ -30,9 +36,10 @@ interface DCAAnalysis {
  * DCA Analysis Widget
  * Shows Dollar Cost Averaging performance metrics
  */
-export default function DCAAnalysisWidget({ id, isEditMode, onRefresh }: WidgetProps) {
+export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
   const [analysis, setAnalysis] = useState<DCAAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string>('');
 
   useEffect(() => {
@@ -40,7 +47,6 @@ export default function DCAAnalysisWidget({ id, isEditMode, onRefresh }: WidgetP
   }, []);
 
   const loadAnalysis = async () => {
-    setLoading(true);
     setError('');
     
     try {
@@ -61,15 +67,24 @@ export default function DCAAnalysisWidget({ id, isEditMode, onRefresh }: WidgetP
   };
 
   const handleRefresh = async () => {
+    setRefreshing(true);
     await loadAnalysis();
-    if (onRefresh) onRefresh();
+    setRefreshing(false);
+    onRefresh?.();
   };
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 dark:text-green-400';
     if (score >= 6) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 4) return 'text-orange-600 dark:text-orange-400';
+    if (score >= 4) return 'text-btc-500';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  const getScoreBgColor = (score: number) => {
+    if (score >= 8) return 'bg-green-500';
+    if (score >= 6) return 'bg-blue-500';
+    if (score >= 4) return 'bg-btc-500';
+    return 'bg-red-500';
   };
 
   const getScoreLabel = (score: number) => {
@@ -79,182 +94,121 @@ export default function DCAAnalysisWidget({ id, isEditMode, onRefresh }: WidgetP
     return 'Poor';
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            DCA Performance
-          </h3>
-        </div>
-        <ThemedCard className="flex-1">
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-5/6"></div>
-          </div>
-        </ThemedCard>
-      </div>
-    );
-  }
-
-  if (error || !analysis) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            DCA Performance
-          </h3>
-          <button
-            onClick={handleRefresh}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-            title="Refresh"
-          >
-            ↻
-          </button>
-        </div>
-        <ThemedCard className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <ThemedText variant="muted" className="text-sm mb-2">
-              {error || 'No DCA data available'}
-            </ThemedText>
-            <a
-              href="/goals"
-              className="text-xs text-orange-600 hover:text-orange-700 font-medium"
-            >
-              View DCA Analysis →
-            </a>
-          </div>
-        </ThemedCard>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          DCA Performance
-        </h3>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleRefresh}
-            className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-            title="Refresh"
-            disabled={loading}
-          >
-            ↻
-          </button>
-          <a
-            href="/goals"
-            className="text-orange-600 hover:text-orange-700 text-xs font-medium"
-          >
-            Full Analysis →
-          </a>
-        </div>
-      </div>
-
-      <ThemedCard className="flex-1 space-y-3">
-        {/* Overall Score Bar */}
-        <div className="pb-3 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center mb-2">
-            <ThemedText variant="muted" className="text-xs">
-              DCA Strategy Score
-            </ThemedText>
-            <div className={`text-2xl font-bold ${getScoreColor(analysis.score.overall)}`}>
-              {analysis.score.overall.toFixed(1)}/10
-            </div>
-          </div>
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-            <div 
-              className={`h-2 rounded-full transition-all ${
-                analysis.score.overall >= 8 ? 'bg-green-500' :
-                analysis.score.overall >= 6 ? 'bg-blue-500' :
-                analysis.score.overall >= 4 ? 'bg-orange-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${(analysis.score.overall / 10) * 100}%` }}
-            />
-          </div>
-          <ThemedText variant="muted" className="text-xs mt-1">
-            {getScoreLabel(analysis.score.overall)} - Keep up the consistent buying!
-          </ThemedText>
-        </div>
-
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-          {/* Timing Score */}
+    <WidgetCard
+      title="DCA Performance"
+      icon={TargetIcon}
+      badge={
+        analysis && (
+          <Badge variant={analysis.score.overall >= 6 ? "default" : "secondary"}>
+            {analysis.score.overall.toFixed(1)}/10
+          </Badge>
+        )
+      }
+      loading={loading}
+      error={error || (!analysis ? "No DCA data available" : null)}
+      onRefresh={handleRefresh}
+      refreshing={refreshing}
+      contentClassName="overflow-auto"
+    >
+      {analysis && (
+        <div className="space-y-3 flex-1">
+          {/* Overall Score Bar */}
           <div>
-            <ThemedText variant="muted" className="text-xs mb-1">
-              Timing Score
-            </ThemedText>
-            <div className="flex items-baseline space-x-2">
-              <div className={`text-lg font-bold ${getScoreColor(analysis.score.timing)}`}>
-                {analysis.score.timing.toFixed(1)}
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs text-muted-foreground">DCA Strategy Score</span>
+              <div className={`text-2xl font-bold ${getScoreColor(analysis.score.overall)}`}>
+                {analysis.score.overall.toFixed(1)}/10
               </div>
-              {analysis.timing && (
-                <ThemedText variant="muted" className="text-xs">
-                  ({analysis.timing.btcBoughtBelowCurrent.toFixed(0)}% below)
-                </ThemedText>
-              )}
             </div>
+            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+              <div 
+                className={`h-2 rounded-full transition-all ${getScoreBgColor(analysis.score.overall)}`}
+                style={{ width: `${(analysis.score.overall / 10) * 100}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {getScoreLabel(analysis.score.overall)} - Keep up the consistent buying!
+            </p>
           </div>
 
-          {/* Consistency Score */}
-          <div>
-            <ThemedText variant="muted" className="text-xs mb-1">
-              Consistency
-            </ThemedText>
-            <div className="flex items-baseline space-x-2">
-              <div className={`text-lg font-bold ${getScoreColor(analysis.score.consistency)}`}>
-                {analysis.score.consistency.toFixed(1)}
-              </div>
-              {analysis.consistency && (
-                <ThemedText variant="muted" className="text-xs">
-                  ({analysis.consistency.totalPurchases} buys)
-                </ThemedText>
-              )}
-            </div>
-          </div>
+          <Separator />
 
-          {/* Performance */}
-          <div>
-            <ThemedText variant="muted" className="text-xs mb-1">
-              Performance
-            </ThemedText>
-            <div className="flex items-baseline space-x-2">
-              <div className={`text-lg font-bold ${getScoreColor(analysis.score.performance)}`}>
-                {analysis.score.performance.toFixed(1)}
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Timing Score */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Timing</p>
+              <div className="flex items-baseline gap-2">
+                <div className={`text-lg font-bold ${getScoreColor(analysis.score.timing)}`}>
+                  {analysis.score.timing.toFixed(1)}
+                </div>
+                {analysis.timing && (
+                  <span className="text-xs text-muted-foreground">
+                    ({analysis.timing.btcBoughtBelowCurrent.toFixed(0)}% below)
+                  </span>
+                )}
               </div>
-              {analysis.summary && (
-                <ThemedText 
-                  className={`text-xs font-medium ${
+            </div>
+
+            {/* Consistency Score */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Consistency</p>
+              <div className="flex items-baseline gap-2">
+                <div className={`text-lg font-bold ${getScoreColor(analysis.score.consistency)}`}>
+                  {analysis.score.consistency.toFixed(1)}
+                </div>
+                {analysis.consistency && (
+                  <span className="text-xs text-muted-foreground">
+                    ({analysis.consistency.totalPurchases} buys)
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Performance */}
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Performance</p>
+              <div className="flex items-baseline gap-2">
+                <div className={`text-lg font-bold ${getScoreColor(analysis.score.performance)}`}>
+                  {analysis.score.performance.toFixed(1)}
+                </div>
+                {analysis.summary && (
+                  <span className={`text-xs font-medium ${
                     analysis.summary.totalPnLPercent >= 0 
                       ? 'text-green-600 dark:text-green-400' 
                       : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {analysis.summary.totalPnLPercent >= 0 ? '+' : ''}
-                  {analysis.summary.totalPnLPercent.toFixed(1)}%
-                </ThemedText>
-              )}
-            </div>
-          </div>
-
-          {/* Avg Buy Price */}
-          {analysis.summary && (
-            <div>
-              <ThemedText variant="muted" className="text-xs mb-1">
-                Avg Buy Price
-              </ThemedText>
-              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                {analysis.currency === 'EUR' ? '€' : '$'}
-                {analysis.summary.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  }`}>
+                    {analysis.summary.totalPnLPercent >= 0 ? '+' : ''}
+                    {analysis.summary.totalPnLPercent.toFixed(1)}%
+                  </span>
+                )}
               </div>
             </div>
-          )}
+
+            {/* Avg Buy Price */}
+            {analysis.summary && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Avg Buy</p>
+                <div className="text-lg font-bold text-btc-500">
+                  {analysis.currency === 'EUR' ? '€' : '$'}
+                  {analysis.summary.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Full Analysis Link */}
+          <Button asChild variant="outline" size="sm" className="w-full">
+            <Link href="/goals">
+              View Full Analysis
+              <ExternalLinkIcon className="size-3.5 ml-2" />
+            </Link>
+          </Button>
         </div>
-      </ThemedCard>
-    </div>
+      )}
+    </WidgetCard>
   );
 }
-

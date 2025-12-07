@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { ThemedText } from './ui/ThemeProvider'
+import { cn } from '@/lib/utils'
+import { DeleteIcon, CheckIcon, TrashIcon } from 'lucide-react'
 
 interface PinKeypadProps {
   onPinComplete: (pin: string) => void
@@ -41,31 +42,30 @@ export default function PinKeypad({
       }
     }
 
-    // Focus the container to capture keyboard events
     if (containerRef.current) {
       containerRef.current.focus()
     }
 
     document.addEventListener('keydown', handleKeyPress)
     return () => document.removeEventListener('keydown', handleKeyPress)
-  }, [pin, loading, onPinComplete])
+  }, [pin, loading, onPinComplete, submittedPins])
 
-  // Auto-submit when PIN reaches max length (but only if not already submitted)
+  // Auto-submit when PIN reaches max length
   useEffect(() => {
     if (pin.length === maxLength && !submittedPins.has(pin)) {
       setSubmittedPins(prev => new Set(prev).add(pin))
       setTimeout(() => {
         onPinComplete(pin)
-      }, 200) // Small delay for visual feedback
+      }, 200)
     }
   }, [pin, maxLength, onPinComplete, submittedPins])
 
-  // Clear PIN when error changes (for retry)
+  // Clear PIN when error changes
   useEffect(() => {
     if (error) {
       const timer = setTimeout(() => {
         setPin('')
-        setSubmittedPins(new Set()) // Clear submitted PINs to allow retry
+        setSubmittedPins(new Set())
       }, 1000)
       return () => clearTimeout(timer)
     }
@@ -74,8 +74,6 @@ export default function PinKeypad({
   const handleNumberPress = (number: string) => {
     if (pin.length < maxLength) {
       setPin(prev => prev + number)
-      
-      // Button animation
       setAnimatingButton(number)
       setTimeout(() => setAnimatingButton(null), 150)
     }
@@ -83,17 +81,13 @@ export default function PinKeypad({
 
   const handleBackspace = () => {
     setPin(prev => prev.slice(0, -1))
-    
-    // Button animation
     setAnimatingButton('backspace')
     setTimeout(() => setAnimatingButton(null), 150)
   }
 
   const handleClear = () => {
     setPin('')
-    setSubmittedPins(new Set()) // Clear submitted PINs when clearing
-    
-    // Button animation
+    setSubmittedPins(new Set())
     setAnimatingButton('clear')
     setTimeout(() => setAnimatingButton(null), 150)
   }
@@ -102,8 +96,6 @@ export default function PinKeypad({
     if (pin.length >= 4 && !submittedPins.has(pin)) {
       setSubmittedPins(prev => new Set(prev).add(pin))
       onPinComplete(pin)
-      
-      // Button animation
       setAnimatingButton('submit')
       setTimeout(() => setAnimatingButton(null), 150)
     }
@@ -119,51 +111,41 @@ export default function PinKeypad({
   return (
     <div 
       ref={containerRef}
-      className="flex flex-col items-center space-y-8 outline-none"
+      className="flex flex-col items-center space-y-6 outline-none"
       tabIndex={0}
     >
       {/* PIN Display */}
-      <div className="flex flex-col items-center space-y-4">
-        <ThemedText variant="secondary" className="text-lg">
-          Enter your PIN
-        </ThemedText>
+      <div className="flex flex-col items-center space-y-3">
+        <p className="text-sm text-muted-foreground">Enter your PIN</p>
         
         {/* PIN Dots */}
-        <div className="flex space-x-4">
+        <div className="flex gap-3">
           {Array.from({ length: maxLength }, (_, i) => (
             <div
               key={i}
-              className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+              className={cn(
+                "size-4 rounded-full border-2 transition-all duration-200",
                 i < pin.length
-                  ? 'bg-btc-500 border-btc-500 scale-110'
+                  ? 'bg-primary border-primary scale-110'
                   : error
-                  ? 'border-red-500 bg-red-100 dark:bg-red-900/20'
-                  : 'border-gray-300 dark:border-gray-600'
-              }`}
+                  ? 'border-destructive bg-destructive/10'
+                  : 'border-muted-foreground/30'
+              )}
             />
           ))}
         </div>
 
-        {/* Error Display */}
-        {error && (
-          <div className="text-red-500 text-sm text-center animate-shake">
-            {error}
-          </div>
-        )}
-
         {/* Loading State */}
         {loading && (
-          <div className="flex items-center space-x-2 text-btc-500">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-btc-500"></div>
-            <ThemedText variant="secondary" size="sm">
-              Signing in...
-            </ThemedText>
+          <div className="flex items-center gap-2 text-primary">
+            <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm">Signing in...</span>
           </div>
         )}
       </div>
 
       {/* Keypad */}
-      <div className="grid grid-cols-3 gap-4 max-w-xs">
+      <div className="grid grid-cols-3 gap-3">
         {keypadButtons.map((row, rowIndex) =>
           row.map((button, colIndex) => {
             const isAnimating = animatingButton === button
@@ -177,45 +159,29 @@ export default function PinKeypad({
                 key={`${rowIndex}-${colIndex}`}
                 onClick={() => {
                   if (loading) return
-                  
-                  if (isNumber) {
-                    handleNumberPress(button)
-                  } else if (isBackspace) {
-                    handleBackspace()
-                  } else if (isClear) {
-                    handleClear()
-                  } else if (isSubmit) {
-                    handleSubmit()
-                  }
+                  if (isNumber) handleNumberPress(button)
+                  else if (isBackspace) handleBackspace()
+                  else if (isClear) handleClear()
+                  else if (isSubmit) handleSubmit()
                 }}
                 disabled={loading || (isSubmit && (pin.length < 4 || submittedPins.has(pin)))}
-                className={`
-                  w-16 h-16 rounded-full font-semibold text-xl transition-all duration-150 
-                  ${isNumber
-                    ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-2 border-gray-200 dark:border-gray-600 hover:border-btc-500 hover:bg-btc-50 dark:hover:bg-btc-900/20'
-                    : isClear
-                    ? 'bg-red-500 text-white hover:bg-red-600'
-                    : isSubmit
-                    ? 'bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed'
-                    : 'bg-gray-500 text-white hover:bg-gray-600'
-                  }
-                  ${isAnimating ? 'scale-95 bg-btc-500 text-white' : ''}
-                  ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}
-                  shadow-lg hover:shadow-xl
-                `}
+                className={cn(
+                  "size-16 rounded-xl font-semibold text-xl transition-all duration-150",
+                  "focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background",
+                  isNumber && "bg-card border border-border text-foreground hover:bg-muted hover:border-primary/50",
+                  isClear && "bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20",
+                  isSubmit && "bg-profit/10 text-profit border border-profit/20 hover:bg-profit/20 disabled:opacity-40 disabled:cursor-not-allowed",
+                  isBackspace && "bg-muted text-muted-foreground border border-border hover:bg-muted/80",
+                  isAnimating && "scale-95 bg-primary text-primary-foreground border-primary",
+                  loading && "opacity-50 cursor-not-allowed"
+                )}
               >
                 {isBackspace ? (
-                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
-                  </svg>
+                  <DeleteIcon className="size-5 mx-auto" />
                 ) : isClear ? (
-                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  <TrashIcon className="size-5 mx-auto" />
                 ) : isSubmit ? (
-                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
+                  <CheckIcon className="size-5 mx-auto" />
                 ) : (
                   button
                 )}
@@ -226,21 +192,21 @@ export default function PinKeypad({
       </div>
 
       {/* Instructions */}
-      <div className="text-center space-y-2">
-        <ThemedText variant="muted" size="sm">
-          Use keyboard or tap numbers above
-        </ThemedText>
+      <div className="text-center space-y-1">
+        <p className="text-xs text-muted-foreground">
+          Use keyboard or tap numbers
+        </p>
         {pin.length >= 4 && pin.length < maxLength && (
-          <ThemedText variant="muted" size="xs">
-            Press Enter or tap ✓ to sign in, or continue typing
-          </ThemedText>
+          <p className="text-xs text-muted-foreground">
+            Press Enter or tap <CheckIcon className="inline size-3" /> to sign in
+          </p>
         )}
         {pin.length < 4 && (
-          <ThemedText variant="muted" size="xs">
+          <p className="text-xs text-muted-foreground">
             Enter at least 4 digits
-          </ThemedText>
+          </p>
         )}
       </div>
     </div>
   )
-} 
+}

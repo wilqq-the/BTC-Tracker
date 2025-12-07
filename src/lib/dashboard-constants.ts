@@ -28,12 +28,13 @@ export const GRID_COLS_PER_BREAKPOINT = {
 };
 
 // Widget definitions with metadata
+// Note: icon field stores lucide-react icon name for reference
 export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'bitcoin-chart',
     type: 'chart',
-    title: 'Bitcoin Price Chart',
-    icon: '📈',
+    title: 'Bitcoin Price',
+    icon: 'LineChart',
     description: 'Real-time Bitcoin price chart with technical indicators',
     minW: 4,
     minH: 2,
@@ -44,8 +45,8 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'latest-transactions',
     type: 'transactions',
-    title: 'Latest Transactions',
-    icon: '💸',
+    title: 'Transactions',
+    icon: 'ArrowLeftRight',
     description: 'Your 5 most recent Bitcoin transactions',
     minW: 3,
     minH: 2,
@@ -57,7 +58,7 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
     id: 'goals-overview',
     type: 'goals',
     title: 'Savings Goals',
-    icon: '🎯',
+    icon: 'Target',
     description: 'Overview of your Bitcoin savings goals',
     minW: 3,
     minH: 2,
@@ -68,8 +69,8 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'portfolio-summary',
     type: 'portfolio',
-    title: 'Portfolio Summary',
-    icon: '💼',
+    title: 'Portfolio',
+    icon: 'Wallet',
     description: 'Overview of your Bitcoin holdings and performance',
     minW: 2,
     minH: 2,
@@ -81,7 +82,7 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
     id: 'dca-analysis',
     type: 'dca',
     title: 'DCA Performance',
-    icon: '📊',
+    icon: 'TrendingUp',
     description: 'Dollar Cost Averaging strategy analysis',
     minW: 3,
     minH: 2,
@@ -92,8 +93,8 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'multi-timeframe',
     type: 'timeframe',
-    title: 'Multi-Timeframe Performance',
-    icon: '📈',
+    title: 'Performance',
+    icon: 'Activity',
     description: 'Performance across 24h, 7d, 30d, 1y, and all-time',
     minW: 3,
     minH: 2,
@@ -104,8 +105,8 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'monthly-summary',
     type: 'monthly',
-    title: 'Monthly Summary',
-    icon: '📅',
+    title: 'This Month',
+    icon: 'Calendar',
     description: 'Current month accumulation statistics',
     minW: 2,
     minH: 2,
@@ -117,7 +118,7 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
     id: 'auto-dca',
     type: 'auto-dca',
     title: 'Auto DCA',
-    icon: '🤖',
+    icon: 'RefreshCw',
     description: 'Status of automated recurring Bitcoin purchases',
     minW: 2,
     minH: 2,
@@ -128,8 +129,8 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
   {
     id: 'wallet-distribution',
     type: 'wallet-distribution',
-    title: 'Wallet Distribution',
-    icon: '🔐',
+    title: 'Wallets',
+    icon: 'Shield',
     description: 'Hot and cold wallet security breakdown',
     minW: 2,
     minH: 2,

@@ -1,12 +1,68 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
+import React, { useState, useEffect, useCallback } from 'react';
 import AppLayout from '@/components/AppLayout';
 import AddTransactionModal from '@/components/AddTransactionModal';
-import TransactionTags from '@/components/TransactionTags';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
-import { DocumentIcon, InboxIcon } from '@heroicons/react/24/outline';
+import { cn } from '@/lib/utils';
+
+// shadcn/ui components
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+// Icons
+import {
+  PlusIcon,
+  UploadIcon,
+  DownloadIcon,
+  SearchIcon,
+  XIcon,
+  TrashIcon,
+  PencilIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronsLeftIcon,
+  ChevronsRightIcon,
+  ArrowUpIcon,
+  ArrowDownIcon,
+  FileIcon,
+  InboxIcon,
+  CheckIcon,
+  MoreVerticalIcon,
+  FilterIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+  WalletIcon,
+  CoinsIcon,
+  BarChart3Icon,
+  CalendarIcon,
+  ListChecksIcon,
+} from 'lucide-react';
 
 interface BitcoinTransaction {
   id: number;
@@ -25,15 +81,11 @@ interface BitcoinTransaction {
   fees_currency: string;
   transaction_date: string;
   notes: string;
-  tags?: string; // Comma-separated tags
+  tags?: string;
   created_at: string;
   updated_at: string;
-  
-  // Transfer-specific fields
   transfer_type?: string;
   destination_address?: string;
-  
-  // Secondary currency display values (added by API)
   secondary_currency?: string;
   secondary_currency_price_per_btc?: number;
   secondary_currency_total_amount?: number;
@@ -43,6 +95,8 @@ interface BitcoinTransaction {
   pnl_main?: number;
 }
 
+type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<BitcoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,26 +105,18 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL' | 'TRANSFER'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [currentBtcPrice, setCurrentBtcPrice] = useState(105000); // Fallback price
+  const [currentBtcPrice, setCurrentBtcPrice] = useState(105000);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
-  
-  // Duplicate detection settings
-  type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
   const [duplicateCheckMode, setDuplicateCheckMode] = useState<DuplicateCheckMode>('standard');
-  const [showDuplicateSettings, setShowDuplicateSettings] = useState(false);
-  
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  
-  // Summary statistics for current filter (all transactions, not just current page)
   const [summaryStats, setSummaryStats] = useState({
     totalBtcBought: 0,
     totalBtcSold: 0,
@@ -80,38 +126,26 @@ export default function TransactionsPage() {
     totalPnL: 0,
     mainCurrency: 'USD'
   });
-  
-  // New: Date range filter
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | '3m' | '1y' | 'custom'>('all');
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
-  
-  // New: Search filter
   const [searchQuery, setSearchQuery] = useState<string>('');
-  
-  // New: Tag management
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [showTagInput, setShowTagInput] = useState(false);
-  const [newTag, setNewTag] = useState('');
-  
-  // New: Bulk actions
   const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
   const [bulkActionMode, setBulkActionMode] = useState(false);
-  
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadTransactions();
     loadCurrentBitcoinPrice();
   }, []);
 
-  // Reload transactions when pagination changes
   useEffect(() => {
     if (!loading) {
       loadTransactions(currentPage, itemsPerPage);
     }
   }, [currentPage, itemsPerPage]);
 
-  // Reload transactions when filters change (and reset to page 1)
   useEffect(() => {
     if (currentPage === 1) {
       loadTransactions(1, itemsPerPage);
@@ -120,8 +154,7 @@ export default function TransactionsPage() {
     }
   }, [filterType, dateRange, customDateFrom, customDateTo]);
   
-  // Helper: Get date range boundaries
-  const getDateRangeBoundaries = () => {
+  const getDateRangeBoundaries = useCallback(() => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     
@@ -143,9 +176,8 @@ export default function TransactionsPage() {
       default:
         return null;
     }
-  };
-  
-  // Helper: Get all unique tags from transactions
+  }, [dateRange, customDateFrom, customDateTo]);
+
   const getAllTags = (): string[] => {
     const tagSet = new Set<string>();
     transactions.forEach(t => {
@@ -155,56 +187,7 @@ export default function TransactionsPage() {
     });
     return Array.from(tagSet).sort();
   };
-  
-  // Helper: Add tag to transaction
-  const addTagToTransaction = async (transactionId: number, tag: string) => {
-    try {
-      const transaction = transactions.find(t => t.id === transactionId);
-      if (!transaction) return;
-      
-      const existingTags = transaction.tags ? transaction.tags.split(',').map(t => t.trim()) : [];
-      if (existingTags.includes(tag)) return; // Already has this tag
-      
-      const newTags = [...existingTags, tag].join(',');
-      
-      const response = await fetch(`/api/transactions/${transactionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...transaction, tags: newTags }),
-      });
-      
-      if (response.ok) {
-        await loadTransactions();
-      }
-    } catch (error) {
-      console.error('Error adding tag:', error);
-    }
-  };
-  
-  // Helper: Remove tag from transaction
-  const removeTagFromTransaction = async (transactionId: number, tagToRemove: string) => {
-    try {
-      const transaction = transactions.find(t => t.id === transactionId);
-      if (!transaction) return;
-      
-      const existingTags = transaction.tags ? transaction.tags.split(',').map(t => t.trim()) : [];
-      const newTags = existingTags.filter(t => t !== tagToRemove).join(',');
-      
-      const response = await fetch(`/api/transactions/${transactionId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...transaction, tags: newTags || null }),
-      });
-      
-      if (response.ok) {
-        await loadTransactions();
-      }
-    } catch (error) {
-      console.error('Error removing tag:', error);
-    }
-  };
-  
-  // Helper: Bulk delete transactions
+
   const handleBulkDelete = async () => {
     if (selectedTransactions.size === 0) return;
     
@@ -226,24 +209,7 @@ export default function TransactionsPage() {
       alert('Failed to delete transactions');
     }
   };
-  
-  // Helper: Bulk add tag
-  const handleBulkAddTag = async (tag: string) => {
-    if (selectedTransactions.size === 0) return;
-    
-    try {
-      await Promise.all(
-        Array.from(selectedTransactions).map(id => addTagToTransaction(id, tag))
-      );
-      
-      setSelectedTransactions(new Set());
-      setBulkActionMode(false);
-    } catch (error) {
-      console.error('Error bulk adding tag:', error);
-    }
-  };
-  
-  // Helper: Toggle transaction selection
+
   const toggleTransactionSelection = (id: number) => {
     const newSelection = new Set(selectedTransactions);
     if (newSelection.has(id)) {
@@ -253,8 +219,7 @@ export default function TransactionsPage() {
     }
     setSelectedTransactions(newSelection);
   };
-  
-  // Helper: Select all/none
+
   const toggleSelectAll = () => {
     if (selectedTransactions.size === filteredAndSortedTransactions.length) {
       setSelectedTransactions(new Set());
@@ -265,47 +230,21 @@ export default function TransactionsPage() {
 
   const loadSummaryStats = async () => {
     try {
-      // Build query parameters for fetching ALL transactions with same filters
-      const params = new URLSearchParams({
-        limit: '100000', // Very high limit to get all transactions for stats
-      });
-
-      // Add type filter if not ALL
-      if (filterType !== 'ALL') {
-        params.append('type', filterType);
-      }
-
-      // Add date range filters
-      const dateRangeBoundaries = getDateRangeBoundaries();
-      if (dateRangeBoundaries) {
-        params.append('date_from', dateRangeBoundaries.from.toISOString());
-        params.append('date_to', dateRangeBoundaries.to.toISOString());
-      }
-
-      const response = await fetch(`/api/transactions?${params}`);
+      // Use portfolio-metrics API for consistent P&L calculation with sidebar
+      const response = await fetch('/api/portfolio-metrics');
       const result = await response.json();
       
-      if (result.success && Array.isArray(result.data)) {
-        const allTransactions = result.data;
-        
-        // Calculate summary statistics
-        const buyTxs = allTransactions.filter(t => t.type === 'BUY');
-        const sellTxs = allTransactions.filter(t => t.type === 'SELL');
-        
-        const totalBtcBought = buyTxs.reduce((sum, t) => sum + t.btc_amount, 0);
-        const totalBtcSold = sellTxs.reduce((sum, t) => sum + t.btc_amount, 0);
-        const totalInvested = buyTxs.reduce((sum, t) => sum + (t.main_currency_total_amount || 0), 0);
-        const totalPnL = allTransactions.reduce((sum, t) => sum + (t.pnl_main || 0), 0);
-        const mainCurrency = allTransactions[0]?.main_currency || 'USD';
+      if (result.success && result.data) {
+        const metrics = result.data;
         
         setSummaryStats({
-          totalBtcBought,
-          totalBtcSold,
-          buyTransactionCount: buyTxs.length,
-          sellTransactionCount: sellTxs.length,
-          totalInvested,
-          totalPnL,
-          mainCurrency
+          totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0), // Approximate from holdings
+          totalBtcSold: 0, // Will be calculated from transactions if needed
+          buyTransactionCount: metrics.totalBuys || 0,
+          sellTransactionCount: metrics.totalSells || 0,
+          totalInvested: metrics.totalInvested || 0,
+          totalPnL: metrics.unrealizedPnL || 0,
+          mainCurrency: metrics.mainCurrency || 'USD'
         });
       }
     } catch (error) {
@@ -316,18 +255,12 @@ export default function TransactionsPage() {
   const loadTransactions = async (page: number = currentPage, limit: number = itemsPerPage) => {
     setLoading(true);
     try {
-      // Build query parameters
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
 
-      // Add type filter if not ALL
-      if (filterType !== 'ALL') {
-        params.append('type', filterType);
-      }
-
-      // Add date range filters
+      if (filterType !== 'ALL') params.append('type', filterType);
       const dateRangeBoundaries = getDateRangeBoundaries();
       if (dateRangeBoundaries) {
         params.append('date_from', dateRangeBoundaries.from.toISOString());
@@ -339,19 +272,15 @@ export default function TransactionsPage() {
       
       if (result.success) {
         setTransactions(Array.isArray(result.data) ? result.data : []);
-        
-        // Update pagination state from API response
         if (result.pagination) {
           setTotalItems(result.pagination.total);
           setTotalPages(result.pagination.totalPages);
           setCurrentPage(result.pagination.page);
         }
       } else {
-        console.error('Failed to load transactions:', result.error);
         setTransactions([]);
       }
       
-      // Load summary stats whenever transactions are loaded
       await loadSummaryStats();
     } catch (error) {
       console.error('Error loading transactions:', error);
@@ -365,18 +294,12 @@ export default function TransactionsPage() {
     try {
       const response = await fetch('/api/bitcoin-price');
       const result = await response.json();
-      
       if (result.success && result.data?.price) {
         setCurrentBtcPrice(result.data.price);
       }
     } catch (error) {
       console.error('Error loading current Bitcoin price:', error);
     }
-  };
-
-  const handleAddTransaction = () => {
-    setEditingTransaction(null);
-    setShowAddModal(true);
   };
 
   const handleEditTransaction = (transaction: BitcoinTransaction) => {
@@ -387,14 +310,10 @@ export default function TransactionsPage() {
   const handleDeleteTransaction = async (id: number) => {
     if (confirm('Are you sure you want to delete this transaction?')) {
       try {
-        const response = await fetch(`/api/transactions/${id}`, {
-          method: 'DELETE',
-        });
-
+        const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
         const result = await response.json();
-        
         if (result.success) {
-          loadTransactions(); // Reload transactions
+          loadTransactions();
         } else {
           alert(`Error: ${result.error || result.message}`);
         }
@@ -405,19 +324,10 @@ export default function TransactionsPage() {
     }
   };
 
-
   const calculatePnL = (transaction: BitcoinTransaction) => {
-    // TRANSFER transactions don't have P&L
-    if (transaction.type === 'TRANSFER') {
-      return 0;
-    }
+    if (transaction.type === 'TRANSFER') return 0;
+    if (transaction.pnl_main !== undefined) return transaction.pnl_main;
     
-    // Use API-provided P&L calculation if available (more accurate)
-    if (transaction.pnl_main !== undefined) {
-      return transaction.pnl_main;
-    }
-    
-    // Fallback calculation using main currency values
     const currentValue = transaction.btc_amount * currentBtcPrice;
     const mainCurrencyTotal = transaction.main_currency_total_amount || transaction.usd_total_amount;
     const costBasis = mainCurrencyTotal + (transaction.fees || 0);
@@ -425,17 +335,12 @@ export default function TransactionsPage() {
     if (transaction.type === 'BUY') {
       return currentValue - costBasis;
     } else {
-      // For SELL transactions, P&L is the proceeds minus the cost basis
       return mainCurrencyTotal - costBasis;
     }
   };
 
   const calculatePnLPercent = (transaction: BitcoinTransaction) => {
-    // TRANSFER transactions don't have P&L percentage
-    if (transaction.type === 'TRANSFER') {
-      return 0;
-    }
-    
+    if (transaction.type === 'TRANSFER') return 0;
     const pnl = calculatePnL(transaction);
     const mainCurrencyTotal = transaction.main_currency_total_amount || transaction.usd_total_amount;
     const costBasis = mainCurrencyTotal + (transaction.fees || 0);
@@ -446,8 +351,6 @@ export default function TransactionsPage() {
     try {
       const response = await fetch('/api/transactions/export');
       const blob = await response.blob();
-      
-      // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -465,19 +368,12 @@ export default function TransactionsPage() {
   const detectFileFormat = async (file: File) => {
     setFormatDetecting(true);
     setDetectedFormat(null);
-    
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('detect_only', 'true'); // Add flag for detection only
-      
-      const response = await fetch('/api/transactions/import', {
-        method: 'POST',
-        body: formData,
-      });
-      
+      formData.append('detect_only', 'true');
+      const response = await fetch('/api/transactions/import', { method: 'POST', body: formData });
       const result = await response.json();
-      
       if (result.detected_format) {
         const formatMap: { [key: string]: string } = {
           'legacy': 'Legacy Format',
@@ -490,7 +386,6 @@ export default function TransactionsPage() {
         setDetectedFormat(formatMap[result.detected_format] || result.detected_format);
       }
     } catch (error) {
-      console.error('Error detecting file format:', error);
       setDetectedFormat('Unknown Format');
     } finally {
       setFormatDetecting(false);
@@ -504,17 +399,12 @@ export default function TransactionsPage() {
     }
 
     setImportLoading(true);
-    
     try {
       const formData = new FormData();
       formData.append('file', importFile);
       formData.append('duplicate_check_mode', duplicateCheckMode);
 
-      const response = await fetch('/api/transactions/import', {
-        method: 'POST',
-        body: formData,
-      });
-
+      const response = await fetch('/api/transactions/import', { method: 'POST', body: formData });
       const result = await response.json();
       
       if (result.success) {
@@ -525,13 +415,12 @@ export default function TransactionsPage() {
         setShowImportModal(false);
         setImportFile(null);
         setDetectedFormat(null);
-        setDuplicateCheckMode('standard'); // Reset to default
-        loadTransactions(); // Reload transactions
+        setDuplicateCheckMode('standard');
+        loadTransactions();
       } else {
         alert(`Import failed: ${result.error || result.message}`);
       }
     } catch (error) {
-      console.error('Error importing transactions:', error);
       alert('Failed to import transactions. Please try again.');
     } finally {
       setImportLoading(false);
@@ -566,17 +455,21 @@ export default function TransactionsPage() {
     }
   };
 
-  // Client-side filtering and sorting for the current page's transactions
+  const handleSort = (column: typeof sortBy) => {
+    if (sortBy === column) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+  };
+
   const filteredAndSortedTransactions = transactions
     .filter(t => {
-      // Tag filter (client-side)
       if (selectedTags.length > 0) {
         const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
-        const hasSelectedTag = selectedTags.some(selectedTag => txTags.includes(selectedTag));
-        if (!hasSelectedTag) return false;
+        if (!selectedTags.some(selectedTag => txTags.includes(selectedTag))) return false;
       }
-      
-      // Search filter (client-side)
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesNotes = t.notes?.toLowerCase().includes(query);
@@ -585,16 +478,14 @@ export default function TransactionsPage() {
         const matchesDate = t.transaction_date.includes(query);
         const matchesPrice = t.original_price_per_btc.toString().includes(query);
         const matchesTags = t.tags?.toLowerCase().includes(query);
-        
         if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
           return false;
         }
       }
-      
       return true;
     })
     .sort((a, b) => {
-      let aValue: any, bValue: any;
+      let aValue: number | string, bValue: number | string;
       
       switch (sortBy) {
         case 'date':
@@ -621,22 +512,23 @@ export default function TransactionsPage() {
           return 0;
       }
       
-      // Handle string comparison for type
       if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' 
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue);
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       }
-      
-      // Handle numeric comparison
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      return sortOrder === 'asc' ? (aValue as number) - (bValue as number) : (bValue as number) - (aValue as number);
     });
+
+  const netPosition = summaryStats.totalBtcBought - summaryStats.totalBtcSold;
+  const avgBuyPrice = summaryStats.totalBtcBought > 0 ? summaryStats.totalInvested / summaryStats.totalBtcBought : 0;
 
   if (loading) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-full">
-          <ThemedText variant="secondary">Loading transactions...</ThemedText>
+          <div className="text-center space-y-3">
+            <div className="size-8 border-2 border-btc-500 border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading transactions...</p>
+          </div>
         </div>
       </AppLayout>
     );
@@ -644,1123 +536,740 @@ export default function TransactionsPage() {
 
   return (
     <AppLayout>
-      <div className="p-4 md:p-6">
+      <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6 space-y-4 lg:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
-              <h1 className="text-xl md:text-2xl font-bold text-btc-text-primary">
-                Transaction History
-              </h1>
-              <div className="bg-btc-bg-tertiary px-2 py-1 rounded-md inline-block">
-                <ThemedText variant="secondary" size="sm">
-                  {totalItems > 0 ? (
-                    <>
-                      Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
-                      {filterType !== 'ALL' ? ` ${filterType.toLowerCase()}` : ''} 
-                      {' transaction'}
-                      {totalItems !== 1 ? 's' : ''}
-                    </>
-                  ) : (
-                    'No transactions'
-                  )}
-                </ThemedText>
-              </div>
-            </div>
-            <ThemedText variant="secondary" className="text-sm md:text-base">
-              Manage your Bitcoin transactions and track performance
-            </ThemedText>
+            <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              {totalItems.toLocaleString()} total transactions
+            </p>
           </div>
-          <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:space-x-3">
-            <ThemedButton
-              variant={bulkActionMode ? 'primary' : 'secondary'}
-              onClick={() => {
-                setBulkActionMode(!bulkActionMode);
-                setSelectedTransactions(new Set());
-              }}
-              className="text-xs sm:text-sm"
-            >
-              {bulkActionMode ? '✓ Bulk Mode' : '☑ Select'}
-            </ThemedButton>
-            <ThemedButton
-              variant="secondary"
-              onClick={() => setShowImportModal(true)}
-              className="text-btc-text-secondary hover:text-btc-text-primary text-xs sm:text-sm"
-            >
-              <span className="mr-1 sm:mr-2">⬆️</span> Import
-            </ThemedButton>
-            <ThemedButton
-              variant="secondary"
-              onClick={handleExport}
-              disabled={transactions.length === 0}
-              className="text-btc-text-secondary hover:text-btc-text-primary disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-            >
-              <span className="mr-1 sm:mr-2">⬇️</span> Export
-            </ThemedButton>
-            <ThemedButton
-              variant="primary"
-              onClick={handleAddTransaction}
-              className="bg-bitcoin hover:bg-bitcoin-dark text-xs sm:text-sm"
-            >
-              + Add
-            </ThemedButton>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+              <UploadIcon className="size-4 mr-2" />
+              Import
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExport} disabled={transactions.length === 0}>
+              <DownloadIcon className="size-4 mr-2" />
+              Export
+            </Button>
+            <Button size="sm" onClick={() => { setEditingTransaction(null); setShowAddModal(true); }}>
+              <PlusIcon className="size-4 mr-2" />
+              New Transaction
+            </Button>
           </div>
         </div>
 
-        {/* Bulk Actions Bar */}
-        {bulkActionMode && (
-          <ThemedCard className="mb-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={toggleSelectAll}
-                  className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium"
-                >
-                  {selectedTransactions.size === filteredAndSortedTransactions.length ? 'Deselect All' : 'Select All'}
-                </button>
-                <span className="text-xs text-btc-text-muted">
-                  {selectedTransactions.size} selected
-                </span>
+        {/* Stats Overview */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Holdings Card */}
+          <Card className="col-span-2 bg-gradient-to-br from-btc-500/10 to-btc-600/5 border-btc-500/20">
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Net Holdings</p>
+                  <p className="text-3xl font-bold text-btc-500 mt-1">{netPosition.toFixed(8)} BTC</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    ≈ {formatCurrency(netPosition * currentBtcPrice, summaryStats.mainCurrency)}
+                  </p>
+                </div>
+                <div className="p-3 bg-btc-500/10 rounded-xl">
+                  <WalletIcon className="size-6 text-btc-500" />
+                </div>
               </div>
-              
-              {selectedTransactions.size > 0 && (
-                <button
-                  onClick={handleBulkDelete}
-                  className="px-4 py-2 bg-loss hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors shadow-md"
-                >
-                  🗑️ Delete {selectedTransactions.size} Transaction{selectedTransactions.size > 1 ? 's' : ''}
-                </button>
-              )}
-            </div>
-          </ThemedCard>
-        )}
+              <div className="mt-4 pt-4 border-t border-btc-500/10 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Bought</p>
+                  <p className="text-sm font-semibold text-profit">{summaryStats.totalBtcBought.toFixed(6)} BTC</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Sold</p>
+                  <p className="text-sm font-semibold text-loss">{summaryStats.totalBtcSold.toFixed(6)} BTC</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Enhanced Quick Stats Summary */}
-        <ThemedCard className="mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {/* Total BTC Bought */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">BTC Bought</div>
-              <div className="text-lg font-bold text-profit">
-                {summaryStats.totalBtcBought.toFixed(6)} ₿
+          {/* Investment Card */}
+          <Card>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Invested</p>
+                  <p className="text-2xl font-bold mt-1">{formatCurrency(summaryStats.totalInvested, summaryStats.mainCurrency)}</p>
+                </div>
+                <div className="p-2.5 bg-muted rounded-lg">
+                  <CoinsIcon className="size-5 text-muted-foreground" />
+                </div>
               </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                {summaryStats.buyTransactionCount} txs
-            </div>
-            </div>
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground">Avg. Buy Price</p>
+                <p className="text-sm font-medium">{avgBuyPrice > 0 ? formatCurrency(avgBuyPrice, summaryStats.mainCurrency) : '—'}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Total BTC Sold */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">BTC Sold</div>
-              <div className="text-lg font-bold text-loss">
-                {summaryStats.totalBtcSold.toFixed(6)} ₿
+          {/* P&L Card */}
+          <Card className={summaryStats.totalPnL >= 0 ? 'bg-profit/5 border-profit/20' : 'bg-loss/5 border-loss/20'}>
+            <CardContent className="p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Unrealized P&L</p>
+                  <p className={cn("text-2xl font-bold mt-1", summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
+                    {summaryStats.totalPnL >= 0 ? '+' : ''}{formatCurrency(summaryStats.totalPnL, summaryStats.mainCurrency)}
+                  </p>
+                </div>
+                <div className={cn("p-2.5 rounded-lg", summaryStats.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10')}>
+                  {summaryStats.totalPnL >= 0 
+                    ? <TrendingUpIcon className="size-5 text-profit" />
+                    : <TrendingDownIcon className="size-5 text-loss" />
+                  }
+                </div>
               </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                {summaryStats.sellTransactionCount} txs
-            </div>
-            </div>
-
-            {/* Net Position */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">Net Position</div>
-              <div className="text-lg font-bold text-bitcoin">
-                {(summaryStats.totalBtcBought - summaryStats.totalBtcSold).toFixed(6)} ₿
+              <div className="mt-3">
+                <p className="text-xs text-muted-foreground">Return</p>
+                <p className={cn("text-sm font-medium", summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
+                  {summaryStats.totalInvested > 0 
+                    ? formatPercentage((summaryStats.totalPnL / summaryStats.totalInvested) * 100)
+                    : '—'}
+                </p>
               </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                {dateRange !== 'all' ? 'Period holdings' : 'Current holdings'}
-              </div>
-            </div>
-
-            {/* Total Invested */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">Total Invested</div>
-              <div className="text-lg font-bold text-btc-text-primary">
-                {formatCurrency(summaryStats.totalInvested, summaryStats.mainCurrency)}
-              </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                Buy volume
-              </div>
-            </div>
-
-            {/* Average Buy Price */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">Avg Buy Price</div>
-              <div className="text-lg font-bold text-btc-text-primary">
-                {summaryStats.totalBtcBought > 0 
-                  ? formatCurrency(summaryStats.totalInvested / summaryStats.totalBtcBought, summaryStats.mainCurrency)
-                  : '--'
-                }
-              </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                Per BTC
-              </div>
-            </div>
-
-            {/* Total P&L */}
-            <div className="text-center">
-              <div className="text-xs text-btc-text-muted mb-1">Total P&L</div>
-              <div className={`text-lg font-bold ${
-                summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss'
-              }`}>
-                {(summaryStats.totalPnL >= 0 ? '+' : '') + formatCurrency(summaryStats.totalPnL, summaryStats.mainCurrency)}
-              </div>
-              <div className="text-xs text-btc-text-secondary mt-1">
-                Unrealized
-              </div>
-            </div>
-            </div>
-          </ThemedCard>
-
-        {/* Tag Filter */}
-        {getAllTags().length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center flex-wrap gap-2">
-              <span className="text-xs text-btc-text-muted">Filter by tags:</span>
-              {getAllTags().map(tag => (
-                <button
-                  key={tag}
-                  onClick={() => {
-                    if (selectedTags.includes(tag)) {
-                      setSelectedTags(selectedTags.filter(t => t !== tag));
-                    } else {
-                      setSelectedTags([...selectedTags, tag]);
-                    }
-                  }}
-                  className={`px-2 py-1 rounded-full text-xs font-medium transition-all ${
-                    selectedTags.includes(tag)
-                      ? 'bg-bitcoin text-white shadow-md'
-                      : 'bg-btc-bg-tertiary text-btc-text-secondary hover:bg-btc-border-primary'
-                  }`}
-                >
-                  {tag} {selectedTags.includes(tag) && '✓'}
-                </button>
-              ))}
-              {selectedTags.length > 0 && (
-                <button
-                  onClick={() => setSelectedTags([])}
-                  className="px-2 py-1 text-xs text-loss hover:underline"
-                >
-                  Clear
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search transactions (notes, amount, currency, date, tags...)"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary placeholder-btc-text-muted focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-btc-text-secondary hover:text-btc-text-primary"
-              >
-                ✕
-              </button>
-            )}
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Filters and Controls */}
-        <ThemedCard className="mb-6">
-          <div className="space-y-4">
-            {/* Row 1: Type Filter & Date Range */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Type Filter */}
-            <div className="flex items-center space-x-2">
-                <ThemedText variant="secondary" size="sm">Type:</ThemedText>
-              <div className="flex space-x-1">
-                {(['ALL', 'BUY', 'SELL'] as const).map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setFilterType(type)}
-                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 relative ${
-                      filterType === type
-                        ? 'bg-bitcoin text-white shadow-md transform scale-105'
-                        : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary hover:bg-btc-border-primary'
-                    }`}
+        {/* Filters & Search */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+              {/* Search */}
+              <div className="relative flex-1 max-w-md">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by amount, notes, date..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-muted/50"
+                />
+                {searchQuery && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
+                    onClick={() => setSearchQuery('')}
                   >
-                    {type}
-                    {filterType === type && type !== 'ALL' && (
-                      <span className="ml-1 text-xs opacity-75">
-                        ({transactions.filter(t => t.type === type).length})
-                      </span>
-                    )}
-                  </button>
-                ))}
+                    <XIcon className="size-3" />
+                  </Button>
+                )}
               </div>
-            </div>
 
-              {/* Date Range Filter */}
-              <div className="flex items-center space-x-2 flex-wrap">
-                <ThemedText variant="secondary" size="sm">Period:</ThemedText>
-                <div className="flex space-x-1">
-                  {[
-                    { value: 'all', label: 'All' },
-                    { value: '7d', label: '7D' },
-                    { value: '30d', label: '30D' },
-                    { value: '3m', label: '3M' },
-                    { value: '1y', label: '1Y' },
-                    { value: 'custom', label: 'Custom' },
-                  ].map((range) => (
+              {/* Quick Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center rounded-lg border bg-muted/30 p-1">
+                  {(['ALL', 'BUY', 'SELL', 'TRANSFER'] as const).map((type) => (
                     <button
-                      key={range.value}
-                      onClick={() => setDateRange(range.value as any)}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-200 ${
-                        dateRange === range.value
-                          ? 'bg-bitcoin text-white shadow-md'
-                          : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary hover:bg-btc-border-primary'
-                      }`}
+                      key={type}
+                      onClick={() => setFilterType(type)}
+                      className={cn(
+                        "px-3 py-1.5 text-xs font-medium rounded-md transition-all",
+                        filterType === type 
+                          ? "bg-background shadow-sm text-foreground" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
                     >
-                      {range.label}
+                      {type === 'ALL' ? 'All' : type.charAt(0) + type.slice(1).toLowerCase()}
                     </button>
                   ))}
                 </div>
+
+                <Select value={dateRange} onValueChange={(v) => setDateRange(v as typeof dateRange)}>
+                  <SelectTrigger className="w-[130px] bg-muted/30">
+                    <CalendarIcon className="size-4 mr-2 text-muted-foreground" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Time</SelectItem>
+                    <SelectItem value="7d">Last 7 Days</SelectItem>
+                    <SelectItem value="30d">Last 30 Days</SelectItem>
+                    <SelectItem value="3m">Last 3 Months</SelectItem>
+                    <SelectItem value="1y">Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={cn(showFilters && "bg-muted")}
+                >
+                  <FilterIcon className="size-4 mr-2" />
+                  Filters
+                  {(selectedTags.length > 0 || dateRange === 'custom') && (
+                    <Badge variant="secondary" className="ml-2 size-5 p-0 justify-center">
+                      {selectedTags.length + (dateRange === 'custom' ? 1 : 0)}
+                    </Badge>
+                  )}
+                </Button>
+
+                <Button
+                  variant={bulkActionMode ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setBulkActionMode(!bulkActionMode);
+                    setSelectedTransactions(new Set());
+                  }}
+                >
+                  <ListChecksIcon className="size-4 mr-2" />
+                  {bulkActionMode ? 'Done' : 'Select'}
+                </Button>
               </div>
             </div>
 
-            {/* Row 2: Custom Date Range (if selected) */}
-            {dateRange === 'custom' && (
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-2 border-t border-btc-border-primary">
-                <ThemedText variant="secondary" size="sm">From:</ThemedText>
-                <input
-                  type="date"
-                  value={customDateFrom}
-                  onChange={(e) => setCustomDateFrom(e.target.value)}
-                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin"
-                />
-                <ThemedText variant="secondary" size="sm">To:</ThemedText>
-                <input
-                  type="date"
-                  value={customDateTo}
-                  onChange={(e) => setCustomDateTo(e.target.value)}
-                  className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin"
-                />
+            {/* Extended Filters */}
+            {showFilters && (
+              <div className="mt-4 pt-4 border-t space-y-4">
+                {/* Custom Date Range */}
+                {dateRange === 'custom' && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-muted-foreground">From</Label>
+                      <Input
+                        type="date"
+                        value={customDateFrom}
+                        onChange={(e) => setCustomDateFrom(e.target.value)}
+                        className="w-40"
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-muted-foreground">To</Label>
+                      <Input
+                        type="date"
+                        value={customDateTo}
+                        onChange={(e) => setCustomDateTo(e.target.value)}
+                        className="w-40"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Tags */}
+                {getAllTags().length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-muted-foreground">Tags:</span>
+                    {getAllTags().map(tag => (
+                      <Badge
+                        key={tag}
+                        variant={selectedTags.includes(tag) ? 'default' : 'outline'}
+                        className="cursor-pointer"
+                        onClick={() => {
+                          if (selectedTags.includes(tag)) {
+                            setSelectedTags(selectedTags.filter(t => t !== tag));
+                          } else {
+                            setSelectedTags([...selectedTags, tag]);
+                          }
+                        }}
+                      >
+                        {tag}
+                        {selectedTags.includes(tag) && <CheckIcon className="size-3 ml-1" />}
+                      </Badge>
+                    ))}
+                    {selectedTags.length > 0 && (
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedTags([])}>
+                        Clear all
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {/* Sort */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">Sort by</Label>
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Date</SelectItem>
+                        <SelectItem value="type">Type</SelectItem>
+                        <SelectItem value="amount">Amount</SelectItem>
+                        <SelectItem value="price">Price</SelectItem>
+                        <SelectItem value="pnl">P&L</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                  >
+                    {sortOrder === 'asc' ? <ArrowUpIcon className="size-4 mr-1" /> : <ArrowDownIcon className="size-4 mr-1" />}
+                    {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                  </Button>
+                </div>
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {/* Row 3: Sort Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-2 border-t border-btc-border-primary">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <ThemedText variant="secondary" size="sm">Sort by:</ThemedText>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as any)}
-                    className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-                  >
-                    <option value="date">Date</option>
-                    <option value="type">Type</option>
-                    <option value="amount">Amount</option>
-                    <option value="price">Price</option>
-                    <option value="pnl">P&L</option>
-                  </select>
-                </div>
-
-                <button
-                  onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-                  className={`px-3 py-1 rounded text-xs transition-all duration-200 flex items-center space-x-1 ${
-                    sortOrder === 'desc' 
-                      ? 'bg-bitcoin text-white shadow-md' 
-                      : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary border border-btc-border-primary'
-                  }`}
-                >
-                  <span>{sortOrder === 'asc' ? '↑ Ascending' : '↓ Descending'}</span>
-                </button>
-              </div>
-              
-
+        {/* Bulk Actions Bar */}
+        {bulkActionMode && selectedTransactions.size > 0 && (
+          <div className="flex items-center justify-between bg-muted/50 border rounded-lg px-4 py-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
+                {selectedTransactions.size === filteredAndSortedTransactions.length ? 'Deselect all' : 'Select all'}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {selectedTransactions.size} of {filteredAndSortedTransactions.length} selected
+              </span>
             </div>
-          </div>
-        </ThemedCard>
-
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Items per page selector */}
-            <div className="flex items-center space-x-2">
-              <ThemedText variant="secondary" size="sm">Show:</ThemedText>
-              <select
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(parseInt(e.target.value));
-                  setCurrentPage(1); // Reset to first page
-                }}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-              >
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-                <option value="200">200</option>
-              </select>
-              <ThemedText variant="secondary" size="sm">per page</ThemedText>
-            </div>
-
-            {/* Page navigation */}
-            <div className="flex items-center space-x-2">
-              {/* First page */}
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="First page"
-              >
-                ««
-              </button>
-
-              {/* Previous page */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Previous page"
-              >
-                ‹
-              </button>
-
-              {/* Page numbers */}
-              <div className="flex items-center space-x-1">
-                {(() => {
-                  const pages = [];
-                  const maxVisible = 5;
-                  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-                  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-                  
-                  if (endPage - startPage < maxVisible - 1) {
-                    startPage = Math.max(1, endPage - maxVisible + 1);
-                  }
-
-                  if (startPage > 1) {
-                    pages.push(
-                      <span key="start-ellipsis" className="px-2 text-btc-text-muted">...</span>
-                    );
-                  }
-
-                  for (let i = startPage; i <= endPage; i++) {
-                    pages.push(
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(i)}
-                        className={`px-3 py-1 rounded text-xs transition-all ${
-                          currentPage === i
-                            ? 'bg-bitcoin text-white font-semibold shadow-md'
-                            : 'bg-btc-bg-tertiary text-btc-text-primary hover:bg-btc-border-primary border border-btc-border-primary'
-                        }`}
-                      >
-                        {i}
-                      </button>
-                    );
-                  }
-
-                  if (endPage < totalPages) {
-                    pages.push(
-                      <span key="end-ellipsis" className="px-2 text-btc-text-muted">...</span>
-                    );
-                  }
-
-                  return pages;
-                })()}
-              </div>
-
-              {/* Next page */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Next page"
-              >
-                ›
-              </button>
-
-              {/* Last page */}
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Last page"
-              >
-                »»
-              </button>
-            </div>
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              <TrashIcon className="size-4 mr-2" />
+              Delete selected
+            </Button>
           </div>
         )}
 
-        {/* Transactions Table */}
-        <ThemedCard padding={false}>
-          <div className="overflow-x-auto">
-            {/* Table Header - Desktop Only */}
-            <div className="hidden lg:block bg-btc-bg-tertiary px-6 py-3 border-b border-btc-border-primary">
-              <div className={`grid gap-4 text-xs font-medium text-btc-text-secondary uppercase tracking-wider ${bulkActionMode ? 'grid-cols-11' : 'grid-cols-10'}`}>
-                {/* Bulk Select Checkbox */}
-                {bulkActionMode && (
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedTransactions.size === filteredAndSortedTransactions.length && filteredAndSortedTransactions.length > 0}
-                      onChange={toggleSelectAll}
-                      className="rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
-                    />
-                  </div>
-                )}
-                <button
-                  onClick={() => {
-                    if (sortBy === 'date') {
-                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('date');
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
-                >
-                  <span>Date</span>
-                  {sortBy === 'date' && (
-                    <span className="text-bitcoin">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    if (sortBy === 'type') {
-                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('type');
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
-                >
-                  <span>Type</span>
-                  {sortBy === 'type' && (
-                    <span className="text-bitcoin">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    if (sortBy === 'amount') {
-                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('amount');
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
-                >
-                  <span>Amount (BTC)</span>
-                  {sortBy === 'amount' && (
-                    <span className="text-bitcoin">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => {
-                    if (sortBy === 'price') {
-                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('price');
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
-                >
-                  <span>Original Price</span>
-                  {sortBy === 'price' && (
-                    <span className="text-bitcoin">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-                <div>Total (Main)</div>
-                <div>Total (Display)</div>
-                <div>Fees</div>
-                <div>Current Value</div>
-                <button
-                  onClick={() => {
-                    if (sortBy === 'pnl') {
-                      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                    } else {
-                      setSortBy('pnl');
-                      setSortOrder('desc');
-                    }
-                  }}
-                  className="text-left hover:text-btc-text-primary transition-colors flex items-center space-x-1"
-                >
-                  <span>P&L</span>
-                  {sortBy === 'pnl' && (
-                    <span className="text-bitcoin">
-                      {sortOrder === 'asc' ? '↑' : '↓'}
-                    </span>
-                  )}
-                </button>
-                <div>Actions</div>
+        {/* Transactions List */}
+        <Card>
+          <CardContent className="p-0">
+            {/* Table Header */}
+            <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-muted/30 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {bulkActionMode && <div className="col-span-1" />}
+              <div className={cn("cursor-pointer hover:text-foreground transition-colors flex items-center gap-1", bulkActionMode ? "col-span-2" : "col-span-2")} onClick={() => handleSort('date')}>
+                Date {sortBy === 'date' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
               </div>
+              <div className="col-span-1 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('type')}>
+                Type {sortBy === 'type' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+              </div>
+              <div className={cn("cursor-pointer hover:text-foreground transition-colors flex items-center gap-1", bulkActionMode ? "col-span-2" : "col-span-2")} onClick={() => handleSort('amount')}>
+                Amount {sortBy === 'amount' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+              </div>
+              <div className="col-span-2 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('price')}>
+                Price {sortBy === 'price' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+              </div>
+              <div className="col-span-2">Value</div>
+              <div className="col-span-2 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('pnl')}>
+                P&L {sortBy === 'pnl' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+              </div>
+              <div className="col-span-1 text-right">Actions</div>
             </div>
 
-            {/* Table Body */}
-            <div className="divide-y divide-btc-border-secondary">
-              {filteredAndSortedTransactions.length === 0 ? (
-                <div className="px-6 py-12 text-center">
-                  <div className="text-4xl mb-4">₿</div>
-                  <h3 className="text-lg font-medium text-btc-text-secondary mb-2">
-                    No transactions found
-                  </h3>
-                  <ThemedText variant="muted">
-                    {filterType !== 'ALL' 
-                      ? `No ${filterType.toLowerCase()} transactions to display.`
-                      : 'Start by adding your first Bitcoin transaction.'
-                    }
-                  </ThemedText>
+            {/* Empty State */}
+            {filteredAndSortedTransactions.length === 0 ? (
+              <div className="py-16 text-center">
+                <div className="inline-flex items-center justify-center size-16 rounded-full bg-muted mb-4">
+                  <BarChart3Icon className="size-8 text-muted-foreground" />
                 </div>
-              ) : (
-                filteredAndSortedTransactions.map((transaction) => {
-                  const currentValue = transaction.btc_amount * currentBtcPrice;
+                <h3 className="text-lg font-medium mb-1">No transactions found</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {filterType !== 'ALL' || searchQuery 
+                    ? 'Try adjusting your filters or search query'
+                    : 'Get started by adding your first Bitcoin transaction'
+                  }
+                </p>
+                {filterType === 'ALL' && !searchQuery && (
+                  <Button onClick={() => { setEditingTransaction(null); setShowAddModal(true); }}>
+                    <PlusIcon className="size-4 mr-2" />
+                    Add Transaction
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y">
+                {filteredAndSortedTransactions.map((transaction) => {
                   const pnl = calculatePnL(transaction);
                   const pnlPercent = calculatePnLPercent(transaction);
+                  const isSelected = selectedTransactions.has(transaction.id);
+                  const currentValue = transaction.current_value_main || (transaction.btc_amount * currentBtcPrice);
 
                   return (
-                    <div key={transaction.id}>
+                    <div 
+                      key={transaction.id} 
+                      className={cn(
+                        "group px-6 py-4 transition-colors hover:bg-muted/30",
+                        isSelected && "bg-primary/5"
+                      )}
+                    >
                       {/* Desktop View */}
-                      <div className="hidden lg:block px-6 py-4 hover:bg-btc-bg-tertiary transition-colors">
-                        <div className={`grid gap-4 items-center ${bulkActionMode ? 'grid-cols-11' : 'grid-cols-10'}`}>
-                        {/* Bulk Select Checkbox */}
+                      <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
                         {bulkActionMode && (
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedTransactions.has(transaction.id)}
-                              onChange={() => toggleTransactionSelection(transaction.id)}
-                              className="rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
-                              onClick={(e) => e.stopPropagation()}
-                            />
+                          <div className="col-span-1">
+                            <button
+                              onClick={() => toggleTransactionSelection(transaction.id)}
+                              className={cn(
+                                "size-5 rounded border-2 flex items-center justify-center transition-colors",
+                                isSelected 
+                                  ? "bg-primary border-primary text-primary-foreground" 
+                                  : "border-muted-foreground/30 hover:border-primary"
+                              )}
+                            >
+                              {isSelected && <CheckIcon className="size-3" />}
+                            </button>
                           </div>
                         )}
-                        {/* Date */}
-                        <div className="text-sm">
-                          <div className="text-btc-text-primary font-medium">
-                            {new Date(transaction.transaction_date).toLocaleDateString()}
-                          </div>
-                          <div className="text-btc-text-muted text-xs">
-                            {new Date(transaction.created_at).toLocaleTimeString()}
-                          </div>
+                        <div className={cn(bulkActionMode ? "col-span-2" : "col-span-2")}>
+                          <p className="font-medium">{new Date(transaction.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                          <p className="text-xs text-muted-foreground">{new Date(transaction.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
                         </div>
-
-                        {/* Type */}
-                        <div>
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            transaction.type === 'BUY' 
-                              ? 'bg-profit text-white' 
-                              : transaction.type === 'SELL'
-                              ? 'bg-loss text-white'
-                              : 'bg-blue-500 text-white'
-                          }`}>
-                            {transaction.type}
-                          </span>
-                          {transaction.type === 'TRANSFER' && transaction.transfer_type && (
-                            <div className="text-xs text-btc-text-muted mt-1">
-                              {transaction.transfer_type.replace(/_/g, ' ')}
-                            </div>
-                          )}
+                        <div className="col-span-1">
+                          <Badge 
+                            variant="outline"
+                            className={cn(
+                              "font-semibold",
+                              transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
+                              transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
+                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
+                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
+                              transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                            )}
+                          >
+                            {transaction.type === 'TRANSFER' 
+                              ? transaction.transfer_type === 'TRANSFER_IN' 
+                                ? 'TRANSFER IN' 
+                                : transaction.transfer_type === 'TRANSFER_OUT' 
+                                  ? 'TRANSFER OUT' 
+                                  : 'TRANSFER'
+                              : transaction.type}
+                          </Badge>
                         </div>
-
-                        {/* BTC Amount */}
-                        <div className="text-sm">
-                          <div className="text-btc-text-primary font-medium">
-                            {transaction.btc_amount.toFixed(8)} ₿
-                          </div>
-                          <div className="text-btc-text-muted text-xs">
-                            {(transaction.btc_amount * 100000000).toLocaleString()} sats
-                          </div>
+                        <div className={cn(bulkActionMode ? "col-span-2" : "col-span-2")}>
+                          <p className="font-mono font-medium">{transaction.btc_amount.toFixed(8)}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{(transaction.btc_amount * 100000000).toLocaleString()} sats</p>
                         </div>
-
-                        {/* Original Price */}
-                        <div className="text-sm">
-                          {transaction.type === 'TRANSFER' ? (
-                            <div className="text-btc-text-muted text-xs">
-                              N/A (Transfer)
-                            </div>
-                          ) : (
-                            <>
-                              <div className="text-btc-text-primary font-medium">
-                                {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
-                              </div>
-                              {transaction.original_currency !== (transaction.main_currency || 'USD') && (
-                                <div className="text-btc-text-muted text-xs opacity-70">
-                                  {formatCurrency(transaction.main_currency_price_per_btc || transaction.usd_price_per_btc, transaction.main_currency || 'USD')}
-                                </div>
-                              )}
-                            </>
-                          )}
-                        </div>
-
-                        {/* Total (Main) */}
-                        <div className="text-sm">
-                          <div className="text-btc-text-primary font-semibold">
-                            {formatCurrency(transaction.main_currency_total_amount || transaction.usd_total_amount, transaction.main_currency || 'USD')}
-                          </div>
-                          {transaction.original_currency !== (transaction.main_currency || 'USD') && (
-                            <div className="text-btc-text-muted text-xs opacity-70 font-normal">
-                              {formatCurrency(transaction.original_total_amount, transaction.original_currency)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Total (Display) */}
-                        <div className="text-sm">
-                          {transaction.secondary_currency && (
-                            <div className="text-btc-text-secondary text-sm opacity-80">
-                              {formatCurrency(transaction.secondary_currency_total_amount || 0, transaction.secondary_currency)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Fees */}
-                        <div className="text-sm text-btc-text-primary font-medium">
-                          {transaction.fees_currency === 'BTC' 
-                            ? `${transaction.fees.toFixed(8)} BTC`
-                            : formatCurrency(transaction.fees, transaction.fees_currency)
-                          }
-                        </div>
-
-                        {/* Current Value */}
-                        <div className="text-sm">
-                          {transaction.type === 'BUY' ? (
-                            <>
-                              <div className="text-btc-text-primary font-semibold">
-                                {formatCurrency(transaction.current_value_main || (transaction.btc_amount * currentBtcPrice), transaction.main_currency || 'USD')}
-                              </div>
-                              {transaction.secondary_currency && (
-                                <div className="text-btc-text-muted text-xs opacity-70 font-normal">
-                                  {formatCurrency(transaction.secondary_currency_current_value || 0, transaction.secondary_currency)}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <div className="text-btc-text-muted">-</div>
-                          )}
-                        </div>
-
-                        {/* P&L */}
-                        <div className="text-sm">
-                          {transaction.type === 'TRANSFER' ? (
-                            <div className="text-btc-text-muted text-xs">
-                              N/A
-                            </div>
-                          ) : (() => {
-                            const mainPnL = transaction.pnl_main || pnl;
-                            const secondaryPnL = transaction.secondary_currency_pnl || 0;
-                            const pnlColor = mainPnL >= 0 ? 'text-profit' : 'text-loss';
-                            
-                            return (
+                        <div className="col-span-2">
+                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                            // External transfers show reference price
+                            transaction.original_price_per_btc > 0 ? (
                               <>
-                                <div className={`font-bold text-base ${pnlColor}`}>
-                                  {mainPnL >= 0 ? '+' : ''}{formatCurrency(mainPnL, transaction.main_currency || 'USD')}
-                                </div>
-                                {transaction.secondary_currency && (
-                                  <div className={`text-xs opacity-70 font-normal ${pnlColor}`}>
-                                    {secondaryPnL >= 0 ? '+' : ''}{formatCurrency(secondaryPnL, transaction.secondary_currency)}
-                                  </div>
-                                )}
-                                <div className={`text-xs font-semibold ${pnlColor}`}>
-                                  {formatPercentage(pnlPercent)}
-                                </div>
+                                <p className="font-medium text-muted-foreground">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
+                                <p className="text-xs text-muted-foreground/70">ref. price</p>
                               </>
-                            );
-                          })()}
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )
+                          ) : transaction.type === 'TRANSFER' ? (
+                            // Internal transfers have no price
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            // BUY/SELL show actual price
+                            <>
+                              <p className="font-medium">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
+                              {transaction.original_currency !== transaction.main_currency && (
+                                <p className="text-xs text-muted-foreground">{formatCurrency(transaction.main_currency_price_per_btc, transaction.main_currency)}</p>
+                              )}
+                            </>
+                          )}
                         </div>
-
-                        {/* Actions */}
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleEditTransaction(transaction)}
-                            className="px-3 py-1.5 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin hover:text-bitcoin-dark text-xs font-medium rounded-md border border-bitcoin/20 hover:border-bitcoin/40 transition-all duration-200"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(transaction.id)}
-                            className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium rounded-md border border-red-500/20 hover:border-red-500/40 transition-all duration-200"
-                          >
-                            Delete
-                          </button>
+                        <div className="col-span-2">
+                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                            // External transfers: show value at transfer time + current value
+                            <>
+                              <p className="font-semibold">
+                                {transaction.original_price_per_btc > 0 
+                                  ? formatCurrency(transaction.btc_amount * transaction.original_price_per_btc, transaction.original_currency)
+                                  : formatCurrency(currentValue, transaction.main_currency)
+                                }
+                              </p>
+                              {transaction.original_price_per_btc > 0 && (
+                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                              )}
+                            </>
+                          ) : transaction.type === 'TRANSFER' ? (
+                            // Internal transfers: no value to show
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            // BUY/SELL: show original transaction value
+                            <>
+                              <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                              {transaction.type === 'BUY' && (
+                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <div className="col-span-2">
+                          {transaction.type === 'TRANSFER' ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            <div>
+                              <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
+                              </p>
+                              <p className={cn("text-xs font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                {formatPercentage(pnlPercent)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="col-span-1 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="size-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreVerticalIcon className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEditTransaction(transaction)}>
+                                <PencilIcon className="size-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteTransaction(transaction.id)}>
+                                <TrashIcon className="size-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
 
-                        {/* Notes */}
-                        {transaction.notes && (
-                          <div className="mt-2 text-xs text-btc-text-muted">
-                            Note: {transaction.notes}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Mobile View - Card Layout */}
-                      <div className="lg:hidden px-4 py-4 border-b border-btc-border-secondary hover:bg-btc-bg-tertiary transition-colors">
-                        <div className="space-y-3">
-                          {/* Header Row */}
-                          <div className="flex justify-between items-start">
-                            {/* Checkbox for bulk mode */}
+                      {/* Mobile View */}
+                      <div className="lg:hidden space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
                             {bulkActionMode && (
-                              <input
-                                type="checkbox"
-                                checked={selectedTransactions.has(transaction.id)}
-                                onChange={() => toggleTransactionSelection(transaction.id)}
-                                className="mt-1 mr-2 rounded border-btc-border-primary text-bitcoin focus:ring-bitcoin cursor-pointer"
-                                onClick={(e) => e.stopPropagation()}
-                              />
+                              <button
+                                onClick={() => toggleTransactionSelection(transaction.id)}
+                                className={cn(
+                                  "size-5 rounded border-2 flex items-center justify-center transition-colors",
+                                  isSelected 
+                                    ? "bg-primary border-primary text-primary-foreground" 
+                                    : "border-muted-foreground/30 hover:border-primary"
+                                )}
+                              >
+                                {isSelected && <CheckIcon className="size-3" />}
+                              </button>
                             )}
                             <div>
-                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                                transaction.type === 'BUY' 
-                                  ? 'bg-profit text-white' 
-                                  : 'bg-loss text-white'
-                              }`}>
-                                {transaction.type}
-                              </span>
-                              <div className="text-xs text-btc-text-muted mt-1">
-                                {new Date(transaction.transaction_date).toLocaleDateString()}
-                              </div>
+                              <Badge 
+                                variant="outline"
+                                className={cn(
+                                  "font-semibold mb-1",
+                                  transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
+                                  transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
+                                  transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                                )}
+                              >
+                                {transaction.type === 'TRANSFER' 
+                                  ? transaction.transfer_type === 'TRANSFER_IN' 
+                                    ? 'TRANSFER IN' 
+                                    : transaction.transfer_type === 'TRANSFER_OUT' 
+                                      ? 'TRANSFER OUT' 
+                                      : 'TRANSFER'
+                                  : transaction.type}
+                              </Badge>
+                              <p className="text-sm text-muted-foreground">{new Date(transaction.transaction_date).toLocaleDateString()}</p>
                             </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-mono font-semibold">{transaction.btc_amount.toFixed(6)} BTC</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                          </div>
+                        </div>
+                        {(transaction.type === 'BUY' || transaction.type === 'SELL') && (
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <p className="text-sm text-muted-foreground">P&L</p>
                             <div className="text-right">
-                              <div className="font-mono text-sm font-medium text-btc-text-primary">
-                                {transaction.btc_amount.toFixed(6)} ₿
-                              </div>
-                              <div className="text-xs text-btc-text-muted">
-                                @ {formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}
-                              </div>
+                              <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
+                              </p>
+                              <p className={cn("text-xs", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                {formatPercentage(pnlPercent)}
+                              </p>
                             </div>
                           </div>
-                          
-                          {/* Values Row */}
-                          <div className="flex justify-between items-center pt-2 border-t border-btc-border-secondary">
-                            <div>
-                              <div className="text-xs text-btc-text-muted">Total</div>
-                              <div className="text-sm font-medium text-btc-text-primary">
-                                {formatCurrency(transaction.main_currency_total_amount || transaction.original_total_amount, transaction.main_currency || transaction.original_currency)}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-xs text-btc-text-muted">P&L</div>
-                              {transaction.type === 'TRANSFER' ? (
-                                <div className="text-sm text-btc-text-muted">
-                                  N/A
-                                </div>
-                              ) : (
-                                <>
-                                  <div className={`text-sm font-bold ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency || 'USD')}
-                                  </div>
-                                  <div className={`text-xs ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    {formatPercentage(pnlPercent)}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Actions Row */}
-                          <div className="flex justify-end space-x-2 pt-2">
-                            <button
-                              onClick={() => handleEditTransaction(transaction)}
-                              className="px-3 py-1.5 bg-bitcoin/10 hover:bg-bitcoin/20 text-bitcoin hover:text-bitcoin-dark text-xs font-medium rounded-md border border-bitcoin/20 hover:border-bitcoin/40 transition-all duration-200"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTransaction(transaction.id)}
-                              className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 text-xs font-medium rounded-md border border-red-500/20 hover:border-red-500/40 transition-all duration-200"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                          
-                          {/* Notes */}
-                          {transaction.notes && (
-                            <div className="text-xs text-btc-text-muted pt-2 border-t border-btc-border-secondary">
-                              Note: {transaction.notes}
-                            </div>
-                          )}
+                        )}
+                        <div className="flex justify-end gap-2 pt-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditTransaction(transaction)}>
+                            <PencilIcon className="size-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteTransaction(transaction.id)}>
+                            <TrashIcon className="size-4 mr-1" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
-          </div>
-        </ThemedCard>
+                })}
+              </div>
+            )}
 
-        {/* Bottom Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            {/* Page info */}
-            <ThemedText variant="secondary" size="sm">
-              Page {currentPage} of {totalPages}
-            </ThemedText>
-
-            {/* Page navigation */}
-            <div className="flex items-center space-x-2">
-              {/* First page */}
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="First page"
-              >
-                ««
-              </button>
-
-              {/* Previous page */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Previous page"
-              >
-                ‹ Previous
-              </button>
-
-              {/* Next page */}
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Next page"
-              >
-                Next ›
-              </button>
-
-              {/* Last page */}
-              <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 bg-btc-bg-tertiary border border-btc-border-primary rounded text-btc-text-primary text-xs hover:bg-btc-border-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                title="Last page"
-              >
-                »»
-              </button>
-            </div>
-          </div>
-        )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Rows per page</span>
+                  <Select value={itemsPerPage.toString()} onValueChange={(v) => { setItemsPerPage(parseInt(v)); setCurrentPage(1); }}>
+                    <SelectTrigger className="w-[70px] h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="25">25</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground mr-2">
+                    {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+                  </span>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>
+                    <ChevronsLeftIcon className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                    <ChevronLeftIcon className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                    <ChevronRightIcon className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="size-8" onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>
+                    <ChevronsRightIcon className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Add/Edit Transaction Modal */}
         <AddTransactionModal
           isOpen={showAddModal}
-          onClose={() => {
-            setShowAddModal(false);
-            setEditingTransaction(null);
-          }}
-          onSuccess={() => {
-            setShowAddModal(false);
-            setEditingTransaction(null);
-            loadTransactions();
-          }}
+          onClose={() => { setShowAddModal(false); setEditingTransaction(null); }}
+          onSuccess={() => { setShowAddModal(false); setEditingTransaction(null); loadTransactions(); }}
           editingTransaction={editingTransaction}
         />
 
         {/* Import Modal */}
-        {showImportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto py-8">
-            <div className="bg-white dark:bg-gray-900 rounded-lg p-6 w-full max-w-2xl mx-4 my-auto">
-              <h3 className="text-lg font-semibold text-btc-text-primary mb-4">
-                Import Transactions
-              </h3>
+        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+          <DialogContent className="max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Import Transactions</DialogTitle>
+              <DialogDescription>
+                Upload a CSV or JSON file with your Bitcoin transactions
+              </DialogDescription>
+            </DialogHeader>
 
-              <div className="space-y-4">
-                {/* Drag and Drop Area */}
-                <div
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                    dragActive
-                      ? 'border-bitcoin bg-bitcoin/10'
-                      : 'border-btc-border-primary hover:border-bitcoin/50'
-                  }`}
-                >
-                  {importFile ? (
-                    <div className="space-y-3 text-center">
-                      <DocumentIcon className="h-12 w-12 text-btc-500 mx-auto" />
-                      <div className="text-btc-text-primary font-medium">
-                        {importFile.name}
+            <div className="space-y-4">
+              {/* Drag and Drop Area */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-8 text-center transition-all",
+                  dragActive ? 'border-btc-500 bg-btc-500/5' : 'border-muted hover:border-muted-foreground/50'
+                )}
+              >
+                {importFile ? (
+                  <div className="space-y-3">
+                    <div className="inline-flex items-center justify-center size-12 rounded-full bg-btc-500/10">
+                      <FileIcon className="size-6 text-btc-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{importFile.name}</p>
+                      <p className="text-sm text-muted-foreground">{(importFile.size / 1024).toFixed(2)} KB</p>
+                    </div>
+                    {formatDetecting && (
+                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <div className="size-4 border-2 border-btc-500 border-t-transparent rounded-full animate-spin" />
+                        Detecting format...
                       </div>
-                      <div className="text-btc-text-secondary text-sm">
-                        {(importFile.size / 1024).toFixed(2)} KB
-                      </div>
-                      {/* Format Detection */}
-                      {formatDetecting && (
-                        <div className="text-btc-text-secondary text-sm flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-btc-500 mr-2"></div>
-                          Detecting format...
-                        </div>
-                      )}
-                      {detectedFormat && !formatDetecting && (
-                        <div className="text-profit text-sm font-medium">
-                          ✓ Detected: {detectedFormat}
-                        </div>
-                      )}
-                      <button
-                        onClick={() => {
-                          setImportFile(null);
-                          setDetectedFormat(null);
+                    )}
+                    {detectedFormat && !formatDetecting && (
+                      <Badge className="bg-profit/10 text-profit border-profit/30">
+                        <CheckIcon className="size-3 mr-1" />
+                        {detectedFormat}
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => { setImportFile(null); setDetectedFormat(null); }}>
+                      Remove file
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="inline-flex items-center justify-center size-12 rounded-full bg-muted">
+                      <InboxIcon className="size-6 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Drop your file here</p>
+                      <p className="text-sm text-muted-foreground">or click to browse</p>
+                    </div>
+                    <Label className="cursor-pointer">
+                      <Input
+                        type="file"
+                        accept=".csv,.json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setImportFile(file);
+                            if (file.name.endsWith('.csv')) detectFileFormat(file);
+                          }
                         }}
-                        className="text-red-400 hover:text-red-300 text-sm underline"
-                      >
-                        Remove file
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 text-center">
-                      <InboxIcon className="h-12 w-12 text-btc-text-muted mx-auto" />
-                      <div className="text-btc-text-primary font-medium">
-                        Drag and drop your file here
-                      </div>
-                      <div className="text-btc-text-secondary text-sm">
-                        or
-                      </div>
-                      <label className="inline-block">
-                        <input
-                          type="file"
-                          accept=".csv,.json"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              setImportFile(file);
-                              if (file.name.endsWith('.csv')) {
-                                detectFileFormat(file);
-                              }
-                            }
-                          }}
-                          className="hidden"
-                        />
-                        <span className="text-bitcoin hover:text-bitcoin-dark cursor-pointer underline">
-                          browse to upload
-                        </span>
-                      </label>
-                    </div>
-                  )}
-                </div>
-
-                {/* Duplicate Detection Settings */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-btc-text-primary">
-                      Duplicate Detection
-                    </h4>
-                    <button
-                      onClick={() => setShowDuplicateSettings(!showDuplicateSettings)}
-                      className="text-xs text-bitcoin hover:text-bitcoin-dark underline"
-                    >
-                      {showDuplicateSettings ? 'Hide details' : 'Show details'}
-                    </button>
+                      />
+                      <Button variant="outline" size="sm" asChild>
+                        <span>Choose file</span>
+                      </Button>
+                    </Label>
                   </div>
-                  
-                  {/* Mode Selection */}
-                  <div className="space-y-2">
-                    {[
-                      { 
-                        value: 'strict' as DuplicateCheckMode, 
-                        label: 'Strict', 
-                        desc: 'All fields must match (date, amount, price, fees, currency, notes)'
-                      },
-                      { 
-                        value: 'standard' as DuplicateCheckMode, 
-                        label: 'Standard (Recommended)', 
-                        desc: 'Core fields must match (date, amount, price, type)'
-                      },
-                      { 
-                        value: 'loose' as DuplicateCheckMode, 
-                        label: 'Loose', 
-                        desc: 'Only date and amount must match'
-                      },
-                      { 
-                        value: 'off' as DuplicateCheckMode, 
-                        label: 'Off', 
-                        desc: 'Import all transactions, including duplicates'
-                      }
-                    ].map((mode) => (
-                      <label
-                        key={mode.value}
-                        className={`flex items-start p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                          duplicateCheckMode === mode.value
-                            ? 'border-bitcoin bg-bitcoin/5'
-                            : 'border-btc-border-primary hover:border-bitcoin/30'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="duplicateMode"
-                          value={mode.value}
-                          checked={duplicateCheckMode === mode.value}
-                          onChange={(e) => setDuplicateCheckMode(e.target.value as DuplicateCheckMode)}
-                          className="mt-0.5 mr-3 text-bitcoin focus:ring-bitcoin"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-btc-text-primary">
-                            {mode.label}
-                          </div>
-                          {showDuplicateSettings && (
-                            <div className="text-xs text-btc-text-secondary mt-1">
-                              {mode.desc}
-                            </div>
-                          )}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                )}
+              </div>
 
-                {/* Supported Formats Info */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-2">
-                  <h4 className="text-sm font-medium text-btc-text-primary">
-                    Supported Formats:
-                  </h4>
-                  <ul className="text-xs text-btc-text-secondary space-y-1">
-                    <li>• <strong>CSV:</strong> Standard format, Legacy format, Binance SPOT export</li>
-                    <li>• <strong>JSON:</strong> Our export format or custom array</li>
-                  </ul>
-                </div>
+              {/* Duplicate Detection */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Duplicate handling</Label>
+                <Select value={duplicateCheckMode} onValueChange={(v) => setDuplicateCheckMode(v as DuplicateCheckMode)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="strict">Strict — All fields must match</SelectItem>
+                    <SelectItem value="standard">Standard — Core fields must match (recommended)</SelectItem>
+                    <SelectItem value="loose">Loose — Only date and amount</SelectItem>
+                    <SelectItem value="off">Off — Import all</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Import Actions */}
-                <div className="flex space-x-3 pt-4">
-                  <ThemedButton
-                    variant="primary"
-                    onClick={handleImportSubmit}
-                    disabled={!importFile || importLoading}
-                    className="flex-1 bg-bitcoin hover:bg-bitcoin-dark disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {importLoading ? 'Importing...' : 'Import Transactions'}
-                  </ThemedButton>
-                  <ThemedButton
-                    type="button"
-                    variant="secondary"
-                    onClick={() => {
-                      setShowImportModal(false);
-                      setImportFile(null);
-                    }}
-                    disabled={importLoading}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </ThemedButton>
-                </div>
+              {/* Supported Formats */}
+              <div className="rounded-lg bg-muted/50 p-3">
+                <p className="text-xs font-medium mb-1">Supported formats</p>
+                <p className="text-xs text-muted-foreground">CSV: Standard, Binance, Kraken, Coinbase, Strike • JSON: Our export format</p>
               </div>
             </div>
-          </div>
-        )}
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); }} disabled={importLoading}>
+                Cancel
+              </Button>
+              <Button onClick={handleImportSubmit} disabled={!importFile || importLoading}>
+                {importLoading ? (
+                  <>
+                    <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <UploadIcon className="size-4 mr-2" />
+                    Import
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );
-} 
+}
+
+

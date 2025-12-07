@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
-import { AppSettings, CurrencySettings, PriceDataSettings, DisplaySettings, NotificationSettings } from '@/lib/types';
+import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
 import AppLayout from '@/components/AppLayout';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon } from 'lucide-react';
+import packageJson from '../../../package.json';
 
 type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'admin';
 
@@ -17,14 +20,13 @@ interface SettingsResponse {
 }
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('currency');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [userData, setUserData] = useState<any>(null);
 
-  // Load settings and user data on component mount
   useEffect(() => {
     loadSettings();
     loadUserData();
@@ -64,9 +66,7 @@ export default function SettingsPage() {
     try {
       const response = await fetch('/api/settings', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category, updates }),
       });
 
@@ -89,10 +89,7 @@ export default function SettingsPage() {
   const resetToDefaults = async () => {
     setSaving(true);
     try {
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-      });
-
+      const response = await fetch('/api/settings', { method: 'POST' });
       const result: SettingsResponse = await response.json();
       
       if (result.success) {
@@ -118,7 +115,10 @@ export default function SettingsPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-full">
-          <ThemedText variant="secondary">Loading settings...</ThemedText>
+          <div className="text-center space-y-3">
+            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-muted-foreground">Loading settings...</p>
+          </div>
         </div>
       </AppLayout>
     );
@@ -128,30 +128,30 @@ export default function SettingsPage() {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-full">
-          <ThemedText variant="secondary">Failed to load settings</ThemedText>
+          <p className="text-muted-foreground">Failed to load settings</p>
         </div>
       </AppLayout>
     );
   }
 
   const tabs = [
-    { id: 'account', label: 'Account' },
-    { id: 'currency', label: 'Currency' },
-    { id: 'priceData', label: 'Price Data' },
-    { id: 'display', label: 'Display' },
-    // { id: 'notifications', label: 'Notifications' }, // Coming soon
-    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin Panel' }] : [])
+    { id: 'account', label: 'Account', icon: UserIcon },
+    { id: 'currency', label: 'Currency', icon: DollarSignIcon },
+    { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
+    { id: 'display', label: 'Display', icon: MonitorIcon },
+    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
   ];
 
   return (
     <AppLayout>
       {/* Message Bar */}
       {message && (
-        <div className={`p-4 ${message.type === 'success' ? 'bg-profit' : 'bg-loss'} text-white`}>
+        <div className={cn(
+          "px-4 py-3 text-sm font-medium",
+          message.type === 'success' ? 'bg-profit text-white' : 'bg-destructive text-destructive-foreground'
+        )}>
           <div className="max-w-7xl mx-auto">
-            <ThemedText className="text-white">
-              {message.text}
-            </ThemedText>
+            {message.text}
           </div>
         </div>
       )}
@@ -159,74 +159,79 @@ export default function SettingsPage() {
       {/* Settings Content with Secondary Sidebar */}
       <div className="flex flex-col lg:flex-row h-full">
         {/* Mobile Tab Navigation */}
-        <div className="lg:hidden bg-btc-bg-secondary border-b border-btc-border-secondary p-4 overflow-x-auto">
-          <div className="flex space-x-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-bitcoin text-white'
-                    : 'bg-btc-bg-tertiary text-btc-text-secondary hover:text-btc-text-primary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+        <div className="lg:hidden bg-card border-b p-4 overflow-x-auto">
+          <div className="flex gap-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <Button
+                  key={tab.id}
+                  variant={activeTab === tab.id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setActiveTab(tab.id as SettingsTab)}
+                  className="whitespace-nowrap"
+                >
+                  <Icon className="size-4 mr-2" />
+                  {tab.label}
+                </Button>
+              );
+            })}
           </div>
         </div>
         
         {/* Desktop Settings Navigation Sidebar */}
-        <div className="hidden lg:block w-64 bg-btc-bg-secondary border-r border-btc-border-secondary p-6 overflow-y-auto">
+        <div className="hidden lg:block w-64 bg-card border-r p-6 overflow-y-auto">
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-btc-text-primary">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <SettingsIcon className="size-5" />
                 Settings
               </h2>
-              <ThemedButton
-                variant="secondary"
-                size="sm"
-                onClick={resetToDefaults}
-                disabled={saving}
-              >
-                Reset
-              </ThemedButton>
             </div>
-            <ThemedText variant="muted" size="sm">
+            <p className="text-sm text-muted-foreground">
               Configure your Bitcoin tracker
-            </ThemedText>
+            </p>
           </div>
 
           {/* Settings Navigation */}
-          <nav className="space-y-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-orange-500 text-white shadow-md'
-                    : 'text-btc-text-secondary hover:text-btc-text-primary hover:bg-btc-bg-tertiary'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <nav className="space-y-1">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as SettingsTab)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    activeTab === tab.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Settings Info */}
-          <div className="mt-8 pt-6 border-t border-btc-border-secondary">
-            <ThemedText variant="muted" size="sm">
-              Settings are automatically saved when changed
-            </ThemedText>
-            {settings && (
-              <div className="mt-2">
-                <ThemedText variant="muted" size="xs">
-                  Version: {settings.version}
-                </ThemedText>
-              </div>
-            )}
+          {/* Settings Footer */}
+          <div className="mt-8 pt-6 border-t space-y-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={resetToDefaults}
+              disabled={saving}
+              className="w-full"
+            >
+              Reset to Defaults
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Settings auto-save on change
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              Version: {packageJson.version}
+            </p>
           </div>
         </div>
 
@@ -275,4 +280,4 @@ export default function SettingsPage() {
       </div>
     </AppLayout>
   );
-} 
+}
