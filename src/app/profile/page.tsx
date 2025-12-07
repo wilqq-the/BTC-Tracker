@@ -36,6 +36,9 @@ import {
   EditIcon,
 } from 'lucide-react';
 
+// 2FA Component
+import TwoFactorSetup from '@/components/TwoFactorSetup';
+
 interface UserStats {
   memberSince: string;
   lastLogin: string;
@@ -70,6 +73,9 @@ export default function ProfilePage() {
   const [pinError, setPinError] = useState('');
   const [pinSuccess, setPinSuccess] = useState('');
   const [userData, setUserData] = useState<any>(null);
+  
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -77,8 +83,21 @@ export default function ProfilePage() {
     } else if (status === 'authenticated') {
       loadUserStats();
       loadUserData();
+      load2FAStatus();
     }
   }, [status, router]);
+
+  const load2FAStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/2fa/setup');
+      const result = await response.json();
+      if (result.success) {
+        setTwoFactorEnabled(result.data.enabled);
+      }
+    } catch (error) {
+      console.error('Error loading 2FA status:', error);
+    }
+  };
 
   const loadUserStats = async () => {
     try {
@@ -654,6 +673,12 @@ export default function ProfilePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Two-Factor Authentication */}
+          <TwoFactorSetup 
+            isEnabled={twoFactorEnabled} 
+            onStatusChange={load2FAStatus}
+          />
 
           {/* Data & Session */}
           <Card>

@@ -8,7 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.7] - 2025-12-07
 
 ### 🔒 Security
-- **Critical:** Updated Next.js from 15.3.4 to 15.3.6 to fix   (CVSS 10.0) - Remote Code Execution vulnerability in React Server Components ([Details](https://nextjs.org/blog/CVE-2025-66478))
+- **Two-Factor Authentication (2FA)** - Secure your account with TOTP-based 2FA
+  - Works with Google Authenticator, Authy, and other authenticator apps
+  - 10 backup codes generated for account recovery
+  - Enable/disable from Profile → Two-Factor Authentication
+- **Critical:** Updated Next.js from 15.3.4 to 15.3.6 to fix CVE-2025-66478 (CVSS 10.0) - Remote Code Execution vulnerability in React Server Components ([Details](https://nextjs.org/blog/CVE-2025-66478))
 - Fixed npm audit vulnerabilities by adding `baseline-browser-mapping@2.9.4`
 
 ### ✨ New Features
