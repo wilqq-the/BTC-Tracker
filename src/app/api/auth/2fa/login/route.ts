@@ -2,41 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authenticator } from 'otplib';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 // POST - Verify 2FA code during login
 // This is called after password verification when 2FA is enabled
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, code, tempToken } = body;
+    const { email, code } = body;
 
     if (!email || !code) {
       return NextResponse.json(
         { success: false, error: 'Email and verification code are required' },
         { status: 400 }
-      );
-    }
-
-    // Verify the temporary token (proves password was already verified)
-    const secret = process.env.NEXTAUTH_SECRET;
-    if (!secret) {
-      return NextResponse.json(
-        { success: false, error: 'Server configuration error' },
-        { status: 500 }
-      );
-    }
-
-    // Verify temp token
-    try {
-      const decoded = jwt.verify(tempToken, secret) as { email: string; purpose: string };
-      if (decoded.email !== email || decoded.purpose !== '2fa-pending') {
-        throw new Error('Invalid token');
-      }
-    } catch {
-      return NextResponse.json(
-        { success: false, error: 'Session expired. Please login again.' },
-        { status: 401 }
       );
     }
 

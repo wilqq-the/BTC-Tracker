@@ -33,7 +33,7 @@ export default function SignInPage() {
   // 2FA state
   const [requires2FA, setRequires2FA] = useState(false)
   const [twoFactorCode, setTwoFactorCode] = useState('')
-  const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string } | null>(null)
+  const [pendingCredentials, setPendingCredentials] = useState<{ email: string; password: string; isPin?: boolean } | null>(null)
 
   useEffect(() => {
     const loadUserInfo = async () => {
@@ -124,12 +124,7 @@ export default function SignInPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: pendingCredentials.email,
-          code: twoFactorCode,
-          tempToken: btoa(JSON.stringify({ 
-            email: pendingCredentials.email, 
-            purpose: '2fa-pending',
-            exp: Date.now() + 5 * 60 * 1000 // 5 min expiry
-          }))
+          code: twoFactorCode
         })
       })
 
@@ -142,9 +137,10 @@ export default function SignInPage() {
       }
 
       // 2FA verified, now complete sign-in with flag
-      const result = await signIn('credentials', {
+      const provider = pendingCredentials.isPin ? 'pin' : 'credentials'
+      const result = await signIn(provider, {
         email: pendingCredentials.email,
-        password: pendingCredentials.password,
+        [pendingCredentials.isPin ? 'pin' : 'password']: pendingCredentials.password,
         twoFactorVerified: 'true',
         redirect: false
       })
@@ -188,6 +184,14 @@ export default function SignInPage() {
       })
 
       if (result?.error) {
+        // Check if 2FA is required
+        if (result.error.includes('2FA_REQUIRED')) {
+          // Store credentials and show 2FA input
+          setPendingCredentials({ email, password: pin, isPin: true })
+          setRequires2FA(true)
+          setLoading(false)
+          return
+        }
         setError('Invalid PIN')
       } else {
         await getSession()
