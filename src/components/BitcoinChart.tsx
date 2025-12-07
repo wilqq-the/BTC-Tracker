@@ -498,7 +498,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
 
             {/* Transaction Legend */}
             {hasTransactions && (
-              <div className="flex items-center justify-center gap-4 pt-2 text-xs text-muted-foreground shrink-0">
+              <div className="flex items-center justify-center gap-4 py-3 text-xs text-muted-foreground shrink-0">
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                   <span>Buy</span>
@@ -516,7 +516,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
 
             {/* Stats Footer */}
             {stats && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 pt-3 border-t shrink-0">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 pt-4 border-t shrink-0">
           <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">{timeRange} High</p>
                   <p className="text-sm font-bold text-green-600 dark:text-green-400">
