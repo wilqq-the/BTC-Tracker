@@ -928,9 +928,9 @@ export default function TransactionsPage() {
                           >
                             {transaction.type === 'TRANSFER' 
                               ? transaction.transfer_type === 'TRANSFER_IN' 
-                                ? 'IN' 
+                                ? 'TRANSFER IN' 
                                 : transaction.transfer_type === 'TRANSFER_OUT' 
-                                  ? 'OUT' 
+                                  ? 'TRANSFER OUT' 
                                   : 'TRANSFER'
                               : transaction.type}
                           </Badge>
@@ -964,9 +964,30 @@ export default function TransactionsPage() {
                           )}
                         </div>
                         <div className="col-span-2">
-                          <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
-                          {transaction.type === 'BUY' && (
-                            <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                            // External transfers: show value at transfer time + current value
+                            <>
+                              <p className="font-semibold">
+                                {transaction.original_price_per_btc > 0 
+                                  ? formatCurrency(transaction.btc_amount * transaction.original_price_per_btc, transaction.original_currency)
+                                  : formatCurrency(currentValue, transaction.main_currency)
+                                }
+                              </p>
+                              {transaction.original_price_per_btc > 0 && (
+                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                              )}
+                            </>
+                          ) : transaction.type === 'TRANSFER' ? (
+                            // Internal transfers: no value to show
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            // BUY/SELL: show original transaction value
+                            <>
+                              <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                              {transaction.type === 'BUY' && (
+                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                              )}
+                            </>
                           )}
                         </div>
                         <div className="col-span-2">
@@ -1036,9 +1057,9 @@ export default function TransactionsPage() {
                               >
                                 {transaction.type === 'TRANSFER' 
                                   ? transaction.transfer_type === 'TRANSFER_IN' 
-                                    ? 'IN' 
+                                    ? 'TRANSFER IN' 
                                     : transaction.transfer_type === 'TRANSFER_OUT' 
-                                      ? 'OUT' 
+                                      ? 'TRANSFER OUT' 
                                       : 'TRANSFER'
                                   : transaction.type}
                               </Badge>
