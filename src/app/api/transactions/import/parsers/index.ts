@@ -55,6 +55,24 @@ export function detectParser(headers: string[]): Parser {
  * Parse a CSV line handling quoted values
  */
 export function parseCsvLine(line: string): string[] {
+  // Fix for Excel wrapping entire rows in quotes
+  // Detect if line starts and ends with quote but contains unquoted commas
+  // e.g., "381,BUY,0.01794592,..." should become 381,BUY,0.01794592,...
+  if (line.startsWith('"') && line.endsWith('"')) {
+    const inner = line.slice(1, -1);
+    // Check if this looks like a wrapped row (has commas that would be field separators)
+    // by seeing if removing the outer quotes gives us a valid CSV row
+    const testParse = parseLineInner(inner);
+    if (testParse.length > 1) {
+      // This was a wrapped row - use the inner content
+      line = inner;
+    }
+  }
+  
+  return parseLineInner(line);
+}
+
+function parseLineInner(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;

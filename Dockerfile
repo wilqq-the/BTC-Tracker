@@ -32,7 +32,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
 
-RUN chmod +x ./scripts/docker-entrypoint.sh && \
+RUN chmod +x ./scripts/docker-entrypoint.sh ./scripts/migrate.sh && \
     mkdir -p /app/data /app/public/uploads/avatars && \
     chown -R nextjs:nodejs /app/data /app/public/uploads && \
     chmod -R 755 /app/node_modules

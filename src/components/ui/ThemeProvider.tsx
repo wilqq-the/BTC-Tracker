@@ -50,10 +50,10 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       disableTransitionOnChange
     >
       <ThemePresetInitializer>
-        {/* Use CSS variables from globals.css - no hardcoded colors */}
-        <div className="min-h-screen bg-background text-foreground">
-          {children}
-        </div>
+      {/* Use CSS variables from globals.css - no hardcoded colors */}
+      <div className="min-h-screen bg-background text-foreground">
+        {children}
+      </div>
       </ThemePresetInitializer>
     </NextThemesProvider>
   );
