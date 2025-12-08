@@ -8,7 +8,9 @@ import UserAvatar from './UserAvatar';
 import AvatarUploadModal from './AvatarUploadModal';
 import SystemStatusDialog from './SystemStatusDialog';
 import { useTheme } from './ui/ThemeProvider';
+import { useDarkThemePreset } from '@/hooks/use-dark-theme-preset';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -41,7 +43,8 @@ import {
   ActivityIcon,
   DatabaseIcon,
   ClockIcon,
-  ServerIcon
+  ServerIcon,
+  PaletteIcon
 } from 'lucide-react';
 
 interface SettingsPanelProps<T> {
@@ -819,6 +822,19 @@ export function DisplaySettingsPanel({
   saving: boolean;
 }) {
   const { theme, setTheme } = useTheme();
+  const { 
+    darkPresetId, 
+    lightPresetId, 
+    setDarkPreset, 
+    setLightPreset, 
+    darkPresets, 
+    lightPresets, 
+    mounted 
+  } = useDarkThemePreset();
+  
+  const currentPresets = theme === 'dark' ? darkPresets : lightPresets;
+  const currentPresetId = theme === 'dark' ? darkPresetId : lightPresetId;
+  const setCurrentPreset = theme === 'dark' ? setDarkPreset : setLightPreset;
   
   return (
     <div className="space-y-6">
@@ -831,7 +847,7 @@ export function DisplaySettingsPanel({
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <SettingsIcon className="size-4" />
-            Theme
+            Theme Mode
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -871,11 +887,63 @@ export function DisplaySettingsPanel({
               {theme === 'dark' && <CheckIcon className="size-4 text-primary" />}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Theme changes are saved automatically and persist across sessions
-          </p>
         </CardContent>
       </Card>
+
+      {/* Theme Style - Shows for both light and dark modes */}
+      {mounted && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <PaletteIcon className="size-4" />
+              {theme === 'dark' ? 'Dark' : 'Light'} Theme Style
+            </CardTitle>
+            <CardDescription>
+              Choose a color scheme for {theme === 'dark' ? 'dark' : 'light'} mode
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {currentPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => setCurrentPreset(preset.id)}
+                  className={cn(
+                    "relative flex flex-col items-start p-3 rounded-lg border-2 transition-all text-left",
+                    currentPresetId === preset.id 
+                      ? "border-primary bg-primary/5" 
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  {/* Color preview dots */}
+                  <div className="flex gap-1 mb-2">
+                    <div 
+                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
+                      style={{ backgroundColor: `hsl(${preset.colors.background})` }}
+                    />
+                    <div 
+                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
+                      style={{ backgroundColor: `hsl(${preset.colors.card})` }}
+                    />
+                    <div 
+                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
+                      style={{ backgroundColor: `hsl(${preset.colors.border})` }}
+                    />
+                  </div>
+                  <span className="font-medium text-sm">{preset.name}</span>
+                  <span className="text-xs text-muted-foreground">{preset.description}</span>
+                  {currentPresetId === preset.id && (
+                    <CheckIcon className="absolute top-2 right-2 size-4 text-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              Theme style is saved automatically and persists across sessions
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -966,7 +1034,6 @@ export function UserAccountSettingsPanel() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showAvatarModal, setShowAvatarModal] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState('')
@@ -996,11 +1063,6 @@ export function UserAccountSettingsPanel() {
     }
   }
 
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text })
-    setTimeout(() => setMessage(null), 5000)
-  }
-
   const handleUpdateName = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
@@ -1015,13 +1077,13 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to update name')
+      toast({ title: 'Failed to update name', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1040,13 +1102,13 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to update display name')
+      toast({ title: 'Failed to update display name', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1065,13 +1127,13 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to upload profile picture')
+      toast({ title: 'Failed to upload profile picture', variant: 'destructive' })
     } finally {
       setUploading(false)
     }
@@ -1086,13 +1148,13 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to remove profile picture')
+      toast({ title: 'Failed to remove profile picture', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1103,7 +1165,7 @@ export function UserAccountSettingsPanel() {
     if (!currentPassword || !newPassword || !confirmPassword) return
 
     if (newPassword !== confirmPassword) {
-      showMessage('error', 'New passwords do not match')
+      toast({ title: 'New passwords do not match', variant: 'destructive' })
       return
     }
 
@@ -1121,15 +1183,15 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         setCurrentPassword('')
         setNewPassword('')
         setConfirmPassword('')
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to change password')
+      toast({ title: 'Failed to change password', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1140,7 +1202,7 @@ export function UserAccountSettingsPanel() {
     if (!newPin || !confirmPin) return
 
     if (newPin !== confirmPin) {
-      showMessage('error', 'PINs do not match')
+      toast({ title: 'PINs do not match', variant: 'destructive' })
       return
     }
 
@@ -1154,15 +1216,15 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         setNewPin('')
         setConfirmPin('')
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to set PIN')
+      toast({ title: 'Failed to set PIN', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1183,13 +1245,13 @@ export function UserAccountSettingsPanel() {
 
       const data = await response.json()
       if (response.ok) {
-        showMessage('success', data.message)
+        toast({ title: data.message })
         await fetchUserData()
       } else {
-        showMessage('error', data.error)
+        toast({ title: data.error, variant: 'destructive' })
       }
     } catch (error) {
-      showMessage('error', 'Failed to remove PIN')
+      toast({ title: 'Failed to remove PIN', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -1209,17 +1271,6 @@ export function UserAccountSettingsPanel() {
         <h3 className="text-xl font-semibold mb-2">Account Settings</h3>
         <p className="text-muted-foreground">Manage your account information and security</p>
       </div>
-
-      {message && (
-        <div className={cn(
-          "p-4 rounded-lg border",
-          message.type === 'success' 
-            ? 'bg-profit/10 text-profit border-profit/20' 
-            : 'bg-destructive/10 text-destructive border-destructive/20'
-        )}>
-          {message.text}
-        </div>
-      )}
 
       {/* Profile Information */}
       <Card>

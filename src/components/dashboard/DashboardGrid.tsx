@@ -215,25 +215,25 @@ export default function DashboardGrid() {
     
     // Use functional update to get the CURRENT state, not stale layoutRef
     setLayout(currentLayout => {
-      let hasActualChanges = false;
-      const updatedWidgets = currentLayout.widgets.map(widget => {
-        const gridItem = newLayout.find(item => item.i === widget.id);
-        if (gridItem) {
+    let hasActualChanges = false;
+    const updatedWidgets = currentLayout.widgets.map(widget => {
+      const gridItem = newLayout.find(item => item.i === widget.id);
+      if (gridItem) {
           // Only update position if values actually changed
-          if (widget.x !== gridItem.x || widget.y !== gridItem.y || 
-              widget.w !== gridItem.w || widget.h !== gridItem.h) {
-            hasActualChanges = true;
-            return { ...widget, x: gridItem.x, y: gridItem.y, w: gridItem.w, h: gridItem.h };
-          }
+        if (widget.x !== gridItem.x || widget.y !== gridItem.y || 
+            widget.w !== gridItem.w || widget.h !== gridItem.h) {
+          hasActualChanges = true;
+          return { ...widget, x: gridItem.x, y: gridItem.y, w: gridItem.w, h: gridItem.h };
         }
-        return widget;
-      });
+      }
+      return widget;
+    });
 
       // Only return new state if there were actual position changes
-      if (hasActualChanges) {
-        setHasChanges(true);
+    if (hasActualChanges) {
+      setHasChanges(true);
         return { widgets: updatedWidgets };
-      }
+    }
       return currentLayout; // No changes, return same reference
     });
   }, [isEditMode]);

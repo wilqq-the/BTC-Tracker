@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
 import { UserIcon, ShieldCheckIcon, TrashIcon, PencilIcon, PlusIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { toast } from '@/hooks/use-toast';
 
 interface User {
   id: number;
@@ -53,8 +54,6 @@ export default function AdminPanel() {
     displayName: '',
     isAdmin: false
   });
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
   useEffect(() => {
     loadData();
   }, []);
@@ -77,15 +76,10 @@ export default function AdminPanel() {
       }
     } catch (error) {
       console.error('Error loading admin data:', error);
-      showMessage('error', 'Failed to load admin data');
+      toast({ title: 'Failed to load admin data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -100,15 +94,15 @@ export default function AdminPanel() {
       const result = await response.json();
       
       if (result.success) {
-        showMessage('success', 'User created successfully');
+        toast({ title: 'User created successfully' });
         setShowCreateForm(false);
         setCreateForm({ email: '', password: '', name: '', displayName: '', isAdmin: false });
         loadData();
       } else {
-        showMessage('error', result.error || 'Failed to create user');
+        toast({ title: result.error || 'Failed to create user', variant: 'destructive' });
       }
     } catch (error) {
-      showMessage('error', 'Failed to create user');
+      toast({ title: 'Failed to create user', variant: 'destructive' });
     }
   };
 
@@ -123,13 +117,13 @@ export default function AdminPanel() {
       const result = await response.json();
       
       if (result.success) {
-        showMessage('success', `User ${!isActive ? 'activated' : 'deactivated'} successfully`);
+        toast({ title: `User ${!isActive ? 'activated' : 'deactivated'} successfully` });
         loadData();
       } else {
-        showMessage('error', result.error || 'Failed to update user');
+        toast({ title: result.error || 'Failed to update user', variant: 'destructive' });
       }
     } catch (error) {
-      showMessage('error', 'Failed to update user');
+      toast({ title: 'Failed to update user', variant: 'destructive' });
     }
   };
 
@@ -144,13 +138,13 @@ export default function AdminPanel() {
       const result = await response.json();
       
       if (result.success) {
-        showMessage('success', `Admin status ${!isAdmin ? 'granted' : 'revoked'} successfully`);
+        toast({ title: `Admin status ${!isAdmin ? 'granted' : 'revoked'} successfully` });
         loadData();
       } else {
-        showMessage('error', result.error || 'Failed to update admin status');
+        toast({ title: result.error || 'Failed to update admin status', variant: 'destructive' });
       }
     } catch (error) {
-      showMessage('error', 'Failed to update admin status');
+      toast({ title: 'Failed to update admin status', variant: 'destructive' });
     }
   };
 
@@ -167,13 +161,13 @@ export default function AdminPanel() {
       const result = await response.json();
       
       if (result.success) {
-        showMessage('success', 'User deleted successfully');
+        toast({ title: 'User deleted successfully' });
         loadData();
       } else {
-        showMessage('error', result.error || 'Failed to delete user');
+        toast({ title: result.error || 'Failed to delete user', variant: 'destructive' });
       }
     } catch (error) {
-      showMessage('error', 'Failed to delete user');
+      toast({ title: 'Failed to delete user', variant: 'destructive' });
     }
   };
 
@@ -187,17 +181,6 @@ export default function AdminPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Message */}
-      {message && (
-        <div className={`p-4 rounded-lg ${
-          message.type === 'success' 
-            ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300' 
-            : 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-300'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

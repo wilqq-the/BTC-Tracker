@@ -143,19 +143,19 @@ export class AppInitializationService {
 
   private static async verifyDatabase(): Promise<void> {
     // Auto-setup database if it doesn't exist (works in both dev and production)
-    const { existsSync } = require('fs');
-    const dbUrl = process.env.DATABASE_URL || '';
-    
-    if (dbUrl.startsWith('file:')) {
-      const dbPath = dbUrl.replace('file:', '');
-      if (!existsSync(dbPath)) {
+      const { existsSync } = require('fs');
+      const dbUrl = process.env.DATABASE_URL || '';
+      
+      if (dbUrl.startsWith('file:')) {
+        const dbPath = dbUrl.replace('file:', '');
+        if (!existsSync(dbPath)) {
         console.log('[SETUP] Database not found - running migrations...');
-        try {
+          try {
           await this.setupDatabase();
-          console.log('[OK] Database ready');
-          return;
-        } catch (setupError) {
-          console.error('[ERROR] Setup failed:', setupError);
+            console.log('[OK] Database ready');
+            return;
+          } catch (setupError) {
+            console.error('[ERROR] Setup failed:', setupError);
           throw new Error('Failed to setup database');
         }
       }
@@ -178,9 +178,9 @@ export class AppInitializationService {
         await this.setupDatabase();
         console.log('[OK] Database migrated');
       } catch (migrateError) {
-        console.error('[ERROR] Database verification failed:', error);
+      console.error('[ERROR] Database verification failed:', error);
         console.error('[INFO] Please run: npm exec prisma migrate deploy');
-        throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
