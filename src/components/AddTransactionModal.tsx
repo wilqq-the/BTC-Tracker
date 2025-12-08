@@ -356,33 +356,33 @@ export default function AddTransactionModal({
           <div className="space-y-4 overflow-y-auto flex-1 pr-2">
           {/* Transaction Type - Compact horizontal */}
           <div className="flex items-center gap-2">
-            {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => {
-              const config = getTransactionTypeConfig(type);
-              const Icon = config.icon;
-              const isSelected = formData.type === type;
-              return (
-                <Button
-                  key={type}
-                  type="button"
-                  variant={isSelected ? "default" : "outline"}
+              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => {
+                const config = getTransactionTypeConfig(type);
+                const Icon = config.icon;
+                const isSelected = formData.type === type;
+                return (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setFormData(prev => ({ 
-                    ...prev, 
-                    type,
-                    fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
-                  }))}
-                  className={cn(
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      type,
+                      fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
+                    }))}
+                    className={cn(
                     "gap-1.5",
-                    isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
-                    isSelected && type === 'SELL' && "bg-red-500 hover:bg-red-600",
-                    isSelected && type === 'TRANSFER' && "bg-blue-500 hover:bg-blue-600"
-                  )}
-                >
+                      isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
+                      isSelected && type === 'SELL' && "bg-red-500 hover:bg-red-600",
+                      isSelected && type === 'TRANSFER' && "bg-blue-500 hover:bg-blue-600"
+                    )}
+                  >
                   <Icon className={cn("size-4", isSelected ? "text-white" : config.color)} />
                   <span className="font-medium">{type}</span>
-                </Button>
-              );
-            })}
+                  </Button>
+                );
+              })}
           </div>
 
           {/* BTC Amount */}
@@ -459,20 +459,20 @@ export default function AddTransactionModal({
                       { type: 'FROM_COLD_WALLET', icon: ArrowUpFromLineIcon, label: 'From Cold' },
                       { type: 'BETWEEN_WALLETS', icon: RefreshCwIcon, label: 'Between' },
                     ].map(({ type, icon: Icon, label }) => (
-                      <Button
+                    <Button
                         key={type}
-                        type="button"
+                      type="button"
                         variant={formData.transfer_type === type ? "default" : "outline"}
-                        size="sm"
+                      size="sm"
                         onClick={() => setFormData(prev => ({ ...prev, transfer_type: type as any }))}
-                        className={cn(
+                      className={cn(
                           "gap-1.5 flex-1",
                           formData.transfer_type === type && "bg-blue-500 hover:bg-blue-600"
-                        )}
-                      >
+                      )}
+                    >
                         <Icon className="size-4" />
                         {label}
-                      </Button>
+                    </Button>
                     ))}
                   </div>
                 ) : (
@@ -505,9 +505,9 @@ export default function AddTransactionModal({
                     </Button>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
+                    </div>
+                  </div>
+                )}
 
           {/* Price/Amount Input (hidden for internal transfers) */}
           {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
@@ -541,37 +541,37 @@ export default function AddTransactionModal({
                     >
                       Total Spent
                     </button>
-                  </div>
-                </div>
-              )}
+              </div>
+            </div>
+          )}
 
               {/* Price per BTC Input (price mode or external transfers) */}
               {(inputMode === 'price' || formData.type === 'TRANSFER') && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
                     <Label htmlFor="price_per_btc">
                       {formData.transfer_category === 'EXTERNAL' ? 'Reference Price' : 'Price per BTC'}
-                    </Label>
+                </Label>
                     {currentBtcPrice && formData.type !== 'TRANSFER' && (
                       <button
-                        type="button"
-                        onClick={useCurrentPrice}
+                    type="button"
+                    onClick={useCurrentPrice}
                         className="text-xs text-btc-500 hover:text-btc-600 hover:underline"
-                      >
+                  >
                         Use ${currentBtcPrice.toLocaleString()}
                       </button>
-                    )}
-                  </div>
-                  <Input
-                    id="price_per_btc"
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_btc}
-                    onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                    placeholder="105000.00"
+                )}
+              </div>
+              <Input
+                id="price_per_btc"
+                type="number"
+                step="0.01"
+                value={formData.price_per_btc}
+                onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
+                placeholder="105000.00"
                     className="font-mono"
                     required={formData.type !== 'TRANSFER' && inputMode === 'price'}
-                  />
+              />
                 </div>
               )}
 
@@ -604,33 +604,33 @@ export default function AddTransactionModal({
           {/* Two-column: Currency + Date */}
           <div className="grid grid-cols-2 gap-3">
             {/* Currency (hidden for internal transfers) */}
-            {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
+          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
               <div className="space-y-1.5">
                 <Label htmlFor="currency">Currency</Label>
-                <CurrencySelector
-                  id="currency"
-                  value={formData.currency}
-                  currencies={allAvailableCurrencies}
-                  onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+              <CurrencySelector
+                id="currency"
+                value={formData.currency}
+                currencies={allAvailableCurrencies}
+                onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
                   placeholder="Select..."
                   searchPlaceholder="Search..."
-                />
-              </div>
-            )}
-
-            {/* Transaction Date */}
-            <div className={cn("space-y-1.5", formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL' && "col-span-2")}>
-              <Label htmlFor="transaction_date">Date</Label>
-              <DatePicker
-                id="transaction_date"
-                value={formData.transaction_date ? new Date(formData.transaction_date) : undefined}
-                onChange={(date) => setFormData(prev => ({ 
-                  ...prev, 
-                  transaction_date: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
-                }))}
-                placeholder="Select date"
               />
             </div>
+          )}
+
+          {/* Transaction Date */}
+            <div className={cn("space-y-1.5", formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL' && "col-span-2")}>
+              <Label htmlFor="transaction_date">Date</Label>
+            <DatePicker
+              id="transaction_date"
+              value={formData.transaction_date ? new Date(formData.transaction_date) : undefined}
+              onChange={(date) => setFormData(prev => ({ 
+                ...prev, 
+                transaction_date: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+              }))}
+              placeholder="Select date"
+            />
+          </div>
           </div>
 
           {/* Cost Summary - Compact inline */}
@@ -735,29 +735,29 @@ export default function AddTransactionModal({
                 </div>
               )}
 
-              {/* Notes */}
+          {/* Notes */}
               <div className="space-y-1.5">
                 <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                   placeholder="Optional notes..."
                   rows={2}
-                  className="resize-none"
-                />
-              </div>
+              className="resize-none"
+            />
+          </div>
 
-              {/* Tags */}
+          {/* Tags */}
               <div className="space-y-1.5">
                 <Label htmlFor="tags">Tags</Label>
-                <TagsInput
-                  id="tags"
-                  value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
-                  onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
+            <TagsInput
+              id="tags"
+              value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
+              onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
                   placeholder="Type and press Enter"
-                />
-              </div>
+            />
+          </div>
             </div>
           )}
           </div>

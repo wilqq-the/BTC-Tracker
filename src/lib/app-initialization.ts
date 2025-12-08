@@ -142,71 +142,80 @@ export class AppInitializationService {
   }
 
   private static async verifyDatabase(): Promise<void> {
-    // Auto-setup database if it doesn't exist (works in both dev and production)
-      const { existsSync } = require('fs');
-      const dbUrl = process.env.DATABASE_URL || '';
-      
-      if (dbUrl.startsWith('file:')) {
-        const dbPath = dbUrl.replace('file:', '');
-        if (!existsSync(dbPath)) {
-        console.log('[SETUP] Database not found - running migrations...');
-          try {
-          await this.setupDatabase();
-            console.log('[OK] Database ready');
-            return;
-          } catch (setupError) {
-            console.error('[ERROR] Setup failed:', setupError);
-          throw new Error('Failed to setup database');
+    const { existsSync } = require('fs');
+    const dbUrl = process.env.DATABASE_URL || '';
+    const isDev = process.env.NODE_ENV === 'development';
+    
+    // Check if database file exists (for SQLite)
+    if (dbUrl.startsWith('file:')) {
+      const dbPath = dbUrl.replace('file:', '');
+      if (!existsSync(dbPath)) {
+        // In development, auto-setup the database
+        if (isDev) {
+          console.log('[SETUP] Development mode - creating database...');
+          await this.runMigrations();
+          return;
         }
+        // In production, database should be created by entrypoint
+        throw new Error('Database not found. Ensure migrations have run during container startup.');
       }
     }
 
+    // Test database connection
     try {
       console.log('[SEARCH] Testing database connection...');
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       console.log('[OK] Database connected');
+    } catch (error) {
+      console.error('[ERROR] Database connection failed:', error);
+      throw new Error('Cannot connect to database');
+    }
 
+    // Verify database structure
+    try {
       console.log('[SEARCH] Verifying database structure...');
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
-
     } catch (error) {
-      // Database exists but structure is invalid - try to run migrations
-      console.log('[WARN] Database structure issue - attempting migration...');
-      try {
-        await this.setupDatabase();
-        console.log('[OK] Database migrated');
-      } catch (migrateError) {
-      console.error('[ERROR] Database verification failed:', error);
-        console.error('[INFO] Please run: npm exec prisma migrate deploy');
-      throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // In development, try to run migrations
+      if (isDev) {
+        console.log('[WARN] Database structure issue - running migrations...');
+        try {
+          await this.runMigrations();
+          await this.verifyDatabaseStructure();
+          console.log('[OK] Database migrated');
+          return;
+        } catch (migrateError) {
+          console.error('[ERROR] Migration failed:', migrateError);
+        }
       }
+      
+      // Provide helpful error message
+      console.error('[ERROR] Database structure verification failed');
+      console.error('[INFO] This usually means migrations need to run.');
+      console.error('[INFO] For Docker: restart the container to trigger migrations');
+      console.error('[INFO] For manual fix: npx prisma migrate deploy');
+      console.error('[INFO] For legacy databases: check /app/scripts/migrate.sh');
+      throw new Error(`Database structure is invalid: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  private static async setupDatabase(): Promise<void> {
+  private static async runMigrations(): Promise<void> {
     const { execSync } = require('child_process');
     
     console.log('[MIGRATE] Running prisma migrate deploy...');
-    execSync('npm exec prisma migrate deploy', { 
+    execSync('npx prisma migrate deploy', { 
       stdio: 'inherit',
       cwd: process.cwd()
     });
-    
-    console.log('[MIGRATE] Verifying tables...');
-    await this.verifyDatabaseStructure();
   }
 
   private static async verifyDatabaseStructure(): Promise<void> {
-    try {
-      await prisma.user.findFirst();
-      await prisma.bitcoinTransaction.findFirst();
-      await prisma.appSettings.findFirst();
-      console.log('[OK] Tables verified');
-    } catch (error) {
-      console.error('[ERROR] Table verification failed:', error);
-      throw new Error('Database structure is invalid or incomplete');
-    }
+    // Test each critical table with a simple query
+    // These will throw if columns are missing (schema mismatch)
+    await prisma.user.findFirst({ select: { id: true, email: true } });
+    await prisma.bitcoinTransaction.findFirst({ select: { id: true, type: true } });
+    await prisma.appSettings.findFirst({ select: { id: true } });
   }
 }
