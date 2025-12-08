@@ -4,8 +4,12 @@
 ![Docker Image Size](https://img.shields.io/docker/image-size/thewilqq/btc-tracker/stable?style=flat-square&logo=docker&label=Image%20Size)
 ![GitHub Stars](https://img.shields.io/github/stars/wilqq-the/BTC-Tracker?style=flat-square&logo=github&label=Stars)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/wilqqthe)
+[![Lightning](https://img.shields.io/badge/Lightning-wilqqthe%40strike.me-yellow?style=flat-square&logo=lightning)](lightning:wilqqthe@strike.me)
 
 **Self-hosted Bitcoin portfolio tracker - that's it.**
+
+> If you find BTC Tracker useful, please consider [giving it a star](https://github.com/wilqq-the/BTC-Tracker) ⭐
 
 Track your Bitcoin investments privately on your own PC. Import transactions from exchanges or add them manually. Multi-user support with admin controls. Your data never leaves your server, period.
 
@@ -134,11 +138,36 @@ Existing portfolio trackers either:
 
 This gives you complete control over your Bitcoin tracking data.
 
+## Requirements
+
+- **Docker** (recommended) or Node.js 18+
+- ~100MB disk space for the app
+- SQLite database (included, single file)
+
+## Backup & Restore
+
+Your data lives in a single SQLite file. To backup:
+
+```bash
+# Docker
+docker cp btc-tracker:/app/prisma/dev.db ./backup.db
+
+# Local
+cp prisma/dev.db ./backup.db
+```
+
+To restore, copy the file back and restart the app.
+
+## Community
+
+- [GitHub Discussions](https://github.com/wilqq-the/BTC-Tracker/discussions) - Ask questions, share ideas
+- [Issue Tracker](https://github.com/wilqq-the/BTC-Tracker/issues) - Report bugs, request features
+
 ## Contributing
 
-Found a bug? Want a feature? Open an issue.
+Found a bug? Want a feature? [Open an issue](https://github.com/wilqq-the/BTC-Tracker/issues).
 
-Want to add support for another exchange? Check `PARSER_DEVELOPMENT_GUIDE.md`.
+Want to add support for another exchange? Check the [Parser Development Guide](src/app/api/transactions/import/parsers/PARSER_DEVELOPMENT_GUIDE.md).
 
 ## License
 

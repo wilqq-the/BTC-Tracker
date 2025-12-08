@@ -142,23 +142,21 @@ export class AppInitializationService {
   }
 
   private static async verifyDatabase(): Promise<void> {
-    // Auto-setup database in dev if it doesn't exist
-    if (process.env.NODE_ENV !== 'production') {
-      const { existsSync } = require('fs');
-      const dbUrl = process.env.DATABASE_URL || '';
-      
-      if (dbUrl.startsWith('file:')) {
-        const dbPath = dbUrl.replace('file:', '');
-        if (!existsSync(dbPath)) {
-          console.log('[DEV] Database not found - setting up...');
-          try {
-            await this.setupDatabaseForDev();
-            console.log('[OK] Database ready');
-            return;
-          } catch (setupError) {
-            console.error('[ERROR] Setup failed:', setupError);
-            throw new Error('Failed to setup database for development');
-          }
+    // Auto-setup database if it doesn't exist (works in both dev and production)
+    const { existsSync } = require('fs');
+    const dbUrl = process.env.DATABASE_URL || '';
+    
+    if (dbUrl.startsWith('file:')) {
+      const dbPath = dbUrl.replace('file:', '');
+      if (!existsSync(dbPath)) {
+        console.log('[SETUP] Database not found - running migrations...');
+        try {
+          await this.setupDatabase();
+          console.log('[OK] Database ready');
+          return;
+        } catch (setupError) {
+          console.error('[ERROR] Setup failed:', setupError);
+          throw new Error('Failed to setup database');
         }
       }
     }
@@ -174,22 +172,29 @@ export class AppInitializationService {
       console.log('[OK] Database structure verified');
 
     } catch (error) {
-      console.error('[ERROR] Database verification failed:', error);
-      console.error('[INFO] Please run: npx prisma migrate deploy');
-      throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Database exists but structure is invalid - try to run migrations
+      console.log('[WARN] Database structure issue - attempting migration...');
+      try {
+        await this.setupDatabase();
+        console.log('[OK] Database migrated');
+      } catch (migrateError) {
+        console.error('[ERROR] Database verification failed:', error);
+        console.error('[INFO] Please run: npm exec prisma migrate deploy');
+        throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   }
 
-  private static async setupDatabaseForDev(): Promise<void> {
+  private static async setupDatabase(): Promise<void> {
     const { execSync } = require('child_process');
     
-    console.log('[DEV] Running migrations...');
-    execSync('npx prisma migrate deploy', { 
+    console.log('[MIGRATE] Running prisma migrate deploy...');
+    execSync('npm exec prisma migrate deploy', { 
       stdio: 'inherit',
       cwd: process.cwd()
     });
     
-    console.log('[DEV] Verifying tables...');
+    console.log('[MIGRATE] Verifying tables...');
     await this.verifyDatabaseStructure();
   }
 

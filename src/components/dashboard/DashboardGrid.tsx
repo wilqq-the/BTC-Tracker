@@ -16,6 +16,15 @@ import {
   PlusIcon,
   Settings2Icon,
   RotateCcwIcon,
+  LineChartIcon,
+  ArrowLeftRightIcon,
+  TargetIcon,
+  WalletIcon,
+  TrendingUpIcon,
+  ActivityIcon,
+  CalendarIcon,
+  RefreshCwIcon,
+  ShieldIcon,
 } from 'lucide-react';
 import {
   GRID_COLS,
@@ -25,6 +34,19 @@ import {
   getWidgetDefinitionById,
 } from '@/lib/dashboard-constants';
 import { DashboardLayout, LayoutItem, WidgetType } from '@/lib/dashboard-types';
+
+// Icon mapping for widget definitions
+const WIDGET_ICONS: Record<string, React.ReactNode> = {
+  'LineChart': <LineChartIcon className="size-4" />,
+  'ArrowLeftRight': <ArrowLeftRightIcon className="size-4" />,
+  'Target': <TargetIcon className="size-4" />,
+  'Wallet': <WalletIcon className="size-4" />,
+  'TrendingUp': <TrendingUpIcon className="size-4" />,
+  'Activity': <ActivityIcon className="size-4" />,
+  'Calendar': <CalendarIcon className="size-4" />,
+  'RefreshCw': <RefreshCwIcon className="size-4" />,
+  'Shield': <ShieldIcon className="size-4" />,
+};
 
 // Widget loading placeholder
 const WidgetLoading = () => (
@@ -191,28 +213,29 @@ export default function DashboardGrid() {
     // Only process in edit mode
     if (!isEditMode) return;
     
-    const currentLayout = layoutRef.current;
-    
-    // Check if layout actually changed to prevent infinite loops
-    let hasActualChanges = false;
-    const updatedWidgets = currentLayout.widgets.map(widget => {
-      const gridItem = newLayout.find(item => item.i === widget.id);
-      if (gridItem) {
-        // Only update if values actually changed
-        if (widget.x !== gridItem.x || widget.y !== gridItem.y || 
-            widget.w !== gridItem.w || widget.h !== gridItem.h) {
-          hasActualChanges = true;
-          return { ...widget, x: gridItem.x, y: gridItem.y, w: gridItem.w, h: gridItem.h };
+    // Use functional update to get the CURRENT state, not stale layoutRef
+    setLayout(currentLayout => {
+      let hasActualChanges = false;
+      const updatedWidgets = currentLayout.widgets.map(widget => {
+        const gridItem = newLayout.find(item => item.i === widget.id);
+        if (gridItem) {
+          // Only update position if values actually changed
+          if (widget.x !== gridItem.x || widget.y !== gridItem.y || 
+              widget.w !== gridItem.w || widget.h !== gridItem.h) {
+            hasActualChanges = true;
+            return { ...widget, x: gridItem.x, y: gridItem.y, w: gridItem.w, h: gridItem.h };
+          }
         }
-      }
-      return widget;
-    });
+        return widget;
+      });
 
-    // Only update state if there were actual changes
-    if (hasActualChanges) {
-      setLayout({ widgets: updatedWidgets });
-      setHasChanges(true);
-    }
+      // Only return new state if there were actual position changes
+      if (hasActualChanges) {
+        setHasChanges(true);
+        return { widgets: updatedWidgets };
+      }
+      return currentLayout; // No changes, return same reference
+    });
   }, [isEditMode]);
 
   const handleRemoveWidget = useCallback((widgetId: string) => {
@@ -224,7 +247,8 @@ export default function DashboardGrid() {
 
   const handleAddWidget = useCallback((widgetId: string) => {
     setLayout(prev => ({
-      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, visible: true } : w),
+      // Set y to large value so react-grid-layout places it at the bottom via compaction
+      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, visible: true, y: 9999 } : w),
     }));
     setHasChanges(true);
     setShowAddWidget(false);
@@ -305,9 +329,10 @@ export default function DashboardGrid() {
                   <DropdownMenuContent align="end" className="w-64">
                     {hiddenWidgets.map(widget => {
                       const def = getWidgetDefinitionById(widget.id);
+                      const icon = def?.icon ? WIDGET_ICONS[def.icon] : null;
                       return (
-                        <DropdownMenuItem key={widget.id} onClick={() => handleAddWidget(widget.id)}>
-                          <span className="mr-2">{def?.icon}</span>
+                        <DropdownMenuItem key={widget.id} onSelect={() => handleAddWidget(widget.id)}>
+                          {icon && <span className="mr-2">{icon}</span>}
                           {def?.title}
                         </DropdownMenuItem>
                       );
