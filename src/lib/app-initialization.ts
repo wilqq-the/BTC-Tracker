@@ -144,19 +144,23 @@ export class AppInitializationService {
   private static async verifyDatabase(): Promise<void> {
     const { existsSync } = require('fs');
     const dbUrl = process.env.DATABASE_URL || '';
+    
+    // Determine if we should auto-migrate
+    // - Always in development
+    // - In production when NOT in Docker (Docker entrypoint handles it)
     const isDev = process.env.NODE_ENV === 'development';
+    const isDocker = existsSync('/.dockerenv') || process.env.DOCKER === 'true';
+    const shouldAutoMigrate = isDev || !isDocker;
     
     // Check if database file exists (for SQLite)
     if (dbUrl.startsWith('file:')) {
       const dbPath = dbUrl.replace('file:', '');
       if (!existsSync(dbPath)) {
-        // In development, auto-setup the database
-        if (isDev) {
-          console.log('[SETUP] Development mode - creating database...');
+        if (shouldAutoMigrate) {
+          console.log('[SETUP] Database not found - running migrations...');
           await this.runMigrations();
           return;
         }
-        // In production, database should be created by entrypoint
         throw new Error('Database not found. Ensure migrations have run during container startup.');
       }
     }
@@ -178,8 +182,8 @@ export class AppInitializationService {
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
     } catch (error) {
-      // In development, try to run migrations
-      if (isDev) {
+      // Try to run migrations if we're allowed to
+      if (shouldAutoMigrate) {
         console.log('[WARN] Database structure issue - running migrations...');
         try {
           await this.runMigrations();
@@ -196,7 +200,6 @@ export class AppInitializationService {
       console.error('[INFO] This usually means migrations need to run.');
       console.error('[INFO] For Docker: restart the container to trigger migrations');
       console.error('[INFO] For manual fix: npx prisma migrate deploy');
-      console.error('[INFO] For legacy databases: check /app/scripts/migrate.sh');
       throw new Error(`Database structure is invalid: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
