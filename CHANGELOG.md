@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - External transfers change holdings but don't affect cost basis or P&L calculations
 - **System Status Dialog** - View all background services status in Settings → Price Data
 - **Transaction markers on chart** - Buy/sell dots on price chart with tooltips showing transaction details
+- **BTC/Fiat Price interchancheable** - Implemented a switch that you can put the BTC price or Fiat amount during buy/sell and app will calculate the price based on that. ([140](https://github.com/wilqq-the/BTC-Tracker/issues/140))
 
 ### 🔧 Improvements
 - Price scheduler now fetches every 5 minutes (was stuck at 1 hour)
