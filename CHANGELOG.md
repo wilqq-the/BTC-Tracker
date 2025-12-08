@@ -36,6 +36,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed Profile export button - now exports transactions CSV (was broken)
 
 ### 🎨 UI
+- **Theme Presets** - Choose from 5 dark and 5 light theme styles in Settings → Display
+- **Toast Notifications** - Replaced intrusive banner messages with subtle toast notifications
 - Migrated to shadcn/ui components
 - Consolidated BitcoinChart components (removed BitcoinChartNew.tsx)
 
