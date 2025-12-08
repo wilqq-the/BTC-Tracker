@@ -8,6 +8,7 @@ import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
 type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'admin';
@@ -24,7 +25,6 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [userData, setUserData] = useState<any>(null);
 
   useEffect(() => {
@@ -39,11 +39,11 @@ export default function SettingsPage() {
         const data = await response.json();
         setSettings(data.data);
       } else {
-        showMessage('error', 'Failed to load settings');
+        toast({ title: 'Failed to load settings', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error loading settings:', error);
-      showMessage('error', 'Error loading settings');
+      toast({ title: 'Error loading settings', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -74,13 +74,13 @@ export default function SettingsPage() {
       
       if (result.success) {
         setSettings(result.data);
-        showMessage('success', result.message);
+        toast({ title: 'Settings saved' });
       } else {
-        showMessage('error', result.error || 'Failed to update settings');
+        toast({ title: result.error || 'Failed to update settings', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error updating settings:', error);
-      showMessage('error', 'Failed to update settings');
+      toast({ title: 'Failed to update settings', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -94,21 +94,16 @@ export default function SettingsPage() {
       
       if (result.success) {
         setSettings(result.data);
-        showMessage('success', 'Settings reset to defaults');
+        toast({ title: 'Settings reset to defaults' });
       } else {
-        showMessage('error', 'Failed to reset settings');
+        toast({ title: 'Failed to reset settings', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error resetting settings:', error);
-      showMessage('error', 'Failed to reset settings');
+      toast({ title: 'Failed to reset settings', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
-  };
-
-  const showMessage = (type: 'success' | 'error', text: string) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage(null), 5000);
   };
 
   if (loading) {
@@ -144,18 +139,6 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      {/* Message Bar */}
-      {message && (
-        <div className={cn(
-          "px-4 py-3 text-sm font-medium",
-          message.type === 'success' ? 'bg-profit text-white' : 'bg-destructive text-destructive-foreground'
-        )}>
-          <div className="max-w-7xl mx-auto">
-            {message.text}
-          </div>
-        </div>
-      )}
-
       {/* Settings Content with Secondary Sidebar */}
       <div className="flex flex-col lg:flex-row h-full">
         {/* Mobile Tab Navigation */}

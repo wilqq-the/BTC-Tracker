@@ -1,10 +1,41 @@
 'use client';
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
+import { getThemePreset, applyThemePreset, loadSavedThemePreset, clearThemePresetOverrides } from '@/lib/theme-presets';
 
 // Re-export useTheme for convenience
 export { useTheme };
+
+// Component that handles theme preset application
+function ThemePresetInitializer({ children }: { children: ReactNode }) {
+  const { resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    // Wait for next frame to ensure DOM class is applied
+    const applyPreset = () => {
+      // Clear any previous overrides first
+      clearThemePresetOverrides();
+      
+      const mode = resolvedTheme === 'dark' ? 'dark' : 'light';
+      const savedPresetId = loadSavedThemePreset(mode);
+      const preset = getThemePreset(savedPresetId, mode);
+      
+      if (preset) {
+        applyThemePreset(preset);
+      }
+    };
+
+    // Use requestAnimationFrame to ensure DOM is updated
+    const frameId = requestAnimationFrame(() => {
+      applyPreset();
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [resolvedTheme]);
+
+  return <>{children}</>;
+}
 
 interface ThemeProviderProps {
   children: ReactNode;
@@ -18,10 +49,12 @@ export default function ThemeProvider({ children }: ThemeProviderProps) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      {/* Use CSS variables from globals.css - no hardcoded colors */}
-      <div className="min-h-screen bg-background text-foreground">
-        {children}
-      </div>
+      <ThemePresetInitializer>
+        {/* Use CSS variables from globals.css - no hardcoded colors */}
+        <div className="min-h-screen bg-background text-foreground">
+          {children}
+        </div>
+      </ThemePresetInitializer>
     </NextThemesProvider>
   );
 }
