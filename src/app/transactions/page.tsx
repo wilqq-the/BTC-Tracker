@@ -62,7 +62,11 @@ import {
   BarChart3Icon,
   CalendarIcon,
   ListChecksIcon,
+  ColumnsIcon,
+  StickyNoteIcon,
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface BitcoinTransaction {
   id: number;
@@ -96,6 +100,36 @@ interface BitcoinTransaction {
 }
 
 type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+
+// Column configuration
+type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
+
+interface ColumnConfig {
+  id: ColumnId;
+  label: string;
+  defaultVisible: boolean;
+  sortable: boolean;
+  colSpan: number;
+}
+
+const COLUMNS: ColumnConfig[] = [
+  { id: 'date', label: 'Date', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'type', label: 'Type', defaultVisible: true, sortable: true, colSpan: 1 },
+  { id: 'amount', label: 'Amount', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'price', label: 'Price', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'value', label: 'Value', defaultVisible: true, sortable: false, colSpan: 2 },
+  { id: 'pnl', label: 'P&L', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'notes', label: 'Notes', defaultVisible: false, sortable: false, colSpan: 2 },
+];
+
+const STORAGE_KEY = 'btc-tracker-tx-columns';
+
+const getDefaultVisibility = (): Record<ColumnId, boolean> => {
+  return COLUMNS.reduce((acc, col) => {
+    acc[col.id] = col.defaultVisible;
+    return acc;
+  }, {} as Record<ColumnId, boolean>);
+};
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<BitcoinTransaction[]>([]);
@@ -134,6 +168,34 @@ export default function TransactionsPage() {
   const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
   const [bulkActionMode, setBulkActionMode] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [columnVisibility, setColumnVisibility] = useState<Record<ColumnId, boolean>>(getDefaultVisibility);
+
+  // Load column visibility from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setColumnVisibility(prev => ({ ...prev, ...parsed }));
+      }
+    } catch (e) {
+      console.error('Failed to load column preferences:', e);
+    }
+  }, []);
+
+  // Save column visibility to localStorage
+  const updateColumnVisibility = (columnId: ColumnId, visible: boolean) => {
+    const newVisibility = { ...columnVisibility, [columnId]: visible };
+    setColumnVisibility(newVisibility);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newVisibility));
+    } catch (e) {
+      console.error('Failed to save column preferences:', e);
+    }
+  };
+
+  const visibleColumns = COLUMNS.filter(col => columnVisibility[col.id]);
+  const totalColSpan = visibleColumns.reduce((sum, col) => sum + col.colSpan, 0) + 1; // +1 for actions
 
   useEffect(() => {
     loadTransactions();
@@ -713,6 +775,33 @@ export default function TransactionsPage() {
                   )}
                 </Button>
 
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <ColumnsIcon className="size-4 mr-2" />
+                      Columns
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-48 p-2">
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground px-2 py-1">Toggle columns</p>
+                      {COLUMNS.map((column) => (
+                        <div
+                          key={column.id}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                          onClick={() => updateColumnVisibility(column.id, !columnVisibility[column.id])}
+                        >
+                          <Checkbox
+                            checked={columnVisibility[column.id]}
+                            onCheckedChange={(checked) => updateColumnVisibility(column.id, !!checked)}
+                          />
+                          <span className="text-sm">{column.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+
                 <Button
                   variant={bulkActionMode ? 'default' : 'outline'}
                   size="sm"
@@ -836,25 +925,36 @@ export default function TransactionsPage() {
         <Card>
           <CardContent className="p-0">
             {/* Table Header */}
-            <div className="hidden lg:grid grid-cols-12 gap-4 px-6 py-3 bg-muted/30 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {bulkActionMode && <div className="col-span-1" />}
-              <div className={cn("cursor-pointer hover:text-foreground transition-colors flex items-center gap-1", bulkActionMode ? "col-span-2" : "col-span-2")} onClick={() => handleSort('date')}>
-                Date {sortBy === 'date' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
-              </div>
-              <div className="col-span-1 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('type')}>
-                Type {sortBy === 'type' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
-              </div>
-              <div className={cn("cursor-pointer hover:text-foreground transition-colors flex items-center gap-1", bulkActionMode ? "col-span-2" : "col-span-2")} onClick={() => handleSort('amount')}>
-                Amount {sortBy === 'amount' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
-              </div>
-              <div className="col-span-2 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('price')}>
-                Price {sortBy === 'price' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
-              </div>
-              <div className="col-span-2">Value</div>
-              <div className="col-span-2 cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('pnl')}>
-                P&L {sortBy === 'pnl' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
-              </div>
-              <div className="col-span-1 text-right">Actions</div>
+            <div className="hidden lg:grid gap-4 px-6 py-3 bg-muted/30 border-b text-xs font-medium text-muted-foreground uppercase tracking-wider" style={{ gridTemplateColumns: `${bulkActionMode ? '40px ' : ''}${visibleColumns.map(c => `${c.colSpan}fr`).join(' ')} 60px` }}>
+              {bulkActionMode && <div />}
+              {columnVisibility.date && (
+                <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('date')}>
+                  Date {sortBy === 'date' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+                </div>
+              )}
+              {columnVisibility.type && (
+                <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('type')}>
+                  Type {sortBy === 'type' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+                </div>
+              )}
+              {columnVisibility.amount && (
+                <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('amount')}>
+                  Amount {sortBy === 'amount' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+                </div>
+              )}
+              {columnVisibility.price && (
+                <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('price')}>
+                  Price {sortBy === 'price' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+                </div>
+              )}
+              {columnVisibility.value && <div>Value</div>}
+              {columnVisibility.pnl && (
+                <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('pnl')}>
+                  P&L {sortBy === 'pnl' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
+                </div>
+              )}
+              {columnVisibility.notes && <div>Notes</div>}
+              <div className="text-right">Actions</div>
             </div>
 
             {/* Empty State */}
@@ -894,9 +994,9 @@ export default function TransactionsPage() {
                       )}
                     >
                       {/* Desktop View */}
-                      <div className="hidden lg:grid grid-cols-12 gap-4 items-center">
+                      <div className="hidden lg:grid gap-4 items-center" style={{ gridTemplateColumns: `${bulkActionMode ? '40px ' : ''}${visibleColumns.map(c => `${c.colSpan}fr`).join(' ')} 60px` }}>
                         {bulkActionMode && (
-                          <div className="col-span-1">
+                          <div>
                             <button
                               onClick={() => toggleTransactionSelection(transaction.id)}
                               className={cn(
@@ -910,101 +1010,118 @@ export default function TransactionsPage() {
                             </button>
                           </div>
                         )}
-                        <div className={cn(bulkActionMode ? "col-span-2" : "col-span-2")}>
-                          <p className="font-medium">{new Date(transaction.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(transaction.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-                        </div>
-                        <div className="col-span-1">
-                          <Badge 
-                            variant="outline"
-                            className={cn(
-                              "font-semibold",
-                              transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
-                              transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
-                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
-                              transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
-                              transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
-                            )}
-                          >
-                            {transaction.type === 'TRANSFER' 
-                              ? transaction.transfer_type === 'TRANSFER_IN' 
-                                ? 'TRANSFER IN' 
-                                : transaction.transfer_type === 'TRANSFER_OUT' 
-                                  ? 'TRANSFER OUT' 
-                                  : 'TRANSFER'
-                              : transaction.type}
-                          </Badge>
-                        </div>
-                        <div className={cn(bulkActionMode ? "col-span-2" : "col-span-2")}>
-                          <p className="font-mono font-medium">{transaction.btc_amount.toFixed(8)}</p>
-                          <p className="text-xs text-muted-foreground font-mono">{(transaction.btc_amount * 100000000).toLocaleString()} sats</p>
-                        </div>
-                        <div className="col-span-2">
-                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
-                            // External transfers show reference price
-                            transaction.original_price_per_btc > 0 ? (
-                              <>
-                                <p className="font-medium text-muted-foreground">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
-                                <p className="text-xs text-muted-foreground/70">ref. price</p>
-                              </>
-                            ) : (
+                        {columnVisibility.date && (
+                          <div>
+                            <p className="font-medium">{new Date(transaction.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                            <p className="text-xs text-muted-foreground">{new Date(transaction.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                          </div>
+                        )}
+                        {columnVisibility.type && (
+                          <div>
+                            <Badge 
+                              variant="outline"
+                              className={cn(
+                                "font-semibold",
+                                transaction.type === 'BUY' && "border-profit/50 text-profit bg-profit/10",
+                                transaction.type === 'SELL' && "border-loss/50 text-loss bg-loss/10",
+                                transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_IN' && "border-green-500/50 text-green-500 bg-green-500/10",
+                                transaction.type === 'TRANSFER' && transaction.transfer_type === 'TRANSFER_OUT' && "border-red-500/50 text-red-500 bg-red-500/10",
+                                transaction.type === 'TRANSFER' && transaction.transfer_type !== 'TRANSFER_IN' && transaction.transfer_type !== 'TRANSFER_OUT' && "border-blue-500/50 text-blue-500 bg-blue-500/10"
+                              )}
+                            >
+                              {transaction.type === 'TRANSFER' 
+                                ? transaction.transfer_type === 'TRANSFER_IN' 
+                                  ? 'TRANSFER IN' 
+                                  : transaction.transfer_type === 'TRANSFER_OUT' 
+                                    ? 'TRANSFER OUT' 
+                                    : 'TRANSFER'
+                                : transaction.type}
+                            </Badge>
+                          </div>
+                        )}
+                        {columnVisibility.amount && (
+                          <div>
+                            <p className="font-mono font-medium">{transaction.btc_amount.toFixed(8)}</p>
+                            <p className="text-xs text-muted-foreground font-mono">{(transaction.btc_amount * 100000000).toLocaleString()} sats</p>
+                          </div>
+                        )}
+                        {columnVisibility.price && (
+                          <div>
+                            {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                              transaction.original_price_per_btc > 0 ? (
+                                <>
+                                  <p className="font-medium text-muted-foreground">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
+                                  <p className="text-xs text-muted-foreground/70">ref. price</p>
+                                </>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )
+                            ) : transaction.type === 'TRANSFER' ? (
                               <span className="text-muted-foreground">—</span>
-                            )
-                          ) : transaction.type === 'TRANSFER' ? (
-                            // Internal transfers have no price
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
-                            // BUY/SELL show actual price
-                            <>
-                              <p className="font-medium">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
-                              {transaction.original_currency !== transaction.main_currency && (
-                                <p className="text-xs text-muted-foreground">{formatCurrency(transaction.main_currency_price_per_btc, transaction.main_currency)}</p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="col-span-2">
-                          {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
-                            // External transfers: show value at transfer time + current value
-                            <>
-                              <p className="font-semibold">
-                                {transaction.original_price_per_btc > 0 
-                                  ? formatCurrency(transaction.btc_amount * transaction.original_price_per_btc, transaction.original_currency)
-                                  : formatCurrency(currentValue, transaction.main_currency)
-                                }
+                            ) : (
+                              <>
+                                <p className="font-medium">{formatCurrency(transaction.original_price_per_btc, transaction.original_currency)}</p>
+                                {transaction.original_currency !== transaction.main_currency && (
+                                  <p className="text-xs text-muted-foreground">{formatCurrency(transaction.main_currency_price_per_btc, transaction.main_currency)}</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {columnVisibility.value && (
+                          <div>
+                            {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
+                              <>
+                                <p className="font-semibold">
+                                  {transaction.original_price_per_btc > 0 
+                                    ? formatCurrency(transaction.btc_amount * transaction.original_price_per_btc, transaction.original_currency)
+                                    : formatCurrency(currentValue, transaction.main_currency)
+                                  }
+                                </p>
+                                {transaction.original_price_per_btc > 0 && (
+                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                                )}
+                              </>
+                            ) : transaction.type === 'TRANSFER' ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <>
+                                <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                                {transaction.type === 'BUY' && (
+                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+                        {columnVisibility.pnl && (
+                          <div>
+                            {transaction.type === 'TRANSFER' ? (
+                              <span className="text-muted-foreground">—</span>
+                            ) : (
+                              <div>
+                                <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                  {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
+                                </p>
+                                <p className={cn("text-xs font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
+                                  {formatPercentage(pnlPercent)}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {columnVisibility.notes && (
+                          <div className="truncate">
+                            {transaction.notes ? (
+                              <p className="text-sm text-muted-foreground truncate" title={transaction.notes}>
+                                {transaction.notes}
                               </p>
-                              {transaction.original_price_per_btc > 0 && (
-                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
-                              )}
-                            </>
-                          ) : transaction.type === 'TRANSFER' ? (
-                            // Internal transfers: no value to show
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
-                            // BUY/SELL: show original transaction value
-                            <>
-                              <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
-                              {transaction.type === 'BUY' && (
-                                <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <div className="col-span-2">
-                          {transaction.type === 'TRANSFER' ? (
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
-                            <div>
-                              <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
-                              </p>
-                              <p className={cn("text-xs font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {formatPercentage(pnlPercent)}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                        <div className="col-span-1 text-right">
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
+                            )}
+                          </div>
+                        )}
+                        <div className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon" className="size-8 opacity-0 group-hover:opacity-100 transition-opacity">

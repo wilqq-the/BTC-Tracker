@@ -22,14 +22,35 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 *Install BTC Tracker with one click on your Umbrel home server*
 
-## What it does
+## Features
 
-- **Multi-user setup** - First user becomes admin, can create accounts for others
-- **Import from exchanges** - Kraken, Binance, Coinbase, Strike (auto-detects CSV format)
-- **Real-time tracking** - Live Bitcoin prices and portfolio value
-- **Charts and analytics** - Interactive price charts with your transaction history
-- **Complete privacy** - Everything runs on your server, no external data sharing
-- **Multi-currency** - Track in USD, EUR, GBP, PLN, or add custom currencies
+### Portfolio Tracking
+- **Live price updates** - Automatic price fetching with real-time P&L calculations
+- **Transaction history** - Buy, sell, and transfer transactions with full history
+- **Hot/cold distribution** - Track your storage distribution across wallets
+- **Multi-currency support** - USD, EUR, GBP, PLN, or add your own custom currencies
+
+### Analytics & Insights
+- **Performance tracking** - See your gains across different timeframes (24h, 7d, 30d, 1y, all-time)
+- **DCA analysis** - Understand your dollar-cost averaging performance
+- **Interactive charts** - Price charts with your transaction markers
+- **Monthly summaries** - Track your accumulation month by month
+
+### Planning Tools
+- **Savings goals** - Set BTC targets and track progress
+- **DCA calculator** - Plan future purchases with backtesting
+- **Recurring transactions** - Auto-log your DCA purchases
+
+### Customizable Dashboard
+- **Drag & drop widgets** - Arrange your dashboard your way
+- **Show/hide widgets** - Only see what matters to you
+- **Multiple widget types** - Chart, portfolio, transactions, goals, DCA analysis, and more
+
+### Privacy & Control
+- **100% self-hosted** - Your data never leaves your server
+- **Multi-user support** - First user becomes admin, create accounts for family
+- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike
+- **Simple backup** - Single SQLite file, easy to backup and restore
 
 ## Screenshots
 
@@ -48,6 +69,27 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 ![Analytics](screenshots/analytics.png)
 *Advanced portfolio analytics and performance charts*
+</details>
+
+<details>
+<summary>DCA Analysis - Performance breakdown</summary>
+
+![Analysis](screenshots/analysis.png)
+*DCA performance analysis and statistics*
+</details>
+
+<details>
+<summary>Goals - Savings targets</summary>
+
+![Goals](screenshots/goals.png)
+*Set and track your Bitcoin savings goals*
+</details>
+
+<details>
+<summary>Auto DCA - Recurring transactions</summary>
+
+![Auto DCA](screenshots/autodca.png)
+*Automated recurring transaction scheduling*
 </details>
 
 <details>
@@ -112,10 +154,9 @@ Supports most major exchanges. If yours isn't supported, open an issue with exam
 
 ## Tech stack
 
-- **Frontend**: Next.js, React, TypeScript
+- **Frontend**: Next.js, React, TypeScript, shadcn/ui
 - **Backend**: Next.js API routes, Prisma ORM
 - **Database**: SQLite (single file, easy backups)
-- **Charts**: TradingView Lightweight Charts
 - **Deployment**: Docker
 
 ## Development
