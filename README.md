@@ -4,6 +4,7 @@
 ![Docker Image Size](https://img.shields.io/docker/image-size/thewilqq/btc-tracker/stable?style=flat-square&logo=docker&label=Image%20Size)
 ![GitHub Stars](https://img.shields.io/github/stars/wilqq-the/BTC-Tracker?style=flat-square&logo=github&label=Stars)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/v2ByAYHA)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/wilqqthe)
 [![Lightning](https://img.shields.io/badge/Lightning-wilqqthe%40strike.me-yellow?style=flat-square&logo=lightning)](lightning:wilqqthe@strike.me)
 
@@ -201,6 +202,7 @@ To restore, copy the file back and restart the app.
 
 ## Community
 
+- [Discord](https://discord.gg/v2ByAYHA) - Chat with other users and get help
 - [GitHub Discussions](https://github.com/wilqq-the/BTC-Tracker/discussions) - Ask questions, share ideas
 - [Issue Tracker](https://github.com/wilqq-the/BTC-Tracker/issues) - Report bugs, request features
 
