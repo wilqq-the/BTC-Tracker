@@ -215,10 +215,36 @@ export class AppInitializationService {
   }
 
   private static async verifyDatabaseStructure(): Promise<void> {
-    // Test each critical table with a simple query
+    // Test critical tables and columns that newer versions need
     // These will throw if columns are missing (schema mismatch)
-    await prisma.user.findFirst({ select: { id: true, email: true } });
-    await prisma.bitcoinTransaction.findFirst({ select: { id: true, type: true } });
+    
+    // Check users table (including 2FA fields from 0.6.7)
+    await prisma.user.findFirst({ 
+      select: { 
+        id: true, 
+        email: true,
+        twoFactorEnabled: true,  // Added in 0.6.7
+      } 
+    });
+    
+    // Check transactions table (including transfer fields from 0.6.4)
+    await prisma.bitcoinTransaction.findFirst({ 
+      select: { 
+        id: true, 
+        type: true,
+        transferType: true,  // Added in 0.6.4
+      } 
+    });
+    
+    // Check settings
     await prisma.appSettings.findFirst({ select: { id: true } });
+    
+    // Check portfolio summary (including wallet fields from 0.6.4)
+    await prisma.portfolioSummary.findFirst({
+      select: {
+        id: true,
+        coldWalletBtc: true,  // Added in 0.6.4
+      }
+    });
   }
 }
