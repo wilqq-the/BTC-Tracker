@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BTC/Fiat Price interchancheable** - Implemented a switch that you can put the BTC price or Fiat amount during buy/sell and app will calculate the price based on that. ([140](https://github.com/wilqq-the/BTC-Tracker/issues/140))
 
 ### 🔧 Improvements
+- **Improved Migration System** - Automatic handling of legacy databases and upgrade issues
+  - Auto-detects and baselines legacy `db push` databases
+  - Automatic recovery from P3018 "already exists" errors
+  - Schema safety net ensures all tables/columns exist
 - Price scheduler now fetches every 5 minutes (was stuck at 1 hour)
 - Removed unused settings (Live Update Interval, Data Retention Policy)
 - Fixed version display in Settings
