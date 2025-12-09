@@ -27,7 +27,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import UserAvatar from '@/components/UserAvatar';
 
 interface NavigationProps {
   onMenuClick?: () => void;
@@ -47,28 +47,26 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
   }, []);
 
   // Fetch extended user data
-  useEffect(() => {
+  const fetchUserData = () => {
     if (session?.user?.email) {
       fetch('/api/user')
         .then(res => res.ok ? res.json() : null)
         .then(data => setUserData(data))
         .catch(console.error);
     }
+  };
+
+  useEffect(() => {
+    fetchUserData();
   }, [session?.user?.email]);
 
-  // Get user initials for avatar fallback
-  const getUserInitials = () => {
-    if (userData?.displayName) {
-      return userData.displayName.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-    }
-    if (userData?.name) {
-      return userData.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-    }
-    if (session?.user?.email) {
-      return session.user.email.substring(0, 2).toUpperCase();
-    }
-    return 'U';
-  };
+  // Refresh user data when window regains focus (catches avatar updates from settings)
+  useEffect(() => {
+    const handleFocus = () => fetchUserData();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [session?.user?.email]);
+
 
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
@@ -156,15 +154,12 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
                     variant="ghost" 
                     className="relative h-auto py-1.5 px-2 gap-2 hover:bg-muted/50"
                   >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage 
-                        src={userData?.profilePicture || ''} 
-                        alt={userData?.displayName || userData?.name || 'User'} 
-                      />
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {getUserInitials()}
-                      </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      src={userData?.profilePicture}
+                      name={userData?.displayName || userData?.name}
+                      email={session?.user?.email}
+                      size="sm"
+                    />
                     <div className="hidden sm:flex flex-col items-start">
                       <span className="text-sm font-medium leading-tight max-w-[120px] truncate">
                         {userData?.displayName || userData?.name || 'User'}

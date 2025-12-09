@@ -34,11 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed unused settings (Live Update Interval, Data Retention Policy)
 - Fixed version display in Settings
 - Chart stats grid now responsive (1 column on mobile)
+- Reduced migration script verbosity (use `--verbose` for detailed logs)
+- CSV import now handles Excel-quoted rows and smart quotes
 
 ### 🐛 Bug Fixes
 - Fixed P&L calculation on Transactions page to match sidebar and analytics
 - Fixed Monthly Purchase Performance chart - bars now scale correctly, colors match actual gains/losses
 - Fixed Profile export button - now exports transactions CSV (was broken)
+- Fixed double migration execution in Docker
+- Fixed DATABASE_URL loading in migration script
+- Fixed CSV export escaping for commas and quotes in transaction notes
+- Fixed avatar display in navigation bar
+- Added 21bitcoin CSV export parser support
 
 ### 🎨 UI
 - **Theme Presets** - Choose from 5 dark and 5 light theme styles in Settings → Display

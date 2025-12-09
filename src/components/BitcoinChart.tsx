@@ -67,6 +67,8 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
   const [priceChange24h, setPriceChange24h] = useState<number>(0);
   const [priceChangePercent24h, setPriceChangePercent24h] = useState<number>(0);
   const [avgBuyPrice, setAvgBuyPrice] = useState<number>(0);
+  const [currentPriceMain, setCurrentPriceMain] = useState<number>(0); // BTC price in user's main currency
+  const [mainCurrency, setMainCurrency] = useState<string>('USD');
   const [transactions, setTransactions] = useState<any[]>([]);
 
   // Load current price and subscribe to updates
@@ -93,21 +95,30 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
     return unsubscribe;
   }, []);
 
-  // Load average buy price
+  // Load average buy price and current price in main currency
   useEffect(() => {
-  const loadAvgBuyPrice = async () => {
+  const loadPortfolioData = async () => {
     try {
       const response = await fetch('/api/portfolio-metrics');
       const result = await response.json();
-        if (result.success && result.data?.avgBuyPrice) {
-          setAvgBuyPrice(result.data.avgBuyPrice);
+        if (result.success && result.data) {
+          if (result.data.avgBuyPrice) {
+            setAvgBuyPrice(result.data.avgBuyPrice);
+          }
+          // Get current BTC price in user's main currency for consistent P&L calculation
+          if (result.data.currentBtcPrice) {
+            setCurrentPriceMain(result.data.currentBtcPrice);
+          }
+          if (result.data.mainCurrency) {
+            setMainCurrency(result.data.mainCurrency);
+          }
       }
     } catch (error) {
-        console.error('Error loading avg buy price:', error);
+        console.error('Error loading portfolio data:', error);
     }
   };
 
-    loadAvgBuyPrice();
+    loadPortfolioData();
   }, []);
 
   // Load transactions
@@ -157,11 +168,13 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
       const dayTxs = txByDate.get(dateStr);
       
       if (dayTxs && dayTxs.length > 0) {
-        const buys = dayTxs.filter(t => t.type === 'BUY');
-        const sells = dayTxs.filter(t => t.type === 'SELL');
+        const buys = dayTxs.filter((t: any) => t.type === 'BUY');
+        const sells = dayTxs.filter((t: any) => t.type === 'SELL');
         
-        const totalBtc = dayTxs.reduce((sum, t) => sum + t.btc_amount, 0);
-        const totalValue = dayTxs.reduce((sum, t) => sum + (t.main_currency_total_amount || t.original_total_amount), 0);
+        const totalBtc = dayTxs.reduce((sum: number, t: any) => sum + t.btc_amount, 0);
+        // Use main_currency_total_amount consistently (already converted to user's main currency by API)
+        const totalValue = dayTxs.reduce((sum: number, t: any) => sum + (t.main_currency_total_amount || 0), 0);
+        // Calculate average price per BTC in main currency
         const avgPrice = totalBtc > 0 ? totalValue / totalBtc : 0;
         
         let type: 'BUY' | 'SELL' | 'MIXED' = 'BUY';
@@ -181,7 +194,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
             avgPrice,
           },
         };
-    }
+      }
 
       return dataPoint;
     });
@@ -297,7 +310,10 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
     if (!active || !payload?.length) return null;
     const data = payload[0].payload as ChartDataWithTx;
     const tx = data.transaction;
-    const isProfitable = tx && tx.avgPrice < currentPrice;
+    // Use currentPriceMain (BTC price in user's main currency) for consistent P&L calculation
+    // This ensures we compare EUR with EUR, USD with USD, etc.
+    const priceForComparison = currentPriceMain || currentPrice;
+    const isProfitable = tx && tx.avgPrice < priceForComparison;
     
     return (
       <div className="bg-popover border border-border rounded-lg shadow-lg p-3 text-sm min-w-[200px]">
@@ -334,22 +350,22 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                 <span className="font-medium text-foreground">{tx.totalBtc.toFixed(8)}</span>
            </div>
               <div className="flex justify-between gap-4">
-                <span>Avg Price:</span>
+                <span>Avg Price ({mainCurrency}):</span>
                 <span className="font-medium text-foreground">
-                  ${tx.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {tx.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
              </div>
               <div className="flex justify-between gap-4">
-                <span>Total Value:</span>
+                <span>Total ({mainCurrency}):</span>
                 <span className="font-medium text-foreground">
-                  ${tx.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {tx.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
              </div>
-              {tx.type !== 'SELL' && currentPrice > 0 && (
+              {tx.type !== 'SELL' && priceForComparison > 0 && (
                 <div className="flex justify-between gap-4 pt-1 border-t mt-1">
                   <span>P&L:</span>
                   <span className={cn("font-medium", isProfitable ? "text-green-500" : "text-red-500")}>
-                    {isProfitable ? '+' : ''}{(((currentPrice - tx.avgPrice) / tx.avgPrice) * 100).toFixed(2)}%
+                    {isProfitable ? '+' : ''}{(((priceForComparison - tx.avgPrice) / tx.avgPrice) * 100).toFixed(2)}%
                   </span>
              </div>
               )}
@@ -502,16 +518,16 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
                   <span>Buy</span>
-            </div>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
                   <span>Sell</span>
-            </div>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-purple-500" />
                   <span>Mixed</span>
+                </div>
               </div>
-          </div>
             )}
 
             {/* Stats Footer */}
