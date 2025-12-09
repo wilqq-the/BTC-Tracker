@@ -123,8 +123,7 @@ docker-compose up -d
 npm install
 cp .env.example .env
 # Add NEXTAUTH_SECRET to .env
-npm exec prisma db push
-npm run dev
+npm run dev  # Migrations run automatically
 ```
 
 Open `http://localhost:3000` and register the first user (becomes admin automatically).

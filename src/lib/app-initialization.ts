@@ -142,7 +142,7 @@ export class AppInitializationService {
   }
 
   private static async verifyDatabase(): Promise<void> {
-    // Database migrations are handled by docker-entrypoint.sh / migrate.sh
+    // Database migrations are handled by docker-entrypoint.sh / migrate.js
     // This just verifies the database is accessible and has the expected structure
     
     try {
@@ -163,7 +163,7 @@ export class AppInitializationService {
     } catch (error) {
       console.error('[ERROR] Database verification failed:', error);
       console.error('[INFO] Database migrations should be run by the container entrypoint.');
-      console.error('[INFO] If running locally, run: sh scripts/migrate.sh');
+      console.error('[INFO] If running locally, run: npm run db:migrate');
       throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
