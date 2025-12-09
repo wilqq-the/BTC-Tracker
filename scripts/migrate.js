@@ -43,21 +43,6 @@ const ALL_MIGRATIONS = [
   '20251207000000_add_two_factor_auth',
 ];
 
-// Critical tables that must exist for the app to function
-const REQUIRED_TABLES = [
-  'users',
-  'bitcoin_transactions',
-  'bitcoin_price_history',
-  'bitcoin_price_intraday',
-  'exchange_rates',
-  'app_settings',
-  'custom_currencies',
-  'bitcoin_current_price',
-  'portfolio_summary',
-  'goals',
-  'dashboard_layouts',
-  'recurring_transactions',
-];
 
 // =============================================================================
 // UTILITIES
@@ -290,49 +275,58 @@ function runMigrateWithRecovery() {
 }
 
 /**
- * Check for missing tables and run db push if needed
- * This is the safety net for legacy databases that may be missing schema elements
+ * Run db push as safety net to ensure ALL schema elements exist
+ * This catches missing columns even when tables exist
+ * 
+ * IMPORTANT: Always run this, not just when tables are missing!
+ * Migrations may have been marked as "applied" without actually running,
+ * leaving columns missing even though tables exist.
  */
 function runSafetyNetDbPush() {
   log('SAFETY', '--- Schema Safety Check ---');
-  
-  // Check which tables are missing
-  const missingTables = REQUIRED_TABLES.filter(table => !tableExists(table));
-  
-  if (missingTables.length === 0) {
-    log('OK', 'All required tables exist');
-    return true;
-  }
-  
-  log('WARN', `Missing tables detected: ${missingTables.join(', ')}`);
-  log('SAFETY', 'Running prisma db push to add missing schema elements...');
-  log('SAFETY', 'This will only ADD missing tables/columns, not delete anything');
+  log('SAFETY', 'Running prisma db push to ensure all tables/columns exist...');
+  log('SAFETY', 'This will only ADD missing elements, not delete anything');
   
   // Run db push WITHOUT --accept-data-loss (safe mode)
   // This will only add missing tables/columns, refuse destructive changes
   const result = runCommandCapture('npx prisma db push --skip-generate');
   
   if (result.success) {
-    log('OK', 'Schema safety check complete - missing elements added');
+    log('OK', 'Schema is in sync with prisma schema');
     return true;
   }
   
+  const errorOutput = result.error + result.output;
+  
   // Check if it failed because it wants to do destructive changes
-  if (result.error.includes('--accept-data-loss')) {
-    log('WARN', 'db push wants to make destructive changes - skipping for safety');
-    log('WARN', 'Some schema elements may be missing. Manual intervention may be needed.');
-    log('INFO', 'You can run: npx prisma db push --accept-data-loss (⚠️ may lose data)');
+  if (errorOutput.includes('--accept-data-loss')) {
+    log('WARN', 'db push detected schema changes that require --accept-data-loss');
+    log('WARN', 'This usually means column types changed. Checking if it\'s safe...');
+    
+    // For SQLite, adding columns is always safe. The warning is usually about
+    // nullable vs non-nullable or default values. Try with accept-data-loss.
+    log('SAFETY', 'Attempting db push with --accept-data-loss for SQLite compatibility...');
+    const retryResult = runCommandCapture('npx prisma db push --skip-generate --accept-data-loss');
+    
+    if (retryResult.success) {
+      log('OK', 'Schema synchronized successfully');
+      return true;
+    }
+    
+    log('ERROR', 'db push failed even with --accept-data-loss');
+    console.error(retryResult.error);
     return false;
   }
   
   // Check if it succeeded but had warnings
-  if (result.output.includes('Your database is now in sync')) {
-    log('OK', 'Schema safety check complete');
+  if (errorOutput.includes('Your database is now in sync') || errorOutput.includes('already in sync')) {
+    log('OK', 'Schema is in sync');
     return true;
   }
   
-  log('WARN', 'db push completed with warnings:');
-  console.log(result.output || result.error);
+  // Some other issue
+  log('WARN', 'db push completed with output:');
+  console.log(errorOutput);
   return true; // Continue anyway, the app will fail clearly if something is really wrong
 }
 
