@@ -117,21 +117,31 @@ export async function GET(request: NextRequest) {
         'Updated At'
       ];
 
+      // Helper to escape CSV values (quote if contains comma, quote, or newline)
+      const escapeCsvValue = (value: any): string => {
+        if (value === null || value === undefined) return '';
+        const str = String(value).trim(); // Trim whitespace
+        if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
       const csvRows = transactions.map(tx => [
-        tx.id,
-        tx.type,
-        tx.btc_amount,
-        tx.original_price_per_btc,
-        tx.original_currency,
-        tx.original_total_amount,
-        tx.fees || 0,
-        tx.fees_currency || tx.original_currency,
-        tx.transaction_date,
-        `"${(tx.notes || '').replace(/"/g, '""')}"`, // Escape quotes in notes
-        tx.transfer_type || '',
-        tx.destination_address || '',
-        tx.created_at,
-        tx.updated_at
+        escapeCsvValue(tx.id),
+        escapeCsvValue(tx.type),
+        escapeCsvValue(tx.btc_amount),
+        escapeCsvValue(tx.original_price_per_btc),
+        escapeCsvValue(tx.original_currency),
+        escapeCsvValue(tx.original_total_amount),
+        escapeCsvValue(tx.fees || 0),
+        escapeCsvValue(tx.fees_currency || tx.original_currency),
+        escapeCsvValue(tx.transaction_date),
+        escapeCsvValue(tx.notes),
+        escapeCsvValue(tx.transfer_type || ''),
+        escapeCsvValue(tx.destination_address || ''),
+        escapeCsvValue(tx.created_at),
+        escapeCsvValue(tx.updated_at)
       ]);
 
       const csvContent = [

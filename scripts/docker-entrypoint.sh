@@ -47,7 +47,7 @@ if [ "$CURRENT_UID" = "0" ]; then
     su-exec nextjs sh -c "cd /app && HOME='$HOME' node /app/scripts/migrate.js" || true
     
     echo "Starting app as nextjs user..."
-    exec su-exec nextjs npm start
+    exec su-exec nextjs npm run start:skip-migrate
 else
     # Non-root (Umbrel etc)
     setup_db_dir
@@ -57,5 +57,5 @@ else
     run_migrations
     
     echo "Starting app..."
-    exec npm start
+    exec npm run start:skip-migrate
 fi

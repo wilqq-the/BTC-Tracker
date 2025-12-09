@@ -7,6 +7,7 @@ import { CurrencySymbolService } from '@/lib/currency-symbol-service';
 import UserAvatar from './UserAvatar';
 import AvatarUploadModal from './AvatarUploadModal';
 import SystemStatusDialog from './SystemStatusDialog';
+import TwoFactorSetup from './TwoFactorSetup';
 import { useTheme } from './ui/ThemeProvider';
 import { useDarkThemePreset } from '@/hooks/use-dark-theme-preset';
 import { cn } from '@/lib/utils';
@@ -1042,9 +1043,13 @@ export function UserAccountSettingsPanel() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
+  
+  // 2FA state
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
 
   useEffect(() => {
     fetchUserData()
+    load2FAStatus()
   }, [])
 
   const fetchUserData = async () => {
@@ -1060,6 +1065,18 @@ export function UserAccountSettingsPanel() {
       console.error('Error fetching user data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const load2FAStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/2fa/setup')
+      if (response.ok) {
+        const data = await response.json()
+        setTwoFactorEnabled(data.enabled || false)
+      }
+    } catch (error) {
+      console.error('Error loading 2FA status:', error)
     }
   }
 
@@ -1510,6 +1527,12 @@ export function UserAccountSettingsPanel() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Two-Factor Authentication */}
+      <TwoFactorSetup 
+        isEnabled={twoFactorEnabled} 
+        onStatusChange={load2FAStatus}
+      />
 
       {/* Avatar Upload Modal */}
       <AvatarUploadModal
