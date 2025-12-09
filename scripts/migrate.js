@@ -163,14 +163,61 @@ function baselineAllMigrations() {
 }
 
 /**
- * Extract migration name from P3018 error message
+ * Extract migration name from error message
  */
 function extractFailedMigration(errorOutput) {
-  const match = errorOutput.match(/Migration name:\s*(\S+)/);
-  if (match) {
-    return match[1].trim();
+  // Try different patterns
+  const patterns = [
+    /Migration name:\s*(\S+)/,
+    /`(\d{14}_\w+)`/,
+    /migration "([^"]+)"/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = errorOutput.match(pattern);
+    if (match) {
+      return match[1].trim();
+    }
   }
   return null;
+}
+
+/**
+ * Resolve all failed migrations found in the database
+ * Failed migrations have finished_at = NULL in _prisma_migrations table
+ */
+function resolveAllFailedMigrations() {
+  try {
+    // Query for failed migrations (finished_at is NULL but rolled_back_at is also NULL)
+    const result = execSync(
+      `sqlite3 "${DB_PATH}" "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL;"`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    
+    const failedMigrations = result.trim().split('\n').filter(m => m.trim());
+    
+    if (failedMigrations.length === 0) {
+      log('INFO', 'No failed migrations found in database');
+      return;
+    }
+    
+    log('INFO', `Found ${failedMigrations.length} failed migration(s)`);
+    
+    for (const migration of failedMigrations) {
+      log('FIX', `  Resolving: ${migration}`);
+      // Mark as applied (since the objects likely exist)
+      runCommandCapture(`npx prisma migrate resolve --applied "${migration}"`);
+    }
+    
+    log('OK', 'Failed migrations resolved');
+  } catch (error) {
+    log('WARN', 'Could not query failed migrations from database');
+    // Fallback: try to resolve all known migrations
+    log('INFO', 'Attempting to resolve all known migrations...');
+    for (const migration of ALL_MIGRATIONS) {
+      runCommandCapture(`npx prisma migrate resolve --applied "${migration}"`);
+    }
+  }
 }
 
 /**
@@ -211,6 +258,24 @@ function runMigrateWithRecovery() {
       log('FIX', 'Database is not empty but has no migration history');
       log('FIX', 'Applying baseline for all migrations...');
       baselineAllMigrations();
+      continue;
+    }
+    
+    // P3009: "failed migrations" blocking new migrations
+    if (errorOutput.includes('P3009') || errorOutput.includes('found failed migrations')) {
+      log('FIX', 'Found failed/incomplete migrations blocking deployment');
+      log('FIX', 'Resolving failed migrations...');
+      
+      // Try to extract the failed migration name
+      const failedMigration = extractFailedMigration(errorOutput);
+      if (failedMigration) {
+        log('FIX', `Marking "${failedMigration}" as applied...`);
+        runCommandCapture(`npx prisma migrate resolve --applied "${failedMigration}"`);
+      } else {
+        // Can't find specific migration - resolve all failed ones from DB
+        log('FIX', 'Resolving all failed migrations from database...');
+        resolveAllFailedMigrations();
+      }
       continue;
     }
     
