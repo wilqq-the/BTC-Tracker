@@ -940,9 +940,9 @@ export function DisplaySettingsPanel({
             </div>
             <p className="text-xs text-muted-foreground mt-4">
               Theme style is saved automatically and persists across sessions
-            </p>
-          </CardContent>
-        </Card>
+          </p>
+        </CardContent>
+      </Card>
       )}
     </div>
   );

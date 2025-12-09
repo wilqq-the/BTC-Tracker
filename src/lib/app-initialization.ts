@@ -150,11 +150,16 @@ export class AppInitializationService {
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       console.log('[OK] Database connected');
+    } catch (error) {
+      console.error('[ERROR] Database connection failed:', error);
+      throw new Error('Cannot connect to database');
+    }
 
+    // Verify database structure
+    try {
       console.log('[SEARCH] Verifying database structure...');
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
-
     } catch (error) {
       console.error('[ERROR] Database verification failed:', error);
       console.error('[INFO] Database migrations should be run by the container entrypoint.');
