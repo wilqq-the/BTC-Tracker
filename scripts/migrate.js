@@ -331,6 +331,104 @@ function runSafetyNetDbPush() {
 }
 
 /**
+ * Repair orphaned data from migration issues
+ * 
+ * Issue: Upgrading from pre-0.6.6 versions could result in user_id becoming NULL
+ * on transactions and other tables, and is_admin becoming false on users.
+ * 
+ * This function safely repairs the data ONLY if there's exactly one user.
+ * For multi-user instances, it warns and lets the admin handle it manually.
+ * 
+ * See: docs/MIGRATION_DATA_REPAIR.md
+ */
+function repairOrphanedData() {
+  log('INFO', '--- Data Integrity Check ---');
+  
+  if (!fs.existsSync(DB_PATH)) {
+    log('INFO', 'No database yet, skipping data repair');
+    return;
+  }
+  
+  try {
+    // Count users
+    const userCountResult = execSync(
+      `sqlite3 "${DB_PATH}" "SELECT COUNT(*) FROM users;"`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const userCount = parseInt(userCountResult.trim(), 10);
+    
+    // Count orphaned transactions (user_id IS NULL)
+    const orphanedTxResult = execSync(
+      `sqlite3 "${DB_PATH}" "SELECT COUNT(*) FROM bitcoin_transactions WHERE user_id IS NULL;"`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const orphanedTxCount = parseInt(orphanedTxResult.trim(), 10);
+    
+    // Check if first user is admin
+    const adminResult = execSync(
+      `sqlite3 "${DB_PATH}" "SELECT is_admin FROM users WHERE id = (SELECT MIN(id) FROM users);"`,
+      { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+    );
+    const firstUserIsAdmin = adminResult.trim() === '1';
+    
+    // Nothing to fix
+    if (orphanedTxCount === 0 && (userCount === 0 || firstUserIsAdmin)) {
+      log('OK', 'Data integrity verified');
+      return;
+    }
+    
+    // Multi-user with orphaned data - DON'T auto-fix
+    if (userCount > 1 && orphanedTxCount > 0) {
+      log('WARN', '════════════════════════════════════════════════════════════');
+      log('WARN', 'ATTENTION: Data repair needed but multiple users detected!');
+      log('WARN', `Found ${orphanedTxCount} transactions with no owner and ${userCount} users`);
+      log('WARN', 'Cannot auto-assign - manual intervention required');
+      log('WARN', 'See: docs/MIGRATION_DATA_REPAIR.md for instructions');
+      log('WARN', '════════════════════════════════════════════════════════════');
+      return;
+    }
+    
+    // Single user (or no users) - safe to auto-fix
+    if (userCount === 1) {
+      const firstUserId = execSync(
+        `sqlite3 "${DB_PATH}" "SELECT MIN(id) FROM users;"`,
+        { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }
+      ).trim();
+      
+      if (orphanedTxCount > 0) {
+        log('FIX', `Assigning ${orphanedTxCount} orphaned transactions to user ${firstUserId}...`);
+        
+        // Fix bitcoin_transactions
+        execSync(`sqlite3 "${DB_PATH}" "UPDATE bitcoin_transactions SET user_id = ${firstUserId} WHERE user_id IS NULL;"`, { stdio: 'pipe' });
+        
+        // Fix app_settings
+        execSync(`sqlite3 "${DB_PATH}" "UPDATE app_settings SET user_id = ${firstUserId} WHERE user_id IS NULL;"`, { stdio: 'pipe' });
+        
+        // Fix custom_currencies
+        execSync(`sqlite3 "${DB_PATH}" "UPDATE custom_currencies SET user_id = ${firstUserId} WHERE user_id IS NULL;"`, { stdio: 'pipe' });
+        
+        // Fix portfolio_summary
+        execSync(`sqlite3 "${DB_PATH}" "UPDATE portfolio_summary SET user_id = ${firstUserId} WHERE user_id IS NULL;"`, { stdio: 'pipe' });
+        
+        log('OK', 'Orphaned data assigned to user');
+      }
+      
+      // Ensure first user is admin
+      if (!firstUserIsAdmin) {
+        log('FIX', 'Setting first user as admin...');
+        execSync(`sqlite3 "${DB_PATH}" "UPDATE users SET is_admin = 1 WHERE id = ${firstUserId};"`, { stdio: 'pipe' });
+        log('OK', 'Admin status restored');
+      }
+    }
+    
+    log('OK', 'Data integrity check complete');
+    
+  } catch (error) {
+    log('WARN', 'Could not perform data integrity check (database may be new)');
+  }
+}
+
+/**
  * Verify migration status
  */
 function verifyMigrationStatus() {
@@ -398,12 +496,18 @@ async function main() {
   
   console.log('');
   
-  // Step 4: Generate Prisma client
+  // Step 4: Repair orphaned data from 0.6.6 migration issue
+  // See: docs/MIGRATION_DATA_REPAIR.md
+  repairOrphanedData();
+  
+  console.log('');
+  
+  // Step 5: Generate Prisma client
   generateClient();
   
   console.log('');
   
-  // Step 5: Verify final status
+  // Step 6: Verify final status
   log('INFO', '--- Final Status ---');
   verifyMigrationStatus();
   

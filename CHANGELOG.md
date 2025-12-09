@@ -27,8 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Improvements
 - **Improved Migration System** - Automatic handling of legacy databases and upgrade issues
   - Auto-detects and baselines legacy `db push` databases
-  - Automatic recovery from P3018 "already exists" errors
+  - Automatic recovery from P3018/P3009 migration errors
   - Schema safety net ensures all tables/columns exist
+  - Auto-repairs orphaned data for single-user instances (see `docs/MIGRATION_DATA_REPAIR.md`)
 - Price scheduler now fetches every 5 minutes (was stuck at 1 hour)
 - Removed unused settings (Live Update Interval, Data Retention Policy)
 - Fixed version display in Settings
