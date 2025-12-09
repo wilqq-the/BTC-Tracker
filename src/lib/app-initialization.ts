@@ -142,30 +142,9 @@ export class AppInitializationService {
   }
 
   private static async verifyDatabase(): Promise<void> {
-    const { existsSync } = require('fs');
-    const dbUrl = process.env.DATABASE_URL || '';
+    // Database migrations are handled by docker-entrypoint.sh / migrate.sh
+    // This just verifies the database is accessible and has the expected structure
     
-    // Determine if we should auto-migrate
-    // - Always in development
-    // - In production when NOT in Docker (Docker entrypoint handles it)
-    const isDev = process.env.NODE_ENV === 'development';
-    const isDocker = existsSync('/.dockerenv') || process.env.DOCKER === 'true';
-    const shouldAutoMigrate = isDev || !isDocker;
-    
-    // Check if database file exists (for SQLite)
-    if (dbUrl.startsWith('file:')) {
-      const dbPath = dbUrl.replace('file:', '');
-      if (!existsSync(dbPath)) {
-        if (shouldAutoMigrate) {
-          console.log('[SETUP] Database not found - running migrations...');
-          await this.runMigrations();
-          return;
-        }
-        throw new Error('Database not found. Ensure migrations have run during container startup.');
-      }
-    }
-
-    // Test database connection
     try {
       console.log('[SEARCH] Testing database connection...');
       await prisma.$connect();
@@ -182,69 +161,23 @@ export class AppInitializationService {
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
     } catch (error) {
-      // Try to run migrations if we're allowed to
-      if (shouldAutoMigrate) {
-        console.log('[WARN] Database structure issue - running migrations...');
-        try {
-          await this.runMigrations();
-          await this.verifyDatabaseStructure();
-          console.log('[OK] Database migrated');
-          return;
-        } catch (migrateError) {
-          console.error('[ERROR] Migration failed:', migrateError);
-        }
-      }
-      
-      // Provide helpful error message
-      console.error('[ERROR] Database structure verification failed');
-      console.error('[INFO] This usually means migrations need to run.');
-      console.error('[INFO] For Docker: restart the container to trigger migrations');
-      console.error('[INFO] For manual fix: npx prisma migrate deploy');
-      throw new Error(`Database structure is invalid: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[ERROR] Database verification failed:', error);
+      console.error('[INFO] Database migrations should be run by the container entrypoint.');
+      console.error('[INFO] If running locally, run: sh scripts/migrate.sh');
+      throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  private static async runMigrations(): Promise<void> {
-    const { execSync } = require('child_process');
-    
-    console.log('[MIGRATE] Running prisma migrate deploy...');
-    execSync('npx prisma migrate deploy', { 
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
-  }
-
   private static async verifyDatabaseStructure(): Promise<void> {
-    // Test critical tables and columns that newer versions need
-    // These will throw if columns are missing (schema mismatch)
-    
-    // Check users table (including 2FA fields from 0.6.7)
-    await prisma.user.findFirst({ 
-      select: { 
-        id: true, 
-        email: true,
-        twoFactorEnabled: true,  // Added in 0.6.7
-      } 
-    });
-    
-    // Check transactions table (including transfer fields from 0.6.4)
-    await prisma.bitcoinTransaction.findFirst({ 
-      select: { 
-        id: true, 
-        type: true,
-        transferType: true,  // Added in 0.6.4
-      } 
-    });
-    
-    // Check settings
-    await prisma.appSettings.findFirst({ select: { id: true } });
-    
-    // Check portfolio summary (including wallet fields from 0.6.4)
-    await prisma.portfolioSummary.findFirst({
-      select: {
-        id: true,
-        coldWalletBtc: true,  // Added in 0.6.4
-      }
-    });
+    try {
+      // Quick check that core tables exist and are queryable
+      await prisma.user.findFirst();
+      await prisma.bitcoinTransaction.findFirst();
+      await prisma.appSettings.findFirst();
+      console.log('[OK] Tables verified');
+    } catch (error) {
+      console.error('[ERROR] Table verification failed:', error);
+      throw new Error('Database structure is invalid or incomplete');
+    }
   }
 }

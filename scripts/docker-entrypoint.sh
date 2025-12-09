@@ -27,15 +27,10 @@ setup_db_dir() {
     fi
 }
 
-# Run migrations using the smart migration script
+# Run migrations using our custom migration system
 run_migrations() {
     echo "Running database migrations..."
-    if [ -x /app/scripts/migrate.sh ]; then
-        /app/scripts/migrate.sh
-    else
-        # Fallback to direct migrate deploy if script not available
-        npx prisma migrate deploy || true
-    fi
+    node /app/scripts/migrate.js
 }
 
 CURRENT_UID=$(id -u)
@@ -49,7 +44,7 @@ if [ "$CURRENT_UID" = "0" ]; then
     chown -R nextjs:nodejs /app/data /app/public/uploads 2>/dev/null || true
     
     setup_cache
-    su-exec nextjs sh -c "cd /app && HOME='$HOME' /app/scripts/migrate.sh" || true
+    su-exec nextjs sh -c "cd /app && HOME='$HOME' node /app/scripts/migrate.js" || true
     
     echo "Starting app as nextjs user..."
     exec su-exec nextjs npm start

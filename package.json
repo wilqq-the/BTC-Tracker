@@ -10,9 +10,11 @@
     "npm": ">=8.0.0"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/migrate.js && next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/migrate.js && next start",
+    "dev:skip-migrate": "next dev",
+    "start:skip-migrate": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test:setup": "node scripts/test-setup.js",
@@ -25,7 +27,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "db:prod-setup": "node scripts/prod-setup.js",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "node scripts/migrate.js",
     "auth:generate-jwt": "node scripts/generate-jwt.js"
   },
   "dependencies": {
