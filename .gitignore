@@ -47,5 +47,5 @@ next-env.d.ts
 .vscode/
 .cursor/
 
-# Public files
-public/uploads/*
+# Uploaded files
+data/uploads/*

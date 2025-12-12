@@ -41,7 +41,7 @@ if [ "$CURRENT_UID" = "0" ]; then
     [ "$PGID" != "1001" ] && groupmod -g "$PGID" nodejs 2>/dev/null || true
     
     setup_db_dir "chown"
-    chown -R nextjs:nodejs /app/data /app/public/uploads 2>/dev/null || true
+    chown -R nextjs:nodejs /app/data 2>/dev/null || true
     
     setup_cache
     su-exec nextjs sh -c "cd /app && HOME='$HOME' node /app/scripts/migrate.js" || true
@@ -51,7 +51,7 @@ if [ "$CURRENT_UID" = "0" ]; then
 else
     # Non-root (Umbrel etc)
     setup_db_dir
-    mkdir -p /app/data /app/public/uploads 2>/dev/null || true
+    mkdir -p /app/data 2>/dev/null || true
     
     setup_cache
     run_migrations
