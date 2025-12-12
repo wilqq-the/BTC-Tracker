@@ -4,8 +4,13 @@
 ![Docker Image Size](https://img.shields.io/docker/image-size/thewilqq/btc-tracker/stable?style=flat-square&logo=docker&label=Image%20Size)
 ![GitHub Stars](https://img.shields.io/github/stars/wilqq-the/BTC-Tracker?style=flat-square&logo=github&label=Stars)
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
+[![Discord](https://img.shields.io/badge/Discord-Join%20us-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/v2ByAYHA)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-support-yellow?style=flat-square&logo=buy-me-a-coffee)](https://buymeacoffee.com/wilqqthe)
+[![Lightning](https://img.shields.io/badge/Lightning-wilqqthe%40strike.me-yellow?style=flat-square&logo=lightning)](lightning:wilqqthe@strike.me)
 
 **Self-hosted Bitcoin portfolio tracker - that's it.**
+
+> If you find BTC Tracker useful, please consider [giving it a star](https://github.com/wilqq-the/BTC-Tracker) ⭐
 
 Track your Bitcoin investments privately on your own PC. Import transactions from exchanges or add them manually. Multi-user support with admin controls. Your data never leaves your server, period.
 
@@ -18,14 +23,35 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 *Install BTC Tracker with one click on your Umbrel home server*
 
-## What it does
+## Features
 
-- **Multi-user setup** - First user becomes admin, can create accounts for others
-- **Import from exchanges** - Kraken, Binance, Coinbase, Strike (auto-detects CSV format)
-- **Real-time tracking** - Live Bitcoin prices and portfolio value
-- **Charts and analytics** - Interactive price charts with your transaction history
-- **Complete privacy** - Everything runs on your server, no external data sharing
-- **Multi-currency** - Track in USD, EUR, GBP, PLN, or add custom currencies
+### Portfolio Tracking
+- **Live price updates** - Automatic price fetching with real-time P&L calculations
+- **Transaction history** - Buy, sell, and transfer transactions with full history
+- **Hot/cold distribution** - Track your storage distribution across wallets
+- **Multi-currency support** - USD, EUR, GBP, PLN, or add your own custom currencies
+
+### Analytics & Insights
+- **Performance tracking** - See your gains across different timeframes (24h, 7d, 30d, 1y, all-time)
+- **DCA analysis** - Understand your dollar-cost averaging performance
+- **Interactive charts** - Price charts with your transaction markers
+- **Monthly summaries** - Track your accumulation month by month
+
+### Planning Tools
+- **Savings goals** - Set BTC targets and track progress
+- **DCA calculator** - Plan future purchases with backtesting
+- **Recurring transactions** - Auto-log your DCA purchases
+
+### Customizable Dashboard
+- **Drag & drop widgets** - Arrange your dashboard your way
+- **Show/hide widgets** - Only see what matters to you
+- **Multiple widget types** - Chart, portfolio, transactions, goals, DCA analysis, and more
+
+### Privacy & Control
+- **100% self-hosted** - Your data never leaves your server
+- **Multi-user support** - First user becomes admin, create accounts for family
+- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike
+- **Simple backup** - Single SQLite file, easy to backup and restore
 
 ## Screenshots
 
@@ -44,6 +70,27 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 ![Analytics](screenshots/analytics.png)
 *Advanced portfolio analytics and performance charts*
+</details>
+
+<details>
+<summary>DCA Analysis - Performance breakdown</summary>
+
+![Analysis](screenshots/analysis.png)
+*DCA performance analysis and statistics*
+</details>
+
+<details>
+<summary>Goals - Savings targets</summary>
+
+![Goals](screenshots/goals.png)
+*Set and track your Bitcoin savings goals*
+</details>
+
+<details>
+<summary>Auto DCA - Recurring transactions</summary>
+
+![Auto DCA](screenshots/autodca.png)
+*Automated recurring transaction scheduling*
 </details>
 
 <details>
@@ -76,8 +123,7 @@ docker-compose up -d
 npm install
 cp .env.example .env
 # Add NEXTAUTH_SECRET to .env
-npm exec prisma db push
-npm run dev
+npm run dev  # Migrations run automatically
 ```
 
 Open `http://localhost:3000` and register the first user (becomes admin automatically).
@@ -108,10 +154,9 @@ Supports most major exchanges. If yours isn't supported, open an issue with exam
 
 ## Tech stack
 
-- **Frontend**: Next.js, React, TypeScript
+- **Frontend**: Next.js, React, TypeScript, shadcn/ui
 - **Backend**: Next.js API routes, Prisma ORM
 - **Database**: SQLite (single file, easy backups)
-- **Charts**: TradingView Lightweight Charts
 - **Deployment**: Docker
 
 ## Development
@@ -134,11 +179,37 @@ Existing portfolio trackers either:
 
 This gives you complete control over your Bitcoin tracking data.
 
+## Requirements
+
+- **Docker** (recommended) or Node.js 18+
+- ~100MB disk space for the app
+- SQLite database (included, single file)
+
+## Backup & Restore
+
+Your data lives in a single SQLite file. To backup:
+
+```bash
+# Docker
+docker cp btc-tracker:/app/prisma/dev.db ./backup.db
+
+# Local
+cp prisma/dev.db ./backup.db
+```
+
+To restore, copy the file back and restart the app.
+
+## Community
+
+- [Discord](https://discord.gg/v2ByAYHA) - Chat with other users and get help
+- [GitHub Discussions](https://github.com/wilqq-the/BTC-Tracker/discussions) - Ask questions, share ideas
+- [Issue Tracker](https://github.com/wilqq-the/BTC-Tracker/issues) - Report bugs, request features
+
 ## Contributing
 
-Found a bug? Want a feature? Open an issue.
+Found a bug? Want a feature? [Open an issue](https://github.com/wilqq-the/BTC-Tracker/issues).
 
-Want to add support for another exchange? Check `PARSER_DEVELOPMENT_GUIDE.md`.
+Want to add support for another exchange? Check the [Parser Development Guide](src/app/api/transactions/import/parsers/PARSER_DEVELOPMENT_GUIDE.md).
 
 ## License
 

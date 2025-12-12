@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText } from '@/components/ui/ThemeProvider';
+import { WidgetCard } from '@/components/ui/widget-card';
+import { Separator } from '@/components/ui/separator';
 import { formatCurrency } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
+import { WalletIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 
 interface PortfolioMetrics {
   totalBtc: number;
@@ -27,9 +29,10 @@ interface PortfolioMetrics {
  * Portfolio Summary Widget
  * Shows key portfolio metrics and performance
  */
-export default function PortfolioSummaryWidget({ id, isEditMode, onRefresh }: WidgetProps) {
+export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadMetrics();
@@ -58,170 +61,121 @@ export default function PortfolioSummaryWidget({ id, isEditMode, onRefresh }: Wi
   };
 
   const handleRefresh = async () => {
-    setLoading(true);
+    setRefreshing(true);
     await loadMetrics();
-    if (onRefresh) onRefresh();
+    setRefreshing(false);
+    onRefresh?.();
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Portfolio Summary
-          </h3>
-        </div>
-        <ThemedCard className="flex-1">
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-5/6"></div>
-          </div>
-        </ThemedCard>
-      </div>
-    );
-  }
-
-  if (!metrics) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Portfolio Summary
-          </h3>
-        </div>
-        <ThemedCard className="flex-1 flex items-center justify-center">
-          <ThemedText variant="muted" className="text-sm">
-            No portfolio data available
-          </ThemedText>
-        </ThemedCard>
-      </div>
-    );
-  }
-
-  const currency = metrics.mainCurrency;
+  const currency = metrics?.mainCurrency || 'USD';
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Portfolio Summary
-        </h3>
-        <button
-          onClick={handleRefresh}
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-          title="Refresh"
-          disabled={loading}
-        >
-          ↻
-        </button>
-      </div>
+    <WidgetCard
+      title="Portfolio Summary"
+      icon={WalletIcon}
+      loading={loading}
+      error={!metrics ? "No portfolio data available" : null}
+      onRefresh={handleRefresh}
+      refreshing={refreshing}
+      contentClassName="overflow-auto"
+    >
+      {metrics && (
+        <div className="space-y-3 text-sm flex-1">
+          {/* Total Holdings */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Total Holdings</p>
+            <div className="text-lg font-bold">{metrics.totalBtc.toFixed(8)} ₿</div>
+            <div className="text-xs text-muted-foreground">{formatCurrency(metrics.portfolioValue, currency)}</div>
+          </div>
 
-      <ThemedCard className="flex-1 space-y-2.5 text-sm">
-        {/* Total Holdings */}
-        <div>
-          <ThemedText variant="muted" className="text-xs mb-1">
-            Total Holdings
-          </ThemedText>
-          <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            {(metrics.totalBtc || 0).toFixed(8)} ₿
-          </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(metrics.portfolioValue || 0, currency)}
-          </div>
-        </div>
+          <Separator />
 
-        {/* Total P&L (Unrealized + Realized) */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-          <ThemedText variant="muted" className="text-xs mb-1">
-            Total P&L
-          </ThemedText>
-          <div className={`text-base font-bold ${
-            (metrics.totalPnL || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            {(metrics.totalPnL || 0) >= 0 ? '+' : ''}{formatCurrency(metrics.totalPnL || 0, currency)}
-          </div>
-          <div className={`text-xs ${
-            (metrics.roi || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-          }`}>
-            ROI: {(metrics.roi || 0) >= 0 ? '+' : ''}{(metrics.roi || 0).toFixed(2)}%
-          </div>
-        </div>
-
-        {/* Unrealized vs Realized */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between items-center mb-1">
-            <ThemedText variant="muted" className="text-xs">
-              Unrealized
-            </ThemedText>
-            <ThemedText className={`text-xs font-medium ${
-              (metrics.unrealizedPnL || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+          {/* Total P&L */}
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Total P&L</p>
+            <div className="flex items-center gap-2">
+              {metrics.totalPnL >= 0 ? (
+                <TrendingUpIcon className="size-4 text-green-600 dark:text-green-400" />
+              ) : (
+                <TrendingDownIcon className="size-4 text-red-600 dark:text-red-400" />
+              )}
+              <div className={`text-base font-bold ${
+                metrics.totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {metrics.totalPnL >= 0 ? '+' : ''}{formatCurrency(metrics.totalPnL, currency)}
+              </div>
+            </div>
+            <div className={`text-xs ${
+              metrics.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}>
-              {(metrics.unrealizedPnL || 0) >= 0 ? '+' : ''}{formatCurrency(metrics.unrealizedPnL || 0, currency)}
-            </ThemedText>
+              ROI: {metrics.roi >= 0 ? '+' : ''}{metrics.roi.toFixed(2)}%
+            </div>
           </div>
-          <div className="flex justify-between items-center">
-            <ThemedText variant="muted" className="text-xs">
-              Realized
-            </ThemedText>
-            <ThemedText className={`text-xs font-medium ${
-              (metrics.realizedPnL || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-            }`}>
-              {(metrics.realizedPnL || 0) >= 0 ? '+' : ''}{formatCurrency(metrics.realizedPnL || 0, currency)}
-            </ThemedText>
-          </div>
-        </div>
 
-        {/* 24h Change */}
-        {(metrics.portfolioChange24h || 0) !== 0 && (
-          <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-            <ThemedText variant="muted" className="text-xs mb-1">
-              24h Change
-            </ThemedText>
-            <div className={`text-sm font-semibold ${
-              (metrics.portfolioChange24h || 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-            }`}>
-              {(metrics.portfolioChange24h || 0) >= 0 ? '+' : ''}{formatCurrency(metrics.portfolioChange24h || 0, currency)}
-              <span className="ml-1 text-xs">
-                ({(metrics.portfolioChange24hPercent || 0) >= 0 ? '+' : ''}{(metrics.portfolioChange24hPercent || 0).toFixed(2)}%)
+          <Separator />
+
+          {/* Unrealized vs Realized */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Unrealized</span>
+              <span className={`text-xs font-medium ${
+                metrics.unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {metrics.unrealizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.unrealizedPnL, currency)}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Realized</span>
+              <span className={`text-xs font-medium ${
+                metrics.realizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {metrics.realizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.realizedPnL, currency)}
               </span>
             </div>
           </div>
-        )}
 
-        {/* Price Info */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex justify-between mb-1">
-            <ThemedText variant="muted" className="text-xs">
-              Avg Buy
-            </ThemedText>
-            <ThemedText className="text-xs font-medium">
-              {formatCurrency(metrics.avgBuyPrice || 0, currency)}
-            </ThemedText>
-          </div>
-          <div className="flex justify-between">
-            <ThemedText variant="muted" className="text-xs">
-              Current
-            </ThemedText>
-            <ThemedText className="text-xs font-medium text-orange-600 dark:text-orange-400">
-              {formatCurrency(metrics.currentBtcPrice || 0, currency)}
-            </ThemedText>
-          </div>
-        </div>
+          {/* 24h Change */}
+          {metrics.portfolioChange24h !== 0 && (
+            <>
+              <Separator />
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">24h Change</p>
+                <div className={`text-sm font-semibold ${
+                  metrics.portfolioChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
+                  {metrics.portfolioChange24h >= 0 ? '+' : ''}{formatCurrency(metrics.portfolioChange24h, currency)}
+                  <span className="ml-1 text-xs">
+                    ({metrics.portfolioChange24hPercent >= 0 ? '+' : ''}{metrics.portfolioChange24hPercent.toFixed(2)}%)
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
 
-        {/* Transaction Count */}
-        <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+          <Separator />
+
+          {/* Price Info */}
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-xs text-muted-foreground">Avg Buy</span>
+              <span className="text-xs font-medium">{formatCurrency(metrics.avgBuyPrice, currency)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-xs text-muted-foreground">Current</span>
+              <span className="text-xs font-medium text-btc-500">{formatCurrency(metrics.currentBtcPrice, currency)}</span>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Transaction Count */}
           <div className="flex justify-between items-center">
-            <ThemedText variant="muted" className="text-xs">
-              Total Transactions
-            </ThemedText>
-            <ThemedText className="text-xs font-medium">
-              {metrics.totalTransactions || 0}
-            </ThemedText>
+            <span className="text-xs text-muted-foreground">Total Transactions</span>
+            <span className="text-xs font-medium">{metrics.totalTransactions}</span>
           </div>
         </div>
-      </ThemedCard>
-    </div>
+      )}
+    </WidgetCard>
   );
 }
 

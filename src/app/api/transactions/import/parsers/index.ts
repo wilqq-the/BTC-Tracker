@@ -7,6 +7,7 @@ import { KrakenParser } from './kraken';
 import { BinanceParser } from './binance';
 import { CoinbaseParser } from './coinbase';
 import { StrikeParser } from './strike';
+import { Bitcoin21Parser } from './bitcoin21';
 import { LegacyParser } from './legacy';
 import { StandardParser } from './standard';
 
@@ -20,6 +21,7 @@ const PARSERS: Parser[] = [
   new BinanceParser(),
   new CoinbaseParser(),
   new StrikeParser(),
+  new Bitcoin21Parser(),
   new LegacyParser(),
   new StandardParser(), // Fallback parser - should be last
 ];
@@ -55,6 +57,32 @@ export function detectParser(headers: string[]): Parser {
  * Parse a CSV line handling quoted values
  */
 export function parseCsvLine(line: string): string[] {
+  // Trim whitespace first
+  line = line.trim();
+  
+  // Normalize smart/curly quotes to straight quotes (Excel/Word sometimes converts these)
+  // " (U+201C), " (U+201D), „ (U+201E) -> "
+  line = line.replace(/[""„]/g, '"');
+  
+  // Fix for Excel wrapping entire rows in quotes
+  // Detect if line starts and ends with quote but contains unquoted commas
+  // e.g., "381,BUY,0.01794592,..." should become 381,BUY,0.01794592,...
+  if (line.startsWith('"') && line.endsWith('"')) {
+    const inner = line.slice(1, -1);
+    // Check if this looks like a wrapped row (has commas that would be field separators)
+    // by seeing if removing the outer quotes gives us a valid CSV row
+    const testParse = parseLineInner(inner);
+    if (testParse.length > 1) {
+      // This was a wrapped row - use the inner content
+      console.log(`[CSV] Unwrapped Excel-quoted row: "${line.substring(0, 50)}..."`);
+      line = inner;
+    }
+  }
+  
+  return parseLineInner(line);
+}
+
+function parseLineInner(line: string): string[] {
   const result: string[] = [];
   let current = '';
   let inQuotes = false;
@@ -93,7 +121,14 @@ export function parseCsvLine(line: string): string[] {
  * Parse CSV content using auto-detection
  */
 export function parseCsvFile(content: string, detectOnly?: boolean): ParseResult {
-  const lines = content.trim().split('\n');
+  // Normalize line endings (handle Windows \r\n, Mac \r, Unix \n) and trim each line
+  const lines = content
+    .replace(/\r\n/g, '\n')  // Windows -> Unix
+    .replace(/\r/g, '\n')    // Old Mac -> Unix
+    .trim()
+    .split('\n')
+    .map(line => line.trim()); // Trim whitespace from start/end of each line
+  
   if (lines.length < 2) {
     throw new Error('CSV file must have at least a header row and one data row');
   }

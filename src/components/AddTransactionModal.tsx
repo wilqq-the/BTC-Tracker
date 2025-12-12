@@ -1,24 +1,49 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { ThemedButton } from './ui/ThemeProvider';
 import { SupportedCurrency } from '@/lib/types';
 import currencies from '@/data/currencies.json';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { TagsInput } from '@/components/ui/tags-input';
+import { CurrencySelector } from '@/components/ui/currency-selector';
+import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TransactionFormData {
   type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: string;
   price_per_btc: string;
+  total_fiat_amount: string; // For fiat input mode
   currency: string;
   fees: string;
   fees_currency?: string;
   transaction_date: string;
   notes: string;
   tags: string;
-  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS';
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
+  transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
   destination_address?: string;
 }
+
+type InputMode = 'price' | 'fiat';
 
 interface AddTransactionModalProps {
   isOpen: boolean;
@@ -31,6 +56,7 @@ const initialFormData: TransactionFormData = {
   type: 'BUY',
   btc_amount: '',
   price_per_btc: '',
+  total_fiat_amount: '',
   currency: 'USD',
   fees: '0',
   fees_currency: 'BTC', // Default to BTC for transfers
@@ -38,6 +64,7 @@ const initialFormData: TransactionFormData = {
   notes: '',
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
+  transfer_category: 'INTERNAL',
   destination_address: ''
 };
 
@@ -47,11 +74,20 @@ export default function AddTransactionModal({
   onSuccess,
   editingTransaction 
 }: AddTransactionModalProps) {
+  // Helper to determine transfer category from transfer_type
+  const getTransferCategory = (transferType?: string): 'INTERNAL' | 'EXTERNAL' => {
+    if (transferType === 'TRANSFER_IN' || transferType === 'TRANSFER_OUT') {
+      return 'EXTERNAL';
+    }
+    return 'INTERNAL';
+  };
+
   const [formData, setFormData] = useState<TransactionFormData>(
     editingTransaction ? {
       type: editingTransaction.type,
       btc_amount: editingTransaction.btc_amount.toString(),
       price_per_btc: editingTransaction.original_price_per_btc.toString(),
+      total_fiat_amount: (editingTransaction.btc_amount * editingTransaction.original_price_per_btc).toFixed(2),
       currency: editingTransaction.original_currency,
       fees: editingTransaction.fees.toString(),
       fees_currency: editingTransaction.fees_currency || 'USD',
@@ -59,17 +95,22 @@ export default function AddTransactionModal({
       notes: editingTransaction.notes || '',
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+      transfer_category: getTransferCategory(editingTransaction.transfer_type),
       destination_address: editingTransaction.destination_address || ''
     } : initialFormData
   );
   
+  // Input mode: 'price' = enter BTC price, 'fiat' = enter total fiat spent
+  const [inputMode, setInputMode] = useState<InputMode>('price');
+  
+  // UI state for collapsible sections
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [showFees, setShowFees] = useState(false);
+  
   const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>(['USD', 'EUR', 'PLN', 'GBP']);
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
   const [allAvailableCurrencies, setAllAvailableCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
-  const [currencySearch, setCurrencySearch] = useState('');
-  const [showCurrencySuggestions, setShowCurrencySuggestions] = useState(false);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number | null>(null);
-  const [isAnimating, setIsAnimating] = useState(false);
   
   // Helper function to get currency info from currencies.json
   const getCurrencyInfo = (code: string) => {
@@ -84,6 +125,7 @@ export default function AddTransactionModal({
         type: editingTransaction.type,
         btc_amount: editingTransaction.btc_amount.toString(),
         price_per_btc: editingTransaction.original_price_per_btc.toString(),
+        total_fiat_amount: (editingTransaction.btc_amount * editingTransaction.original_price_per_btc).toFixed(2),
         currency: editingTransaction.original_currency,
         fees: editingTransaction.fees.toString(),
         fees_currency: editingTransaction.fees_currency || 'USD',
@@ -91,12 +133,18 @@ export default function AddTransactionModal({
         notes: editingTransaction.notes || '',
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
+        transfer_category: getTransferCategory(editingTransaction.transfer_type),
         destination_address: editingTransaction.destination_address || ''
       });
-      setCurrencySearch('');
+      setInputMode('price'); // Default to price mode when editing
+      // Show more options if editing has notes or tags
+      setShowMoreOptions(!!(editingTransaction.notes || editingTransaction.tags));
+      setShowFees(parseFloat(editingTransaction.fees) > 0);
     } else {
       setFormData(initialFormData);
-      setCurrencySearch('');
+      setInputMode('price');
+      setShowMoreOptions(false);
+      setShowFees(false);
     }
   }, [editingTransaction]);
 
@@ -184,10 +232,6 @@ export default function AddTransactionModal({
     if (isOpen) {
       loadCurrencies();
       loadCurrentBitcoinPrice();
-      setIsAnimating(true);
-    } else {
-      setIsAnimating(false);
-      setCurrencySearch('');
     }
   }, [isOpen]);
 
@@ -204,14 +248,26 @@ export default function AddTransactionModal({
     }
   };
 
-  // Calculate real-time totals
+  // Calculate real-time totals (works in both input modes)
   const calculateTotal = () => {
     const btcAmount = parseFloat(formData.btc_amount) || 0;
-    const pricePerBtc = parseFloat(formData.price_per_btc) || 0;
     const fees = parseFloat(formData.fees) || 0;
-    const subtotal = btcAmount * pricePerBtc;
+    
+    let subtotal: number;
+    let pricePerBtc: number;
+    
+    if (inputMode === 'fiat') {
+      // In fiat mode, total is the input and we derive price
+      subtotal = parseFloat(formData.total_fiat_amount) || 0;
+      pricePerBtc = btcAmount > 0 ? subtotal / btcAmount : 0;
+    } else {
+      // In price mode, price is the input and we derive total
+      pricePerBtc = parseFloat(formData.price_per_btc) || 0;
+      subtotal = btcAmount * pricePerBtc;
+    }
+    
     const total = subtotal + fees;
-    return { subtotal, fees, total };
+    return { subtotal, fees, total, pricePerBtc };
   };
 
   // Convert BTC to sats
@@ -219,15 +275,6 @@ export default function AddTransactionModal({
     const btcNum = parseFloat(btc) || 0;
     return Math.round(btcNum * 100000000);
   };
-
-  // Filter currencies based on search
-  const filteredCurrencies = allAvailableCurrencies.filter(currency => {
-    const searchLower = currencySearch.toLowerCase();
-    return (
-      currency.code.toLowerCase().includes(searchLower) ||
-      currency.name.toLowerCase().includes(searchLower)
-    );
-  }).slice(0, 6); // Limit to 6 suggestions
 
   // Use current BTC price
   const useCurrentPrice = () => {
@@ -245,18 +292,29 @@ export default function AddTransactionModal({
         ? `/api/transactions/${editingTransaction.id}` 
         : '/api/transactions';
       
+      // Prepare submit data - calculate price_per_btc if in fiat mode
+      let submitData = { ...formData };
+      if (inputMode === 'fiat') {
+        const btcAmount = parseFloat(formData.btc_amount) || 0;
+        const totalFiat = parseFloat(formData.total_fiat_amount) || 0;
+        if (btcAmount > 0 && totalFiat > 0) {
+          submitData.price_per_btc = (totalFiat / btcAmount).toFixed(2);
+        }
+      }
+      
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submitData),
       });
 
       const result = await response.json();
       
       if (result.success) {
         setFormData(initialFormData);
+        setInputMode('price');
         onSuccess?.();
         onClose();
       } else {
@@ -268,376 +326,452 @@ export default function AddTransactionModal({
     }
   };
 
-  if (!isOpen) return null;
-
   const totals = calculateTotal();
   const sats = btcToSats(formData.btc_amount);
   const currencyInfo = getCurrencyInfo(formData.currency);
 
-  // Use portal to render modal at document root level (outside sidebar)
-  const modalContent = (
-    <div 
-      className={`fixed inset-0 bg-black/70 backdrop-blur-sm flex items-start justify-center z-50 transition-opacity duration-200 p-4 overflow-y-auto ${
-        isAnimating ? 'opacity-100' : 'opacity-0'
-      }`}
-      onClick={onClose}
-    >
-      <div 
-        className={`bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-lg my-8 shadow-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 max-h-[calc(100vh-4rem)] flex flex-col ${
-          isAnimating ? 'scale-100 translate-y-0' : 'scale-95 translate-y-4'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between mb-6 flex-shrink-0">
-          <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+  // Get icon and color for transaction type
+  const getTransactionTypeConfig = (type: 'BUY' | 'SELL' | 'TRANSFER') => {
+    switch (type) {
+      case 'BUY':
+        return { icon: ArrowDownIcon, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-800' };
+      case 'SELL':
+        return { icon: ArrowUpIcon, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800' };
+      case 'TRANSFER':
+        return { icon: ArrowLeftRightIcon, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800' };
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2">
+            <CoinsIcon className="size-5 text-btc-500" />
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="space-y-4 overflow-y-auto flex-1 pr-2 -mr-2">
-          {/* Transaction Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Transaction Type
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ 
-                    ...prev, 
-                    type,
-                    // Always set fees_currency to BTC for transfers (Bitcoin network fees are always paid in BTC)
-                    fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
-                  }))}
-                  className={`relative py-2.5 px-4 rounded-lg font-medium transition-colors ${
-                    formData.type === type
-                      ? type === 'BUY' 
-                        ? 'bg-green-500 text-white' 
-                        : type === 'SELL'
-                        ? 'bg-red-500 text-white'
-                        : 'bg-blue-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+          {/* Transaction Type - Compact horizontal */}
+          <div className="flex items-center gap-2">
+              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => {
+                const config = getTransactionTypeConfig(type);
+                const Icon = config.icon;
+                const isSelected = formData.type === type;
+                return (
+                  <Button
+                    key={type}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                  size="sm"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      type,
+                      fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
+                    }))}
+                    className={cn(
+                    "gap-1.5",
+                      isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
+                      isSelected && type === 'SELL' && "bg-red-500 hover:bg-red-600",
+                      isSelected && type === 'TRANSFER' && "bg-blue-500 hover:bg-blue-600"
+                    )}
+                  >
+                  <Icon className={cn("size-4", isSelected ? "text-white" : config.color)} />
+                  <span className="font-medium">{type}</span>
+                  </Button>
+                );
+              })}
           </div>
 
           {/* BTC Amount */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {formData.type === 'TRANSFER' ? 'BTC Amount to Send' : 'BTC Amount'}
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.00000001"
-                value={formData.btc_amount}
-                onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
-                placeholder="0.00000000"
-                required
-              />
-              {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
-                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 font-mono">
-                  = {sats.toLocaleString()} sats
-                </div>
-              )}
-              {formData.type === 'TRANSFER' && (
-                <div className="mt-1.5 space-y-1">
-                  <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                    <span>💡</span>
-                    <span>Enter the <strong>total amount leaving</strong> your source wallet</span>
-                  </div>
-                  {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-                    <div className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 px-2 py-1.5 rounded font-mono border border-green-200 dark:border-green-800">
-                      ✅ Will arrive at destination: {(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="btc_amount">BTC Amount</Label>
+            <Input
+              id="btc_amount"
+              type="number"
+              step="0.00000001"
+              value={formData.btc_amount}
+              onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
+              placeholder="0.00000000"
+              className="font-mono"
+              required
+            />
+            {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
+              <p className="text-xs text-muted-foreground font-mono">
+                = {sats.toLocaleString()} sats
+              </p>
+            )}
           </div>
 
-          {/* Transfer Type (only for TRANSFER) */}
+          {/* Transfer Type (only for TRANSFER) - Compact */}
           {formData.type === 'TRANSFER' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Transfer Direction
-              </label>
-              <select
-                value={formData.transfer_type}
-                onChange={(e) => setFormData(prev => ({ ...prev, transfer_type: e.target.value as any }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-                required
-              >
-                <option value="TO_COLD_WALLET">To Cold Wallet</option>
-                <option value="FROM_COLD_WALLET">From Cold Wallet</option>
-                <option value="BETWEEN_WALLETS">Between Wallets</option>
-              </select>
+            <div className="space-y-3">
+              {/* Internal vs External */}
+              <div className="space-y-1.5">
+                <Label>Transfer Type</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={formData.transfer_category === 'INTERNAL' ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      transfer_category: 'INTERNAL',
+                      transfer_type: 'TO_COLD_WALLET'
+                    }))}
+                    className={cn(
+                      "gap-1.5",
+                      formData.transfer_category === 'INTERNAL' && "bg-blue-500 hover:bg-blue-600"
+                    )}
+                  >
+                    <RefreshCwIcon className="size-4" />
+                    Internal
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={formData.transfer_category === 'EXTERNAL' ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ 
+                      ...prev, 
+                      transfer_category: 'EXTERNAL',
+                      transfer_type: 'TRANSFER_IN'
+                    }))}
+                    className={cn(
+                      "gap-1.5",
+                      formData.transfer_category === 'EXTERNAL' && "bg-purple-500 hover:bg-purple-600"
+                    )}
+                  >
+                    <ArrowLeftRightIcon className="size-4" />
+                    External
+                  </Button>
+                </div>
+              </div>
+
+              {/* Direction */}
+              <div className="space-y-1.5">
+                <Label>Direction</Label>
+                {formData.transfer_category === 'INTERNAL' ? (
+                  <div className="flex gap-2">
+                    {[
+                      { type: 'TO_COLD_WALLET', icon: ArrowDownToLineIcon, label: 'To Cold' },
+                      { type: 'FROM_COLD_WALLET', icon: ArrowUpFromLineIcon, label: 'From Cold' },
+                      { type: 'BETWEEN_WALLETS', icon: RefreshCwIcon, label: 'Between' },
+                    ].map(({ type, icon: Icon, label }) => (
+                    <Button
+                        key={type}
+                      type="button"
+                        variant={formData.transfer_type === type ? "default" : "outline"}
+                      size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: type as any }))}
+                      className={cn(
+                          "gap-1.5 flex-1",
+                          formData.transfer_type === type && "bg-blue-500 hover:bg-blue-600"
+                      )}
+                    >
+                        <Icon className="size-4" />
+                        {label}
+                    </Button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN' }))}
+                      className={cn(
+                        "gap-1.5 flex-1",
+                        formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600"
+                      )}
+                    >
+                      <ArrowDownIcon className="size-4" />
+                      Transfer In
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT' }))}
+                      className={cn(
+                        "gap-1.5 flex-1",
+                        formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600"
+                      )}
+                    >
+                      <ArrowUpIcon className="size-4" />
+                      Transfer Out
+                    </Button>
+                  </div>
+                )}
+                    </div>
+                  </div>
+                )}
+
+          {/* Price/Amount Input (hidden for internal transfers) */}
+          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
+            <div className="space-y-3">
+              {/* Input Mode Toggle (only for BUY/SELL) */}
+              {formData.type !== 'TRANSFER' && (
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm text-muted-foreground">I know the:</Label>
+                  <div className="flex rounded-md border bg-muted/30 p-0.5">
+                    <button
+                      type="button"
+                      onClick={() => setInputMode('price')}
+                      className={cn(
+                        "px-3 py-1 text-xs font-medium rounded transition-all",
+                        inputMode === 'price' 
+                          ? "bg-background shadow-sm text-foreground" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      BTC Price
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputMode('fiat')}
+                      className={cn(
+                        "px-3 py-1 text-xs font-medium rounded transition-all",
+                        inputMode === 'fiat' 
+                          ? "bg-background shadow-sm text-foreground" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Total Spent
+                    </button>
+              </div>
             </div>
           )}
 
-          {/* Price per BTC (hidden for TRANSFER) */}
-          {formData.type !== 'TRANSFER' && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Price per BTC
-                </label>
-                {currentBtcPrice && (
-                  <button
+              {/* Price per BTC Input (price mode or external transfers) */}
+              {(inputMode === 'price' || formData.type === 'TRANSFER') && (
+                <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                    <Label htmlFor="price_per_btc">
+                      {formData.transfer_category === 'EXTERNAL' ? 'Reference Price' : 'Price per BTC'}
+                </Label>
+                    {currentBtcPrice && formData.type !== 'TRANSFER' && (
+                      <button
                     type="button"
                     onClick={useCurrentPrice}
-                    className="text-xs text-bitcoin hover:text-bitcoin-dark font-medium transition-colors"
+                        className="text-xs text-btc-500 hover:text-btc-600 hover:underline"
                   >
-                    Use current: ${currentBtcPrice.toLocaleString()}
-                  </button>
+                        Use ${currentBtcPrice.toLocaleString()}
+                      </button>
                 )}
               </div>
-              <input
+              <Input
+                id="price_per_btc"
                 type="number"
                 step="0.01"
                 value={formData.price_per_btc}
                 onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
                 placeholder="105000.00"
-                required
+                    className="font-mono"
+                    required={formData.type !== 'TRANSFER' && inputMode === 'price'}
               />
-              <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <span className="text-bitcoin">💡</span>
-                <span>Enter 0 for mining rewards, gifts, or airdrops</span>
-              </div>
-            </div>
-          )}
-
-          {/* Currency (hidden for TRANSFER since no fiat is involved) */}
-          {formData.type !== 'TRANSFER' && (
-            <div className="relative">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Currency
-              </label>
-              <input
-                type="text"
-                value={currencySearch}
-                onChange={(e) => {
-                  setCurrencySearch(e.target.value);
-                  setShowCurrencySuggestions(true);
-                }}
-                onFocus={() => {
-                  if (!currencySearch) {
-                    setCurrencySearch('');
-                  }
-                  setShowCurrencySuggestions(true);
-                }}
-                onBlur={() => setTimeout(() => setShowCurrencySuggestions(false), 200)}
-                placeholder={formData.currency ? `${currencyInfo.symbol} ${formData.currency}` : "Type to search currencies..."}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-              />
-              
-              {/* Suggestions dropdown */}
-              {showCurrencySuggestions && filteredCurrencies.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                  {filteredCurrencies.map((currency) => (
-                    <button
-                      key={currency.code}
-                      type="button"
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, currency: currency.code }));
-                        setCurrencySearch('');
-                        setShowCurrencySuggestions(false);
-                      }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-sm"
-                    >
-                      <span className="font-medium text-gray-900 dark:text-gray-100">
-                        {currency.symbol} {currency.code}
-                      </span>
-                      <span className="text-gray-500 dark:text-gray-400 ml-2">
-                        {currency.name}
-                      </span>
-                    </button>
-                  ))}
                 </div>
               )}
-              
-              {/* Show current selection when not searching */}
-              {!currencySearch && formData.currency && (
-                <div className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  Selected: {currencyInfo.symbol} {formData.currency} - {currencyInfo.name}
+
+              {/* Total Fiat Amount Input (fiat mode) */}
+              {inputMode === 'fiat' && formData.type !== 'TRANSFER' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="total_fiat_amount">Total Amount Spent</Label>
+                  <Input
+                    id="total_fiat_amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.total_fiat_amount}
+                    onChange={(e) => setFormData(prev => ({ ...prev, total_fiat_amount: e.target.value }))}
+                    placeholder="300.00"
+                    className="font-mono"
+                    required={inputMode === 'fiat'}
+                  />
+                  {parseFloat(formData.btc_amount) > 0 && parseFloat(formData.total_fiat_amount) > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ <span className="font-mono font-medium text-foreground">
+                        {currencyInfo.symbol}{(parseFloat(formData.total_fiat_amount) / parseFloat(formData.btc_amount)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </span> per BTC
+                    </p>
+                  )}
                 </div>
               )}
             </div>
           )}
 
-          {/* Fees */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {formData.type === 'TRANSFER' ? 'Network Fees (in BTC)' : 'Fees'}
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="number"
-                step={formData.type === 'TRANSFER' ? '0.00000001' : '0.01'}
-                value={formData.fees}
-                onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-                className="flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono"
-                placeholder={formData.type === 'TRANSFER' ? '0.00001' : '0.00'}
+          {/* Two-column: Currency + Date */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Currency (hidden for internal transfers) */}
+          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
+              <div className="space-y-1.5">
+                <Label htmlFor="currency">Currency</Label>
+              <CurrencySelector
+                id="currency"
+                value={formData.currency}
+                currencies={allAvailableCurrencies}
+                onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                  placeholder="Select..."
+                  searchPlaceholder="Search..."
               />
-              {formData.type === 'TRANSFER' && (
-                <div className="w-24 px-3 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-600 dark:text-gray-400 flex items-center justify-center font-medium">
-                  BTC
-                </div>
-              )}
-            </div>
-            {formData.type === 'TRANSFER' && parseFloat(formData.fees || '0') > 0 && (
-              <div className="mt-1.5 text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
-                <span>⚠️</span>
-                <span>Network fees are deducted from your total holdings</span>
-              </div>
-            )}
-          </div>
-
-          {/* Destination Address (only for TRANSFER) */}
-          {formData.type === 'TRANSFER' && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Destination Address (Optional)
-              </label>
-              <input
-                type="text"
-                value={formData.destination_address}
-                onChange={(e) => setFormData(prev => ({ ...prev, destination_address: e.target.value }))}
-                className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all font-mono text-sm"
-                placeholder="bc1q... (optional for tracking)"
-              />
-            </div>
-          )}
-
-          {/* Cost Breakdown */}
-          {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 space-y-2 border border-gray-200 dark:border-gray-700">
-              <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
-                Cost Breakdown
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                <span className="font-mono text-gray-900 dark:text-gray-100">
-                  {currencyInfo.symbol}{totals.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-              {totals.fees > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600 dark:text-gray-400">Fees</span>
-                  <span className="font-mono text-gray-900 dark:text-gray-100">
-                    {currencyInfo.symbol}{totals.fees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                </div>
-              )}
-              <div className="flex justify-between text-base font-semibold pt-2 border-t border-gray-200 dark:border-gray-700">
-                <span className="text-gray-900 dark:text-gray-100">Total Cost</span>
-                <span className="font-mono text-gray-900 dark:text-gray-100">
-                  {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Transfer Summary (only for TRANSFER) - Simplified */}
-          {formData.type === 'TRANSFER' && parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-            <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2 border border-green-200 dark:border-green-800">
-              <div className="flex justify-between text-sm items-center">
-                <span className="text-green-700 dark:text-green-300 text-xs">Arrives</span>
-                <span className="font-mono text-green-600 dark:text-green-400 font-bold">
-                  {(parseFloat(formData.btc_amount) - parseFloat(formData.fees || '0')).toFixed(8)} BTC
-                </span>
-              </div>
             </div>
           )}
 
           {/* Transaction Date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Transaction Date
-            </label>
-            <input
-              type="date"
-              value={formData.transaction_date}
-              onChange={(e) => setFormData(prev => ({ ...prev, transaction_date: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-              required
+            <div className={cn("space-y-1.5", formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL' && "col-span-2")}>
+              <Label htmlFor="transaction_date">Date</Label>
+            <DatePicker
+              id="transaction_date"
+              value={formData.transaction_date ? new Date(formData.transaction_date) : undefined}
+              onChange={(date) => setFormData(prev => ({ 
+                ...prev, 
+                transaction_date: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+              }))}
+              placeholder="Select date"
             />
           </div>
+          </div>
+
+          {/* Cost Summary - Compact inline */}
+          {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
+            <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50 border">
+              <span className="text-sm text-muted-foreground">Total</span>
+              <span className="font-mono font-bold text-btc-600 dark:text-btc-400">
+                {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+
+          {/* Fees Toggle (for BUY/SELL) */}
+          {formData.type !== 'TRANSFER' && (
+            <>
+              {!showFees ? (
+                <button
+                  type="button"
+                  onClick={() => setShowFees(true)}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <PlusIcon className="size-4" />
+                  Add fees
+                </button>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="fees">Fees</Label>
+                    <button
+                      type="button"
+                      onClick={() => { setShowFees(false); setFormData(prev => ({ ...prev, fees: '0' })); }}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <Input
+                    id="fees"
+                    type="number"
+                    step="0.01"
+                    value={formData.fees}
+                    onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
+                    placeholder="0.00"
+                    className="font-mono"
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Transfer-specific: Network Fees + Destination */}
+          {formData.type === 'TRANSFER' && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="fees">Network Fees (BTC)</Label>
+                <Input
+                  id="fees"
+                  type="number"
+                  step="0.00000001"
+                  value={formData.fees}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
+                  placeholder="0.00001"
+                  className="font-mono"
+                />
+              </div>
+              {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Arrives: <span className="font-mono font-medium text-foreground">{(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC</span>
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* More Options Toggle */}
+          <button
+            type="button"
+            onClick={() => setShowMoreOptions(!showMoreOptions)}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+          >
+            <ChevronDownIcon className={cn("size-4 transition-transform", showMoreOptions && "rotate-180")} />
+            {showMoreOptions ? 'Hide options' : 'More options'}
+            {(formData.notes || formData.tags || (formData.type === 'TRANSFER' && formData.destination_address)) && !showMoreOptions && (
+              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">has data</span>
+            )}
+          </button>
+
+          {/* Collapsible: Notes, Tags, Destination */}
+          {showMoreOptions && (
+            <div className="space-y-3 pt-1">
+              {/* Destination Address (only for TRANSFER) */}
+              {formData.type === 'TRANSFER' && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="destination_address">Destination Address</Label>
+                  <Input
+                    id="destination_address"
+                    type="text"
+                    value={formData.destination_address}
+                    onChange={(e) => setFormData(prev => ({ ...prev, destination_address: e.target.value }))}
+                    placeholder="bc1q... (optional)"
+                    className="font-mono text-sm"
+                  />
+                </div>
+              )}
 
           {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Notes (Optional)
-            </label>
-            <textarea
+              <div className="space-y-1.5">
+                <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
               value={formData.notes}
               onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all resize-none"
-              placeholder="Add any notes about this transaction..."
-              rows={3}
+                  placeholder="Optional notes..."
+                  rows={2}
+              className="resize-none"
             />
           </div>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Tags (Optional)
-            </label>
-            <input
-              type="text"
-              value={formData.tags}
-              onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-              className="w-full px-3 py-2.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-bitcoin focus:border-bitcoin transition-all"
-              placeholder="e.g. DCA, Long-term, Dip Buy (comma-separated)"
+              <div className="space-y-1.5">
+                <Label htmlFor="tags">Tags</Label>
+            <TagsInput
+              id="tags"
+              value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
+              onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
+                  placeholder="Type and press Enter"
             />
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Separate multiple tags with commas
-            </p>
           </div>
+            </div>
+          )}
           </div>
 
-          {/* Form Actions - Sticky at bottom */}
-          <div className="flex space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <ThemedButton
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              className="flex-1"
-            >
+          <DialogFooter className="mt-4 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
-            </ThemedButton>
-            <ThemedButton
-              type="submit"
-              variant="primary"
-              className="flex-1 bg-bitcoin hover:bg-bitcoin-dark"
-            >
+            </Button>
+            <Button type="submit" className="bg-btc-500 hover:bg-btc-600">
               {editingTransaction ? 'Update' : 'Add Transaction'}
-            </ThemedButton>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
-
-  // Render modal content using portal to document.body
-  return typeof document !== 'undefined' 
-    ? createPortal(modalContent, document.body)
-    : null;
 } 

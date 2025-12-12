@@ -307,7 +307,7 @@ describe.skip('Transactions API', () => {
       expect(data.data.original_total_amount).toBe(1060) // 0.02 * 53000
     })
 
-    it('should create a new TRANSFER transaction', async () => {
+    it('should create a new TRANSFER transaction (internal)', async () => {
       const newTransaction: TransactionFormData = {
         type: 'TRANSFER',
         btc_amount: '0.5',
@@ -334,6 +334,90 @@ describe.skip('Transactions API', () => {
       expect(data.data.fees_currency).toBe('BTC')
       expect(data.data.transfer_type).toBe('TO_COLD_WALLET')
       expect(data.data.destination_address).toBe('bc1q...')
+      // Internal transfers should have price = 0
+      expect(data.data.original_price_per_btc).toBe(0)
+    })
+
+    it('should create a TRANSFER_IN transaction with reference price', async () => {
+      const newTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.5',
+        price_per_btc: '95000', // Reference price when BTC was received
+        currency: 'USD',
+        fees: '0',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-19',
+        notes: 'Received as payment for services',
+        tags: 'income',
+        transfer_type: 'TRANSFER_IN',
+        destination_address: ''
+      }
+
+      const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', newTransaction)
+      const response = await transactionsPOST(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(data.data.type).toBe('TRANSFER')
+      expect(data.data.btc_amount).toBe(0.5)
+      expect(data.data.transfer_type).toBe('TRANSFER_IN')
+      // TRANSFER_IN should save the reference price
+      expect(data.data.original_price_per_btc).toBe(95000)
+      expect(data.data.original_total_amount).toBe(47500) // 0.5 * 95000
+    })
+
+    it('should create a TRANSFER_OUT transaction with reference price', async () => {
+      const newTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.1',
+        price_per_btc: '100000', // Reference price when BTC was sent
+        currency: 'USD',
+        fees: '0.00005',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-20',
+        notes: 'Donated to charity',
+        tags: 'donation',
+        transfer_type: 'TRANSFER_OUT',
+        destination_address: 'bc1qdonation...'
+      }
+
+      const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', newTransaction)
+      const response = await transactionsPOST(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(data.data.type).toBe('TRANSFER')
+      expect(data.data.btc_amount).toBe(0.1)
+      expect(data.data.transfer_type).toBe('TRANSFER_OUT')
+      // TRANSFER_OUT should save the reference price
+      expect(data.data.original_price_per_btc).toBe(100000)
+      expect(data.data.original_total_amount).toBe(10000) // 0.1 * 100000
+      expect(data.data.destination_address).toBe('bc1qdonation...')
+    })
+
+    it('should create TRANSFER_IN without reference price (defaults to 0)', async () => {
+      const newTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.25',
+        price_per_btc: '', // No reference price provided
+        currency: 'USD',
+        fees: '0',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-21',
+        notes: 'Mining reward',
+        transfer_type: 'TRANSFER_IN'
+      }
+
+      const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', newTransaction)
+      const response = await transactionsPOST(mockRequest)
+      const data = await response.json()
+
+      expect(response.status).toBe(201)
+      expect(data.success).toBe(true)
+      expect(data.data.transfer_type).toBe('TRANSFER_IN')
+      expect(data.data.original_price_per_btc).toBe(0)
     })
 
     it('should calculate total amount automatically', async () => {
@@ -502,6 +586,97 @@ describe.skip('Transactions API', () => {
       expect(data.data.original_total_amount).toBe(7800) // 0.15 * 52000
     })
 
+    it('should update a TRANSFER_IN transaction and preserve reference price', async () => {
+      // Create a TRANSFER_IN transaction to update
+      const transaction = await testDb.bitcoinTransaction.create({
+        data: {
+          userId: testUser.id,
+          type: 'TRANSFER',
+          btcAmount: 0.5,
+          originalPricePerBtc: 90000,
+          originalCurrency: 'USD',
+          originalTotalAmount: 45000,
+          fees: 0,
+          feesCurrency: 'BTC',
+          transactionDate: new Date('2024-01-15'),
+          notes: 'Original transfer in',
+          transferType: 'TRANSFER_IN'
+        }
+      })
+
+      const updatedTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.6', // Update amount
+        price_per_btc: '95000', // Update reference price
+        currency: 'EUR',
+        fees: '0',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-20',
+        notes: 'Updated transfer in',
+        transfer_type: 'TRANSFER_IN'
+      }
+
+      const mockRequest = createAuthenticatedRequest('PUT', `/api/transactions/${transaction.id}`, updatedTransaction)
+      const context = { params: Promise.resolve({ id: transaction.id.toString() }) }
+      
+      const response = await transactionPUT(mockRequest, context)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.btc_amount).toBe(0.6)
+      expect(data.data.original_price_per_btc).toBe(95000)
+      expect(data.data.original_total_amount).toBe(57000) // 0.6 * 95000
+      expect(data.data.transfer_type).toBe('TRANSFER_IN')
+    })
+
+    it('should update a TRANSFER_OUT transaction and preserve reference price', async () => {
+      // Create a TRANSFER_OUT transaction to update
+      const transaction = await testDb.bitcoinTransaction.create({
+        data: {
+          userId: testUser.id,
+          type: 'TRANSFER',
+          btcAmount: 0.1,
+          originalPricePerBtc: 100000,
+          originalCurrency: 'USD',
+          originalTotalAmount: 10000,
+          fees: 0.00001,
+          feesCurrency: 'BTC',
+          transactionDate: new Date('2024-01-15'),
+          notes: 'Original transfer out',
+          transferType: 'TRANSFER_OUT',
+          destinationAddress: 'bc1qold...'
+        }
+      })
+
+      const updatedTransaction: TransactionFormData = {
+        type: 'TRANSFER',
+        btc_amount: '0.15',
+        price_per_btc: '105000',
+        currency: 'USD',
+        fees: '0.00002',
+        fees_currency: 'BTC',
+        transaction_date: '2024-01-22',
+        notes: 'Updated transfer out',
+        transfer_type: 'TRANSFER_OUT',
+        destination_address: 'bc1qnew...'
+      }
+
+      const mockRequest = createAuthenticatedRequest('PUT', `/api/transactions/${transaction.id}`, updatedTransaction)
+      const context = { params: Promise.resolve({ id: transaction.id.toString() }) }
+      
+      const response = await transactionPUT(mockRequest, context)
+      const data = await response.json()
+
+      expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
+      expect(data.data.btc_amount).toBe(0.15)
+      expect(data.data.original_price_per_btc).toBe(105000)
+      expect(data.data.original_total_amount).toBe(15750) // 0.15 * 105000
+      expect(data.data.transfer_type).toBe('TRANSFER_OUT')
+      expect(data.data.destination_address).toBe('bc1qnew...')
+    })
+
     it('should fail to update non-existent transaction', async () => {
       const nonExistentId = 99999
       const updatedTransaction: TransactionFormData = {
@@ -643,6 +818,46 @@ describe.skip('Transactions API', () => {
         expect(response.status).toBe(201)
         expect(data.success).toBe(true)
         expect(data.data.type).toBe(type)
+      }
+    })
+
+    it('should accept all valid transfer types including TRANSFER_IN and TRANSFER_OUT', async () => {
+      const transferTypes = [
+        { type: 'TO_COLD_WALLET', hasPrice: false },
+        { type: 'FROM_COLD_WALLET', hasPrice: false },
+        { type: 'BETWEEN_WALLETS', hasPrice: false },
+        { type: 'TRANSFER_IN', hasPrice: true },
+        { type: 'TRANSFER_OUT', hasPrice: true }
+      ]
+      
+      for (const { type, hasPrice } of transferTypes) {
+        const transaction: TransactionFormData = {
+          type: 'TRANSFER',
+          btc_amount: '0.1',
+          price_per_btc: hasPrice ? '100000' : '0',
+          currency: 'USD',
+          fees: '0.00001',
+          fees_currency: 'BTC',
+          transaction_date: '2024-01-15',
+          notes: `Testing ${type}`,
+          transfer_type: type as any
+        }
+
+        const mockRequest = createAuthenticatedRequest('POST', '/api/transactions', transaction)
+        const response = await transactionsPOST(mockRequest)
+        const data = await response.json()
+
+        expect(response.status).toBe(201)
+        expect(data.success).toBe(true)
+        expect(data.data.type).toBe('TRANSFER')
+        expect(data.data.transfer_type).toBe(type)
+        
+        // External transfers should preserve reference price, internal transfers should be 0
+        if (hasPrice) {
+          expect(data.data.original_price_per_btc).toBe(100000)
+        } else {
+          expect(data.data.original_price_per_btc).toBe(0)
+        }
       }
     })
 

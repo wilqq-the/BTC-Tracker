@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText } from '@/components/ui/ThemeProvider';
+import { WidgetCard, WidgetListItem } from '@/components/ui/widget-card';
 import { formatCurrency } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
+import { ActivityIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 
 interface TimeframeData {
   period: string;
@@ -17,9 +18,10 @@ interface TimeframeData {
  * Multi-Timeframe Performance Widget
  * Shows Bitcoin performance across multiple time periods
  */
-export default function MultiTimeframeWidget({ id, isEditMode, onRefresh }: WidgetProps) {
+export default function MultiTimeframeWidget({ id, onRefresh }: WidgetProps) {
   const [timeframes, setTimeframes] = useState<TimeframeData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<number>(0);
   const [currency, setCurrency] = useState<string>('USD');
 
@@ -93,74 +95,55 @@ export default function MultiTimeframeWidget({ id, isEditMode, onRefresh }: Widg
   };
 
   const handleRefresh = async () => {
-    setLoading(true);
+    setRefreshing(true);
     await loadTimeframes();
-    if (onRefresh) onRefresh();
+    setRefreshing(false);
+    onRefresh?.();
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-            Performance
-          </h3>
-        </div>
-        <ThemedCard className="flex-1">
-          <div className="animate-pulse space-y-2">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="h-8 bg-gray-300 dark:bg-gray-700 rounded"></div>
-            ))}
-          </div>
-        </ThemedCard>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-          Performance
-        </h3>
-        <button
-          onClick={handleRefresh}
-          className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-xs p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-          title="Refresh"
-          disabled={loading}
-        >
-          ↻
-        </button>
-      </div>
-
-      <ThemedCard padding={false} className="flex-1">
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+    <WidgetCard
+      title="Performance"
+      icon={ActivityIcon}
+      loading={loading}
+      error={timeframes.length === 0 ? "No performance data available" : null}
+      onRefresh={handleRefresh}
+      refreshing={refreshing}
+      noPadding
+      contentClassName="overflow-auto"
+    >
+      {timeframes.length > 0 && (
+        <div className="divide-y flex-1">
           {timeframes.map((tf) => (
-            <div key={tf.period} className="px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-              <div className="flex justify-between items-center">
-                <div className="flex-1">
-                  <ThemedText variant="muted" className="text-xs">
-                    {tf.label}
-                  </ThemedText>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className={`text-sm font-semibold ${
+            <WidgetListItem
+              key={tf.period}
+              title={tf.label}
+              value={
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-sm font-semibold ${
                     tf.changePercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                     {tf.changePercent >= 0 ? '+' : ''}{tf.changePercent.toFixed(2)}%
-                  </div>
-                  <div className={`text-xs font-medium min-w-[80px] text-right ${
+                  </span>
+                  <span className={`text-xs font-medium ${
                     tf.change >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                   }`}>
                     {tf.change >= 0 ? '+' : ''}{formatCurrency(tf.change, currency)}
-                  </div>
+                  </span>
                 </div>
-              </div>
-            </div>
+              }
+              icon={
+                tf.changePercent >= 0 ? (
+                  <TrendingUpIcon className="size-4 text-green-600 dark:text-green-400" />
+                ) : (
+                  <TrendingDownIcon className="size-4 text-red-600 dark:text-red-400" />
+                )
+              }
+            />
           ))}
         </div>
-      </ThemedCard>
-    </div>
+      )}
+    </WidgetCard>
   );
 }
 

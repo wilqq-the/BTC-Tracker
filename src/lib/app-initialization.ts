@@ -111,10 +111,16 @@ export class AppInitializationService {
   private static shutdownHandlersSetup = false;
 
   static getStatus() {
+    // Always try to get scheduler status - it manages its own state
+    const schedulerStatus = PriceScheduler.getStatus();
+    
     return {
       isInitialized: this.isInitialized,
       isInitializing: this.initPromise !== null && !this.isInitialized,
-      schedulerStatus: this.isInitialized ? PriceScheduler.getStatus() : null
+      schedulerStatus,
+      // Include process info for debugging worker isolation issues
+      processId: process.pid,
+      uptime: process.uptime()
     };
   }
 
@@ -128,66 +134,43 @@ export class AppInitializationService {
   }
 
   static async triggerDataUpdate(): Promise<void> {
-    if (!this.isInitialized) throw new Error('Not initialized');
+    // Direct price update - doesn't need scheduler to be running
+    // PriceScheduler.updateNow() just fetches and saves data directly
     console.log('[SYNC] Updating data...');
     await PriceScheduler.updateNow();
     console.log('[OK] Updated');
   }
 
   private static async verifyDatabase(): Promise<void> {
-    // Auto-setup database in dev if it doesn't exist
-    if (process.env.NODE_ENV !== 'production') {
-      const { existsSync } = require('fs');
-      const dbUrl = process.env.DATABASE_URL || '';
-      
-      if (dbUrl.startsWith('file:')) {
-        const dbPath = dbUrl.replace('file:', '');
-        if (!existsSync(dbPath)) {
-          console.log('[DEV] Database not found - setting up...');
-          try {
-            await this.setupDatabaseForDev();
-            console.log('[OK] Database ready');
-            return;
-          } catch (setupError) {
-            console.error('[ERROR] Setup failed:', setupError);
-            throw new Error('Failed to setup database for development');
-          }
-        }
-      }
-    }
-
+    // Database migrations are handled by docker-entrypoint.sh / migrate.js
+    // This just verifies the database is accessible and has the expected structure
+    
     try {
       console.log('[SEARCH] Testing database connection...');
       await prisma.$connect();
       await prisma.$queryRaw`SELECT 1`;
       console.log('[OK] Database connected');
+    } catch (error) {
+      console.error('[ERROR] Database connection failed:', error);
+      throw new Error('Cannot connect to database');
+    }
 
+    // Verify database structure
+    try {
       console.log('[SEARCH] Verifying database structure...');
       await this.verifyDatabaseStructure();
       console.log('[OK] Database structure verified');
-
     } catch (error) {
       console.error('[ERROR] Database verification failed:', error);
-      console.error('[INFO] Please run: npx prisma migrate deploy');
+      console.error('[INFO] Database migrations should be run by the container entrypoint.');
+      console.error('[INFO] If running locally, run: npm run db:migrate');
       throw new Error(`Database verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  private static async setupDatabaseForDev(): Promise<void> {
-    const { execSync } = require('child_process');
-    
-    console.log('[DEV] Running migrations...');
-    execSync('npx prisma migrate deploy', { 
-      stdio: 'inherit',
-      cwd: process.cwd()
-    });
-    
-    console.log('[DEV] Verifying tables...');
-    await this.verifyDatabaseStructure();
-  }
-
   private static async verifyDatabaseStructure(): Promise<void> {
     try {
+      // Quick check that core tables exist and are queryable
       await prisma.user.findFirst();
       await prisma.bitcoinTransaction.findFirst();
       await prisma.appSettings.findFirst();

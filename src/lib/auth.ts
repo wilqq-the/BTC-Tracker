@@ -10,7 +10,8 @@ export const authOptions: NextAuthOptions = {
       name: 'credentials',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        password: { label: 'Password', type: 'password' },
+        twoFactorVerified: { label: '2FA Verified', type: 'text' } // Flag to indicate 2FA was completed
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -30,19 +31,37 @@ export const authOptions: NextAuthOptions = {
 
           const isValidPassword = await bcrypt.compare(credentials.password, user.passwordHash)
           
-          if (isValidPassword && user.isActive) {
-            return {
-              id: user.id.toString(),
-              email: user.email,
-              name: user.name || user.email.split('@')[0],
-              isAdmin: user.isAdmin,
-              isActive: user.isActive
-            }
-          } else {
+          if (!isValidPassword) {
             console.log('Invalid password for user:', credentials.email)
             return null
           }
-        } catch (error) {
+
+          if (!user.isActive) {
+            console.log('User is not active:', credentials.email)
+            return null
+          }
+
+          // Check if 2FA is enabled
+          if (user.twoFactorEnabled) {
+            // If 2FA is enabled but not verified in this request, reject
+            if (credentials.twoFactorVerified !== 'true') {
+              // Throw specific error to indicate 2FA is required
+              throw new Error('2FA_REQUIRED')
+            }
+          }
+          
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name || user.email.split('@')[0],
+            isAdmin: user.isAdmin,
+            isActive: user.isActive
+          }
+        } catch (error: any) {
+          // Re-throw 2FA_REQUIRED error to be handled by client
+          if (error.message === '2FA_REQUIRED') {
+            throw error
+          }
           console.error('Error during login:', error)
           return null
         }
@@ -53,7 +72,8 @@ export const authOptions: NextAuthOptions = {
       name: 'PIN',
       credentials: {
         email: { label: 'Email', type: 'email' },
-        pin: { label: 'PIN', type: 'password' }
+        pin: { label: 'PIN', type: 'password' },
+        twoFactorVerified: { label: '2FA Verified', type: 'text' } // Flag to indicate 2FA was completed
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.pin) {
@@ -78,19 +98,37 @@ export const authOptions: NextAuthOptions = {
 
           const isValidPin = await bcrypt.compare(credentials.pin, user.pinHash)
           
-          if (isValidPin && user.isActive) {
-            return {
-              id: user.id.toString(),
-              email: user.email,
-              name: user.name || user.email.split('@')[0],
-              isAdmin: user.isAdmin,
-              isActive: user.isActive
-            }
-          } else {
+          if (!isValidPin) {
             console.log('Invalid PIN for user:', credentials.email)
             return null
           }
-        } catch (error) {
+
+          if (!user.isActive) {
+            console.log('User is not active:', credentials.email)
+            return null
+          }
+
+          // Check if 2FA is enabled
+          if (user.twoFactorEnabled) {
+            // If 2FA is enabled but not verified in this request, reject
+            if (credentials.twoFactorVerified !== 'true') {
+              // Throw specific error to indicate 2FA is required
+              throw new Error('2FA_REQUIRED')
+            }
+          }
+          
+          return {
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name || user.email.split('@')[0],
+            isAdmin: user.isAdmin,
+            isActive: user.isActive
+          }
+        } catch (error: any) {
+          // Re-throw 2FA_REQUIRED error to be handled by client
+          if (error.message === '2FA_REQUIRED') {
+            throw error
+          }
           console.error('Error during PIN login:', error)
           return null
         }

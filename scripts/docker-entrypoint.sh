@@ -27,6 +27,12 @@ setup_db_dir() {
     fi
 }
 
+# Run migrations using our custom migration system
+run_migrations() {
+    echo "Running database migrations..."
+    node /app/scripts/migrate.js
+}
+
 CURRENT_UID=$(id -u)
 
 if [ "$CURRENT_UID" = "0" ]; then
@@ -35,22 +41,21 @@ if [ "$CURRENT_UID" = "0" ]; then
     [ "$PGID" != "1001" ] && groupmod -g "$PGID" nodejs 2>/dev/null || true
     
     setup_db_dir "chown"
-    chown -R nextjs:nodejs /app/data /app/public/uploads 2>/dev/null || true
+    chown -R nextjs:nodejs /app/data 2>/dev/null || true
     
     setup_cache
-    su-exec nextjs sh -c "cd /app && HOME='$HOME' npx prisma migrate deploy" || true
+    su-exec nextjs sh -c "cd /app && HOME='$HOME' node /app/scripts/migrate.js" || true
     
     echo "Starting app as nextjs user..."
-    exec su-exec nextjs npm start
+    exec su-exec nextjs npm run start:skip-migrate
 else
     # Non-root (Umbrel etc)
     setup_db_dir
-    mkdir -p /app/data /app/public/uploads 2>/dev/null || true
+    mkdir -p /app/data 2>/dev/null || true
     
     setup_cache
-    echo "Running migrations..."
-    npx prisma migrate deploy || true
+    run_migrations
     
     echo "Starting app..."
-    exec npm start
+    exec npm run start:skip-migrate
 fi

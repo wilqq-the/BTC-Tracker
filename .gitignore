@@ -42,3 +42,10 @@ next-env.d.ts
 *.db
 *.sqlite 
 /generated/prisma
+
+# IDE
+.vscode/
+.cursor/
+
+# Uploaded files
+data/uploads/*

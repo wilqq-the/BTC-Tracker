@@ -1,12 +1,12 @@
 # BTC Tracker - Multi-stage Docker build
 
-FROM node:22-alpine AS deps
+FROM node:22.12.0-alpine3.21 AS deps
 WORKDIR /app
 RUN apk add --no-cache python3 py3-setuptools make g++ gcc musl-dev sqlite-dev
 COPY package.json package-lock.json* ./
 RUN npm ci
 
-FROM node:22-alpine AS builder
+FROM node:22.12.0-alpine3.21 AS builder
 WORKDIR /app
 RUN apk add --no-cache python3 py3-setuptools make g++ gcc musl-dev sqlite-dev
 COPY --from=deps /app/node_modules ./node_modules
@@ -16,7 +16,7 @@ RUN npx prisma generate
 ENV NODE_ENV="production"
 RUN npm run build
 
-FROM node:22-alpine AS runner
+FROM node:22.12.0-alpine3.21 AS runner
 WORKDIR /app
 ENV NODE_ENV="production"
 
@@ -33,8 +33,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
 
 RUN chmod +x ./scripts/docker-entrypoint.sh && \
-    mkdir -p /app/data /app/public/uploads/avatars && \
-    chown -R nextjs:nodejs /app/data /app/public/uploads && \
+    mkdir -p /app/data /app/data/uploads/avatars && \
+    chown -R nextjs:nodejs /app/data && \
     chmod -R 755 /app/node_modules
 
 EXPOSE 3000
