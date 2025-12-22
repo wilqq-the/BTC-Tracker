@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { cn } from '@/lib/utils';
@@ -727,7 +727,10 @@ export default function ProfilePage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => window.location.href = '/api/auth/signout'}
+                  onClick={async () => {
+                    await signOut({ redirect: false })
+                    window.location.href = '/auth/signin'
+                  }}
                 >
                   <LogOutIcon className="size-4 mr-2" />
                   Sign Out
