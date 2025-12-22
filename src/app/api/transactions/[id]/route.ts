@@ -46,7 +46,7 @@ export async function GET(
     // Format the transaction to match expected format
     const formattedTransaction = transaction ? {
       ...transaction,
-      type: transaction.type as 'BUY' | 'SELL',
+      type: transaction.type as 'BUY' | 'SELL' | 'TRANSFER',
       transaction_date: transaction.transactionDate.toISOString().split('T')[0],
       btc_amount: transaction.btcAmount,
       original_price_per_btc: transaction.originalPricePerBtc,
@@ -55,6 +55,11 @@ export async function GET(
       fees_currency: transaction.feesCurrency,
       notes: transaction.notes || '',
       tags: (transaction as any).tags || '',
+      transfer_type: (transaction as any).transferType || null,
+      destination_address: (transaction as any).destinationAddress || null,
+      source_wallet_id: (transaction as any).sourceWalletId || null,
+      destination_wallet_id: (transaction as any).destinationWalletId || null,
+      transfer_category: (transaction as any).transferCategory || null,
       created_at: transaction.createdAt,
       updated_at: transaction.updatedAt
     } : null;
@@ -147,6 +152,18 @@ export async function PUT(
     // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
     const feesCurrency = isTransfer ? 'BTC' : formData.currency;
 
+    // Determine transfer_category from transfer_type
+    let transferCategory: string | null = null;
+    if (isTransfer && formData.transfer_type) {
+      if (formData.transfer_type === 'TRANSFER_IN') {
+        transferCategory = 'EXTERNAL_IN';
+      } else if (formData.transfer_type === 'TRANSFER_OUT') {
+        transferCategory = 'EXTERNAL_OUT';
+      } else {
+        transferCategory = 'INTERNAL';
+      }
+    }
+
     // Update transaction using Prisma - only store original data for this user
     const updatedTransaction = await prisma.bitcoinTransaction.update({
       where: { 
@@ -165,7 +182,11 @@ export async function PUT(
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
-        destinationAddress: isTransfer ? (formData.destination_address || null) : null
+        destinationAddress: isTransfer ? (formData.destination_address || null) : null,
+        // Multi-wallet support
+        sourceWalletId: formData.source_wallet_id || null,
+        destinationWalletId: formData.destination_wallet_id || null,
+        transferCategory: transferCategory,
         // updatedAt is automatically handled by Prisma
       } as any
     });
@@ -192,6 +213,9 @@ export async function PUT(
       tags: (updatedTransaction as any).tags || '',
       transfer_type: (updatedTransaction as any).transferType || null,
       destination_address: (updatedTransaction as any).destinationAddress || null,
+      source_wallet_id: (updatedTransaction as any).sourceWalletId || null,
+      destination_wallet_id: (updatedTransaction as any).destinationWalletId || null,
+      transfer_category: (updatedTransaction as any).transferCategory || null,
       created_at: updatedTransaction.createdAt,
       updated_at: updatedTransaction.updatedAt
     };

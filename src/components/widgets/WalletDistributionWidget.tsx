@@ -5,7 +5,7 @@ import { WidgetCard } from '@/components/ui/widget-card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { WidgetProps } from '@/lib/dashboard-types';
-import { ShieldCheckIcon, WalletIcon, ServerIcon } from 'lucide-react';
+import { ShieldCheckIcon, FlameIcon, SnowflakeIcon } from 'lucide-react';
 
 interface WalletData {
   totalBtc: number;
@@ -102,12 +102,12 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
 
           {/* Wallet Breakdown */}
           <div className="space-y-3">
-            {/* Cold Wallet */}
+            {/* Cold Wallets */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="size-3 rounded-full bg-blue-500 shrink-0" />
-                <ServerIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Cold Wallet</span>
+                <SnowflakeIcon className="size-4 text-blue-500" />
+                <span className="text-sm font-medium">Cold Wallets</span>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-foreground">
@@ -119,12 +119,12 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
               </div>
             </div>
 
-            {/* Hot Wallet */}
+            {/* Hot Wallets */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="size-3 rounded-full bg-btc-500 shrink-0" />
-                <WalletIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Hot Wallet</span>
+                <FlameIcon className="size-4 text-orange-500" />
+                <span className="text-sm font-medium">Hot Wallets</span>
               </div>
               <div className="text-right">
                 <div className="text-sm font-bold text-foreground">

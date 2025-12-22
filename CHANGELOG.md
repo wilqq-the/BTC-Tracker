@@ -5,7 +5,25 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.8] - 2025-12-22
+## [0.7.0] - 2025-12-22
+
+### ✨ New Features
+- **Multi-Wallet Support** - Track Bitcoin across multiple wallets ([#150](https://github.com/wilqq-the/BTC-Tracker/issues/150))
+  - Create unlimited wallets (Hardware, Software, Exchange, Mobile, Custodial, Paper)
+  - Hot/Cold wallet classification with visual indicators
+  - Per-wallet balance tracking with automatic calculation
+  - Set default wallet for new transactions
+  - Color-coded wallet cards for easy identification
+  - New dedicated Wallets page in main navigation
+  - Wallet selector in transaction forms (Buy/Sell/Transfer)
+  - Wallet column in transactions list showing source/destination
+  - Automatic migration: existing transactions assigned to default wallets
+
+### 🔧 Improvements
+- **Wallet Distribution Widget** - Now uses Flame/Snowflake icons for Hot/Cold
+- **CSV Import** - Imported transactions auto-assigned to default wallet
+- Replaced emojis with professional lucide-react icons throughout wallet UI
+- Removed Wallets tab from Settings (now has dedicated page)
 
 ### 🐛 Bug Fixes
 - **Date Picker fixes** - Fixed multiple issues with date selection ([#159](https://github.com/wilqq-the/BTC-Tracker/issues/159))

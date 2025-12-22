@@ -104,6 +104,12 @@ async function importTransactions(
     }
   };
 
+  // Get default wallet for the user (for auto-assignment)
+  const defaultWallet = await prisma.wallet.findFirst({
+    where: { userId, isDefault: true }
+  });
+  const defaultWalletId = defaultWallet?.id || null;
+
   for (const transaction of transactions) {
     try {
       // Check for duplicates based on mode
@@ -161,8 +167,38 @@ async function importTransactions(
         }
       }
 
-      // Import the transaction with user association
+      // Import the transaction with user association and default wallet
       const isTransfer = transaction.type === 'TRANSFER';
+      
+      // Determine wallet assignment based on transaction type
+      let sourceWalletId: number | null = null;
+      let destinationWalletId: number | null = null;
+      let transferCategory: string | null = null;
+      
+      if (defaultWalletId) {
+        if (transaction.type === 'BUY') {
+          // Buys go INTO the default wallet
+          destinationWalletId = defaultWalletId;
+        } else if (transaction.type === 'SELL') {
+          // Sells come FROM the default wallet
+          sourceWalletId = defaultWalletId;
+        } else if (transaction.type === 'TRANSFER') {
+          // For transfers, determine based on transfer_type
+          if (transaction.transfer_type === 'TRANSFER_IN') {
+            destinationWalletId = defaultWalletId;
+            transferCategory = 'EXTERNAL_IN';
+          } else if (transaction.transfer_type === 'TRANSFER_OUT') {
+            sourceWalletId = defaultWalletId;
+            transferCategory = 'EXTERNAL_OUT';
+          } else {
+            // Internal transfer - use default for both (user can reassign later)
+            sourceWalletId = defaultWalletId;
+            destinationWalletId = defaultWalletId;
+            transferCategory = 'INTERNAL';
+          }
+        }
+      }
+
       await prisma.bitcoinTransaction.create({
         data: {
           userId: userId,
@@ -176,7 +212,11 @@ async function importTransactions(
           transactionDate: new Date(transaction.transaction_date),
           notes: transaction.notes,
           transferType: isTransfer ? (transaction.transfer_type || null) : null,
-          destinationAddress: isTransfer ? (transaction.destination_address || null) : null
+          destinationAddress: isTransfer ? (transaction.destination_address || null) : null,
+          // Wallet assignment
+          sourceWalletId,
+          destinationWalletId,
+          transferCategory,
         } as any
       });
 

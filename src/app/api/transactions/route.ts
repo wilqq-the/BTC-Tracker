@@ -121,6 +121,9 @@ export async function GET(request: NextRequest) {
       tags: (tx as any).tags || '',
       transfer_type: (tx as any).transferType || null,
       destination_address: (tx as any).destinationAddress || null,
+      source_wallet_id: (tx as any).sourceWalletId || null,
+      destination_wallet_id: (tx as any).destinationWalletId || null,
+      transfer_category: (tx as any).transferCategory || null,
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));
@@ -259,6 +262,18 @@ export async function POST(request: NextRequest) {
     // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
     const feesCurrency = isTransfer ? 'BTC' : formData.currency;
 
+    // Determine transfer_category from transfer_type
+    let transferCategory: string | null = null;
+    if (isTransfer && formData.transfer_type) {
+      if (formData.transfer_type === 'TRANSFER_IN') {
+        transferCategory = 'EXTERNAL_IN';
+      } else if (formData.transfer_type === 'TRANSFER_OUT') {
+        transferCategory = 'EXTERNAL_OUT';
+      } else {
+        transferCategory = 'INTERNAL';
+      }
+    }
+
     // Insert transaction using Prisma - only store original data with user association
     const newTransaction = await prisma.bitcoinTransaction.create({
       data: {
@@ -274,7 +289,11 @@ export async function POST(request: NextRequest) {
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
-        destinationAddress: isTransfer ? (formData.destination_address || null) : null
+        destinationAddress: isTransfer ? (formData.destination_address || null) : null,
+        // Multi-wallet support
+        sourceWalletId: formData.source_wallet_id || null,
+        destinationWalletId: formData.destination_wallet_id || null,
+        transferCategory: transferCategory,
       } as any
     });
 
@@ -292,6 +311,9 @@ export async function POST(request: NextRequest) {
       tags: (newTransaction as any).tags || '',
       transfer_type: (newTransaction as any).transferType || null,
       destination_address: (newTransaction as any).destinationAddress || null,
+      source_wallet_id: (newTransaction as any).sourceWalletId || null,
+      destination_wallet_id: (newTransaction as any).destinationWalletId || null,
+      transfer_category: (newTransaction as any).transferCategory || null,
       created_at: newTransaction.createdAt,
       updated_at: newTransaction.updatedAt
     };

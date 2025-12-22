@@ -24,8 +24,10 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { TagsInput } from '@/components/ui/tags-input';
 import { CurrencySelector } from '@/components/ui/currency-selector';
-import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
+import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon, ChevronDownIcon, PlusIcon, WalletIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { WalletSelector } from '@/components/WalletSelector';
+import { WalletForm } from '@/components/WalletForm';
 
 /**
  * Format a Date to YYYY-MM-DD string in LOCAL timezone (not UTC)
@@ -61,6 +63,9 @@ interface TransactionFormData {
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
   transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
   destination_address?: string;
+  // Multi-wallet support
+  source_wallet_id?: number | null;
+  destination_wallet_id?: number | null;
 }
 
 type InputMode = 'price' | 'fiat';
@@ -85,7 +90,9 @@ const initialFormData: TransactionFormData = {
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
   transfer_category: 'INTERNAL',
-  destination_address: ''
+  destination_address: '',
+  source_wallet_id: null,
+  destination_wallet_id: null,
 };
 
 export default function AddTransactionModal({ 
@@ -116,7 +123,9 @@ export default function AddTransactionModal({
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
       transfer_category: getTransferCategory(editingTransaction.transfer_type),
-      destination_address: editingTransaction.destination_address || ''
+      destination_address: editingTransaction.destination_address || '',
+      source_wallet_id: editingTransaction.source_wallet_id || null,
+      destination_wallet_id: editingTransaction.destination_wallet_id || null,
     } : initialFormData
   );
   
@@ -126,6 +135,10 @@ export default function AddTransactionModal({
   // UI state for collapsible sections
   const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showFees, setShowFees] = useState(false);
+  
+  // Wallet creation modal
+  const [showWalletForm, setShowWalletForm] = useState(false);
+  const [walletSelectorKey, setWalletSelectorKey] = useState(0); // Key to force re-fetch wallets
   
   const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>(['USD', 'EUR', 'PLN', 'GBP']);
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
@@ -154,7 +167,9 @@ export default function AddTransactionModal({
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
         transfer_category: getTransferCategory(editingTransaction.transfer_type),
-        destination_address: editingTransaction.destination_address || ''
+        destination_address: editingTransaction.destination_address || '',
+        source_wallet_id: editingTransaction.source_wallet_id || null,
+        destination_wallet_id: editingTransaction.destination_wallet_id || null,
       });
       setInputMode('price'); // Default to price mode when editing
       // Show more options if editing has notes or tags
@@ -425,6 +440,32 @@ export default function AddTransactionModal({
             )}
           </div>
 
+          {/* Wallet Selection for BUY/SELL */}
+          {formData.type !== 'TRANSFER' && (
+            <div className="space-y-1.5">
+              <Label className="flex items-center gap-1.5">
+                <WalletIcon className="size-4" />
+                {formData.type === 'BUY' ? 'Destination Wallet' : 'Source Wallet'}
+              </Label>
+              <WalletSelector
+                key={walletSelectorKey}
+                value={formData.type === 'BUY' ? formData.destination_wallet_id : formData.source_wallet_id}
+                onChange={(walletId) => setFormData(prev => ({
+                  ...prev,
+                  [formData.type === 'BUY' ? 'destination_wallet_id' : 'source_wallet_id']: walletId
+                }))}
+                placeholder={formData.type === 'BUY' ? 'Where BTC will be stored' : 'Where BTC is coming from'}
+                onCreateWallet={() => setShowWalletForm(true)}
+              />
+              <p className="text-xs text-muted-foreground">
+                {formData.type === 'BUY' 
+                  ? 'Select where you want to store your purchased Bitcoin'
+                  : 'Select which wallet you are selling from'
+                }
+              </p>
+            </div>
+          )}
+
           {/* Transfer Type (only for TRANSFER) - Compact */}
           {formData.type === 'TRANSFER' && (
             <div className="space-y-3">
@@ -526,6 +567,82 @@ export default function AddTransactionModal({
                   </div>
                 )}
                     </div>
+
+              {/* Wallet Selection for Transfers */}
+              <div className="space-y-3 pt-2 border-t">
+                {/* Internal transfers: source and destination */}
+                {formData.transfer_category === 'INTERNAL' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">From Wallet</Label>
+                      <WalletSelector
+                        key={`source-${walletSelectorKey}`}
+                        value={formData.source_wallet_id}
+                        onChange={(walletId) => setFormData(prev => ({ ...prev, source_wallet_id: walletId }))}
+                        placeholder="Source wallet"
+                        excludeWalletId={formData.destination_wallet_id}
+                        onCreateWallet={() => setShowWalletForm(true)}
+                        showBalance
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">To Wallet</Label>
+                      <WalletSelector
+                        key={`dest-${walletSelectorKey}`}
+                        value={formData.destination_wallet_id}
+                        onChange={(walletId) => setFormData(prev => ({ ...prev, destination_wallet_id: walletId }))}
+                        placeholder="Destination wallet"
+                        excludeWalletId={formData.source_wallet_id}
+                        onCreateWallet={() => setShowWalletForm(true)}
+                        showBalance
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* External IN: destination wallet only */}
+                {formData.transfer_category === 'EXTERNAL' && formData.transfer_type === 'TRANSFER_IN' && (
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5">
+                      <WalletIcon className="size-4" />
+                      Receiving Wallet
+                    </Label>
+                    <WalletSelector
+                      key={`dest-ext-${walletSelectorKey}`}
+                      value={formData.destination_wallet_id}
+                      onChange={(walletId) => setFormData(prev => ({ ...prev, destination_wallet_id: walletId }))}
+                      placeholder="Where BTC will arrive"
+                      onCreateWallet={() => setShowWalletForm(true)}
+                      showBalance
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Select which wallet is receiving the Bitcoin
+                    </p>
+                  </div>
+                )}
+
+                {/* External OUT: source wallet only */}
+                {formData.transfer_category === 'EXTERNAL' && formData.transfer_type === 'TRANSFER_OUT' && (
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5">
+                      <WalletIcon className="size-4" />
+                      Sending Wallet
+                    </Label>
+                    <WalletSelector
+                      key={`source-ext-${walletSelectorKey}`}
+                      value={formData.source_wallet_id}
+                      onChange={(walletId) => setFormData(prev => ({ ...prev, source_wallet_id: walletId }))}
+                      placeholder="Where BTC is leaving from"
+                      showExternal={false}
+                      onCreateWallet={() => setShowWalletForm(true)}
+                      showBalance
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Select which wallet you are sending from
+                    </p>
+                  </div>
+                )}
+              </div>
                   </div>
                 )}
 
@@ -792,6 +909,17 @@ export default function AddTransactionModal({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      {/* Wallet Creation Modal */}
+      <WalletForm
+        isOpen={showWalletForm}
+        onClose={() => setShowWalletForm(false)}
+        onSuccess={() => {
+          setShowWalletForm(false);
+          // Increment key to force WalletSelector to refresh
+          setWalletSelectorKey(prev => prev + 1);
+        }}
+      />
     </Dialog>
   );
 } 

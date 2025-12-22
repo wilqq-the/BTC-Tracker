@@ -16,6 +16,7 @@ import {
   BarChart3Icon,
   TargetIcon,
   ChevronDownIcon,
+  WalletIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +72,7 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
   const navItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboardIcon },
     { href: '/transactions', label: 'Transactions', icon: ArrowLeftRightIcon },
+    { href: '/wallets', label: 'Wallets', icon: WalletIcon },
     { href: '/analytics', label: 'Analytics', icon: BarChart3Icon },
     { href: '/goals', label: 'Planning', icon: TargetIcon },
   ];

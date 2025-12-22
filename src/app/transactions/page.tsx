@@ -97,12 +97,23 @@ interface BitcoinTransaction {
   secondary_currency_pnl?: number;
   current_value_main?: number;
   pnl_main?: number;
+  // Wallet fields
+  source_wallet_id?: number | null;
+  destination_wallet_id?: number | null;
+  transfer_category?: string | null;
+}
+
+interface Wallet {
+  id: number;
+  name: string;
+  type: string;
+  temperature: string;
 }
 
 type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
 
 // Column configuration
-type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
+type ColumnId = 'date' | 'type' | 'wallet' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
 
 interface ColumnConfig {
   id: ColumnId;
@@ -115,6 +126,7 @@ interface ColumnConfig {
 const COLUMNS: ColumnConfig[] = [
   { id: 'date', label: 'Date', defaultVisible: true, sortable: true, colSpan: 2 },
   { id: 'type', label: 'Type', defaultVisible: true, sortable: true, colSpan: 1 },
+  { id: 'wallet', label: 'Wallet', defaultVisible: true, sortable: false, colSpan: 2 },
   { id: 'amount', label: 'Amount', defaultVisible: true, sortable: true, colSpan: 2 },
   { id: 'price', label: 'Price', defaultVisible: true, sortable: true, colSpan: 2 },
   { id: 'value', label: 'Value', defaultVisible: true, sortable: false, colSpan: 2 },
@@ -169,6 +181,25 @@ export default function TransactionsPage() {
   const [bulkActionMode, setBulkActionMode] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [columnVisibility, setColumnVisibility] = useState<Record<ColumnId, boolean>>(getDefaultVisibility);
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+
+  // Create a map for quick wallet lookup
+  const walletMap = React.useMemo(() => {
+    return wallets.reduce((acc, w) => {
+      acc[w.id] = w;
+      return acc;
+    }, {} as Record<number, Wallet>);
+  }, [wallets]);
+
+  // Fetch wallets on mount
+  useEffect(() => {
+    fetch('/api/wallets')
+      .then(res => res.json())
+      .then(data => {
+        if (data.wallets) setWallets(data.wallets);
+      })
+      .catch(console.error);
+  }, []);
 
   // Load column visibility from localStorage
   useEffect(() => {
@@ -937,6 +968,11 @@ export default function TransactionsPage() {
                   Type {sortBy === 'type' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
                 </div>
               )}
+              {columnVisibility.wallet && (
+                <div className="flex items-center gap-1">
+                  Wallet
+                </div>
+              )}
               {columnVisibility.amount && (
                 <div className="cursor-pointer hover:text-foreground transition-colors flex items-center gap-1" onClick={() => handleSort('amount')}>
                   Amount {sortBy === 'amount' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
@@ -1037,6 +1073,39 @@ export default function TransactionsPage() {
                                     : 'TRANSFER'
                                 : transaction.type}
                             </Badge>
+                          </div>
+                        )}
+                        {columnVisibility.wallet && (
+                          <div className="text-sm">
+                            {(() => {
+                              // For BUY: show destination wallet
+                              if (transaction.type === 'BUY') {
+                                const wallet = transaction.destination_wallet_id ? walletMap[transaction.destination_wallet_id] : null;
+                                return wallet ? (
+                                  <span className="text-muted-foreground">→ {wallet.name}</span>
+                                ) : <span className="text-muted-foreground/50">—</span>;
+                              }
+                              // For SELL: show source wallet
+                              if (transaction.type === 'SELL') {
+                                const wallet = transaction.source_wallet_id ? walletMap[transaction.source_wallet_id] : null;
+                                return wallet ? (
+                                  <span className="text-muted-foreground">{wallet.name} →</span>
+                                ) : <span className="text-muted-foreground/50">—</span>;
+                              }
+                              // For TRANSFER: show source → destination
+                              if (transaction.type === 'TRANSFER') {
+                                const srcWallet = transaction.source_wallet_id ? walletMap[transaction.source_wallet_id] : null;
+                                const dstWallet = transaction.destination_wallet_id ? walletMap[transaction.destination_wallet_id] : null;
+                                const srcName = srcWallet?.name || 'External';
+                                const dstName = dstWallet?.name || 'External';
+                                return (
+                                  <span className="text-muted-foreground truncate" title={`${srcName} → ${dstName}`}>
+                                    {srcName} → {dstName}
+                                  </span>
+                                );
+                              }
+                              return <span className="text-muted-foreground/50">—</span>;
+                            })()}
                           </div>
                         )}
                         {columnVisibility.amount && (
