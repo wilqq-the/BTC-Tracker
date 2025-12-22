@@ -477,19 +477,8 @@ export class BitcoinPriceService {
       ]);
 
       // Calculate BTC fees from transfer transactions and track cold/hot wallet distribution
-      // 
-      // IMPORTANT: Transfer logic explanation
-      // ========================================
-      // When transferring Bitcoin:
-      //   - btcAmount = total amount LEAVING source wallet
-      //   - fees = network fees paid (always in BTC)
-      //   - Amount arriving at destination = btcAmount - fees
-      //
-      // Example: Transfer all BTC from hot to cold wallet
-      //   - Had: 0.43134872 BTC in hot wallet
-      //   - User enters: btcAmount = 0.43134872, fees = 0.00040589
-      //   - Amount received in cold: 0.43094283 BTC (0.43134872 - 0.00040589)
-      //   - Result: Hot wallet = 0 BTC, Cold wallet = 0.43094283 BTC, Total = 0.43094283 BTC
+      // Using legacy transferType-based calculation for background service
+      // The API endpoints use the new wallet-based system
       let totalFeesBTC = 0;
       let coldWalletBTC = 0;
       
@@ -499,13 +488,11 @@ export class BitcoinPriceService {
           totalFeesBTC += tx.fees;
         }
         
-        // Track cold wallet movements
+        // Track cold wallet movements using legacy transferType
         // btcAmount is total leaving source, so destination gets (btcAmount - fees)
         if (tx.transferType === 'TO_COLD_WALLET') {
-          // Amount received in cold wallet = sent amount - fees
           coldWalletBTC += (tx.btcAmount - tx.fees);
         } else if (tx.transferType === 'FROM_COLD_WALLET') {
-          // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
           coldWalletBTC -= tx.btcAmount;
         }
       }

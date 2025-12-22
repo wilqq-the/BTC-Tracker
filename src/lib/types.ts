@@ -17,22 +17,43 @@ export interface BitcoinTransaction {
   notes: string; // Optional notes
   tags?: string; // Optional tags
   
-  // Transfer-specific fields
+  // Transfer-specific fields (LEGACY - kept for backward compatibility)
   // IMPORTANT: For transfers, btc_amount = total leaving source, fees = network fee
   // Amount arriving at destination = btc_amount - fees
-  // 
-  // Internal transfers (between your wallets - no portfolio balance change):
-  //   - TO_COLD_WALLET, FROM_COLD_WALLET, BETWEEN_WALLETS
-  // 
-  // External transfers (in/out of portfolio - changes balance, NOT P&L):
-  //   - TRANSFER_IN: BTC received (gift, payment, mining) - adds to holdings
-  //   - TRANSFER_OUT: BTC sent (payment, donation, gift) - removes from holdings
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT' | null;
   destination_address?: string | null; // Optional: wallet address for tracking
+  
+  // Multi-wallet support (v0.7.0+)
+  source_wallet_id?: number | null; // Wallet where BTC comes from
+  destination_wallet_id?: number | null; // Wallet where BTC goes to
+  transfer_category?: 'INTERNAL' | 'EXTERNAL_IN' | 'EXTERNAL_OUT' | null; // Simplified transfer classification
   
   // Tracking
   created_at: string; // When record was created
   updated_at: string; // When record was last updated
+}
+
+// Wallet Types (v0.7.0+)
+export type WalletType = 'HARDWARE' | 'SOFTWARE' | 'EXCHANGE' | 'MOBILE' | 'CUSTODIAL' | 'PAPER';
+export type WalletTemperature = 'HOT' | 'COLD';
+export type TransferCategory = 'INTERNAL' | 'EXTERNAL_IN' | 'EXTERNAL_OUT';
+
+export interface Wallet {
+  id: number;
+  user_id: number;
+  name: string;
+  type: WalletType;
+  temperature: WalletTemperature;
+  emoji?: string | null;
+  color?: string | null;
+  notes?: string | null;
+  include_in_total: boolean;
+  is_default: boolean;
+  sort_order: number;
+  balance?: number; // Calculated, not stored
+  transaction_count?: number; // Calculated, not stored
+  created_at: string;
+  updated_at: string;
 }
 
 // Enhanced Transaction (with calculated currency conversions)
@@ -66,6 +87,10 @@ export interface TransactionFormData {
   tags?: string;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
   destination_address?: string;
+  // Multi-wallet support (v0.7.0+)
+  source_wallet_id?: number;
+  destination_wallet_id?: number;
+  transfer_category?: TransferCategory;
 }
 
 export interface TransactionSummary {

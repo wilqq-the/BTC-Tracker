@@ -28,6 +28,8 @@
     "db:studio": "prisma studio",
     "db:prod-setup": "node scripts/prod-setup.js",
     "db:migrate": "node scripts/migrate.js",
+    "db:migrate-wallets": "node scripts/migrate-wallets.js",
+    "db:migrate-wallets:dry": "node scripts/migrate-wallets.js --dry-run",
     "auth:generate-jwt": "node scripts/generate-jwt.js"
   },
   "dependencies": {

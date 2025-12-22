@@ -33,9 +33,21 @@ model BitcoinTransaction {
   notes                 String?
   tags                  String?  // Comma-separated tags: "DCA,Long-term,Dip Buy"
   
-  // Transfer-specific fields
-  transferType          String?  @map("transfer_type") // 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS'
+  // Transfer-specific fields (LEGACY - kept for backward compatibility)
+  transferType          String?  @map("transfer_type") // DEPRECATED: 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS'
   destinationAddress    String?  @map("destination_address") // Optional: wallet address for tracking
+  
+  // Multi-wallet support (v0.7.0+)
+  // For BUY: destinationWalletId = where BTC goes
+  // For SELL: sourceWalletId = where BTC comes from
+  // For TRANSFER: both set for internal, one null for external
+  sourceWalletId        Int?     @map("source_wallet_id")
+  sourceWallet          Wallet?  @relation("SourceWallet", fields: [sourceWalletId], references: [id], onDelete: SetNull)
+  destinationWalletId   Int?     @map("destination_wallet_id")
+  destinationWallet     Wallet?  @relation("DestinationWallet", fields: [destinationWalletId], references: [id], onDelete: SetNull)
+  
+  // Simplified transfer category (replaces transferType for new transactions)
+  transferCategory      String?  @map("transfer_category") // 'INTERNAL', 'EXTERNAL_IN', 'EXTERNAL_OUT'
   
   // Tracking
   createdAt             DateTime @default(now()) @map("created_at")
@@ -45,6 +57,9 @@ model BitcoinTransaction {
   @@index([userId])
   @@index([type])
   @@index([transferType])
+  @@index([sourceWalletId])
+  @@index([destinationWalletId])
+  @@index([transferCategory])
 }
 
 // Historical Bitcoin prices (daily OHLC data for long-term trends)
@@ -127,8 +142,45 @@ model User {
   goals                 Goal[]
   dashboardLayout       DashboardLayout?
   recurringTransactions RecurringTransaction[]
+  wallets               Wallet[]
 
   @@map("users")
+}
+
+// User wallets for multi-wallet support (v0.7.0+)
+// Allows users to define multiple wallets (hardware, exchange, mobile, etc.)
+// and track BTC distribution across them
+model Wallet {
+  id              Int      @id @default(autoincrement())
+  userId          Int      @map("user_id")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Wallet identity
+  name            String   // User-defined name: "Ledger Nano X", "Strike", "Muun"
+  type            String   // 'HARDWARE', 'SOFTWARE', 'EXCHANGE', 'MOBILE', 'CUSTODIAL', 'PAPER'
+  temperature     String   @default("HOT") // 'HOT' or 'COLD' - security classification
+  
+  // Visual customization
+  emoji           String?  // Optional emoji: "🔐", "📱", "⚡"
+  color           String?  // Optional hex color for charts: "#3B82F6"
+  notes           String?  // User notes about this wallet
+  
+  // Portfolio settings
+  includeInTotal  Boolean  @default(true) @map("include_in_total") // Include in portfolio calculations
+  isDefault       Boolean  @default(false) @map("is_default") // Default wallet for new transactions
+  sortOrder       Int      @default(0) @map("sort_order") // Display order in lists
+  
+  // Timestamps
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations - transactions linked to this wallet
+  transactionsFrom BitcoinTransaction[] @relation("SourceWallet")
+  transactionsTo   BitcoinTransaction[] @relation("DestinationWallet")
+
+  @@map("wallets")
+  @@index([userId])
+  @@unique([userId, name]) // No duplicate wallet names per user
 }
 
 // Custom currencies table for user-defined currencies

@@ -62,6 +62,7 @@ const ALL_MIGRATIONS = [
   '20251107000000_add_transfer_and_cold_wallet_fields',
   '20251107213701_add_recurring_transactions',
   '20251207000000_add_two_factor_auth',
+  '20251222140223_add_multi_wallet_support',
 ];
 
 
@@ -425,7 +426,168 @@ async function main() {
   // Step 5: Generate Prisma client
   generateClient();
   
+  // Step 6: Auto-migrate wallets for existing users (v0.7.0+)
+  await migrateWalletsIfNeeded();
+  
   log('OK', 'Database ready');
+}
+
+/**
+ * Auto-migrate users to multi-wallet system if they don't have wallets yet
+ * This runs silently on every startup to ensure new users and upgrades are handled
+ */
+async function migrateWalletsIfNeeded() {
+  try {
+    const { PrismaClient } = require('@prisma/client');
+    const prisma = new PrismaClient();
+    
+    // Find users without any wallets
+    const usersWithoutWallets = await prisma.user.findMany({
+      where: {
+        wallets: {
+          none: {}
+        }
+      },
+      select: { id: true, email: true }
+    });
+
+    if (usersWithoutWallets.length === 0) {
+      await prisma.$disconnect();
+      return;
+    }
+
+    log('INFO', `Found ${usersWithoutWallets.length} user(s) without wallets, creating defaults...`);
+
+    for (const user of usersWithoutWallets) {
+      // Create default wallets
+      const hotWallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          name: 'Hot Wallet',
+          type: 'SOFTWARE',
+          temperature: 'HOT',
+          emoji: '🔥',
+          includeInTotal: true,
+          isDefault: true,
+          sortOrder: 0,
+        }
+      });
+
+      const coldWallet = await prisma.wallet.create({
+        data: {
+          userId: user.id,
+          name: 'Cold Storage',
+          type: 'HARDWARE',
+          temperature: 'COLD',
+          emoji: '🔐',
+          includeInTotal: true,
+          isDefault: false,
+          sortOrder: 1,
+        }
+      });
+
+      // Update existing transactions
+      // BUY → destination = hot wallet
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'BUY',
+          destinationWalletId: null
+        },
+        data: { destinationWalletId: hotWallet.id }
+      });
+
+      // SELL → source = hot wallet
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'SELL',
+          sourceWalletId: null
+        },
+        data: { sourceWalletId: hotWallet.id }
+      });
+
+      // TRANSFER - TO_COLD_WALLET
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'TRANSFER',
+          transferType: 'TO_COLD_WALLET',
+          sourceWalletId: null
+        },
+        data: { 
+          sourceWalletId: hotWallet.id,
+          destinationWalletId: coldWallet.id,
+          transferCategory: 'INTERNAL'
+        }
+      });
+
+      // TRANSFER - FROM_COLD_WALLET
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'TRANSFER',
+          transferType: 'FROM_COLD_WALLET',
+          sourceWalletId: null
+        },
+        data: { 
+          sourceWalletId: coldWallet.id,
+          destinationWalletId: hotWallet.id,
+          transferCategory: 'INTERNAL'
+        }
+      });
+
+      // TRANSFER - BETWEEN_WALLETS (default to hot→hot)
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'TRANSFER',
+          transferType: 'BETWEEN_WALLETS',
+          sourceWalletId: null
+        },
+        data: { 
+          sourceWalletId: hotWallet.id,
+          destinationWalletId: hotWallet.id,
+          transferCategory: 'INTERNAL'
+        }
+      });
+
+      // TRANSFER - TRANSFER_IN
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'TRANSFER',
+          transferType: 'TRANSFER_IN',
+          destinationWalletId: null
+        },
+        data: { 
+          destinationWalletId: hotWallet.id,
+          transferCategory: 'EXTERNAL_IN'
+        }
+      });
+
+      // TRANSFER - TRANSFER_OUT
+      await prisma.bitcoinTransaction.updateMany({
+        where: { 
+          userId: user.id, 
+          type: 'TRANSFER',
+          transferType: 'TRANSFER_OUT',
+          sourceWalletId: null
+        },
+        data: { 
+          sourceWalletId: hotWallet.id,
+          transferCategory: 'EXTERNAL_OUT'
+        }
+      });
+
+      log('OK', `Created wallets for user ${user.email}`);
+    }
+
+    await prisma.$disconnect();
+  } catch (error) {
+    // Don't fail startup if wallet migration fails - it can be run manually
+    log('WARN', `Wallet auto-migration skipped: ${error.message}`);
+  }
 }
 
 main().catch((error) => {

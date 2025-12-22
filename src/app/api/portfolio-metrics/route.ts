@@ -40,34 +40,29 @@ export async function GET(request: NextRequest) {
     const transferTransactions = allTransactions.filter(tx => tx.type === 'TRANSFER');
     
     // Separate internal transfers (no balance change) from external transfers (change balance)
+    // Support both legacy transferType and new transferCategory
     const internalTransfers = transferTransactions.filter(tx => 
+      tx.transferCategory === 'INTERNAL' ||
       tx.transferType === 'TO_COLD_WALLET' || 
       tx.transferType === 'FROM_COLD_WALLET' || 
       tx.transferType === 'BETWEEN_WALLETS'
     );
-    const transfersIn = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_IN');
-    const transfersOut = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_OUT');
+    const transfersIn = transferTransactions.filter(tx => 
+      tx.transferCategory === 'EXTERNAL_IN' || tx.transferType === 'TRANSFER_IN'
+    );
+    const transfersOut = transferTransactions.filter(tx => 
+      tx.transferCategory === 'EXTERNAL_OUT' || tx.transferType === 'TRANSFER_OUT'
+    );
     
     // Calculate BTC fees from transfer transactions
     // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
     // Amount arriving at destination = btcAmount - fees
     let totalFeesBTC = 0;
-    let coldWalletBTC = 0;
     
     for (const tx of internalTransfers) {
       // If fees are paid in BTC, reduce total holdings (burned, gone forever)
       if (tx.feesCurrency.toUpperCase() === 'BTC') {
         totalFeesBTC += tx.fees;
-      }
-      
-      // Track cold wallet movements
-      // btcAmount is total leaving source, so destination gets (btcAmount - fees)
-      if (tx.transferType === 'TO_COLD_WALLET') {
-        // Amount received in cold wallet = sent amount - fees
-        coldWalletBTC += (tx.btcAmount - tx.fees);
-      } else if (tx.transferType === 'FROM_COLD_WALLET') {
-        // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
-        coldWalletBTC -= tx.btcAmount;
       }
     }
     
@@ -86,7 +81,51 @@ export async function GET(request: NextRequest) {
     const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const currentHoldings = totalBtcBought - totalBtcSold + totalBtcTransferredIn - totalBtcTransferredOut - totalFeesBTC;
-    const hotWalletBTC = currentHoldings - coldWalletBTC;
+    
+    // Calculate hot/cold wallet distribution using new wallet-based system
+    let hotWalletBTC = 0;
+    let coldWalletBTC = 0;
+    
+    // Try to use new wallet-based calculation
+    const userWallets = await prisma.wallet.findMany({
+      where: { userId, includeInTotal: true }
+    });
+    
+    if (userWallets.length > 0) {
+      // New multi-wallet system: calculate per wallet
+      for (const wallet of userWallets) {
+        const incoming = await prisma.bitcoinTransaction.aggregate({
+          where: { userId, destinationWalletId: wallet.id },
+          _sum: { btcAmount: true }
+        });
+        const outgoing = await prisma.bitcoinTransaction.aggregate({
+          where: { userId, sourceWalletId: wallet.id },
+          _sum: { btcAmount: true }
+        });
+        const outgoingFees = await prisma.bitcoinTransaction.aggregate({
+          where: { userId, sourceWalletId: wallet.id, feesCurrency: 'BTC' },
+          _sum: { fees: true }
+        });
+        
+        const walletBalance = (incoming._sum.btcAmount || 0) - (outgoing._sum.btcAmount || 0) - (outgoingFees._sum.fees || 0);
+        
+        if (wallet.temperature === 'COLD') {
+          coldWalletBTC += Math.max(0, walletBalance);
+        } else {
+          hotWalletBTC += Math.max(0, walletBalance);
+        }
+      }
+    } else {
+      // Legacy fallback: use transferType-based calculation
+      for (const tx of internalTransfers) {
+        if (tx.transferType === 'TO_COLD_WALLET') {
+          coldWalletBTC += (tx.btcAmount - tx.fees);
+        } else if (tx.transferType === 'FROM_COLD_WALLET') {
+          coldWalletBTC -= tx.btcAmount;
+        }
+      }
+      hotWalletBTC = currentHoldings - coldWalletBTC;
+    }
     
     // Get exchange rates for all currencies
     const uniqueCurrencies = Array.from(new Set(allTransactions.map(tx => tx.originalCurrency))) as string[];
