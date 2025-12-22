@@ -192,7 +192,10 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={() => signOut({ callbackUrl: '/auth/signin' })}
+                    onClick={async () => {
+                      await signOut({ redirect: false })
+                      window.location.href = '/auth/signin'
+                    }}
                     className="text-destructive focus:text-destructive"
                   >
                     <LogOutIcon className="mr-2 h-4 w-4" />

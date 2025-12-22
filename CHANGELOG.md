@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.8] - 2025-12-22
 
 ### 🐛 Bug Fixes
+- **Logout redirect fix** - Fixed logout redirecting to invalid URL in Docker/Umbrel setups ([#161](https://github.com/wilqq-the/BTC-Tracker/issues/161))
 - **Date Picker fixes** - Fixed multiple issues with date selection ([#159](https://github.com/wilqq-the/BTC-Tracker/issues/159))
   - Fixed date being off by one day due to UTC timezone conversion
   - Fixed Safari compatibility issues where date picker wouldn't respond to clicks
