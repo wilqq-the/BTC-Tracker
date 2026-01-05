@@ -5,6 +5,16 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.8] - 2025-01-05
+
+### 🐛 Bug Fixes
+- **Fixed Yahoo Finance price fetching** - Upgraded `yahoo-finance2` from v2.13.3 to v3.11.2 to fix rate limiting and API compatibility issues that prevented Bitcoin price updates
+
+### 🔧 Improvements
+- Updated Yahoo Finance service to use v3 class-based initialization
+
+---
+
 ## [0.6.7] - 2025-12-07
 
 ### 🔒 Security

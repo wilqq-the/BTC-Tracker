@@ -1,6 +1,6 @@
 {
   "name": "btc-tracker",
-  "version": "0.6.7",
+  "version": "0.6.8",
   "description": "100% Private, Self-Hosted Bitcoin Portfolio Tracker",
   "author": "wilqq-the",
   "license": "MIT",
@@ -97,7 +97,7 @@
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.20.3",
     "typescript": "^5",
-    "yahoo-finance2": "^2.13.3"
+    "yahoo-finance2": "^3.11.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
