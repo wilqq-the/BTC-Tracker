@@ -82,7 +82,7 @@
     "swagger-ui-react": "^5.25.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "yahoo-finance2": "^2.13.3"
+    "yahoo-finance2": "^3.11.2"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",
