@@ -7,6 +7,7 @@
 import { prisma } from './prisma';
 import { RecurringTransactionService } from './recurring-transaction-service';
 import { BitcoinPriceService } from './bitcoin-price-service';
+import { ExchangeRateService } from './exchange-rate-service';
 
 export class DCAScheduler {
   private static interval: NodeJS.Timeout | null = null;
@@ -121,11 +122,14 @@ export class DCAScheduler {
       const currentBTCPriceUSD = priceData.price;
       console.log(`[DCA] Current BTC price: $${currentBTCPriceUSD.toFixed(2)}`);
 
-      // 2. Calculate BTC amount based on fiat amount
-      // For now, assume currency is USD (we'll add conversion later)
-      const btcAmount = recurringTx.amount / currentBTCPriceUSD;
-      
-      console.log(`[DCA] Converting ${recurringTx.amount} ${recurringTx.currency} to ${btcAmount.toFixed(8)} BTC`);
+      // 2. Convert USD price to transaction currency, then calculate BTC amount
+      const txCurrency = recurringTx.currency || 'USD';
+      const usdToFiatRate = await ExchangeRateService.getExchangeRate('USD', txCurrency);
+      const btcPriceInFiatCurrency = currentBTCPriceUSD * usdToFiatRate;
+      const btcAmount = recurringTx.amount / btcPriceInFiatCurrency;
+
+      console.log(`[DCA] BTC price in ${txCurrency}: ${btcPriceInFiatCurrency.toFixed(2)}`);
+      console.log(`[DCA] Converting ${recurringTx.amount} ${txCurrency} to ${btcAmount.toFixed(8)} BTC`);
 
       // 3. Create the actual Bitcoin transaction
       const transaction = await prisma.bitcoinTransaction.create({
@@ -133,7 +137,7 @@ export class DCAScheduler {
           userId: recurringTx.userId,
           type: recurringTx.type,
           btcAmount: btcAmount,
-          originalPricePerBtc: currentBTCPriceUSD,
+          originalPricePerBtc: btcPriceInFiatCurrency,  // Price in transaction's currency
           originalCurrency: recurringTx.currency,
           originalTotalAmount: recurringTx.amount,
           fees: recurringTx.fees,
