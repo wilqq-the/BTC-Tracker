@@ -9,6 +9,7 @@ RUN npm ci
 FROM deps AS builder
 WORKDIR /app
 COPY . .
+RUN mkdir -p src/data
 ENV DATABASE_URL="file:./build-dummy.db"
 RUN npx prisma generate
 ENV NODE_ENV="production"
