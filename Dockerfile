@@ -14,6 +14,13 @@ RUN npx prisma generate
 ENV NODE_ENV="production"
 RUN npm run build
 
+# Automatically collect all transitive runtime dependencies of the prisma CLI.
+# Reads each package's package.json recursively — no manual list to maintain.
+# When prisma is upgraded, this stage picks up new deps automatically.
+FROM deps AS prisma-runtime
+COPY scripts/collect-prisma-deps.js /tmp/collect-prisma-deps.js
+RUN node /tmp/collect-prisma-deps.js /app/node_modules /prisma-runtime/node_modules
+
 FROM node:22.12.0-alpine3.21 AS runner
 WORKDIR /app
 ENV NODE_ENV="production"
@@ -30,50 +37,14 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
 
-# Prisma generated client (built during `prisma generate` in builder)
+# Prisma generated client (produced by `prisma generate` in builder)
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 
-# Prisma CLI package (contains WASM engines in build/ dir)
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+# All prisma CLI deps — collected automatically by prisma-runtime stage
+COPY --from=prisma-runtime --chown=nextjs:nodejs /prisma-runtime/node_modules ./node_modules
 
-# All @prisma/* scoped packages (engines, config, debug, fetch-engine, get-platform, engines-version)
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
-
-# @standard-schema (peer dep of @prisma/config)
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/@standard-schema ./node_modules/@standard-schema
-
-# effect + its runtime deps (required by @prisma/config)
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/effect ./node_modules/effect
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/fast-check ./node_modules/fast-check
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/pure-rand ./node_modules/pure-rand
-
-# c12 (config loader, required by @prisma/config) + its transitive deps
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/c12 ./node_modules/c12
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/chokidar ./node_modules/chokidar
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/citty ./node_modules/citty
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/confbox ./node_modules/confbox
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/consola ./node_modules/consola
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/defu ./node_modules/defu
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/destr ./node_modules/destr
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/dotenv ./node_modules/dotenv
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/exsolve ./node_modules/exsolve
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/giget ./node_modules/giget
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/jiti ./node_modules/jiti
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/node-fetch-native ./node_modules/node-fetch-native
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/nypm ./node_modules/nypm
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/ohash ./node_modules/ohash
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/pathe ./node_modules/pathe
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/perfect-debounce ./node_modules/perfect-debounce
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/pkg-types ./node_modules/pkg-types
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/rc9 ./node_modules/rc9
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/readdirp ./node_modules/readdirp
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/tinyexec ./node_modules/tinyexec
-
-# Other @prisma/config deps
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/deepmerge-ts ./node_modules/deepmerge-ts
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/empathic ./node_modules/empathic
-
-# Prisma CLI symlink: preserve so __dirname resolves to prisma/build/ (where WASM files live)
+# Prisma CLI symlink: must be a real symlink so __dirname resolves to
+# prisma/build/ (where WASM engines live). Docker COPY would flatten it.
 RUN mkdir -p /app/node_modules/.bin && ln -sf ../prisma/build/index.js /app/node_modules/.bin/prisma
 
 RUN chmod +x ./scripts/docker-entrypoint.sh && \
