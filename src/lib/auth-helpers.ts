@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { jwtVerify } from 'jose'
+import crypto from 'crypto'
 
 export interface AuthUser {
   id: string
@@ -57,20 +58,67 @@ export async function getAuthToken(request: NextRequest) {
  */
 export async function verifyApiToken(request: NextRequest): Promise<AuthUser | null> {
   try {
+    const { prisma } = await import('@/lib/prisma')
+
+    // Check for API key (btct_ prefix) before trying JWT
+    const bearerToken = extractBearerToken(request)
+    if (bearerToken?.startsWith('btct_')) {
+      const keyHash = crypto.createHash('sha256').update(bearerToken).digest('hex')
+      const apiKey = await prisma.apiKey.findUnique({
+        where: { keyHash },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              isAdmin: true,
+              isActive: true
+            }
+          }
+        }
+      })
+
+      if (!apiKey || !apiKey.isActive) {
+        return null
+      }
+
+      if (apiKey.expiresAt && apiKey.expiresAt < new Date()) {
+        return null
+      }
+
+      if (!apiKey.user.isActive) {
+        return null
+      }
+
+      // Update lastUsedAt asynchronously (fire-and-forget)
+      prisma.apiKey.update({
+        where: { id: apiKey.id },
+        data: { lastUsedAt: new Date() }
+      }).catch(() => {})
+
+      return {
+        id: apiKey.user.id.toString(),
+        email: apiKey.user.email,
+        name: apiKey.user.name || undefined,
+        isAdmin: apiKey.user.isAdmin,
+        isActive: apiKey.user.isActive
+      }
+    }
+
     const token = await getAuthToken(request)
-    
+
     if (!token?.sub || !token?.email) {
       return null
     }
-    
+
     // Check token expiration
     if (token.exp && typeof token.exp === 'number' && Date.now() >= token.exp * 1000) {
       console.log('Token expired')
       return null
     }
-    
+
     // Get fresh user data from database to include admin status
-    const { prisma } = await import('@/lib/prisma')
     const user = await prisma.user.findUnique({
       where: { id: parseInt(token.sub) },
       select: {
@@ -81,11 +129,11 @@ export async function verifyApiToken(request: NextRequest): Promise<AuthUser | n
         isActive: true
       }
     })
-    
+
     if (!user || !user.isActive) {
       return null
     }
-    
+
     return {
       id: user.id.toString(),
       email: user.email,
