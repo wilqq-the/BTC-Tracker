@@ -127,8 +127,25 @@ model User {
   goals                 Goal[]
   dashboardLayout       DashboardLayout?
   recurringTransactions RecurringTransaction[]
+  apiKeys               ApiKey[]
 
   @@map("users")
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  keyHash    String    @unique @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  label      String
+  isActive   Boolean   @default(true) @map("is_active")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime? @map("expires_at")
+  lastUsedAt DateTime? @map("last_used_at")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("api_keys")
 }
 
 // Custom currencies table for user-defined currencies

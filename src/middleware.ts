@@ -16,11 +16,16 @@ const middleware = withAuth(
         
         if (isApiRoute && authHeader?.startsWith('Bearer ')) {
           const bearerToken = authHeader.substring(7)
-          
+
+          // API key format — pass through; route handler validates
+          if (bearerToken.startsWith('btct_')) {
+            return true
+          }
+
           try {
             // Verify JWT token using NextAuth's secret
             const { payload } = await jwtVerify(bearerToken, secret)
-            
+
             // Check if token has required claims
             if (payload.sub && payload.email) {
               return true
@@ -50,6 +55,8 @@ export const config = {
     '/settings',
     '/api/transactions/:path*',
     '/api/settings/:path*',
-    '/api/historical-data/:path*'
+    '/api/historical-data/:path*',
+    '/api/analytics/:path*',
+    '/api/portfolio-metrics'
   ]
 } 
