@@ -61,7 +61,7 @@ export default function AdminPanel() {
   const loadData = async () => {
     try {
       const [usersResponse, statsResponse] = await Promise.all([
-        fetch('/api/admin/users'),
+        fetch('/api/admin/users?include_inactive=true'),
         fetch('/api/admin/stats')
       ]);
 
