@@ -46,6 +46,7 @@ next-env.d.ts
 # IDE
 .vscode/
 .cursor/
+.claude/
 
 # Uploaded files
 data/uploads/*

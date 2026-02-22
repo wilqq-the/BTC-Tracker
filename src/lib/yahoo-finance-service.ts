@@ -1,8 +1,11 @@
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
 import { prisma } from './prisma';
 import { BitcoinPriceHistory, BitcoinPriceIntraday } from './types';
 
 const BITCOIN_SYMBOL = 'BTC-USD';
+
+// v3 requires class instantiation
+const yahooFinance = new YahooFinance();
 
 export class YahooFinanceService {
   
