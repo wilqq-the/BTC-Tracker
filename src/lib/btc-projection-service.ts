@@ -184,28 +184,28 @@ export class BTCProjectionService {
       const growth2y = price2y ? calculateAnnualGrowth(price2y, currentPrice, 2) : null;
       const growth4y = price4y ? calculateAnnualGrowth(price4y, currentPrice, 4) : null;
       
-      // Apply reasonable caps and use most conservative available data
-      // Conservative: Use the LOWEST available growth, capped at 15%
-      let conservative: number | null = null;
-      if (growth1y !== null || growth2y !== null || growth4y !== null) {
-        const availableGrowths = [growth1y, growth2y, growth4y].filter(g => g !== null) as number[];
-        conservative = Math.min(...availableGrowths, 0.15); // Cap at 15%
+      // Apply reasonable caps. Negative CAGR is not meaningful for growth scenarios,
+      // so negative historical rates fall back to null (→ getScenarios() uses defaults).
+
+      // Conservative: lowest POSITIVE rate, capped at 15%. Fallback default: 0.10
+      const positiveGrowths = [growth1y, growth2y, growth4y].filter(g => g !== null && g > 0) as number[];
+      const conservative = positiveGrowths.length > 0
+        ? Math.min(...positiveGrowths, 0.15)
+        : null;
+
+      // Moderate: 2yr rate if positive, else 4yr rate if positive. Fallback default: 0.40
+      let moderate: number | null = null;
+      if (growth2y !== null && growth2y > 0) {
+        moderate = Math.min(growth2y, 0.60);
+      } else if (growth4y !== null && growth4y > 0) {
+        moderate = Math.min(growth4y, 0.60);
       }
-      
-      // Moderate: Use 2yr average (medium-term trend), capped at 60%
-      let moderate: number | null = growth2y;
-      if (moderate !== null) {
-        moderate = Math.min(moderate, 0.60); // Cap at 60%
-      } else if (growth4y !== null) {
-        moderate = Math.min(growth4y, 0.60); // Fallback to 4yr if 2yr unavailable
-      }
-      
-      // Bull: Use HIGHEST available growth (most optimistic), capped at 150%
-      let bull: number | null = null;
-      if (growth1y !== null || growth2y !== null || growth4y !== null) {
-        const availableGrowths = [growth1y, growth2y, growth4y].filter(g => g !== null) as number[];
-        bull = Math.min(Math.max(...availableGrowths), 1.50); // Use MAX, cap at 150%
-      }
+
+      // Bull: highest POSITIVE rate, capped at 150%. Fallback default: 1.00
+      const bullGrowths = [growth1y, growth2y, growth4y].filter(g => g !== null && g > 0) as number[];
+      const bull = bullGrowths.length > 0
+        ? Math.min(Math.max(...bullGrowths), 1.50)
+        : null;
       
       return {
         conservative,
