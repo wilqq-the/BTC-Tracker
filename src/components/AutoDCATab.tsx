@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import RecurringTransactionModal from './RecurringTransactionModal';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/theme';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -300,9 +301,9 @@ export default function AutoDCATab() {
                     {/* Amount & Stats */}
                     <div className="flex items-center justify-between py-3 border-y">
                       <div>
-                        <p className="text-2xl font-bold">{tx.currency} {tx.amount.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{formatCurrency(tx.amount, tx.currency)}</p>
                         <p className="text-xs text-muted-foreground">
-                          per {tx.frequency === 'biweekly' ? '2 weeks' : tx.frequency.replace('ly', '')}
+                          per {{ daily: 'day', weekly: 'week', biweekly: '2 weeks', monthly: 'month' }[tx.frequency] ?? tx.frequency}
                         </p>
                       </div>
                       <div className="text-right">
@@ -388,7 +389,7 @@ export default function AutoDCATab() {
                       <div>
                         <p className="font-semibold">{tx.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {tx.currency} {tx.amount.toFixed(2)} · {formatFrequency(tx.frequency)}
+                          {formatCurrency(tx.amount, tx.currency)} · {formatFrequency(tx.frequency)}
                         </p>
                       </div>
                       <Badge variant="outline" className="text-amber-600 border-amber-500/30">
@@ -483,7 +484,7 @@ export default function AutoDCATab() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-semibold">{exec.originalCurrency} {exec.originalTotalAmount.toFixed(2)}</p>
+                        <p className="text-sm font-semibold">{formatCurrency(exec.originalTotalAmount, exec.originalCurrency)}</p>
                         <p className="text-xs text-muted-foreground">Automatic</p>
                       </div>
                     </div>

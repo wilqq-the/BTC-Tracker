@@ -30,7 +30,13 @@ interface ConvertedPortfolioData {
   
   // Secondary currency values
   secondaryCurrency: string;
+  averageBuyPriceSecondary: number;
+  currentBTCPriceSecondary: number;
   currentPortfolioValueSecondary: number;
+  unrealizedPnLSecondary: number;
+  portfolioChange24hSecondary: number;
+  totalInvestedSecondary: number;
+  totalFeesSecondary: number;
 }
 
 interface PortfolioSidebarProps {
@@ -181,7 +187,13 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
       totalFeesMain: portfolioData.totalFeesMain || 0,
       
       secondaryCurrency,
+      averageBuyPriceSecondary: (portfolioData.avgBuyPrice || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
+      currentBTCPriceSecondary: (portfolioData.currentBtcPrice || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
       currentPortfolioValueSecondary: (portfolioData.portfolioValue || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
+      unrealizedPnLSecondary: (portfolioData.unrealizedPnL || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
+      portfolioChange24hSecondary: (portfolioData.portfolioChange24h || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
+      totalInvestedSecondary: (portfolioData.totalInvested || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
+      totalFeesSecondary: (portfolioData.totalFeesMain || 0) * getExchangeRate(mainCurrency, secondaryCurrency),
     };
 
     setConvertedData(converted);
@@ -348,7 +360,7 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
               Avg. Buy Price
             </span>
             <div className="font-mono text-lg font-medium">
-              {formatCurrency(convertedData.averageBuyPriceMain, convertedData.mainCurrency)}
+              {formatCurrency(convertedData.averageBuyPriceSecondary, convertedData.secondaryCurrency)}
             </div>
           </div>
         </CardContent>
@@ -367,7 +379,7 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             <p className="text-sm text-muted-foreground mb-1">Current Price</p>
             <div className="flex items-baseline justify-between">
               <div className="font-mono text-lg font-bold text-primary">
-                {formatCurrency(convertedData.currentBTCPriceMain, convertedData.mainCurrency)}
+                {formatCurrency(convertedData.currentBTCPriceSecondary, convertedData.secondaryCurrency)}
               </div>
               <div className="flex flex-col items-end">
                 {priceData?.priceChangePercent24h !== undefined ? (
@@ -405,10 +417,10 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             <p className="text-sm text-muted-foreground mb-1">Portfolio Value</p>
             <div className="space-y-1">
               <div className="font-mono text-lg font-bold">
-                {formatCurrency(convertedData.currentPortfolioValueMain, convertedData.mainCurrency)}
+                {formatCurrency(convertedData.currentPortfolioValueSecondary, convertedData.secondaryCurrency)}
               </div>
               <div className="font-mono text-sm text-muted-foreground">
-                {formatCurrency(convertedData.currentPortfolioValueSecondary, convertedData.secondaryCurrency)}
+                {formatCurrency(convertedData.currentPortfolioValueMain, convertedData.mainCurrency)}
               </div>
             </div>
           </div>
@@ -427,9 +439,9 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
           <div>
             <p className="text-sm text-muted-foreground mb-1">Unrealized P&L</p>
             <div className={`font-mono text-lg font-bold ${
-              convertedData.unrealizedPnLMain >= 0 ? 'text-profit' : 'text-loss'
+              convertedData.unrealizedPnLSecondary >= 0 ? 'text-profit' : 'text-loss'
             }`}>
-              {convertedData.unrealizedPnLMain >= 0 ? '+' : ''}{formatCurrency(convertedData.unrealizedPnLMain, convertedData.mainCurrency)}
+              {convertedData.unrealizedPnLSecondary >= 0 ? '+' : ''}{formatCurrency(convertedData.unrealizedPnLSecondary, convertedData.secondaryCurrency)}
             </div>
             <div className={`text-sm ${
               convertedData.unrealizedPnLPercentage >= 0 ? 'text-profit' : 'text-loss'
@@ -441,10 +453,10 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
           <Separator />
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">24h Change</span>
-            <span className={`text-sm font-medium ${
-              convertedData.portfolioChange24hMain >= 0 ? 'text-profit' : 'text-loss'
+            <span className={`font-mono text-sm font-medium ${
+              convertedData.portfolioChange24hSecondary >= 0 ? 'text-profit' : 'text-loss'
             }`}>
-              {convertedData.portfolioChange24hMain >= 0 ? '+' : '-'}{formatCurrency(Math.abs(convertedData.portfolioChange24hMain), convertedData.mainCurrency)}
+              {convertedData.portfolioChange24hSecondary >= 0 ? '+' : '-'}{formatCurrency(Math.abs(convertedData.portfolioChange24hSecondary), convertedData.secondaryCurrency)}
             </span>
           </div>
         </CardContent>
@@ -461,22 +473,22 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Invested</span>
             <span className="font-mono text-sm font-medium">
-              {formatCurrency(convertedData.totalInvestedMain, convertedData.mainCurrency)}
+              {formatCurrency(convertedData.totalInvestedSecondary, convertedData.secondaryCurrency)}
             </span>
           </div>
-          
+
           <div className="flex justify-between items-center">
             <span className="text-sm text-muted-foreground">Total Fees</span>
             <span className="font-mono text-sm font-medium">
-              {formatCurrency(convertedData.totalFeesMain, convertedData.mainCurrency)}
+              {formatCurrency(convertedData.totalFeesSecondary, convertedData.secondaryCurrency)}
             </span>
           </div>
-          
+
           <Separator />
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium">Total Cost</span>
             <span className="font-mono text-base font-bold">
-              {formatCurrency(convertedData.totalInvestedMain + convertedData.totalFeesMain, convertedData.mainCurrency)}
+              {formatCurrency(convertedData.totalInvestedSecondary + convertedData.totalFeesSecondary, convertedData.secondaryCurrency)}
             </span>
           </div>
         </CardContent>
