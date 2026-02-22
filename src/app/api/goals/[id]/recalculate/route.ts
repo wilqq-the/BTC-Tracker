@@ -42,18 +42,19 @@ export async function POST(
       const currentPriceData = await BitcoinPriceService.getCurrentPrice();
       const currentBtcPriceUSD = currentPriceData?.price || 100000;
       
-      // Get user's CURRENT main currency (may have changed since goal was created)
+      // Get user's CURRENT display currency (may have changed since goal was created)
       const settings = await SettingsService.getSettings();
       const mainCurrency = settings.currency.mainCurrency;
-      
-      // Convert current BTC price from USD to current main currency
-      const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
-      const currentBtcPrice = currentBtcPriceUSD * usdToMainRate;
-      
-      // Convert goal's initial BTC price (stored in goal.currency at creation) to current main currency
-      // This handles cases where user changed their main currency after creating the goal
-      const goalCurrencyToMainRate = await ExchangeRateService.getExchangeRate(goal.currency, mainCurrency);
-      const initialBtcPriceInMain = goal.initialBtcPrice * goalCurrencyToMainRate;
+      const displayCurrency = settings.currency.secondaryCurrency || mainCurrency;
+
+      // Convert current BTC price from USD to display currency
+      const usdToDisplayRate = await ExchangeRateService.getExchangeRate('USD', displayCurrency);
+      const currentBtcPrice = currentBtcPriceUSD * usdToDisplayRate;
+
+      // Convert goal's initial BTC price (stored in goal.currency at creation) to display currency
+      // This handles cases where user changed their display currency after creating the goal
+      const goalCurrencyToDisplayRate = await ExchangeRateService.getExchangeRate(goal.currency, displayCurrency);
+      const initialBtcPriceInMain = goal.initialBtcPrice * goalCurrencyToDisplayRate;
 
       // Calculate remaining time
       const targetDate = new Date(goal.targetDate);
@@ -152,8 +153,8 @@ export async function POST(
       // Compare original vs current (both in mainCurrency now)
       const priceChange = ((currentBtcPrice - initialBtcPriceInMain) / initialBtcPriceInMain) * 100;
       
-      // Convert goal's original monthly amount to current main currency for accurate comparison
-      const originalMonthlyInMain = goal.monthlyFiatNeeded * goalCurrencyToMainRate;
+      // Convert goal's original monthly amount to display currency for accurate comparison
+      const originalMonthlyInMain = goal.monthlyFiatNeeded * goalCurrencyToDisplayRate;
       
       // Use GOAL'S SCENARIO projection to maintain consistency with original calculation
       const monthlyChange = ((goalScenarioProjection.averageMonthlyFiat - originalMonthlyInMain) / originalMonthlyInMain) * 100;
@@ -195,7 +196,7 @@ export async function POST(
             message: isOnTrack 
               ? '✅ You are on track to meet your goal!' 
               : monthlyChange > 0
-                ? `⚠️ Consider increasing monthly investment by ${Math.abs(currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain).toFixed(0)} ${mainCurrency} or extending timeline`
+                ? `⚠️ Consider increasing monthly investment by ${Math.abs(currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain).toFixed(0)} ${displayCurrency} or extending timeline`
                 : '✅ BTC price drop means you can invest less and still meet your goal',
             suggested_monthly: currentPriceProjection.averageMonthlyFiat
           }
