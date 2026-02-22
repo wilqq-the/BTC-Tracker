@@ -33,6 +33,11 @@ export async function GET(request: NextRequest) {
     // Convert BTC price from USD to main currency
     const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
     const currentPrice = currentPriceUSD * usdToMainRate;
+
+    // Exchange rate for converting main currency values to secondary currency for display
+    const mainToSecondaryRate = secondaryCurrency && secondaryCurrency !== mainCurrency
+      ? await ExchangeRateService.getExchangeRate(mainCurrency, secondaryCurrency)
+      : 1;
     
     // Separate buy, sell, and transfer transactions
     const buyTransactions = allTransactions.filter(tx => tx.type === 'BUY');
@@ -247,6 +252,7 @@ export async function GET(request: NextRequest) {
       // Currency info
       mainCurrency,
       secondaryCurrency,
+      mainToSecondaryRate,
       
       // Timestamp
       lastUpdated: new Date().toISOString()

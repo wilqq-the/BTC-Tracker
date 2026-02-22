@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BotIcon, CalendarIcon, CheckCircleIcon, ClockIcon, ExternalLinkIcon, PauseIcon } from 'lucide-react';
+import { formatCurrency } from '@/lib/theme';
 import Link from 'next/link';
 
 interface RecurringTransaction {
@@ -180,7 +181,7 @@ export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
                         {tx.name}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>{tx.currency} {tx.amount.toFixed(0)}</span>
+                        <span>{formatCurrency(tx.amount, tx.currency)}</span>
                         <span>•</span>
                         <span className="capitalize">{tx.frequency}</span>
                       </div>
@@ -233,7 +234,7 @@ export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
                         </div>
                       </div>
                       <div className="text-xs font-semibold text-muted-foreground">
-                        {exec.originalCurrency} {exec.originalTotalAmount.toFixed(0)}
+                        {formatCurrency(exec.originalTotalAmount, exec.originalCurrency)}
                       </div>
                     </div>
                   ))}

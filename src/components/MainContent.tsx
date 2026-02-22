@@ -32,6 +32,8 @@ export default function MainContent() {
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(true);
   const [mainCurrency, setMainCurrency] = useState<string>('USD');
+  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('USD');
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
 
   useEffect(() => {
     const loadPrice = async () => {
@@ -68,8 +70,41 @@ export default function MainContent() {
       }
     };
 
+    const loadCurrencySettings = async () => {
+      try {
+        const [settingsRes, ratesRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/exchange-rates'),
+        ]);
+        const settingsData = await settingsRes.json();
+        const ratesData = await ratesRes.json();
+
+        if (settingsData.success && settingsData.data) {
+          const main = settingsData.data.currency?.mainCurrency || 'USD';
+          const secondary = settingsData.data.currency?.secondaryCurrency || main;
+          setMainCurrency(main);
+          setSecondaryCurrency(secondary);
+
+          if (main !== secondary && ratesData.rates && Array.isArray(ratesData.rates)) {
+            const direct = ratesData.rates.find(
+              (r: any) => r.from_currency === main && r.to_currency === secondary
+            );
+            if (direct) {
+              setExchangeRate(direct.rate);
+            } else {
+              const reverse = ratesData.rates.find(
+                (r: any) => r.from_currency === secondary && r.to_currency === main
+              );
+              if (reverse) setExchangeRate(1 / reverse.rate);
+            }
+          }
+        }
+      } catch { /* keep defaults */ }
+    };
+
     loadPrice();
     loadLatestTransactions();
+    loadCurrencySettings();
 
     const unsubscribe = BitcoinPriceClient.onPriceUpdate((newPrice: BitcoinPriceData) => {
       setCurrentBtcPrice(newPrice.price);
@@ -207,13 +242,13 @@ export default function MainContent() {
 
                             {/* Price */}
                             <div className="text-sm">
-                              {formatCurrency(pricePerBtc, mainCurrency)}
+                              {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                             </div>
 
                             {/* Current Value */}
                             <div className="text-sm">
                               <div className="font-medium">
-                                {currentValue > 0 ? formatCurrency(currentValue, mainCurrency) : '--'}
+                                {currentValue > 0 ? formatCurrency(currentValue * exchangeRate, secondaryCurrency) : '--'}
                               </div>
                             </div>
 
@@ -222,7 +257,7 @@ export default function MainContent() {
                               {currentValue > 0 ? (
                                 <>
                                   <div className={cn("font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)}
+                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)}
                                   </div>
                                   <div className={cn("text-xs", pnl >= 0 ? 'text-profit' : 'text-loss')}>
                                     {formatPercentage(pnlPercent)}
@@ -258,7 +293,7 @@ export default function MainContent() {
                                 {transaction.btc_amount.toFixed(6)} ₿
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                @ {formatCurrency(pricePerBtc, mainCurrency)}
+                                @ {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                               </div>
                             </div>
                           </div>
@@ -266,10 +301,10 @@ export default function MainContent() {
                           {currentValue > 0 && (
                             <div className="flex justify-between items-center pt-2 border-t">
                               <div className="text-xs text-muted-foreground">
-                                Current: {formatCurrency(currentValue, mainCurrency)}
+                                Current: {formatCurrency(currentValue * exchangeRate, secondaryCurrency)}
                               </div>
                               <div className={cn("text-sm font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)} ({formatPercentage(pnlPercent)})
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)} ({formatPercentage(pnlPercent)})
                               </div>
                             </div>
                           )}

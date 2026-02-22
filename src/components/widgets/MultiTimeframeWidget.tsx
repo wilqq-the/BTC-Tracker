@@ -46,8 +46,10 @@ export default function MultiTimeframeWidget({ id, onRefresh }: WidgetProps) {
       
       if (result.success && result.data) {
         const data = result.data;
-        setCurrency(data.mainCurrency);
-        setCurrentPrice(data.currentBtcPrice);
+        const displayCurrency = data.secondaryCurrency || data.mainCurrency;
+        const rate = data.mainToSecondaryRate || 1;
+        setCurrency(displayCurrency);
+        setCurrentPrice(data.currentBtcPrice * rate);
 
         // Calculate performance for different timeframes
         // For now, we'll use the 24h data and simulate others
@@ -56,31 +58,31 @@ export default function MultiTimeframeWidget({ id, onRefresh }: WidgetProps) {
           {
             period: '24h',
             label: '24 Hours',
-            change: data.portfolioChange24h || 0,
+            change: (data.portfolioChange24h || 0) * rate,
             changePercent: data.portfolioChange24hPercent || 0
           },
           {
             period: '7d',
             label: '7 Days',
-            change: (data.portfolioChange24h || 0) * 3.2, // Simulated
+            change: (data.portfolioChange24h || 0) * rate * 3.2, // Simulated
             changePercent: (data.portfolioChange24hPercent || 0) * 3.2
           },
           {
             period: '30d',
             label: '30 Days',
-            change: (data.portfolioChange24h || 0) * 8.5, // Simulated
+            change: (data.portfolioChange24h || 0) * rate * 8.5, // Simulated
             changePercent: (data.portfolioChange24hPercent || 0) * 8.5
           },
           {
             period: '1y',
             label: '1 Year',
-            change: data.totalPnL || 0, // Use actual total P&L
+            change: (data.totalPnL || 0) * rate, // Use actual total P&L
             changePercent: data.roi || 0
           },
           {
             period: 'ath',
             label: 'All Time',
-            change: data.totalPnL || 0,
+            change: (data.totalPnL || 0) * rate,
             changePercent: data.roi || 0
           }
         ];
