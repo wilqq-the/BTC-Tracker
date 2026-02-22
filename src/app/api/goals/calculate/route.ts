@@ -23,11 +23,12 @@ export async function POST(request: NextRequest) {
     const currentPriceData = await BitcoinPriceService.getCurrentPrice();
     const currentBtcPriceUSD = currentPriceData?.price || 100000;
     
-    // Get user's main currency and convert
+    // Get user's display currency and convert
     const settings = await SettingsService.getSettings();
     const mainCurrency = settings.currency.mainCurrency;
-    const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
-    const currentBtcPrice = currentBtcPriceUSD * usdToMainRate;
+    const displayCurrency = settings.currency.secondaryCurrency || mainCurrency;
+    const usdToDisplayRate = await ExchangeRateService.getExchangeRate('USD', displayCurrency);
+    const currentBtcPrice = currentBtcPriceUSD * usdToDisplayRate;
     
     // Calculate BTC needed
     const holdings = parseFloat(current_holdings || '0');
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: {
         current_btc_price: currentBtcPrice,
-        currency: mainCurrency,
+        currency: displayCurrency,
         btc_needed: btcNeeded,
         total_months: monthsDiff,
         selected_scenario: selectedScen,
