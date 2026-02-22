@@ -108,7 +108,7 @@ export class DCAAnalysisService {
     // Calculate all components
     const timing = this.analyzeTiming(buyTransactions, currentBtcPrice);
     const consistency = this.analyzeConsistency(buyTransactions);
-    const priceDistribution = this.calculatePriceDistribution(buyTransactions, currentBtcPrice);
+    const priceDistribution = this.calculatePriceDistribution(buyTransactions, currentBtcPrice, mainCurrency);
     const whatIfScenarios = this.calculateWhatIfScenarios(buyTransactions, currentBtcPrice);
     const monthlyBreakdown = this.calculateMonthlyBreakdown(buyTransactions);
     const score = this.calculateDCAScore(timing, consistency, buyTransactions, currentBtcPrice);
@@ -352,7 +352,8 @@ export class DCAAnalysisService {
    */
   private static calculatePriceDistribution(
     transactions: BitcoinTransaction[],
-    currentPrice: number
+    currentPrice: number,
+    currency: string = 'USD'
   ): PriceDistribution[] {
     // Find min and max prices
     const prices = transactions.map(tx => tx.originalPricePerBtc);
@@ -360,7 +361,7 @@ export class DCAAnalysisService {
     const maxPrice = Math.max(...prices);
     
     // Create price ranges
-    const ranges = this.createPriceRanges(minPrice, maxPrice, currentPrice);
+    const ranges = this.createPriceRanges(minPrice, maxPrice, currentPrice, currency);
     
     const totalBtc = transactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     
@@ -383,15 +384,15 @@ export class DCAAnalysisService {
   /**
    * Create price ranges for distribution
    */
-  private static createPriceRanges(minPrice: number, maxPrice: number, currentPrice: number): Array<{min: number, max: number, label: string}> {
+  private static createPriceRanges(minPrice: number, maxPrice: number, currentPrice: number, currency: string = 'USD'): Array<{min: number, max: number, label: string}> {
     const priceRange = maxPrice - minPrice;
     const step = priceRange / 4; // 4 ranges
-    
+
     return [
-      { min: minPrice, max: minPrice + step, label: `${this.formatPrice(minPrice)}-${this.formatPrice(minPrice + step)}` },
-      { min: minPrice + step, max: minPrice + step * 2, label: `${this.formatPrice(minPrice + step)}-${this.formatPrice(minPrice + step * 2)}` },
-      { min: minPrice + step * 2, max: minPrice + step * 3, label: `${this.formatPrice(minPrice + step * 2)}-${this.formatPrice(minPrice + step * 3)}` },
-      { min: minPrice + step * 3, max: maxPrice + 1, label: `${this.formatPrice(minPrice + step * 3)}+` }
+      { min: minPrice, max: minPrice + step, label: `${this.formatPrice(minPrice, currency)}-${this.formatPrice(minPrice + step, currency)}` },
+      { min: minPrice + step, max: minPrice + step * 2, label: `${this.formatPrice(minPrice + step, currency)}-${this.formatPrice(minPrice + step * 2, currency)}` },
+      { min: minPrice + step * 2, max: minPrice + step * 3, label: `${this.formatPrice(minPrice + step * 2, currency)}-${this.formatPrice(minPrice + step * 3, currency)}` },
+      { min: minPrice + step * 3, max: maxPrice + 1, label: `${this.formatPrice(minPrice + step * 3, currency)}+` }
     ];
   }
 
@@ -728,11 +729,16 @@ export class DCAAnalysisService {
   /**
    * Helper: Format price for display
    */
-  private static formatPrice(price: number): string {
+  private static formatPrice(price: number, currency: string = 'USD'): string {
+    const symbols: Record<string, string> = {
+      USD: '$', EUR: '€', GBP: '£', CAD: 'C$', AUD: 'A$',
+      JPY: '¥', CHF: 'CHF ', PLN: 'zł', SEK: 'kr', NOK: 'kr',
+    };
+    const sym = symbols[currency] ?? `${currency} `;
     if (price >= 1000) {
-      return `$${(price / 1000).toFixed(0)}k`;
+      return `${sym}${(price / 1000).toFixed(0)}k`;
     }
-    return `$${price.toFixed(0)}`;
+    return `${sym}${price.toFixed(0)}`;
   }
 
   /**
