@@ -21,6 +21,7 @@ import {
 } from 'recharts';
 import { TrendingUpIcon, TrendingDownIcon, ActivityIcon } from 'lucide-react';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
+import { formatCurrency } from '@/lib/theme';
 import { cn } from '@/lib/utils';
 
 interface BitcoinChartProps {
@@ -69,6 +70,8 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
   const [avgBuyPrice, setAvgBuyPrice] = useState<number>(0);
   const [currentPriceMain, setCurrentPriceMain] = useState<number>(0); // BTC price in user's main currency
   const [mainCurrency, setMainCurrency] = useState<string>('USD');
+  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('');
+  const [mainToSecondaryRate, setMainToSecondaryRate] = useState<number>(1);
   const [transactions, setTransactions] = useState<any[]>([]);
 
   // Load current price and subscribe to updates
@@ -111,6 +114,12 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
           }
           if (result.data.mainCurrency) {
             setMainCurrency(result.data.mainCurrency);
+          }
+          if (result.data.secondaryCurrency) {
+            setSecondaryCurrency(result.data.secondaryCurrency);
+          }
+          if (result.data.mainToSecondaryRate) {
+            setMainToSecondaryRate(result.data.mainToSecondaryRate);
           }
       }
     } catch (error) {
@@ -389,7 +398,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
               </div>
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-2xl font-bold">
-                  ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {formatCurrency(currentPriceMain * mainToSecondaryRate, secondaryCurrency || mainCurrency)}
                 </span>
                 <Badge variant={isPositive ? "default" : "destructive"} className="gap-1 shrink-0">
                   {isPositive ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
@@ -397,7 +406,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                 </Badge>
                 </div>
               <p className="text-xs text-muted-foreground">
-                {isPositive ? '+' : ''}${Math.abs(priceChange24h).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} (24h)
+                {isPositive ? '+' : '-'}{formatCurrency(Math.abs(priceChange24h) * (currentPrice > 0 ? currentPriceMain / currentPrice : 1) * mainToSecondaryRate, secondaryCurrency || mainCurrency)} (24h)
               </p>
               </div>
             </div>
