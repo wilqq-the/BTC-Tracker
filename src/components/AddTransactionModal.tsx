@@ -167,6 +167,11 @@ export default function AddTransactionModal({
           enabledCurrencies = settingsResult.data.currency.supportedCurrencies;
           console.log('Loaded enabled currencies from settings:', enabledCurrencies);
         }
+
+        // Set default currency to secondary (display) currency for new transactions
+        if (!editingTransaction && settingsResult.success && settingsResult.data?.currency?.secondaryCurrency) {
+          setFormData(prev => ({ ...prev, currency: settingsResult.data.currency.secondaryCurrency }));
+        }
         
         if (customResult.success && customResult.data) {
           customCurrencyList = customResult.data;
