@@ -35,12 +35,47 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [mainCurrency, setMainCurrency] = useState<string>('USD');
+  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('USD');
+  const [exchangeRate, setExchangeRate] = useState<number>(1);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0);
   const [maxTransactions] = useState<number>(5);
 
   useEffect(() => {
     loadLatestTransactions();
     loadCurrentPrice();
+
+    const loadCurrencySettings = async () => {
+      try {
+        const [settingsRes, ratesRes] = await Promise.all([
+          fetch('/api/settings'),
+          fetch('/api/exchange-rates'),
+        ]);
+        const settingsData = await settingsRes.json();
+        const ratesData = await ratesRes.json();
+
+        if (settingsData.success && settingsData.data) {
+          const main = settingsData.data.currency?.mainCurrency || 'USD';
+          const secondary = settingsData.data.currency?.secondaryCurrency || main;
+          setMainCurrency(main);
+          setSecondaryCurrency(secondary);
+
+          if (main !== secondary && ratesData.rates && Array.isArray(ratesData.rates)) {
+            const direct = ratesData.rates.find(
+              (r: any) => r.from_currency === main && r.to_currency === secondary
+            );
+            if (direct) {
+              setExchangeRate(direct.rate);
+            } else {
+              const reverse = ratesData.rates.find(
+                (r: any) => r.from_currency === secondary && r.to_currency === main
+              );
+              if (reverse) setExchangeRate(1 / reverse.rate);
+            }
+          }
+        }
+      } catch { /* keep defaults */ }
+    };
+    loadCurrencySettings();
 
     // Subscribe to price updates
     const unsubscribe = BitcoinPriceClient.onPriceUpdate((newPrice) => {
@@ -137,7 +172,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
                       {transaction.btc_amount.toFixed(6)} ₿
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      @ {formatCurrency(pricePerBtc, mainCurrency)}
+                      @ {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                     </div>
                   </div>
                 </div>
@@ -146,7 +181,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-muted-foreground">P&L:</span>
                     <span className={`font-medium ${pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)} ({formatPercentage(pnlPercent)})
+                      {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)} ({formatPercentage(pnlPercent)})
                     </span>
                   </div>
                 )}

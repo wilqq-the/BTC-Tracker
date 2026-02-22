@@ -20,6 +20,8 @@ interface PortfolioMetrics {
   avgBuyPrice: number;
   avgSellPrice: number;
   mainCurrency: string;
+  secondaryCurrency?: string;
+  mainToSecondaryRate?: number;
   portfolioChange24h: number;
   portfolioChange24hPercent: number;
   totalTransactions: number;
@@ -67,7 +69,8 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
     onRefresh?.();
   };
 
-  const currency = metrics?.mainCurrency || 'USD';
+  const currency = metrics?.secondaryCurrency || metrics?.mainCurrency || 'USD';
+  const rate = metrics?.mainToSecondaryRate || 1;
 
   return (
     <WidgetCard
@@ -85,7 +88,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
           <div>
             <p className="text-xs text-muted-foreground mb-1">Total Holdings</p>
             <div className="text-lg font-bold">{metrics.totalBtc.toFixed(8)} ₿</div>
-            <div className="text-xs text-muted-foreground">{formatCurrency(metrics.portfolioValue, currency)}</div>
+            <div className="text-xs text-muted-foreground">{formatCurrency(metrics.portfolioValue * rate, currency)}</div>
           </div>
 
           <Separator />
@@ -102,7 +105,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
               <div className={`text-base font-bold ${
                 metrics.totalPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                {metrics.totalPnL >= 0 ? '+' : ''}{formatCurrency(metrics.totalPnL, currency)}
+                {metrics.totalPnL >= 0 ? '+' : ''}{formatCurrency(metrics.totalPnL * rate, currency)}
               </div>
             </div>
             <div className={`text-xs ${
@@ -121,7 +124,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
               <span className={`text-xs font-medium ${
                 metrics.unrealizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                {metrics.unrealizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.unrealizedPnL, currency)}
+                {metrics.unrealizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.unrealizedPnL * rate, currency)}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -129,7 +132,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
               <span className={`text-xs font-medium ${
                 metrics.realizedPnL >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
               }`}>
-                {metrics.realizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.realizedPnL, currency)}
+                {metrics.realizedPnL >= 0 ? '+' : ''}{formatCurrency(metrics.realizedPnL * rate, currency)}
               </span>
             </div>
           </div>
@@ -143,7 +146,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
                 <div className={`text-sm font-semibold ${
                   metrics.portfolioChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`}>
-                  {metrics.portfolioChange24h >= 0 ? '+' : ''}{formatCurrency(metrics.portfolioChange24h, currency)}
+                  {metrics.portfolioChange24h >= 0 ? '+' : ''}{formatCurrency(metrics.portfolioChange24h * rate, currency)}
                   <span className="ml-1 text-xs">
                     ({metrics.portfolioChange24hPercent >= 0 ? '+' : ''}{metrics.portfolioChange24hPercent.toFixed(2)}%)
                   </span>
@@ -158,11 +161,11 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-xs text-muted-foreground">Avg Buy</span>
-              <span className="text-xs font-medium">{formatCurrency(metrics.avgBuyPrice, currency)}</span>
+              <span className="text-xs font-medium">{formatCurrency(metrics.avgBuyPrice * rate, currency)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-xs text-muted-foreground">Current</span>
-              <span className="text-xs font-medium text-btc-500">{formatCurrency(metrics.currentBtcPrice, currency)}</span>
+              <span className="text-xs font-medium text-btc-500">{formatCurrency(metrics.currentBtcPrice * rate, currency)}</span>
             </div>
           </div>
 
