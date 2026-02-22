@@ -60,7 +60,7 @@ const initialFormData: TransactionFormData = {
   currency: 'USD',
   fees: '0',
   fees_currency: 'BTC', // Default to BTC for transfers
-  transaction_date: new Date().toISOString().split('T')[0],
+  transaction_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
   notes: '',
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
@@ -623,10 +623,12 @@ export default function AddTransactionModal({
               <Label htmlFor="transaction_date">Date</Label>
             <DatePicker
               id="transaction_date"
-              value={formData.transaction_date ? new Date(formData.transaction_date) : undefined}
-              onChange={(date) => setFormData(prev => ({ 
-                ...prev, 
-                transaction_date: date ? date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+              value={formData.transaction_date ? (() => { const [y, m, d] = formData.transaction_date.split('-').map(Number); return new Date(y, m - 1, d); })() : undefined}
+              onChange={(date) => setFormData(prev => ({
+                ...prev,
+                transaction_date: date
+                  ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                  : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()
               }))}
               placeholder="Select date"
             />
