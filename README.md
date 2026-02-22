@@ -211,6 +211,8 @@ Found a bug? Want a feature? [Open an issue](https://github.com/wilqq-the/BTC-Tr
 
 Want to add support for another exchange? Check the [Parser Development Guide](src/app/api/transactions/import/parsers/PARSER_DEVELOPMENT_GUIDE.md).
 
+Want to automate transactions via n8n or scripts? Check the [API Documentation](API.md).
+
 ## License
 
 MIT - do what you want with it.
