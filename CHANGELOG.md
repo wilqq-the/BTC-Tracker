@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ New Features
 - **Strike CSV import** now supports both the older Format A (`Transaction ID`, `Time (UTC)`, `Status`, `Exchange Rate`) and the newer Format B (`Reference`, `Date & Time (UTC)`, `BTC Price`, `Cost Basis`) export layouts, with automatic format detection ([#169](https://github.com/wilqq-the/BTC-Tracker/pull/169))
 - **REST API documentation** added for automation and n8n integration use cases ([#187](https://github.com/wilqq-the/BTC-Tracker/pull/187))
+- **Persistent tokens** added to profile for automation purposes
 
 ### 🔧 Improvements
 - **Docker image reduced ~60%** — switched to Next.js `output: 'standalone'` mode, added a dedicated `prisma-runtime` stage that collects only the Prisma CLI dependencies needed at runtime (no full `node_modules` copy), and moved build-time packages to `devDependencies` ([#190](https://github.com/wilqq-the/BTC-Tracker/pull/190))
