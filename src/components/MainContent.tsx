@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import BitcoinChart from './BitcoinChart';
 import { BitcoinPriceClient, BitcoinPriceData } from '@/lib/bitcoin-price-client';
+import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,9 +32,7 @@ export default function MainContent() {
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(true);
-  const [mainCurrency, setMainCurrency] = useState<string>('USD');
-  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('USD');
-  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const { mainCurrency, secondaryCurrency, exchangeRate } = useDisplayCurrency();
 
   useEffect(() => {
     const loadPrice = async () => {
@@ -58,10 +57,6 @@ export default function MainContent() {
             .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
             .slice(0, 5);
           setLatestTransactions(latest);
-          
-          if (latest.length > 0 && latest[0].main_currency) {
-            setMainCurrency(latest[0].main_currency);
-          }
         }
       } catch (error) {
         console.error('Error loading latest transactions:', error);
@@ -70,41 +65,8 @@ export default function MainContent() {
       }
     };
 
-    const loadCurrencySettings = async () => {
-      try {
-        const [settingsRes, ratesRes] = await Promise.all([
-          fetch('/api/settings'),
-          fetch('/api/exchange-rates'),
-        ]);
-        const settingsData = await settingsRes.json();
-        const ratesData = await ratesRes.json();
-
-        if (settingsData.success && settingsData.data) {
-          const main = settingsData.data.currency?.mainCurrency || 'USD';
-          const secondary = settingsData.data.currency?.secondaryCurrency || main;
-          setMainCurrency(main);
-          setSecondaryCurrency(secondary);
-
-          if (main !== secondary && ratesData.rates && Array.isArray(ratesData.rates)) {
-            const direct = ratesData.rates.find(
-              (r: any) => r.from_currency === main && r.to_currency === secondary
-            );
-            if (direct) {
-              setExchangeRate(direct.rate);
-            } else {
-              const reverse = ratesData.rates.find(
-                (r: any) => r.from_currency === secondary && r.to_currency === main
-              );
-              if (reverse) setExchangeRate(1 / reverse.rate);
-            }
-          }
-        }
-      } catch { /* keep defaults */ }
-    };
-
     loadPrice();
     loadLatestTransactions();
-    loadCurrencySettings();
 
     const unsubscribe = BitcoinPriceClient.onPriceUpdate((newPrice: BitcoinPriceData) => {
       setCurrentBtcPrice(newPrice.price);
@@ -125,10 +87,6 @@ export default function MainContent() {
           .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
           .slice(0, 5);
         setLatestTransactions(latest);
-        
-        if (latest.length > 0 && latest[0].main_currency) {
-          setMainCurrency(latest[0].main_currency);
-        }
       }
     } catch (error) {
       console.error('Error refreshing transactions:', error);

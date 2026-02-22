@@ -134,26 +134,7 @@ export default function AnalyticsPage() {
           const secondary = result.data.secondaryCurrency || main;
           setMainCurrency(main);
           setSecondaryCurrency(secondary);
-
-          if (main !== secondary) {
-            try {
-              const ratesRes = await fetch('/api/exchange-rates');
-              const ratesData = await ratesRes.json();
-              if (ratesData.rates && Array.isArray(ratesData.rates)) {
-                const direct = ratesData.rates.find(
-                  (r: any) => r.from_currency === main && r.to_currency === secondary
-                );
-                if (direct) {
-                  setExchangeRate(direct.rate);
-                } else {
-                  const reverse = ratesData.rates.find(
-                    (r: any) => r.from_currency === secondary && r.to_currency === main
-                  );
-                  if (reverse) setExchangeRate(1 / reverse.rate);
-                }
-              }
-            } catch { /* keep rate = 1 */ }
-          }
+          setExchangeRate(result.data.mainToSecondaryRate || 1);
         }
       }
     } catch (error) {
