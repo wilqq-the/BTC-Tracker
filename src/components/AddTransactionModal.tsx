@@ -27,6 +27,26 @@ import { CurrencySelector } from '@/components/ui/currency-selector';
 import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/**
+ * Format a Date to YYYY-MM-DD string in LOCAL timezone (not UTC)
+ * This fixes the "off by one day" bug when selecting dates near midnight
+ */
+function formatDateLocal(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Parse a YYYY-MM-DD string to a Date in LOCAL timezone
+ * Using "T12:00:00" ensures the date doesn't shift due to timezone offset
+ */
+function parseDateLocal(dateStr: string): Date {
+  // Add noon time to avoid timezone issues (midnight can shift days)
+  return new Date(`${dateStr}T12:00:00`);
+}
+
 interface TransactionFormData {
   type: 'BUY' | 'SELL' | 'TRANSFER';
   btc_amount: string;
@@ -60,7 +80,7 @@ const initialFormData: TransactionFormData = {
   currency: 'USD',
   fees: '0',
   fees_currency: 'BTC', // Default to BTC for transfers
-  transaction_date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
+  transaction_date: formatDateLocal(new Date()),
   notes: '',
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
@@ -623,12 +643,10 @@ export default function AddTransactionModal({
               <Label htmlFor="transaction_date">Date</Label>
             <DatePicker
               id="transaction_date"
-              value={formData.transaction_date ? (() => { const [y, m, d] = formData.transaction_date.split('-').map(Number); return new Date(y, m - 1, d); })() : undefined}
-              onChange={(date) => setFormData(prev => ({
-                ...prev,
-                transaction_date: date
-                  ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-                  : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })()
+              value={formData.transaction_date ? parseDateLocal(formData.transaction_date) : undefined}
+              onChange={(date) => setFormData(prev => ({ 
+                ...prev, 
+                transaction_date: date ? formatDateLocal(date) : formatDateLocal(new Date())
               }))}
               placeholder="Select date"
             />
