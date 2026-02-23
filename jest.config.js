@@ -28,6 +28,9 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
   testTimeout: 10000,
+  // All test files share the same SQLite test database — run serially to
+  // prevent concurrent cleanTestDatabase() calls from causing FK violations.
+  maxWorkers: 1,
   clearMocks: true,
   restoreMocks: true,
   setupFiles: ['<rootDir>/src/tests/jest.env.js']
