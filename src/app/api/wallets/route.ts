@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth-helpers';
-
-// Default wallets created for users migrating from the old cold/hot wallet system
-const DEFAULT_WALLETS = [
-  { name: 'Cold Wallet', type: 'cold', emoji: '❄️', note: 'Default cold storage wallet' },
-  { name: 'Hot Wallet', type: 'hot', emoji: '🔥', note: 'Default hot wallet' },
-];
-
-// Ensure the user has at least the default wallets (migration helper)
-export async function ensureDefaultWallets(userId: number) {
-  const existing = await prisma.wallet.count({ where: { userId } });
-  if (existing === 0) {
-    await prisma.wallet.createMany({
-      data: DEFAULT_WALLETS.map(w => ({ ...w, userId })),
-    });
-  }
-}
+import { ensureDefaultWallets } from '@/lib/wallet-helpers';
 
 // GET /api/wallets - list all wallets for the authenticated user, with per-wallet BTC balance
 export async function GET(request: NextRequest) {

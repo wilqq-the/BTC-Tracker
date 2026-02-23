@@ -15,6 +15,7 @@ import { testDb, setupTestDatabase, cleanTestDatabase, seedTestDatabase } from '
 import { createTestUserWithToken } from '../test-helpers'
 import { NextRequest } from 'next/server'
 import { GET as walletsGET, POST as walletsPOST } from '../../app/api/wallets/route'
+// ensureDefaultWallets is tested indirectly via GET (auto-creates on first call)
 import { PUT as walletPUT, DELETE as walletDELETE } from '../../app/api/wallets/[id]/route'
 
 const createMockRequest = (method: string, url: string, body?: any, headers?: any) => {
