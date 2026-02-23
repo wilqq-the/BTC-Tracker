@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin panel** now shows inactive/deactivated users, allowing admins to reactivate them ([#173](https://github.com/wilqq-the/BTC-Tracker/pull/173))
 
 ### ✨ New Features
+- **Multiple named wallets** — create and manage multiple hot/cold wallets with custom names; wallets are selectable when recording transfers and displayed with per-wallet BTC balances in the Wallet Distribution widget and portfolio metrics ([#193](https://github.com/wilqq-the/BTC-Tracker/pull/193))
 - **Strike CSV import** now supports both the older Format A (`Transaction ID`, `Time (UTC)`, `Status`, `Exchange Rate`) and the newer Format B (`Reference`, `Date & Time (UTC)`, `BTC Price`, `Cost Basis`) export layouts, with automatic format detection ([#169](https://github.com/wilqq-the/BTC-Tracker/pull/169))
 - **REST API documentation** added for automation and n8n integration use cases ([#187](https://github.com/wilqq-the/BTC-Tracker/pull/187))
 - **Persistent tokens** added to profile for automation purposes

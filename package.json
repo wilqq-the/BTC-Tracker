@@ -1,6 +1,6 @@
 {
   "name": "btc-tracker",
-  "version": "0.6.8",
+  "version": "0.7.0",
   "description": "100% Private, Self-Hosted Bitcoin Portfolio Tracker",
   "author": "wilqq-the",
   "license": "MIT",
@@ -98,7 +98,7 @@
     "autoprefixer": "^10.0.1",
     "baseline-browser-mapping": "^2.9.4",
     "eslint": "^8",
-    "eslint-config-next": "14.0.0",
+    "eslint-config-next": "^15.3.6",
     "jest": "^29.7.0",
     "jest-environment-node": "^29.7.0",
     "postcss": "^8",
