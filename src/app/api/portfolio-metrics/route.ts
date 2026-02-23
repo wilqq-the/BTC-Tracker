@@ -43,54 +43,104 @@ export async function GET(request: NextRequest) {
     const buyTransactions = allTransactions.filter(tx => tx.type === 'BUY');
     const sellTransactions = allTransactions.filter(tx => tx.type === 'SELL');
     const transferTransactions = allTransactions.filter(tx => tx.type === 'TRANSFER');
-    
+
     // Separate internal transfers (no balance change) from external transfers (change balance)
-    const internalTransfers = transferTransactions.filter(tx => 
-      tx.transferType === 'TO_COLD_WALLET' || 
-      tx.transferType === 'FROM_COLD_WALLET' || 
+    const internalTransfers = transferTransactions.filter(tx =>
+      tx.transferType === 'TO_COLD_WALLET' ||
+      tx.transferType === 'FROM_COLD_WALLET' ||
       tx.transferType === 'BETWEEN_WALLETS'
     );
     const transfersIn = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_IN');
     const transfersOut = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_OUT');
-    
+
     // Calculate BTC fees from transfer transactions
     // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
     // Amount arriving at destination = btcAmount - fees
     let totalFeesBTC = 0;
-    let coldWalletBTC = 0;
-    
+
+    // Legacy cold wallet tracking (for transactions WITHOUT wallet IDs)
+    let legacyColdWalletBTC = 0;
+
     for (const tx of internalTransfers) {
       // If fees are paid in BTC, reduce total holdings (burned, gone forever)
       if (tx.feesCurrency.toUpperCase() === 'BTC') {
         totalFeesBTC += tx.fees;
       }
-      
-      // Track cold wallet movements
-      // btcAmount is total leaving source, so destination gets (btcAmount - fees)
-      if (tx.transferType === 'TO_COLD_WALLET') {
-        // Amount received in cold wallet = sent amount - fees
-        coldWalletBTC += (tx.btcAmount - tx.fees);
-      } else if (tx.transferType === 'FROM_COLD_WALLET') {
-        // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
-        coldWalletBTC -= tx.btcAmount;
+
+      // Only apply legacy calculation for transactions without wallet IDs
+      if (!tx.fromWalletId && !tx.toWalletId) {
+        if (tx.transferType === 'TO_COLD_WALLET') {
+          legacyColdWalletBTC += (tx.btcAmount - tx.fees);
+        } else if (tx.transferType === 'FROM_COLD_WALLET') {
+          legacyColdWalletBTC -= tx.btcAmount;
+        }
       }
     }
-    
+
     // Handle external transfer fees
     for (const tx of [...transfersIn, ...transfersOut]) {
       if (tx.feesCurrency.toUpperCase() === 'BTC') {
         totalFeesBTC += tx.fees;
       }
     }
-    
+
     // Calculate external transfer amounts (adds/removes from portfolio without affecting P&L)
     const totalBtcTransferredIn = transfersIn.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcTransferredOut = transfersOut.reduce((sum, tx) => sum + tx.btcAmount, 0);
-    
+
     // Calculate total BTC (BUY - SELL + TRANSFER_IN - TRANSFER_OUT - BTC_FEES)
     const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const currentHoldings = totalBtcBought - totalBtcSold + totalBtcTransferredIn - totalBtcTransferredOut - totalFeesBTC;
+
+    // --- Per-wallet breakdown (new multi-wallet system) ---
+    const userWallets = await prisma.wallet.findMany({
+      where: { userId, isActive: true },
+      orderBy: [{ type: 'asc' }, { createdAt: 'asc' }],
+    });
+
+    let newStyleColdBTC = 0;
+    let newStyleHotBTC = 0;
+
+    const walletBreakdown = userWallets.map(wallet => {
+      const incoming = allTransactions.filter(tx => tx.toWalletId === wallet.id);
+      const outgoing = allTransactions.filter(tx => tx.fromWalletId === wallet.id);
+
+      let balance = 0;
+      for (const tx of incoming) {
+        const btcFee = tx.feesCurrency.toUpperCase() === 'BTC' ? tx.fees : 0;
+        if (tx.type === 'BUY') {
+          balance += tx.btcAmount;
+        } else if (tx.type === 'TRANSFER') {
+          balance += tx.btcAmount - btcFee;
+        }
+      }
+      for (const tx of outgoing) {
+        if (tx.type === 'SELL') {
+          balance -= tx.btcAmount;
+        } else if (tx.type === 'TRANSFER') {
+          balance -= tx.btcAmount;
+        }
+      }
+      balance = Math.max(0, balance);
+
+      if (wallet.includeInPortfolio) {
+        if (wallet.type === 'cold') newStyleColdBTC += balance;
+        else newStyleHotBTC += balance;
+      }
+
+      return {
+        id: wallet.id,
+        name: wallet.name,
+        type: wallet.type,
+        emoji: wallet.emoji,
+        includeInPortfolio: wallet.includeInPortfolio,
+        btcBalance: balance,
+      };
+    });
+
+    // Combine legacy and new-style wallet totals
+    const coldWalletBTC = legacyColdWalletBTC + newStyleColdBTC;
     const hotWalletBTC = currentHoldings - coldWalletBTC;
     
     // Get exchange rates for all currencies
@@ -248,12 +298,15 @@ export async function GET(request: NextRequest) {
       // BTC from transfers (for info display)
       totalBtcTransferredIn,
       totalBtcTransferredOut,
-      
+
+      // Per-wallet breakdown (new multi-wallet system)
+      walletBreakdown,
+
       // Currency info
       mainCurrency,
       secondaryCurrency,
       mainToSecondaryRate,
-      
+
       // Timestamp
       lastUpdated: new Date().toISOString()
     };
