@@ -224,7 +224,7 @@ describe('Wallets API', () => {
           type: 'cold',
           emoji: '🔒',
         }),
-        { params: { id: walletId.toString() } }
+        { params: Promise.resolve({ id: walletId.toString() }) }
       )
       const data = await res.json()
 
@@ -237,7 +237,7 @@ describe('Wallets API', () => {
     it('toggles includeInPortfolio to false', async () => {
       const res = await walletPUT(
         auth('PUT', `/api/wallets/${walletId}`, { includeInPortfolio: false }),
-        { params: { id: walletId.toString() } }
+        { params: Promise.resolve({ id: walletId.toString() }) }
       )
       const data = await res.json()
 
@@ -252,7 +252,7 @@ describe('Wallets API', () => {
 
       const res = await walletPUT(
         auth('PUT', `/api/wallets/${otherWallet.id}`, { name: 'Hijack' }),
-        { params: { id: otherWallet.id.toString() } }
+        { params: Promise.resolve({ id: otherWallet.id.toString() }) }
       )
       expect(res.status).toBe(404)
     })
@@ -260,7 +260,7 @@ describe('Wallets API', () => {
     it('returns 400 for invalid type value', async () => {
       const res = await walletPUT(
         auth('PUT', `/api/wallets/${walletId}`, { type: 'warm' }),
-        { params: { id: walletId.toString() } }
+        { params: Promise.resolve({ id: walletId.toString() }) }
       )
       expect(res.status).toBe(400)
     })
@@ -268,7 +268,7 @@ describe('Wallets API', () => {
     it('returns 400 for non-numeric id', async () => {
       const res = await walletPUT(
         auth('PUT', '/api/wallets/abc', { name: 'X' }),
-        { params: { id: 'abc' } }
+        { params: Promise.resolve({ id: 'abc' }) }
       )
       expect(res.status).toBe(400)
     })
@@ -284,7 +284,7 @@ describe('Wallets API', () => {
 
       const res = await walletDELETE(
         auth('DELETE', `/api/wallets/${wallet.id}`),
-        { params: { id: wallet.id.toString() } }
+        { params: Promise.resolve({ id: wallet.id.toString() }) }
       )
       const data = await res.json()
 
@@ -317,7 +317,7 @@ describe('Wallets API', () => {
 
       const res = await walletDELETE(
         auth('DELETE', `/api/wallets/${wallet.id}`),
-        { params: { id: wallet.id.toString() } }
+        { params: Promise.resolve({ id: wallet.id.toString() }) }
       )
       const data = await res.json()
 
@@ -338,7 +338,7 @@ describe('Wallets API', () => {
 
       const res = await walletDELETE(
         auth('DELETE', `/api/wallets/${otherWallet.id}`),
-        { params: { id: otherWallet.id.toString() } }
+        { params: Promise.resolve({ id: otherWallet.id.toString() }) }
       )
       expect(res.status).toBe(404)
     })
@@ -350,7 +350,7 @@ describe('Wallets API', () => {
 
       const res = await walletDELETE(
         createMockRequest('DELETE', `/api/wallets/${wallet.id}`),
-        { params: { id: wallet.id.toString() } }
+        { params: Promise.resolve({ id: wallet.id.toString() }) }
       )
       expect(res.status).toBe(401)
     })

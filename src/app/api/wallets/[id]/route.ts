@@ -5,10 +5,11 @@ import { withAuth } from '@/lib/auth-helpers';
 // PUT /api/wallets/[id] - update a wallet
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   return withAuth(request, async (userId) => {
-    const walletId = parseInt(params.id);
+    const { id } = await context.params;
+    const walletId = parseInt(id);
     if (isNaN(walletId)) {
       return NextResponse.json({ success: false, message: 'Invalid wallet ID' }, { status: 400 });
     }
@@ -49,10 +50,11 @@ export async function PUT(
 // If it has no transactions it is permanently deleted.
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   return withAuth(request, async (userId) => {
-    const walletId = parseInt(params.id);
+    const { id } = await context.params;
+    const walletId = parseInt(id);
     if (isNaN(walletId)) {
       return NextResponse.json({ success: false, message: 'Invalid wallet ID' }, { status: 400 });
     }
