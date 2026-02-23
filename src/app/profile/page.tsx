@@ -836,7 +836,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border">
                 <div>
                   <p className="text-sm font-medium">Include in Portfolio Total</p>
-                  <p className="text-xs text-muted-foreground">When disabled, this wallet's BTC is excluded from your portfolio value</p>
+                  <p className="text-xs text-muted-foreground">When disabled, this wallet&apos;s BTC is excluded from your portfolio value</p>
                 </div>
                 <button
                   type="button"
