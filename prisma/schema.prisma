@@ -15,28 +15,39 @@ model BitcoinTransaction {
   id                    Int      @id @default(autoincrement())
   type                  String   // 'BUY', 'SELL', or 'TRANSFER'
   btcAmount             Float    @map("btc_amount")
-  
+
   // User relationship
   userId                Int?     @map("user_id")
   user                  User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Original transaction data (what user actually entered)
   // For TRANSFER: these fields can be 0 or null since no buying/selling occurs
   originalPricePerBtc   Float    @default(0) @map("original_price_per_btc")
   originalCurrency      String   @map("original_currency")
   originalTotalAmount   Float    @default(0) @map("original_total_amount")
-  
+
   // Fees and metadata
   fees                  Float    @default(0)
   feesCurrency          String   @default("USD") @map("fees_currency")
   transactionDate       DateTime @map("transaction_date")
   notes                 String?
   tags                  String?  // Comma-separated tags: "DCA,Long-term,Dip Buy"
-  
+
   // Transfer-specific fields
-  transferType          String?  @map("transfer_type") // 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS'
+  transferType          String?  @map("transfer_type") // 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS', 'TRANSFER_IN', 'TRANSFER_OUT'
   destinationAddress    String?  @map("destination_address") // Optional: wallet address for tracking
-  
+
+  // Wallet relationships (new multi-wallet system)
+  // For internal transfers: both fromWalletId and toWalletId are set
+  // For external IN (TRANSFER_IN): only toWalletId is set (source is external)
+  // For external OUT (TRANSFER_OUT): only fromWalletId is set (destination is external)
+  // For BUY: toWalletId indicates which wallet receives the BTC (optional)
+  // For SELL: fromWalletId indicates which wallet the BTC is sold from (optional)
+  fromWalletId          Int?     @map("from_wallet_id")
+  fromWallet            Wallet?  @relation("TransactionFromWallet", fields: [fromWalletId], references: [id], onDelete: SetNull)
+  toWalletId            Int?     @map("to_wallet_id")
+  toWallet              Wallet?  @relation("TransactionToWallet", fields: [toWalletId], references: [id], onDelete: SetNull)
+
   // Tracking
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
@@ -45,6 +56,8 @@ model BitcoinTransaction {
   @@index([userId])
   @@index([type])
   @@index([transferType])
+  @@index([fromWalletId])
+  @@index([toWalletId])
 }
 
 // Historical Bitcoin prices (daily OHLC data for long-term trends)
@@ -99,6 +112,33 @@ model AppSettings {
   @@index([userId])
 }
 
+// User-defined wallets (cold/hot storage locations)
+model Wallet {
+  id                 Int      @id @default(autoincrement())
+  userId             Int      @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name               String   // Custom name, e.g. "Ledger Nano", "Kraken", "Lightning"
+  type               String   // 'cold' or 'hot'
+  emoji              String?  // Optional emoji/icon for display, e.g. "❄️", "🔥"
+  note               String?  // Optional description/note
+
+  // Portfolio inclusion: if false, this wallet's BTC is excluded from portfolio totals
+  includeInPortfolio Boolean  @default(true) @map("include_in_portfolio")
+  isActive           Boolean  @default(true) @map("is_active")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations back to transactions
+  transactionsFrom   BitcoinTransaction[] @relation("TransactionFromWallet")
+  transactionsTo     BitcoinTransaction[] @relation("TransactionToWallet")
+
+  @@map("wallets")
+  @@index([userId])
+  @@index([type])
+}
+
 // Users table for authentication
 model User {
   id           Int      @id @default(autoincrement())
@@ -110,12 +150,12 @@ model User {
   pinHash      String?  @map("pin_hash") // Added for PIN authentication
   isAdmin      Boolean  @default(false) @map("is_admin") // Admin role (first user is auto-admin)
   isActive     Boolean  @default(true) @map("is_active") // Allow admin to deactivate users
-  
+
   // Two-Factor Authentication (2FA/TOTP)
   twoFactorSecret      String?  @map("two_factor_secret") // TOTP secret key (encrypted)
   twoFactorEnabled     Boolean  @default(false) @map("two_factor_enabled")
   twoFactorBackupCodes String?  @map("two_factor_backup_codes") // JSON array of hashed backup codes
-  
+
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -128,6 +168,7 @@ model User {
   dashboardLayout       DashboardLayout?
   recurringTransactions RecurringTransaction[]
   apiKeys               ApiKey[]
+  wallets               Wallet[]
 
   @@map("users")
 }

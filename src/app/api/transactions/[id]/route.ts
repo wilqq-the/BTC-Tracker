@@ -165,7 +165,9 @@ export async function PUT(
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
-        destinationAddress: isTransfer ? (formData.destination_address || null) : null
+        destinationAddress: isTransfer ? (formData.destination_address || null) : null,
+        fromWalletId: (formData as any).from_wallet_id || null,
+        toWalletId: (formData as any).to_wallet_id || null,
         // updatedAt is automatically handled by Prisma
       } as any
     });
@@ -192,6 +194,8 @@ export async function PUT(
       tags: (updatedTransaction as any).tags || '',
       transfer_type: (updatedTransaction as any).transferType || null,
       destination_address: (updatedTransaction as any).destinationAddress || null,
+      from_wallet_id: (updatedTransaction as any).fromWalletId || null,
+      to_wallet_id: (updatedTransaction as any).toWalletId || null,
       created_at: updatedTransaction.createdAt,
       updated_at: updatedTransaction.updatedAt
     };

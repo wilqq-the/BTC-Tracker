@@ -274,7 +274,9 @@ export async function POST(request: NextRequest) {
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
-        destinationAddress: isTransfer ? (formData.destination_address || null) : null
+        destinationAddress: isTransfer ? (formData.destination_address || null) : null,
+        fromWalletId: (formData as any).from_wallet_id || null,
+        toWalletId: (formData as any).to_wallet_id || null,
       } as any
     });
 
@@ -292,6 +294,8 @@ export async function POST(request: NextRequest) {
       tags: (newTransaction as any).tags || '',
       transfer_type: (newTransaction as any).transferType || null,
       destination_address: (newTransaction as any).destinationAddress || null,
+      from_wallet_id: (newTransaction as any).fromWalletId || null,
+      to_wallet_id: (newTransaction as any).toWalletId || null,
       created_at: newTransaction.createdAt,
       updated_at: newTransaction.updatedAt
     };
