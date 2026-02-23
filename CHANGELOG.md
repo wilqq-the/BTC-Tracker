@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **REST API documentation** added for automation and n8n integration use cases ([#187](https://github.com/wilqq-the/BTC-Tracker/pull/187))
 - **Persistent tokens** added to profile for automation purposes
 
+### 🔒 Security
+- **Next.js updated to 15.5.12** — fixes server actions source code exposure (GHSA-w37m-7fhw-fmv9), server components DoS (GHSA-mwv6-3258-q52c, GHSA-h25m-26qc-wcjf), and image optimizer DoS (GHSA-9g9p-9gw9-jx7f)
+- **axios updated** — fixes DoS via `__proto__` key in `mergeConfig` (GHSA-43fc-jf86-j433)
+- **qs updated to 6.15.0** — fixes DoS via array limit bypass (GHSA-6rw7-vpxm-498p, GHSA-w7fw-mjwx-w883)
+- **preact updated to 10.28.4** — fixes JSON VNode injection (GHSA-36hm-qxxp-pg3m)
+
 ### 🔧 Improvements
 - **Docker image reduced ~60%** — switched to Next.js `output: 'standalone'` mode, added a dedicated `prisma-runtime` stage that collects only the Prisma CLI dependencies needed at runtime (no full `node_modules` copy), and moved build-time packages to `devDependencies` ([#190](https://github.com/wilqq-the/BTC-Tracker/pull/190))
 
