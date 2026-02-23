@@ -112,18 +112,21 @@ export const createTestTransactionData = (overrides: any = {}) => {
  * Create test transaction in database
  */
 export async function createTestTransaction(transactionData: any = {}) {
-  // Remove userId and date fields that don't belong in the Prisma model
+  // Extract userId and date separately — userId must be forwarded to Prisma
   const { userId, date, ...cleanData } = transactionData
-  
+
   // Use date for transactionDate if provided
   if (date && !cleanData.transactionDate) {
     cleanData.transactionDate = date
   }
-  
+
   const testData = createTestTransactionData(cleanData)
-  
+
   return await testDb.bitcoinTransaction.create({
-    data: testData
+    data: {
+      ...testData,
+      ...(userId !== undefined ? { userId } : {})
+    }
   })
 }
 
