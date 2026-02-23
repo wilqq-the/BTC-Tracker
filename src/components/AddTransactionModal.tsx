@@ -61,6 +61,16 @@ interface TransactionFormData {
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
   transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
   destination_address?: string;
+  from_wallet_id?: number | null;
+  to_wallet_id?: number | null;
+}
+
+interface WalletOption {
+  id: number;
+  name: string;
+  type: 'cold' | 'hot';
+  emoji: string | null;
+  btcBalance: number;
 }
 
 type InputMode = 'price' | 'fiat';
@@ -85,7 +95,9 @@ const initialFormData: TransactionFormData = {
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
   transfer_category: 'INTERNAL',
-  destination_address: ''
+  destination_address: '',
+  from_wallet_id: null,
+  to_wallet_id: null,
 };
 
 export default function AddTransactionModal({ 
@@ -116,7 +128,9 @@ export default function AddTransactionModal({
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
       transfer_category: getTransferCategory(editingTransaction.transfer_type),
-      destination_address: editingTransaction.destination_address || ''
+      destination_address: editingTransaction.destination_address || '',
+      from_wallet_id: editingTransaction.from_wallet_id || null,
+      to_wallet_id: editingTransaction.to_wallet_id || null,
     } : initialFormData
   );
   
@@ -131,6 +145,7 @@ export default function AddTransactionModal({
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
   const [allAvailableCurrencies, setAllAvailableCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number | null>(null);
+  const [wallets, setWallets] = useState<WalletOption[]>([]);
   
   // Helper function to get currency info from currencies.json
   const getCurrencyInfo = (code: string) => {
@@ -154,7 +169,9 @@ export default function AddTransactionModal({
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
         transfer_category: getTransferCategory(editingTransaction.transfer_type),
-        destination_address: editingTransaction.destination_address || ''
+        destination_address: editingTransaction.destination_address || '',
+        from_wallet_id: editingTransaction.from_wallet_id || null,
+        to_wallet_id: editingTransaction.to_wallet_id || null,
       });
       setInputMode('price'); // Default to price mode when editing
       // Show more options if editing has notes or tags
@@ -175,10 +192,17 @@ export default function AddTransactionModal({
         // Load settings for supported currencies
         const settingsResponse = await fetch('/api/settings');
         const settingsResult = await settingsResponse.json();
-        
+
         // Load custom currencies
         const customResponse = await fetch('/api/custom-currencies');
         const customResult = await customResponse.json();
+
+        // Load wallets
+        const walletsResponse = await fetch('/api/wallets');
+        const walletsResult = await walletsResponse.json();
+        if (walletsResult.success && walletsResult.data) {
+          setWallets(walletsResult.data);
+        }
         
         let enabledCurrencies: SupportedCurrency[] = ['USD', 'EUR', 'PLN', 'GBP']; // fallback
         let customCurrencyList: any[] = [];
@@ -474,65 +498,184 @@ export default function AddTransactionModal({
                 </div>
               </div>
 
-              {/* Direction */}
-              <div className="space-y-1.5">
-                <Label>Direction</Label>
-                {formData.transfer_category === 'INTERNAL' ? (
-                  <div className="flex gap-2">
-                    {[
-                      { type: 'TO_COLD_WALLET', icon: ArrowDownToLineIcon, label: 'To Cold' },
-                      { type: 'FROM_COLD_WALLET', icon: ArrowUpFromLineIcon, label: 'From Cold' },
-                      { type: 'BETWEEN_WALLETS', icon: RefreshCwIcon, label: 'Between' },
-                    ].map(({ type, icon: Icon, label }) => (
-                    <Button
-                        key={type}
-                      type="button"
-                        variant={formData.transfer_type === type ? "default" : "outline"}
-                      size="sm"
-                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: type as any }))}
-                      className={cn(
-                          "gap-1.5 flex-1",
-                          formData.transfer_type === type && "bg-blue-500 hover:bg-blue-600"
-                      )}
-                    >
-                        <Icon className="size-4" />
-                        {label}
-                    </Button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN' }))}
-                      className={cn(
-                        "gap-1.5 flex-1",
-                        formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600"
-                      )}
-                    >
-                      <ArrowDownIcon className="size-4" />
-                      Transfer In
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT' }))}
-                      className={cn(
-                        "gap-1.5 flex-1",
-                        formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600"
-                      )}
-                    >
-                      <ArrowUpIcon className="size-4" />
-                      Transfer Out
-                    </Button>
-                  </div>
-                )}
+              {/* Wallet Selectors */}
+              {wallets.length > 0 ? (
+                <div className="space-y-3">
+                  {formData.transfer_category === 'INTERNAL' ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label>From Wallet</Label>
+                        <Select
+                          value={formData.from_wallet_id?.toString() || ''}
+                          onValueChange={v => {
+                            const fromId = v ? parseInt(v) : null;
+                            const toWallet = wallets.find(w => w.id === formData.to_wallet_id);
+                            const fromWallet = wallets.find(w => w.id === fromId);
+                            // Derive transfer_type from wallet types
+                            let ttype: TransactionFormData['transfer_type'] = 'BETWEEN_WALLETS';
+                            if (fromWallet?.type === 'cold') ttype = 'FROM_COLD_WALLET';
+                            else if (toWallet?.type === 'cold') ttype = 'TO_COLD_WALLET';
+                            setFormData(prev => ({ ...prev, from_wallet_id: fromId, transfer_type: ttype }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select source" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {wallets.map(w => (
+                              <SelectItem key={w.id} value={w.id.toString()} disabled={w.id === formData.to_wallet_id}>
+                                {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>To Wallet</Label>
+                        <Select
+                          value={formData.to_wallet_id?.toString() || ''}
+                          onValueChange={v => {
+                            const toId = v ? parseInt(v) : null;
+                            const fromWallet = wallets.find(w => w.id === formData.from_wallet_id);
+                            const toWallet = wallets.find(w => w.id === toId);
+                            let ttype: TransactionFormData['transfer_type'] = 'BETWEEN_WALLETS';
+                            if (toWallet?.type === 'cold') ttype = 'TO_COLD_WALLET';
+                            else if (fromWallet?.type === 'cold') ttype = 'FROM_COLD_WALLET';
+                            setFormData(prev => ({ ...prev, to_wallet_id: toId, transfer_type: ttype }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select destination" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {wallets.map(w => (
+                              <SelectItem key={w.id} value={w.id.toString()} disabled={w.id === formData.from_wallet_id}>
+                                {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN', from_wallet_id: null }))}
+                          className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600")}
+                        >
+                          <ArrowDownIcon className="size-4" />
+                          Transfer In
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT', to_wallet_id: null }))}
+                          className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600")}
+                        >
+                          <ArrowUpIcon className="size-4" />
+                          Transfer Out
+                        </Button>
+                      </div>
+                      {formData.transfer_type === 'TRANSFER_IN' && (
+                        <div className="space-y-1.5">
+                          <Label>To Wallet</Label>
+                          <Select
+                            value={formData.to_wallet_id?.toString() || ''}
+                            onValueChange={v => setFormData(prev => ({ ...prev, to_wallet_id: v ? parseInt(v) : null }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select destination wallet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {wallets.map(w => (
+                                <SelectItem key={w.id} value={w.id.toString()}>
+                                  {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {formData.transfer_type === 'TRANSFER_OUT' && (
+                        <div className="space-y-1.5">
+                          <Label>From Wallet</Label>
+                          <Select
+                            value={formData.from_wallet_id?.toString() || ''}
+                            onValueChange={v => setFormData(prev => ({ ...prev, from_wallet_id: v ? parseInt(v) : null }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select source wallet" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {wallets.map(w => (
+                                <SelectItem key={w.id} value={w.id.toString()}>
+                                  {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                // Fallback for users with no wallets yet: old direction buttons
+                <div className="space-y-1.5">
+                  <Label>Direction</Label>
+                  {formData.transfer_category === 'INTERNAL' ? (
+                    <div className="flex gap-2">
+                      {[
+                        { type: 'TO_COLD_WALLET', icon: ArrowDownToLineIcon, label: 'To Cold' },
+                        { type: 'FROM_COLD_WALLET', icon: ArrowUpFromLineIcon, label: 'From Cold' },
+                        { type: 'BETWEEN_WALLETS', icon: RefreshCwIcon, label: 'Between' },
+                      ].map(({ type, icon: Icon, label }) => (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={formData.transfer_type === type ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: type as any }))}
+                          className={cn("gap-1.5 flex-1", formData.transfer_type === type && "bg-blue-500 hover:bg-blue-600")}
+                        >
+                          <Icon className="size-4" />
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN' }))}
+                        className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600")}
+                      >
+                        <ArrowDownIcon className="size-4" />
+                        Transfer In
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT' }))}
+                        className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600")}
+                      >
+                        <ArrowUpIcon className="size-4" />
+                        Transfer Out
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Price/Amount Input (hidden for internal transfers) */}
           {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
