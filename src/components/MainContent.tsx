@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import BitcoinChart from './BitcoinChart';
 import { BitcoinPriceClient, BitcoinPriceData } from '@/lib/bitcoin-price-client';
+import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,7 +32,7 @@ export default function MainContent() {
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(true);
   const [loadingPrice, setLoadingPrice] = useState(true);
-  const [mainCurrency, setMainCurrency] = useState<string>('USD');
+  const { mainCurrency, secondaryCurrency, exchangeRate } = useDisplayCurrency();
 
   useEffect(() => {
     const loadPrice = async () => {
@@ -56,10 +57,6 @@ export default function MainContent() {
             .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
             .slice(0, 5);
           setLatestTransactions(latest);
-          
-          if (latest.length > 0 && latest[0].main_currency) {
-            setMainCurrency(latest[0].main_currency);
-          }
         }
       } catch (error) {
         console.error('Error loading latest transactions:', error);
@@ -90,10 +87,6 @@ export default function MainContent() {
           .sort((a: Transaction, b: Transaction) => new Date(b.transaction_date).getTime() - new Date(a.transaction_date).getTime())
           .slice(0, 5);
         setLatestTransactions(latest);
-        
-        if (latest.length > 0 && latest[0].main_currency) {
-          setMainCurrency(latest[0].main_currency);
-        }
       }
     } catch (error) {
       console.error('Error refreshing transactions:', error);
@@ -207,13 +200,13 @@ export default function MainContent() {
 
                             {/* Price */}
                             <div className="text-sm">
-                              {formatCurrency(pricePerBtc, mainCurrency)}
+                              {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                             </div>
 
                             {/* Current Value */}
                             <div className="text-sm">
                               <div className="font-medium">
-                                {currentValue > 0 ? formatCurrency(currentValue, mainCurrency) : '--'}
+                                {currentValue > 0 ? formatCurrency(currentValue * exchangeRate, secondaryCurrency) : '--'}
                               </div>
                             </div>
 
@@ -222,7 +215,7 @@ export default function MainContent() {
                               {currentValue > 0 ? (
                                 <>
                                   <div className={cn("font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)}
+                                    {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)}
                                   </div>
                                   <div className={cn("text-xs", pnl >= 0 ? 'text-profit' : 'text-loss')}>
                                     {formatPercentage(pnlPercent)}
@@ -258,7 +251,7 @@ export default function MainContent() {
                                 {transaction.btc_amount.toFixed(6)} ₿
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                @ {formatCurrency(pricePerBtc, mainCurrency)}
+                                @ {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                               </div>
                             </div>
                           </div>
@@ -266,10 +259,10 @@ export default function MainContent() {
                           {currentValue > 0 && (
                             <div className="flex justify-between items-center pt-2 border-t">
                               <div className="text-xs text-muted-foreground">
-                                Current: {formatCurrency(currentValue, mainCurrency)}
+                                Current: {formatCurrency(currentValue * exchangeRate, secondaryCurrency)}
                               </div>
                               <div className={cn("text-sm font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)} ({formatPercentage(pnlPercent)})
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)} ({formatPercentage(pnlPercent)})
                               </div>
                             </div>
                           )}

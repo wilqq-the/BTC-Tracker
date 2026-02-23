@@ -81,6 +81,8 @@ export default function AnalyticsPage() {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [mainCurrency, setMainCurrency] = useState('USD');
+  const [secondaryCurrency, setSecondaryCurrency] = useState('USD');
+  const [exchangeRate, setExchangeRate] = useState(1);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
@@ -128,7 +130,11 @@ export default function AnalyticsPage() {
             }
           };
           setAnalyticsData(transformedData);
-          setMainCurrency(result.data.mainCurrency || 'USD');
+          const main = result.data.mainCurrency || 'USD';
+          const secondary = result.data.secondaryCurrency || main;
+          setMainCurrency(main);
+          setSecondaryCurrency(secondary);
+          setExchangeRate(result.data.mainToSecondaryRate || 1);
         }
       }
     } catch (error) {
@@ -138,10 +144,12 @@ export default function AnalyticsPage() {
     }
   };
 
-  const formatCurrency = (value: number | undefined, currency: string = mainCurrency) => {
+  const formatCurrency = (value: number | undefined, currency: string = secondaryCurrency) => {
     if (value === undefined || value === null) return `${getCurrencySymbol(currency)}0`;
     return `${getCurrencySymbol(currency)}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
+
+  const fc = (value: number | undefined) => formatCurrency(value !== undefined ? value * exchangeRate : undefined);
 
   const getCurrencySymbol = (currency: string) => {
     const currencyData = currencies.find(c => c.alpha === currency);
@@ -290,9 +298,9 @@ export default function AnalyticsPage() {
                     "text-2xl font-bold mt-1",
                     analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'text-profit' : 'text-loss'
                   )}>
-                    {analyticsData?.totalPnL 
-                      ? `${analyticsData.totalPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.totalPnL))}`
-                      : formatCurrency(0)}
+                    {analyticsData?.totalPnL
+                      ? `${analyticsData.totalPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.totalPnL))}`
+                      : fc(0)}
                   </p>
                   <p className={cn(
                     "text-sm font-medium mt-1",
@@ -324,9 +332,9 @@ export default function AnalyticsPage() {
                     "text-2xl font-bold mt-1",
                     analyticsData?.unrealizedPnL && analyticsData.unrealizedPnL >= 0 ? 'text-profit' : 'text-loss'
                   )}>
-                    {analyticsData?.unrealizedPnL 
-                      ? `${analyticsData.unrealizedPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.unrealizedPnL))}`
-                      : formatCurrency(0)}
+                    {analyticsData?.unrealizedPnL
+                      ? `${analyticsData.unrealizedPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.unrealizedPnL))}`
+                      : fc(0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Current holdings</p>
                 </div>
@@ -347,9 +355,9 @@ export default function AnalyticsPage() {
                     "text-2xl font-bold mt-1",
                     analyticsData?.realizedPnL && analyticsData.realizedPnL >= 0 ? 'text-profit' : 'text-loss'
                   )}>
-                    {analyticsData?.realizedPnL 
-                      ? `${analyticsData.realizedPnL >= 0 ? '+' : '-'}${formatCurrency(Math.abs(analyticsData.realizedPnL))}`
-                      : formatCurrency(0)}
+                    {analyticsData?.realizedPnL
+                      ? `${analyticsData.realizedPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.realizedPnL))}`
+                      : fc(0)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Closed positions</p>
                 </div>
@@ -389,7 +397,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardContent className="p-5">
               <p className="text-sm font-medium text-muted-foreground">Average Buy Price</p>
-              <p className="text-xl font-bold mt-1">{formatCurrency(analyticsData?.avgBuyPrice)}</p>
+              <p className="text-xl font-bold mt-1">{fc(analyticsData?.avgBuyPrice)}</p>
               <p className="text-xs text-muted-foreground mt-1">Cost basis</p>
             </CardContent>
           </Card>
@@ -397,7 +405,7 @@ export default function AnalyticsPage() {
           <Card className="bg-gradient-to-br from-btc-500/10 to-btc-600/5 border-btc-500/20">
             <CardContent className="p-5">
               <p className="text-sm font-medium text-muted-foreground">Current BTC Price</p>
-              <p className="text-xl font-bold text-btc-500 mt-1">{formatCurrency(analyticsData?.currentBtcPrice)}</p>
+              <p className="text-xl font-bold text-btc-500 mt-1">{fc(analyticsData?.currentBtcPrice)}</p>
               <p className="text-xs text-muted-foreground mt-1">Live market price</p>
             </CardContent>
           </Card>
@@ -486,7 +494,7 @@ export default function AnalyticsPage() {
                                 <div 
                                   className="w-full bg-profit hover:bg-profit/80 rounded-t transition-all cursor-pointer"
                                   style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${formatCurrency(month.avgBuyPrice)} (${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%)`}
+                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${fc(month.avgBuyPrice)} (${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%)`}
                                 />
                               )}
                             </div>
@@ -506,7 +514,7 @@ export default function AnalyticsPage() {
                                 <div 
                                   className="w-full bg-loss hover:bg-loss/80 rounded-b transition-all cursor-pointer"
                                   style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${formatCurrency(month.avgBuyPrice)} (${month.percentGain.toFixed(1)}%)`}
+                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${fc(month.avgBuyPrice)} (${month.percentGain.toFixed(1)}%)`}
                                 />
                               )}
                               <div className="text-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity">

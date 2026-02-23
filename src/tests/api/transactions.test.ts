@@ -54,7 +54,7 @@ const createMockRequest = (method: string, url: string, body?: any, headers?: an
 import { GET as transactionsGET, POST as transactionsPOST } from '../../app/api/transactions/route'
 import { GET as transactionGET, PUT as transactionPUT, DELETE as transactionDELETE } from '../../app/api/transactions/[id]/route'
 
-describe.skip('Transactions API', () => {
+describe('Transactions API', () => {
   let testUser: any
   let testToken: string
   let authHeaders: { Authorization: string }
@@ -474,7 +474,7 @@ describe.skip('Transactions API', () => {
       expect(response.status).toBe(400)
       expect(data.success).toBe(false)
       expect(data.error).toBe('Invalid numeric values')
-      expect(data.message).toContain('positive numbers')
+      expect(data.message).toContain('BTC amount must be positive')
     })
 
     it('should fail with non-numeric string values', async () => {
@@ -930,7 +930,7 @@ describe.skip('Transactions API', () => {
   describe('Error Handling', () => {
     it('should handle malformed JSON in POST request', async () => {
       const mockRequest = {
-        method: 'POST',
+        ...createMockRequest('POST', '/api/transactions', null, authHeaders),
         json: async () => { throw new Error('Invalid JSON') }
       } as unknown as NextRequest
 
@@ -939,12 +939,12 @@ describe.skip('Transactions API', () => {
 
       expect(response.status).toBe(500)
       expect(data.success).toBe(false)
-      expect(data.error).toBe('Failed to create transaction')
+      expect(data.error).toBe('Internal server error')
     })
 
     it('should handle malformed JSON in PUT request', async () => {
       const mockRequest = {
-        method: 'PUT',
+        ...createMockRequest('PUT', `/api/transactions/${testTransactionId}`, null, authHeaders),
         json: async () => { throw new Error('Invalid JSON') }
       } as unknown as NextRequest
       const context = { params: Promise.resolve({ id: testTransactionId.toString() }) }
@@ -954,7 +954,7 @@ describe.skip('Transactions API', () => {
 
       expect(response.status).toBe(500)
       expect(data.success).toBe(false)
-      expect(data.error).toBe('Failed to update transaction')
+      expect(data.error).toBe('Internal server error')
     })
   })
 }) 

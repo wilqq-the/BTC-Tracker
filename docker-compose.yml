@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   btc-tracker:
     image: thewilqq/btc-tracker:latest  # Use :latest, :stable, or specific version like :v0.6.0

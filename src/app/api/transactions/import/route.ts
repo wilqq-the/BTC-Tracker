@@ -20,6 +20,8 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File;
     const duplicateCheckMode = (formData.get('duplicate_check_mode') as string) || 'standard';
     const detectOnly = formData.get('detect_only') === 'true';
+    const walletIdRaw = formData.get('wallet_id') as string | null;
+    const walletId = walletIdRaw ? parseInt(walletIdRaw) : null;
 
     if (!file) {
       return NextResponse.json({
@@ -65,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and import transactions with user association
-    const result = await importTransactions(transactions, duplicateCheckMode, userId);
+    const result = await importTransactions(transactions, duplicateCheckMode, userId, walletId);
 
     // Recalculate portfolio after import (rate-limited to prevent I/O overload)
     if (result.imported > 0) {
@@ -87,9 +89,10 @@ export async function POST(request: NextRequest) {
 type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
 
 async function importTransactions(
-  transactions: ImportTransaction[], 
+  transactions: ImportTransaction[],
   duplicateCheckMode: string,
-  userId: number
+  userId: number,
+  walletId: number | null = null
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: true,
@@ -176,7 +179,9 @@ async function importTransactions(
           transactionDate: new Date(transaction.transaction_date),
           notes: transaction.notes,
           transferType: isTransfer ? (transaction.transfer_type || null) : null,
-          destinationAddress: isTransfer ? (transaction.destination_address || null) : null
+          destinationAddress: isTransfer ? (transaction.destination_address || null) : null,
+          toWalletId: !isTransfer && transaction.type === 'BUY' ? walletId : null,
+          fromWalletId: !isTransfer && transaction.type === 'SELL' ? walletId : null,
         } as any
       });
 

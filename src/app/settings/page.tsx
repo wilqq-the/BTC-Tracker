@@ -213,7 +213,7 @@ export default function SettingsPage() {
               Settings auto-save on change
             </p>
             <p className="text-xs text-muted-foreground text-center">
-              Version: {packageJson.version}
+              Version: {packageJson.version}{packageJson.version.includes('69') && ' 😏'}
             </p>
           </div>
         </div>

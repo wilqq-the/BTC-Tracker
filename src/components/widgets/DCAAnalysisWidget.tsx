@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { TrendingUpIcon, TargetIcon, ExternalLinkIcon } from 'lucide-react';
+import { formatCurrency } from '@/lib/theme';
 import Link from 'next/link';
 
 interface DCAAnalysis {
@@ -191,8 +192,7 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Avg Buy</p>
                 <div className="text-lg font-bold text-btc-500">
-                  {analysis.currency === 'EUR' ? '€' : '$'}
-                  {analysis.summary.avgBuyPrice.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  {formatCurrency(analysis.summary.avgBuyPrice, analysis.currency)}
                 </div>
               </div>
             )}

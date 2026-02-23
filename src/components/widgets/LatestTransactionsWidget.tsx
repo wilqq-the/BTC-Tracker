@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
+import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { HistoryIcon, ExternalLinkIcon, ArrowUpRightIcon, ArrowDownRightIcon } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,7 +35,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [mainCurrency, setMainCurrency] = useState<string>('USD');
+  const { mainCurrency, secondaryCurrency, exchangeRate } = useDisplayCurrency();
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0);
   const [maxTransactions] = useState<number>(5);
 
@@ -71,10 +72,6 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
           )
           .slice(0, maxTransactions);
         setLatestTransactions(latest);
-        
-        if (latest.length > 0 && latest[0].main_currency) {
-          setMainCurrency(latest[0].main_currency);
-        }
       }
     } catch (error) {
       console.error('Error loading latest transactions:', error);
@@ -137,7 +134,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
                       {transaction.btc_amount.toFixed(6)} ₿
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      @ {formatCurrency(pricePerBtc, mainCurrency)}
+                      @ {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                     </div>
                   </div>
                 </div>
@@ -146,7 +143,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
                   <div className="flex justify-between items-center text-xs">
                     <span className="text-muted-foreground">P&L:</span>
                     <span className={`font-medium ${pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, mainCurrency)} ({formatPercentage(pnlPercent)})
+                      {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)} ({formatPercentage(pnlPercent)})
                     </span>
                   </div>
                 )}

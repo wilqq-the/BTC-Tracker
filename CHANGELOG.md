@@ -5,15 +5,56 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.8] - 2025-01-05
+## [0.6.9] - 2026-02-23
+
+### 🐛 Bug Fixes
+
+#### Display Currency
+- **Dashboard BTC price header** now shows the user's display currency instead of hardcoded USD; fixed inverted sign on 24h change ([#188](https://github.com/wilqq-the/BTC-Tracker/pull/188))
+- **Dashboard widgets** (Portfolio Summary, Multi-Timeframe, Auto DCA, DCA Analysis, Latest Transactions) now convert values to display currency correctly ([#184](https://github.com/wilqq-the/BTC-Tracker/pull/184))
+- **Analytics and Transactions pages** now use display currency for all amounts and P&L figures ([#185](https://github.com/wilqq-the/BTC-Tracker/pull/185))
+- **Goals & DCA API** now calculates in display currency instead of main currency ([#183](https://github.com/wilqq-the/BTC-Tracker/pull/183))
+- **Add transaction modal** now defaults the currency field to the user's display currency ([#177](https://github.com/wilqq-the/BTC-Tracker/pull/177))
+
+#### DCA & Goals
+- **DCA scenario calculator** was showing wrong growth rates for Conservative and Bull scenarios when historical CAGR was negative — now correctly ignores negative rates and falls back to sensible defaults ([#182](https://github.com/wilqq-the/BTC-Tracker/pull/182))
+- **DCA scheduler** was calculating BTC amount by dividing fiat amount by the USD BTC price, giving wrong results for non-USD users — now converts price to the transaction's currency first ([#171](https://github.com/wilqq-the/BTC-Tracker/pull/171))
+
+#### UI
+- **Bitcoin price chart** was rendering as a flat line when the widget was resized small — fixed container collapsing to zero height in Flexbox layout ([#170](https://github.com/wilqq-the/BTC-Tracker/pull/170))
+
+#### Admin
+- **Admin panel** now shows inactive/deactivated users, allowing admins to reactivate them ([#173](https://github.com/wilqq-the/BTC-Tracker/pull/173))
+
+### ✨ New Features
+- **Multiple named wallets** — create and manage multiple hot/cold wallets with custom names; wallets are selectable when recording transfers and displayed with per-wallet BTC balances in the Wallet Distribution widget and portfolio metrics ([#193](https://github.com/wilqq-the/BTC-Tracker/pull/193))
+- **River CSV import** — supports Buy transactions, zero-cost Interest rows (BTC earned on cash held at River), and external Receive transfers (BTC sent in from another wallet) ([#160](https://github.com/wilqq-the/BTC-Tracker/issues/160))
+- **Strike CSV import** now supports both the older Format A (`Transaction ID`, `Time (UTC)`, `Status`, `Exchange Rate`) and the newer Format B (`Reference`, `Date & Time (UTC)`, `BTC Price`, `Cost Basis`) export layouts, with automatic format detection ([#169](https://github.com/wilqq-the/BTC-Tracker/pull/169))
+- **REST API documentation** added for automation and n8n integration use cases ([#187](https://github.com/wilqq-the/BTC-Tracker/pull/187))
+- **Persistent tokens** added to profile for automation purposes
+
+### 🔒 Security
+- **Next.js updated to 15.5.12** — fixes server actions source code exposure (GHSA-w37m-7fhw-fmv9), server components DoS (GHSA-mwv6-3258-q52c, GHSA-h25m-26qc-wcjf), and image optimizer DoS (GHSA-9g9p-9gw9-jx7f)
+- **axios updated** — fixes DoS via `__proto__` key in `mergeConfig` (GHSA-43fc-jf86-j433)
+- **qs updated to 6.15.0** — fixes DoS via array limit bypass (GHSA-6rw7-vpxm-498p, GHSA-w7fw-mjwx-w883)
+- **preact updated to 10.28.4** — fixes JSON VNode injection (GHSA-36hm-qxxp-pg3m)
+
+### 🔧 Improvements
+- **Docker image reduced ~60%** — switched to Next.js `output: 'standalone'` mode, added a dedicated `prisma-runtime` stage that collects only the Prisma CLI dependencies needed at runtime (no full `node_modules` copy), and moved build-time packages to `devDependencies` ([#190](https://github.com/wilqq-the/BTC-Tracker/pull/190))
+
+## [0.6.8] - 2025-12-22
 
 ### 🐛 Bug Fixes
 - **Fixed Yahoo Finance price fetching** - Upgraded `yahoo-finance2` from v2.13.3 to v3.11.2 to fix rate limiting and API compatibility issues that prevented Bitcoin price updates
+- **Logout redirect fix** - Fixed logout redirecting to invalid URL in Docker/Umbrel setups ([#161](https://github.com/wilqq-the/BTC-Tracker/issues/161))
+- **Date Picker fixes** - Fixed multiple issues with date selection ([#159](https://github.com/wilqq-the/BTC-Tracker/issues/159))
+  - Fixed date being off by one day due to UTC timezone conversion
+  - Fixed Safari compatibility issues where date picker wouldn't respond to clicks
 
 ### 🔧 Improvements
 - Updated Yahoo Finance service to use v3 class-based initialization
 
----
+
 
 ## [0.6.7] - 2025-12-07
 

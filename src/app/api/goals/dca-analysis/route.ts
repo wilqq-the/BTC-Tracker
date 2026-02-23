@@ -32,18 +32,16 @@ export async function GET(request: NextRequest) {
       // Get user settings for currency
       const settings = await SettingsService.getSettings();
       const mainCurrency = settings.currency.mainCurrency;
+      const displayCurrency = settings.currency.secondaryCurrency || mainCurrency;
 
-      // Convert BTC price to user's main currency
-      const usdToMainRate = await ExchangeRateService.getExchangeRate('USD', mainCurrency);
-      const currentBtcPrice = currentBtcPriceUSD * usdToMainRate;
+      // Convert BTC price to display currency
+      const usdToDisplayRate = await ExchangeRateService.getExchangeRate('USD', displayCurrency);
+      const currentBtcPrice = currentBtcPriceUSD * usdToDisplayRate;
 
-      // Convert all transaction prices to main currency
+      // Convert all transaction prices to display currency
       const transactionsWithConvertedPrices = await Promise.all(
         transactions.map(async (tx) => {
-          // Get exchange rate from original currency to main currency
-          const rate = await ExchangeRateService.getExchangeRate(tx.originalCurrency, mainCurrency);
-          
-          // Convert prices to main currency
+          const rate = await ExchangeRateService.getExchangeRate(tx.originalCurrency, displayCurrency);
           return {
             ...tx,
             originalPricePerBtc: tx.originalPricePerBtc * rate,
@@ -56,7 +54,7 @@ export async function GET(request: NextRequest) {
       const analysisResult = DCAAnalysisService.analyzeDCA(
         transactionsWithConvertedPrices as any,
         currentBtcPrice,
-        mainCurrency
+        displayCurrency
       );
 
       // Format response
@@ -64,7 +62,7 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           ...analysisResult,
-          currency: mainCurrency,
+          currency: displayCurrency,
           analysis_date: new Date().toISOString(),
           total_transactions: transactions.length,
           buy_transactions: transactions.filter(tx => tx.type === 'BUY').length,

@@ -216,10 +216,31 @@ export default function GoalsPage() {
       const result = await response.json();
       
       if (result.success && result.data) {
-        const btcPrice = result.data.currentBtcPrice;
         const mainCurrency = result.data.mainCurrency || 'USD';
+        const displayCurrency = result.data.secondaryCurrency || mainCurrency;
+        setSelectedCurrency(displayCurrency);
+
+        let btcPrice = result.data.currentBtcPrice;
+        if (mainCurrency !== displayCurrency) {
+          try {
+            const ratesRes = await fetch('/api/exchange-rates');
+            const ratesData = await ratesRes.json();
+            if (ratesData.rates && Array.isArray(ratesData.rates)) {
+              const direct = ratesData.rates.find(
+                (r: any) => r.from_currency === mainCurrency && r.to_currency === displayCurrency
+              );
+              if (direct) {
+                btcPrice = btcPrice * direct.rate;
+              } else {
+                const reverse = ratesData.rates.find(
+                  (r: any) => r.from_currency === displayCurrency && r.to_currency === mainCurrency
+                );
+                if (reverse) btcPrice = btcPrice / reverse.rate;
+              }
+            }
+          } catch { /* keep original price */ }
+        }
         setCurrentBtcPrice(btcPrice);
-        setSelectedCurrency(mainCurrency);
       }
     } catch (error) {
       console.error('Error loading Bitcoin price:', error);
@@ -604,7 +625,6 @@ export default function GoalsPage() {
             {goals.map((goal) => {
               const recalc = goalRecalculations.get(goal.id);
               const isRecalculating = recalculatingGoalId === goal.id;
-              const currencySymbol = goal.currency === 'EUR' ? '€' : '$';
               
               return (
                 <Card key={goal.id} className="overflow-hidden">
@@ -702,7 +722,7 @@ export default function GoalsPage() {
                           <CircleDollarSignIcon className="size-3" /> Monthly
                         </p>
                         <p className="font-semibold text-primary">
-                          {currencySymbol}{goal.monthly_fiat_needed.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                          {formatCurrency(goal.monthly_fiat_needed, goal.currency)}
                         </p>
                       </div>
                       <div className="p-3 bg-muted/50 rounded-lg">

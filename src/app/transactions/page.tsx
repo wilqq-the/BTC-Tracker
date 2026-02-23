@@ -143,6 +143,8 @@ export default function TransactionsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [importWalletId, setImportWalletId] = useState<string>('');
+  const [importWallets, setImportWallets] = useState<{ id: number; name: string; type: string; emoji?: string | null }[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
@@ -158,8 +160,10 @@ export default function TransactionsPage() {
     sellTransactionCount: 0,
     totalInvested: 0,
     totalPnL: 0,
-    mainCurrency: 'USD'
+    mainCurrency: 'USD',
+    secondaryCurrency: 'USD',
   });
+  const [secondaryExchangeRate, setSecondaryExchangeRate] = useState(1);
   const [dateRange, setDateRange] = useState<'all' | '7d' | '30d' | '3m' | '1y' | 'custom'>('all');
   const [customDateFrom, setCustomDateFrom] = useState<string>('');
   const [customDateTo, setCustomDateTo] = useState<string>('');
@@ -298,15 +302,20 @@ export default function TransactionsPage() {
       
       if (result.success && result.data) {
         const metrics = result.data;
-        
+        const mainCurrency = metrics.mainCurrency || 'USD';
+        const secondaryCurrency = metrics.secondaryCurrency || mainCurrency;
+
+        setSecondaryExchangeRate(metrics.mainToSecondaryRate || 1);
+
         setSummaryStats({
-          totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0), // Approximate from holdings
-          totalBtcSold: 0, // Will be calculated from transactions if needed
+          totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0),
+          totalBtcSold: 0,
           buyTransactionCount: metrics.totalBuys || 0,
           sellTransactionCount: metrics.totalSells || 0,
           totalInvested: metrics.totalInvested || 0,
           totalPnL: metrics.unrealizedPnL || 0,
-          mainCurrency: metrics.mainCurrency || 'USD'
+          mainCurrency,
+          secondaryCurrency,
         });
       }
     } catch (error) {
@@ -454,6 +463,17 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleOpenImportModal = async () => {
+    setShowImportModal(true);
+    try {
+      const res = await fetch('/api/wallets');
+      const data = await res.json();
+      if (data.success && data.data) setImportWallets(data.data);
+    } catch {
+      // wallets optional, ignore error
+    }
+  };
+
   const handleImportSubmit = async () => {
     if (!importFile) {
       alert('Please select a file to import');
@@ -465,6 +485,7 @@ export default function TransactionsPage() {
       const formData = new FormData();
       formData.append('file', importFile);
       formData.append('duplicate_check_mode', duplicateCheckMode);
+      if (importWalletId) formData.append('wallet_id', importWalletId);
 
       const response = await fetch('/api/transactions/import', { method: 'POST', body: formData });
       const result = await response.json();
@@ -478,6 +499,7 @@ export default function TransactionsPage() {
         setImportFile(null);
         setDetectedFormat(null);
         setDuplicateCheckMode('standard');
+        setImportWalletId('');
         loadTransactions();
       } else {
         alert(`Import failed: ${result.error || result.message}`);
@@ -608,7 +630,7 @@ export default function TransactionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+            <Button variant="outline" size="sm" onClick={handleOpenImportModal}>
               <UploadIcon className="size-4 mr-2" />
               Import
             </Button>
@@ -633,7 +655,7 @@ export default function TransactionsPage() {
                   <p className="text-sm font-medium text-muted-foreground">Net Holdings</p>
                   <p className="text-3xl font-bold text-btc-500 mt-1">{netPosition.toFixed(8)} BTC</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    ≈ {formatCurrency(netPosition * currentBtcPrice, summaryStats.mainCurrency)}
+                    ≈ {formatCurrency(netPosition * currentBtcPrice * secondaryExchangeRate, summaryStats.secondaryCurrency)}
                   </p>
                 </div>
                 <div className="p-3 bg-btc-500/10 rounded-xl">
@@ -659,7 +681,7 @@ export default function TransactionsPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Invested</p>
-                  <p className="text-2xl font-bold mt-1">{formatCurrency(summaryStats.totalInvested, summaryStats.mainCurrency)}</p>
+                  <p className="text-2xl font-bold mt-1">{formatCurrency(summaryStats.totalInvested * secondaryExchangeRate, summaryStats.secondaryCurrency)}</p>
                 </div>
                 <div className="p-2.5 bg-muted rounded-lg">
                   <CoinsIcon className="size-5 text-muted-foreground" />
@@ -667,7 +689,7 @@ export default function TransactionsPage() {
               </div>
               <div className="mt-3">
                 <p className="text-xs text-muted-foreground">Avg. Buy Price</p>
-                <p className="text-sm font-medium">{avgBuyPrice > 0 ? formatCurrency(avgBuyPrice, summaryStats.mainCurrency) : '—'}</p>
+                <p className="text-sm font-medium">{avgBuyPrice > 0 ? formatCurrency(avgBuyPrice * secondaryExchangeRate, summaryStats.secondaryCurrency) : '—'}</p>
               </div>
             </CardContent>
           </Card>
@@ -679,7 +701,7 @@ export default function TransactionsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Unrealized P&L</p>
                   <p className={cn("text-2xl font-bold mt-1", summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
-                    {summaryStats.totalPnL >= 0 ? '+' : ''}{formatCurrency(summaryStats.totalPnL, summaryStats.mainCurrency)}
+                    {summaryStats.totalPnL >= 0 ? '+' : ''}{formatCurrency(summaryStats.totalPnL * secondaryExchangeRate, summaryStats.secondaryCurrency)}
                   </p>
                 </div>
                 <div className={cn("p-2.5 rounded-lg", summaryStats.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10')}>
@@ -980,10 +1002,12 @@ export default function TransactionsPage() {
             ) : (
               <div className="divide-y">
                 {filteredAndSortedTransactions.map((transaction) => {
-                  const pnl = calculatePnL(transaction);
+                  const pnl = transaction.secondary_currency_pnl ?? (calculatePnL(transaction) * secondaryExchangeRate);
                   const pnlPercent = calculatePnLPercent(transaction);
                   const isSelected = selectedTransactions.has(transaction.id);
-                  const currentValue = transaction.current_value_main || (transaction.btc_amount * currentBtcPrice);
+                  const currentValue = transaction.secondary_currency_current_value ?? ((transaction.current_value_main || (transaction.btc_amount * currentBtcPrice)) * secondaryExchangeRate);
+                  const totalAmount = transaction.secondary_currency_total_amount ?? (transaction.main_currency_total_amount * secondaryExchangeRate);
+                  const displayCurrency = transaction.secondary_currency || summaryStats.secondaryCurrency;
 
                   return (
                     <div 
@@ -1073,22 +1097,19 @@ export default function TransactionsPage() {
                             {transaction.type === 'TRANSFER' && (transaction.transfer_type === 'TRANSFER_IN' || transaction.transfer_type === 'TRANSFER_OUT') ? (
                               <>
                                 <p className="font-semibold">
-                                  {transaction.original_price_per_btc > 0 
-                                    ? formatCurrency(transaction.btc_amount * transaction.original_price_per_btc, transaction.original_currency)
-                                    : formatCurrency(currentValue, transaction.main_currency)
-                                  }
+                                  {formatCurrency(currentValue, displayCurrency)}
                                 </p>
                                 {transaction.original_price_per_btc > 0 && (
-                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, displayCurrency)}</p>
                                 )}
                               </>
                             ) : transaction.type === 'TRANSFER' ? (
                               <span className="text-muted-foreground">—</span>
                             ) : (
                               <>
-                                <p className="font-semibold">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                                <p className="font-semibold">{formatCurrency(totalAmount, displayCurrency)}</p>
                                 {transaction.type === 'BUY' && (
-                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, transaction.main_currency)}</p>
+                                  <p className="text-xs text-muted-foreground">Now: {formatCurrency(currentValue, displayCurrency)}</p>
                                 )}
                               </>
                             )}
@@ -1101,7 +1122,7 @@ export default function TransactionsPage() {
                             ) : (
                               <div>
                                 <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                  {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
+                                  {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, displayCurrency)}
                                 </p>
                                 <p className={cn("text-xs font-medium", pnl >= 0 ? 'text-profit' : 'text-loss')}>
                                   {formatPercentage(pnlPercent)}
@@ -1185,7 +1206,7 @@ export default function TransactionsPage() {
                           </div>
                           <div className="text-right">
                             <p className="font-mono font-semibold">{transaction.btc_amount.toFixed(6)} BTC</p>
-                            <p className="text-sm text-muted-foreground">{formatCurrency(transaction.main_currency_total_amount, transaction.main_currency)}</p>
+                            <p className="text-sm text-muted-foreground">{formatCurrency(totalAmount, displayCurrency)}</p>
                           </div>
                         </div>
                         {(transaction.type === 'BUY' || transaction.type === 'SELL') && (
@@ -1193,7 +1214,7 @@ export default function TransactionsPage() {
                             <p className="text-sm text-muted-foreground">P&L</p>
                             <div className="text-right">
                               <p className={cn("font-bold", pnl >= 0 ? 'text-profit' : 'text-loss')}>
-                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, transaction.main_currency)}
+                                {pnl >= 0 ? '+' : ''}{formatCurrency(pnl, displayCurrency)}
                               </p>
                               <p className={cn("text-xs", pnl >= 0 ? 'text-profit' : 'text-loss')}>
                                 {formatPercentage(pnlPercent)}
@@ -1341,6 +1362,26 @@ export default function TransactionsPage() {
                 )}
               </div>
 
+              {/* Wallet Selection */}
+              {importWallets.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Assign to wallet <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Select value={importWalletId} onValueChange={setImportWalletId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="No wallet — assign later" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {importWallets.map(w => (
+                        <SelectItem key={w.id} value={w.id.toString()}>
+                          {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">BUY transactions → destination wallet. SELL → source wallet. Transfers are skipped.</p>
+                </div>
+              )}
+
               {/* Duplicate Detection */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Duplicate handling</Label>
@@ -1365,7 +1406,7 @@ export default function TransactionsPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); }} disabled={importLoading}>
+              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); setImportWalletId(''); }} disabled={importLoading}>
                 Cancel
               </Button>
               <Button onClick={handleImportSubmit} disabled={!importFile || importLoading}>

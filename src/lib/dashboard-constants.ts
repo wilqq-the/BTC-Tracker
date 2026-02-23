@@ -37,7 +37,7 @@ export const AVAILABLE_WIDGETS: WidgetDefinition[] = [
     icon: 'LineChart',
     description: 'Real-time Bitcoin price chart with technical indicators',
     minW: 4,
-    minH: 2,
+    minH: 4,
     defaultW: 12,
     defaultH: 4,
     category: 'Market Data',

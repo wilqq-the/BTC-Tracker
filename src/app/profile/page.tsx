@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import AppLayout from '@/components/AppLayout';
 import { cn } from '@/lib/utils';
@@ -34,10 +34,51 @@ import {
   FlameIcon,
   ArrowLeftRightIcon,
   EditIcon,
+  PlusIcon,
+  CopyIcon,
 } from 'lucide-react';
+
+// Dialog for modals
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 // 2FA Component
 import TwoFactorSetup from '@/components/TwoFactorSetup';
+
+interface ApiKey {
+  id: number;
+  keyPrefix: string;
+  label: string;
+  isActive: boolean;
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+}
+
+interface Wallet {
+  id: number;
+  name: string;
+  type: 'cold' | 'hot';
+  emoji: string | null;
+  note: string | null;
+  includeInPortfolio: boolean;
+  isActive: boolean;
+  createdAt: string;
+  btcBalance: number;
+}
 
 interface UserStats {
   memberSince: string;
@@ -77,6 +118,26 @@ export default function ProfilePage() {
   // 2FA state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
 
+  // Wallets state
+  const [wallets, setWallets] = useState<Wallet[]>([]);
+  const [walletsLoading, setWalletsLoading] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
+  const [walletForm, setWalletForm] = useState({ name: '', type: 'hot' as 'cold' | 'hot', emoji: '', note: '', includeInPortfolio: true });
+  const [walletError, setWalletError] = useState('');
+  const [savingWallet, setSavingWallet] = useState(false);
+
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [apiKeysLoading, setApiKeysLoading] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [newKeyLabel, setNewKeyLabel] = useState('');
+  const [newKeyExpiry, setNewKeyExpiry] = useState('never');
+  const [generatingKey, setGeneratingKey] = useState(false);
+  const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+  const [keyCopied, setKeyCopied] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState('');
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin');
@@ -84,8 +145,87 @@ export default function ProfilePage() {
       loadUserStats();
       loadUserData();
       load2FAStatus();
+      loadApiKeys();
+      loadWallets();
     }
   }, [status, router]);
+
+  const loadWallets = async () => {
+    setWalletsLoading(true);
+    try {
+      const response = await fetch('/api/wallets');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) setWallets(result.data);
+      }
+    } catch (error) {
+      console.error('Error loading wallets:', error);
+    } finally {
+      setWalletsLoading(false);
+    }
+  };
+
+  const openAddWallet = () => {
+    setEditingWallet(null);
+    setWalletForm({ name: '', type: 'hot', emoji: '', note: '', includeInPortfolio: true });
+    setWalletError('');
+    setShowWalletModal(true);
+  };
+
+  const openEditWallet = (wallet: Wallet) => {
+    setEditingWallet(wallet);
+    setWalletForm({
+      name: wallet.name,
+      type: wallet.type,
+      emoji: wallet.emoji || '',
+      note: wallet.note || '',
+      includeInPortfolio: wallet.includeInPortfolio,
+    });
+    setWalletError('');
+    setShowWalletModal(true);
+  };
+
+  const handleSaveWallet = async () => {
+    if (!walletForm.name.trim()) {
+      setWalletError('Wallet name is required');
+      return;
+    }
+    setWalletError('');
+    setSavingWallet(true);
+    try {
+      const url = editingWallet ? `/api/wallets/${editingWallet.id}` : '/api/wallets';
+      const method = editingWallet ? 'PUT' : 'POST';
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(walletForm),
+      });
+      const result = await response.json();
+      if (result.success) {
+        setShowWalletModal(false);
+        await loadWallets();
+      } else {
+        setWalletError(result.message || 'Failed to save wallet');
+      }
+    } catch (error) {
+      setWalletError('An error occurred');
+    } finally {
+      setSavingWallet(false);
+    }
+  };
+
+  const handleDeleteWallet = async (wallet: Wallet) => {
+    if (!confirm(`Delete wallet "${wallet.name}"? This cannot be undone.`)) return;
+    try {
+      const response = await fetch(`/api/wallets/${wallet.id}`, { method: 'DELETE' });
+      const result = await response.json();
+      if (result.success) {
+        await loadWallets();
+      }
+    } catch (error) {
+      console.error('Error deleting wallet:', error);
+    }
+  };
 
   const load2FAStatus = async () => {
     try {
@@ -97,6 +237,82 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Error loading 2FA status:', error);
     }
+  };
+
+  const loadApiKeys = async () => {
+    setApiKeysLoading(true);
+    try {
+      const response = await fetch('/api/user/api-keys');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setApiKeys(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading API keys:', error);
+    } finally {
+      setApiKeysLoading(false);
+    }
+  };
+
+  const handleGenerateKey = async () => {
+    if (!newKeyLabel.trim()) {
+      setApiKeyError('Label is required');
+      return;
+    }
+    setApiKeyError('');
+    setGeneratingKey(true);
+    try {
+      const response = await fetch('/api/user/api-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ label: newKeyLabel.trim(), expiresIn: newKeyExpiry })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setGeneratedKey(result.data.key);
+        await loadApiKeys();
+      } else {
+        setApiKeyError(result.error || 'Failed to generate key');
+      }
+    } catch (error) {
+      setApiKeyError('An error occurred while generating key');
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
+  const handleRevokeKey = async (id: number) => {
+    if (!confirm('Are you sure you want to revoke this API key? This cannot be undone.')) return;
+    try {
+      const response = await fetch(`/api/user/api-keys/${id}`, { method: 'DELETE' });
+      if (response.ok) {
+        await loadApiKeys();
+      }
+    } catch (error) {
+      console.error('Error revoking API key:', error);
+    }
+  };
+
+  const handleCopyKey = async () => {
+    if (!generatedKey) return;
+    try {
+      await navigator.clipboard.writeText(generatedKey);
+      setKeyCopied(true);
+      setTimeout(() => setKeyCopied(false), 2000);
+    } catch {
+      // fallback: select text
+    }
+  };
+
+  const handleCloseGenerateModal = () => {
+    setShowGenerateModal(false);
+    setNewKeyLabel('');
+    setNewKeyExpiry('never');
+    setGeneratedKey(null);
+    setKeyCopied(false);
+    setApiKeyError('');
   };
 
   const loadUserStats = async () => {
@@ -484,6 +700,177 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Wallets Management */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <WalletIcon className="size-5" />
+                  Wallets
+                </CardTitle>
+                <CardDescription>Manage your cold and hot storage wallets</CardDescription>
+              </div>
+              <Button size="sm" onClick={openAddWallet}>
+                <PlusIcon className="size-4 mr-1" />
+                Add Wallet
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {walletsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : wallets.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <WalletIcon className="size-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No wallets yet. Add your first wallet to start tracking.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {wallets.map(wallet => (
+                  <div
+                    key={wallet.id}
+                    className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border hover:bg-muted/60 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        'size-9 rounded-full flex items-center justify-center text-lg',
+                        wallet.type === 'cold' ? 'bg-blue-500/10' : 'bg-orange-500/10'
+                      )}>
+                        {wallet.emoji || (wallet.type === 'cold' ? '❄️' : '🔥')}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{wallet.name}</span>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'text-xs py-0',
+                              wallet.type === 'cold'
+                                ? 'text-blue-600 border-blue-500/30'
+                                : 'text-orange-600 border-orange-500/30'
+                            )}
+                          >
+                            {wallet.type === 'cold' ? 'Cold' : 'Hot'}
+                          </Badge>
+                          {!wallet.includeInPortfolio && (
+                            <Badge variant="outline" className="text-xs py-0 text-muted-foreground">
+                              Excluded
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                          {wallet.btcBalance.toFixed(8)} ₿
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" className="size-7" onClick={() => openEditWallet(wallet)}>
+                        <EditIcon className="size-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="size-7 text-destructive hover:text-destructive" onClick={() => handleDeleteWallet(wallet)}>
+                        <TrashIcon className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Add / Edit Wallet Dialog */}
+        <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingWallet ? 'Edit Wallet' : 'Add Wallet'}</DialogTitle>
+              <DialogDescription>
+                {editingWallet ? 'Update your wallet details.' : 'Add a new wallet to track your Bitcoin holdings.'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="walletName">Name *</Label>
+                <Input
+                  id="walletName"
+                  placeholder="e.g. Ledger Nano, Kraken, Lightning"
+                  value={walletForm.name}
+                  onChange={e => setWalletForm({ ...walletForm, name: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Type *</Label>
+                  <Select value={walletForm.type} onValueChange={v => setWalletForm({ ...walletForm, type: v as 'cold' | 'hot' })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cold">❄️ Cold Storage</SelectItem>
+                      <SelectItem value="hot">🔥 Hot Wallet</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="walletEmoji">Emoji / Icon</Label>
+                  <Input
+                    id="walletEmoji"
+                    placeholder="🏦"
+                    value={walletForm.emoji}
+                    onChange={e => setWalletForm({ ...walletForm, emoji: e.target.value })}
+                    maxLength={4}
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="walletNote">Note</Label>
+                <Input
+                  id="walletNote"
+                  placeholder="Optional description"
+                  value={walletForm.note}
+                  onChange={e => setWalletForm({ ...walletForm, note: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border">
+                <div>
+                  <p className="text-sm font-medium">Include in Portfolio Total</p>
+                  <p className="text-xs text-muted-foreground">When disabled, this wallet&apos;s BTC is excluded from your portfolio value</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setWalletForm({ ...walletForm, includeInPortfolio: !walletForm.includeInPortfolio })}
+                  className={cn(
+                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
+                    walletForm.includeInPortfolio ? 'bg-primary' : 'bg-muted-foreground/30'
+                  )}
+                >
+                  <span className={cn(
+                    'pointer-events-none inline-block size-5 rounded-full bg-white shadow transform transition-transform',
+                    walletForm.includeInPortfolio ? 'translate-x-5' : 'translate-x-0'
+                  )} />
+                </button>
+              </div>
+              {walletError && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                  <AlertCircleIcon className="size-4" />
+                  {walletError}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowWalletModal(false)}>Cancel</Button>
+              <Button onClick={handleSaveWallet} disabled={savingWallet}>
+                {savingWallet ? (
+                  <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                ) : null}
+                {editingWallet ? 'Save Changes' : 'Add Wallet'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Security & Data Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Security Settings */}
@@ -680,6 +1067,82 @@ export default function ProfilePage() {
             onStatusChange={load2FAStatus}
           />
 
+          {/* API Keys */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <KeyIcon className="size-5" />
+                    API Keys
+                  </CardTitle>
+                  <CardDescription>Manage API keys for automation integrations (n8n, scripts, etc.)</CardDescription>
+                </div>
+                <Button size="sm" onClick={() => setShowGenerateModal(true)}>
+                  <PlusIcon className="size-4 mr-1" />
+                  Generate New Key
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {apiKeysLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              ) : apiKeys.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <KeyIcon className="size-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">No API keys yet. Generate one to automate transactions.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {apiKeys.map((key) => (
+                    <div
+                      key={key.id}
+                      className={cn(
+                        'flex items-center justify-between p-3 rounded-lg border',
+                        key.isActive ? 'bg-muted/30' : 'bg-muted/10 opacity-60'
+                      )}
+                    >
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm truncate">{key.label}</span>
+                          {!key.isActive && (
+                            <Badge variant="secondary" className="text-xs">Revoked</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+                          <span className="font-mono">btct_{key.keyPrefix}…</span>
+                          <span>Created {new Date(key.createdAt).toLocaleDateString()}</span>
+                          {key.lastUsedAt && (
+                            <span>Last used {new Date(key.lastUsedAt).toLocaleDateString()}</span>
+                          )}
+                          {key.expiresAt && (
+                            <span>
+                              {new Date(key.expiresAt) < new Date()
+                                ? 'Expired'
+                                : `Expires ${new Date(key.expiresAt).toLocaleDateString()}`}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {key.isActive && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2 shrink-0"
+                          onClick={() => handleRevokeKey(key.id)}
+                        >
+                          Revoke
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Data & Session */}
           <Card>
             <CardHeader>
@@ -727,7 +1190,10 @@ export default function ProfilePage() {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => window.location.href = '/api/auth/signout'}
+                  onClick={async () => {
+                    await signOut({ redirect: false })
+                    window.location.href = '/auth/signin'
+                  }}
                 >
                   <LogOutIcon className="size-4 mr-2" />
                   Sign Out
@@ -737,6 +1203,95 @@ export default function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      {/* Generate API Key Modal */}
+      <Dialog open={showGenerateModal} onOpenChange={(open) => { if (!open) handleCloseGenerateModal(); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Generate API Key</DialogTitle>
+            <DialogDescription>
+              Create a new API key for automation integrations.
+            </DialogDescription>
+          </DialogHeader>
+
+          {generatedKey ? (
+            <div className="space-y-4">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-700 dark:text-amber-400 text-sm flex gap-2">
+                <AlertCircleIcon className="size-4 shrink-0 mt-0.5" />
+                <span>Save this key now — it will not be shown again.</span>
+              </div>
+              <div className="space-y-1">
+                <Label>Your new API key</Label>
+                <div className="flex gap-2">
+                  <Input
+                    readOnly
+                    value={generatedKey}
+                    className="font-mono text-xs"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button variant="outline" size="icon" onClick={handleCopyKey}>
+                    {keyCopied ? <CheckIcon className="size-4 text-profit" /> : <CopyIcon className="size-4" />}
+                  </Button>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Use this key as a Bearer token: <code className="bg-muted px-1 rounded">Authorization: Bearer {generatedKey.slice(0, 16)}…</code>
+              </p>
+              <DialogFooter>
+                <Button onClick={handleCloseGenerateModal} className="w-full">Done</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="keyLabel">Label</Label>
+                <Input
+                  id="keyLabel"
+                  placeholder="e.g. n8n automation, home server"
+                  value={newKeyLabel}
+                  onChange={(e) => setNewKeyLabel(e.target.value)}
+                  maxLength={100}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="keyExpiry">Expiry</Label>
+                <Select value={newKeyExpiry} onValueChange={setNewKeyExpiry}>
+                  <SelectTrigger id="keyExpiry">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="never">Never</SelectItem>
+                    <SelectItem value="30d">30 days</SelectItem>
+                    <SelectItem value="90d">90 days</SelectItem>
+                    <SelectItem value="1y">1 year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {apiKeyError && (
+                <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+                  <AlertCircleIcon className="size-4" />
+                  {apiKeyError}
+                </div>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={handleCloseGenerateModal}>Cancel</Button>
+                <Button onClick={handleGenerateKey} disabled={generatingKey}>
+                  {generatingKey ? (
+                    <span className="flex items-center gap-2">
+                      <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
+                      Generating…
+                    </span>
+                  ) : (
+                    'Generate Key'
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
