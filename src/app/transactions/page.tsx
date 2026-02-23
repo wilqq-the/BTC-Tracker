@@ -303,28 +303,7 @@ export default function TransactionsPage() {
         const mainCurrency = metrics.mainCurrency || 'USD';
         const secondaryCurrency = metrics.secondaryCurrency || mainCurrency;
 
-        // Fetch exchange rate main → secondary
-        let rate = 1;
-        if (mainCurrency !== secondaryCurrency) {
-          try {
-            const rateRes = await fetch('/api/exchange-rates');
-            const rateData = await rateRes.json();
-            if (rateData.rates && Array.isArray(rateData.rates)) {
-              const direct = rateData.rates.find(
-                (r: any) => r.from_currency === mainCurrency && r.to_currency === secondaryCurrency
-              );
-              if (direct) {
-                rate = direct.rate;
-              } else {
-                const reverse = rateData.rates.find(
-                  (r: any) => r.from_currency === secondaryCurrency && r.to_currency === mainCurrency
-                );
-                if (reverse) rate = 1 / reverse.rate;
-              }
-            }
-          } catch { /* keep rate = 1 */ }
-        }
-        setSecondaryExchangeRate(rate);
+        setSecondaryExchangeRate(metrics.mainToSecondaryRate || 1);
 
         setSummaryStats({
           totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0),

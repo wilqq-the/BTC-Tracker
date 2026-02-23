@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
+import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { HistoryIcon, ExternalLinkIcon, ArrowUpRightIcon, ArrowDownRightIcon } from 'lucide-react';
 import Link from 'next/link';
 
@@ -34,48 +35,13 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [mainCurrency, setMainCurrency] = useState<string>('USD');
-  const [secondaryCurrency, setSecondaryCurrency] = useState<string>('USD');
-  const [exchangeRate, setExchangeRate] = useState<number>(1);
+  const { mainCurrency, secondaryCurrency, exchangeRate } = useDisplayCurrency();
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0);
   const [maxTransactions] = useState<number>(5);
 
   useEffect(() => {
     loadLatestTransactions();
     loadCurrentPrice();
-
-    const loadCurrencySettings = async () => {
-      try {
-        const [settingsRes, ratesRes] = await Promise.all([
-          fetch('/api/settings'),
-          fetch('/api/exchange-rates'),
-        ]);
-        const settingsData = await settingsRes.json();
-        const ratesData = await ratesRes.json();
-
-        if (settingsData.success && settingsData.data) {
-          const main = settingsData.data.currency?.mainCurrency || 'USD';
-          const secondary = settingsData.data.currency?.secondaryCurrency || main;
-          setMainCurrency(main);
-          setSecondaryCurrency(secondary);
-
-          if (main !== secondary && ratesData.rates && Array.isArray(ratesData.rates)) {
-            const direct = ratesData.rates.find(
-              (r: any) => r.from_currency === main && r.to_currency === secondary
-            );
-            if (direct) {
-              setExchangeRate(direct.rate);
-            } else {
-              const reverse = ratesData.rates.find(
-                (r: any) => r.from_currency === secondary && r.to_currency === main
-              );
-              if (reverse) setExchangeRate(1 / reverse.rate);
-            }
-          }
-        }
-      } catch { /* keep defaults */ }
-    };
-    loadCurrencySettings();
 
     // Subscribe to price updates
     const unsubscribe = BitcoinPriceClient.onPriceUpdate((newPrice) => {
@@ -106,10 +72,6 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
           )
           .slice(0, maxTransactions);
         setLatestTransactions(latest);
-        
-        if (latest.length > 0 && latest[0].main_currency) {
-          setMainCurrency(latest[0].main_currency);
-        }
       }
     } catch (error) {
       console.error('Error loading latest transactions:', error);
