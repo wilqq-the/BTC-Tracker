@@ -56,7 +56,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium">BTC Tracker</span>
           <Separator orientation="vertical" className="h-4 hidden sm:block" />
-          <span className="hidden sm:block">v{packageJson.version}</span>
+          <span
+            className="hidden sm:block"
+            title={packageJson.version.includes('69') ? 'nice 😏' : undefined}
+          >v{packageJson.version}</span>
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
