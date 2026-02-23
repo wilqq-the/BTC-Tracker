@@ -143,6 +143,8 @@ export default function TransactionsPage() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
+  const [importWalletId, setImportWalletId] = useState<string>('');
+  const [importWallets, setImportWallets] = useState<{ id: number; name: string; type: string; emoji?: string | null }[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [formatDetecting, setFormatDetecting] = useState(false);
@@ -461,6 +463,17 @@ export default function TransactionsPage() {
     }
   };
 
+  const handleOpenImportModal = async () => {
+    setShowImportModal(true);
+    try {
+      const res = await fetch('/api/wallets');
+      const data = await res.json();
+      if (data.success && data.data) setImportWallets(data.data);
+    } catch {
+      // wallets optional, ignore error
+    }
+  };
+
   const handleImportSubmit = async () => {
     if (!importFile) {
       alert('Please select a file to import');
@@ -472,6 +485,7 @@ export default function TransactionsPage() {
       const formData = new FormData();
       formData.append('file', importFile);
       formData.append('duplicate_check_mode', duplicateCheckMode);
+      if (importWalletId) formData.append('wallet_id', importWalletId);
 
       const response = await fetch('/api/transactions/import', { method: 'POST', body: formData });
       const result = await response.json();
@@ -485,6 +499,7 @@ export default function TransactionsPage() {
         setImportFile(null);
         setDetectedFormat(null);
         setDuplicateCheckMode('standard');
+        setImportWalletId('');
         loadTransactions();
       } else {
         alert(`Import failed: ${result.error || result.message}`);
@@ -615,7 +630,7 @@ export default function TransactionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowImportModal(true)}>
+            <Button variant="outline" size="sm" onClick={handleOpenImportModal}>
               <UploadIcon className="size-4 mr-2" />
               Import
             </Button>
@@ -1347,6 +1362,26 @@ export default function TransactionsPage() {
                 )}
               </div>
 
+              {/* Wallet Selection */}
+              {importWallets.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Assign to wallet <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <Select value={importWalletId} onValueChange={setImportWalletId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="No wallet — assign later" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {importWallets.map(w => (
+                        <SelectItem key={w.id} value={w.id.toString()}>
+                          {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">BUY transactions → destination wallet. SELL → source wallet. Transfers are skipped.</p>
+                </div>
+              )}
+
               {/* Duplicate Detection */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Duplicate handling</Label>
@@ -1371,7 +1406,7 @@ export default function TransactionsPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); }} disabled={importLoading}>
+              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); setImportWalletId(''); }} disabled={importLoading}>
                 Cancel
               </Button>
               <Button onClick={handleImportSubmit} disabled={!importFile || importLoading}>

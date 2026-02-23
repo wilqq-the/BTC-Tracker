@@ -202,6 +202,13 @@ export default function AddTransactionModal({
         const walletsResult = await walletsResponse.json();
         if (walletsResult.success && walletsResult.data) {
           setWallets(walletsResult.data);
+          // Pre-select the first hot wallet for new BUY transactions
+          if (!editingTransaction) {
+            const defaultHotWallet = walletsResult.data.find((w: WalletOption) => w.type === 'hot');
+            if (defaultHotWallet) {
+              setFormData(prev => ({ ...prev, to_wallet_id: defaultHotWallet.id }));
+            }
+          }
         }
         
         let enabledCurrencies: SupportedCurrency[] = ['USD', 'EUR', 'PLN', 'GBP']; // fallback
@@ -415,11 +422,16 @@ export default function AddTransactionModal({
                     type="button"
                     variant={isSelected ? "default" : "outline"}
                   size="sm"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      type,
-                      fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency
-                    }))}
+                    onClick={() => {
+                      const defaultHotWallet = wallets.find(w => w.type === 'hot');
+                      setFormData(prev => ({
+                        ...prev,
+                        type,
+                        fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency,
+                        from_wallet_id: type === 'SELL' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.from_wallet_id : null),
+                        to_wallet_id: type === 'BUY' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.to_wallet_id : null),
+                      }));
+                    }}
                     className={cn(
                     "gap-1.5",
                       isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
@@ -800,6 +812,39 @@ export default function AddTransactionModal({
             />
           </div>
           </div>
+
+          {/* Wallet Selector for BUY/SELL */}
+          {formData.type !== 'TRANSFER' && wallets.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>{formData.type === 'BUY' ? 'To Wallet' : 'From Wallet'}</Label>
+              <Select
+                value={
+                  formData.type === 'BUY'
+                    ? (formData.to_wallet_id?.toString() || '')
+                    : (formData.from_wallet_id?.toString() || '')
+                }
+                onValueChange={(v) => {
+                  const walletId = v ? parseInt(v) : null;
+                  if (formData.type === 'BUY') {
+                    setFormData(prev => ({ ...prev, to_wallet_id: walletId }));
+                  } else {
+                    setFormData(prev => ({ ...prev, from_wallet_id: walletId }));
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={formData.type === 'BUY' ? 'Select destination wallet' : 'Select source wallet'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {wallets.map(w => (
+                    <SelectItem key={w.id} value={w.id.toString()}>
+                      {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Cost Summary - Compact inline */}
           {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
