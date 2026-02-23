@@ -54,6 +54,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Improvements
 - Updated Yahoo Finance service to use v3 class-based initialization
 
+
+
 ## [0.6.7] - 2025-12-07
 
 ### 🔒 Security
