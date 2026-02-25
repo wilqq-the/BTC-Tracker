@@ -46,7 +46,7 @@ export async function GET(
     // Format the transaction to match expected format
     const formattedTransaction = transaction ? {
       ...transaction,
-      type: transaction.type as 'BUY' | 'SELL',
+      type: transaction.type as 'BUY' | 'SELL' | 'TRANSFER',
       transaction_date: transaction.transactionDate.toISOString().split('T')[0],
       btc_amount: transaction.btcAmount,
       original_price_per_btc: transaction.originalPricePerBtc,
@@ -55,6 +55,10 @@ export async function GET(
       fees_currency: transaction.feesCurrency,
       notes: transaction.notes || '',
       tags: (transaction as any).tags || '',
+      transfer_type: (transaction as any).transferType || null,
+      destination_address: (transaction as any).destinationAddress || null,
+      from_wallet_id: (transaction as any).fromWalletId || null,
+      to_wallet_id: (transaction as any).toWalletId || null,
       created_at: transaction.createdAt,
       updated_at: transaction.updatedAt
     } : null;
