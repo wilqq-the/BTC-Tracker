@@ -65,6 +65,9 @@ export function DatePicker({
           mode="single"
           selected={value}
           onSelect={handleSelect}
+          captionLayout="dropdown"
+          fromDate={new Date(2009, 0, 3)} // Bitcoin genesis block: January 3, 2009
+          toYear={new Date().getFullYear()}
           // Removed initialFocus - causes Safari issues
         />
       </PopoverContent>

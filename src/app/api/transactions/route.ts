@@ -64,6 +64,8 @@ export async function GET(request: NextRequest) {
     const dateTo = searchParams.get('date_to');
     const limit = parseInt(searchParams.get('limit') || '50');
     const page = parseInt(searchParams.get('page') || '1');
+    const sortBy = searchParams.get('sortBy') || 'date';
+    const sortOrder = searchParams.get('sortOrder') || 'desc';
     const offset = (page - 1) * limit;
 
     // Get user's currency settings (TODO: Make user-specific)
@@ -96,16 +98,57 @@ export async function GET(request: NextRequest) {
       where: whereClause
     });
 
-    // Get transactions for this user only
-    const transactions = await prisma.bitcoinTransaction.findMany({
-      where: whereClause,
-      orderBy: [
+    // Build orderBy clause based on sortBy parameter
+    // Note: For 'pnl', we'll sort after enhancing transactions since it's calculated
+    let orderBy: any[] = [];
+    
+    if (sortBy === 'date') {
+      orderBy = [
+        { transactionDate: sortOrder === 'asc' ? 'asc' : 'desc' },
+        { createdAt: sortOrder === 'asc' ? 'asc' : 'desc' }
+      ];
+    } else if (sortBy === 'amount') {
+      orderBy = [{ btcAmount: sortOrder === 'asc' ? 'asc' : 'desc' }];
+    } else if (sortBy === 'price') {
+      orderBy = [{ originalPricePerBtc: sortOrder === 'asc' ? 'asc' : 'desc' }];
+    } else if (sortBy === 'type') {
+      orderBy = [{ type: sortOrder === 'asc' ? 'asc' : 'desc' }];
+    } else {
+      // Default to date desc
+      orderBy = [
         { transactionDate: 'desc' },
         { createdAt: 'desc' }
-      ],
-      take: limit,
-      skip: offset
-    });
+      ];
+    }
+
+    // For P&L sorting, we need to fetch all transactions, calculate P&L, sort, then paginate
+    // For other sorts, we can use database sorting which is more efficient
+    const shouldSortByPnL = sortBy === 'pnl';
+    const MAX_PNL_SORT_LIMIT = 5000; // Limit for P&L sorting to prevent performance issues
+    
+    let transactions;
+    let pnlSortLimited = false;
+    if (shouldSortByPnL) {
+      // Fetch all matching transactions (no pagination yet)
+      // Limit to prevent performance issues with very large datasets
+      if (totalCount > MAX_PNL_SORT_LIMIT) {
+        pnlSortLimited = true;
+      }
+      
+      transactions = await prisma.bitcoinTransaction.findMany({
+        where: whereClause,
+        orderBy: [{ transactionDate: 'desc' }], // Temporary order, will sort by P&L after
+        take: MAX_PNL_SORT_LIMIT // Safety limit
+      });
+    } else {
+      // Use database sorting for efficient pagination
+      transactions = await prisma.bitcoinTransaction.findMany({
+        where: whereClause,
+        orderBy,
+        take: limit,
+        skip: offset
+      });
+    }
 
     // Convert Prisma results to match the expected format
     const formattedTransactions = transactions.map(tx => ({
@@ -135,7 +178,7 @@ export async function GET(request: NextRequest) {
     const currentBtcPriceInSecondary = currentBtcPriceUSD * usdToSecondaryRate;
 
     // Enhance transactions with dynamically calculated currency values
-    const enhancedTransactions = await Promise.all(formattedTransactions.map(async (transaction) => {
+    let enhancedTransactions = await Promise.all(formattedTransactions.map(async (transaction) => {
       // Get exchange rates for this transaction's currency
       const originalToMainRate = await ExchangeRateService.getExchangeRate(transaction.original_currency, mainCurrency);
       const originalToSecondaryRate = await ExchangeRateService.getExchangeRate(transaction.original_currency, secondaryCurrency);
@@ -180,11 +223,29 @@ export async function GET(request: NextRequest) {
       };
     }));
 
+    // Sort by P&L if needed (after enhancing since P&L is calculated)
+    if (shouldSortByPnL) {
+      enhancedTransactions.sort((a, b) => {
+        const aPnL = a.pnl_main || 0;
+        const bPnL = b.pnl_main || 0;
+        return sortOrder === 'asc' ? aPnL - bPnL : bPnL - aPnL;
+      });
+      
+      // Apply pagination after sorting
+      enhancedTransactions = enhancedTransactions.slice(offset, offset + limit);
+    }
+
     // Calculate summary statistics for this user
     const summary = await calculateTransactionSummary(userId);
 
     // Calculate pagination metadata
     const totalPages = Math.ceil(totalCount / limit);
+
+    // Build response message
+    let message = `Retrieved ${enhancedTransactions.length} of ${totalCount} transactions with ${secondaryCurrency} display values`;
+    if (pnlSortLimited) {
+      message += `. Note: P&L sorting is limited to ${MAX_PNL_SORT_LIMIT} transactions for performance.`;
+    }
 
     const response: TransactionResponse = {
       success: true,
@@ -196,7 +257,7 @@ export async function GET(request: NextRequest) {
         limit: limit,
         totalPages: totalPages
       },
-      message: `Retrieved ${transactions.length} of ${totalCount} transactions with ${secondaryCurrency} display values`
+      message
     };
 
     return NextResponse.json(response);
