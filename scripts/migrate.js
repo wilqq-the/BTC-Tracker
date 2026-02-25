@@ -165,7 +165,7 @@ function baselineAllMigrations() {
   
   for (const migration of ALL_MIGRATIONS) {
     log('INFO', `  → ${migration}`);
-    runCommandCapture(`npx prisma migrate resolve --applied "${migration}"`);
+    runCommandCapture(`npm exec prisma migrate resolve --applied "${migration}"`);
   }
   
   log('OK', 'Baseline complete');
@@ -208,12 +208,12 @@ function resolveAllFailedMigrations() {
     log('FIX', `Resolving ${failedMigrations.length} failed migration(s)...`);
     
     for (const migration of failedMigrations) {
-      runCommandCapture(`npx prisma migrate resolve --applied "${migration}"`);
+      runCommandCapture(`npm exec prisma migrate resolve --applied "${migration}"`);
     }
   } catch (error) {
     // Fallback: try to resolve all known migrations
     for (const migration of ALL_MIGRATIONS) {
-      runCommandCapture(`npx prisma migrate resolve --applied "${migration}"`);
+      runCommandCapture(`npm exec prisma migrate resolve --applied "${migration}"`);
     }
   }
 }
@@ -228,7 +228,7 @@ function runMigrateWithRecovery() {
     attempts++;
     log('INFO', `Applying migrations (attempt ${attempts})...`);
     
-    const result = runCommandCapture('npx prisma migrate deploy');
+    const result = runCommandCapture('npm exec prisma migrate deploy');
     
     if (result.success) {
       log('OK', 'Migrations applied');
@@ -242,7 +242,7 @@ function runMigrateWithRecovery() {
       const failedMigration = extractFailedMigration(errorOutput);
       if (failedMigration) {
         log('FIX', `Resolving "${failedMigration}" (already exists)...`);
-        runCommandCapture(`npx prisma migrate resolve --applied "${failedMigration}"`);
+        runCommandCapture(`npm exec prisma migrate resolve --applied "${failedMigration}"`);
         continue;
       }
     }
@@ -258,7 +258,7 @@ function runMigrateWithRecovery() {
       const failedMigration = extractFailedMigration(errorOutput);
       if (failedMigration) {
         log('FIX', `Resolving failed migration "${failedMigration}"...`);
-        runCommandCapture(`npx prisma migrate resolve --applied "${failedMigration}"`);
+        runCommandCapture(`npm exec prisma migrate resolve --applied "${failedMigration}"`);
       } else {
         resolveAllFailedMigrations();
       }
@@ -281,7 +281,7 @@ function runMigrateWithRecovery() {
 function runSafetyNetDbPush() {
   log('INFO', 'Verifying schema...');
   
-  const result = runCommandCapture('npx prisma db push --skip-generate');
+  const result = runCommandCapture('npm exec prisma db push -- --skip-generate');
   
   if (result.success) {
     log('OK', 'Schema verified');
@@ -293,7 +293,7 @@ function runSafetyNetDbPush() {
   // Check if it failed because it wants to do destructive changes
   if (errorOutput.includes('--accept-data-loss')) {
     log('FIX', 'Applying schema updates...');
-    const retryResult = runCommandCapture('npx prisma db push --skip-generate --accept-data-loss');
+    const retryResult = runCommandCapture('npm exec prisma db push -- --skip-generate --accept-data-loss');
     
     if (retryResult.success) {
       log('OK', 'Schema updated');
@@ -387,7 +387,7 @@ function repairOrphanedData() {
  */
 function generateClient() {
   log('INFO', 'Generating Prisma client...');
-  const result = runCommand('npx prisma generate', { silent: true });
+  const result = runCommand('npm exec prisma generate', { silent: true });
   if (!result.success) {
     log('WARN', 'Could not generate Prisma client');
   }

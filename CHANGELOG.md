@@ -60,10 +60,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Improvements
 - Updated Yahoo Finance service to use v3 class-based initialization
 
-
-
-## [0.6.7] - 2025-12-07
-
 ### 🔒 Security
 - **Two-Factor Authentication (2FA)** - Secure your account with TOTP-based 2FA
   - Works with Google Authenticator, Authy, and other authenticator apps
