@@ -112,6 +112,39 @@ model AppSettings {
   @@index([userId])
 }
 
+// Exchange connections for automatic sync of Bitcoin trades
+model ExchangeConnection {
+  id                Int       @id @default(autoincrement())
+  userId            Int       @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exchangeName      String    @map("exchange_name") // 'KRAKEN', 'BINANCE'
+  label             String    @default("") // User-friendly label, e.g. "My Kraken Account"
+
+  // Encrypted API credentials
+  encryptedApiKey   String    @map("encrypted_api_key")
+  encryptedApiSecret String   @map("encrypted_api_secret")
+
+  // Optional wallet assignment for synced transactions
+  walletId          Int?      @map("wallet_id")
+  wallet            Wallet?   @relation(fields: [walletId], references: [id], onDelete: SetNull)
+
+  // Sync status
+  isActive          Boolean   @default(true) @map("is_active")
+  lastSyncAt        DateTime? @map("last_sync_at")
+  lastSyncStatus    String?   @map("last_sync_status") // 'success', 'error', 'partial'
+  lastSyncError     String?   @map("last_sync_error")
+  lastSyncCount     Int       @default(0) @map("last_sync_count") // Transactions imported in last sync
+
+  // Tracking
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("exchange_connections")
+  @@index([userId])
+  @@index([exchangeName])
+}
+
 // User-defined wallets (cold/hot storage locations)
 model Wallet {
   id                 Int      @id @default(autoincrement())
@@ -131,8 +164,9 @@ model Wallet {
   updatedAt          DateTime @updatedAt @map("updated_at")
 
   // Relations back to transactions
-  transactionsFrom   BitcoinTransaction[] @relation("TransactionFromWallet")
-  transactionsTo     BitcoinTransaction[] @relation("TransactionToWallet")
+  transactionsFrom       BitcoinTransaction[] @relation("TransactionFromWallet")
+  transactionsTo         BitcoinTransaction[] @relation("TransactionToWallet")
+  exchangeConnections    ExchangeConnection[]
 
   @@map("wallets")
   @@index([userId])
@@ -169,6 +203,7 @@ model User {
   recurringTransactions RecurringTransaction[]
   apiKeys               ApiKey[]
   wallets               Wallet[]
+  exchangeConnections   ExchangeConnection[]
 
   @@map("users")
 }
