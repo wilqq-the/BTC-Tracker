@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ New Features
 - **Exchange Auto-Sync**  (Beta) — Connect exchange API keys to automatically import BTC spot trades. Supports Binance, Kraken, Coinbase, Bybit, and Gemini
 - **Exchange Connections UI** — New "Exchanges" tab in Settings to manage connections, test credentials, and trigger syncs
+- **Start9 packaging** — `.s9pk` wrapper available at [btc-tracker-start9](https://github.com/wilqq-the/btc-tracker-start9) for sideloading on Start9/StartOS devices ([#7](https://github.com/wilqq-the/BTC-Tracker/issues/7))
 
 ## [0.6.9] - 2026-02-23
 

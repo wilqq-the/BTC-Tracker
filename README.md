@@ -20,8 +20,20 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 **Special thanks to [@dennysubke](https://github.com/dennysubke) for helping bring BTC Tracker to Umbrel!**
 
-
 *Install BTC Tracker with one click on your Umbrel home server*
+
+## Install on Start9
+
+A Start9/StartOS `.s9pk` wrapper is available at **[btc-tracker-start9](https://github.com/wilqq-the/btc-tracker-start9)**.
+
+Sideload it via **System → Sideload a Service** in your StartOS UI, or build it yourself:
+
+```bash
+git clone https://github.com/wilqq-the/btc-tracker-start9.git
+cd btc-tracker-start9
+./prepare.sh  # install build deps (once)
+make          # produces btc-tracker.s9pk
+```
 
 ## Features
 
