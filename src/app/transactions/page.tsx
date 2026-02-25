@@ -219,6 +219,17 @@ export default function TransactionsPage() {
       setCurrentPage(1);
     }
   }, [filterType, dateRange, customDateFrom, customDateTo]);
+
+  // Reload when sort changes - reset to page 1
+  useEffect(() => {
+    if (!loading) {
+      if (currentPage === 1) {
+        loadTransactions(1, itemsPerPage);
+      } else {
+        setCurrentPage(1); // Will trigger loadTransactions via the currentPage useEffect
+      }
+    }
+  }, [sortBy, sortOrder]);
   
   const getDateRangeBoundaries = useCallback(() => {
     const now = new Date();
@@ -329,6 +340,8 @@ export default function TransactionsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        sortBy: sortBy,
+        sortOrder: sortOrder,
       });
 
       if (filterType !== 'ALL') params.append('type', filterType);
@@ -546,61 +559,33 @@ export default function TransactionsPage() {
       setSortBy(column);
       setSortOrder('desc');
     }
+    // Reset to page 1 when sorting changes
+    setCurrentPage(1);
   };
 
-  const filteredAndSortedTransactions = transactions
-    .filter(t => {
-      if (selectedTags.length > 0) {
-        const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
-        if (!selectedTags.some(selectedTag => txTags.includes(selectedTag))) return false;
+  // Only filter client-side (tags and search), sorting is now done server-side
+  const filteredTransactions = transactions.filter(t => {
+    if (selectedTags.length > 0) {
+      const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
+      if (!selectedTags.some(selectedTag => txTags.includes(selectedTag))) return false;
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesNotes = t.notes?.toLowerCase().includes(query);
+      const matchesAmount = t.btc_amount.toString().includes(query);
+      const matchesCurrency = t.original_currency?.toLowerCase().includes(query);
+      const matchesDate = t.transaction_date.includes(query);
+      const matchesPrice = t.original_price_per_btc.toString().includes(query);
+      const matchesTags = t.tags?.toLowerCase().includes(query);
+      if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
+        return false;
       }
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesNotes = t.notes?.toLowerCase().includes(query);
-        const matchesAmount = t.btc_amount.toString().includes(query);
-        const matchesCurrency = t.original_currency?.toLowerCase().includes(query);
-        const matchesDate = t.transaction_date.includes(query);
-        const matchesPrice = t.original_price_per_btc.toString().includes(query);
-        const matchesTags = t.tags?.toLowerCase().includes(query);
-        if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      let aValue: number | string, bValue: number | string;
-      
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.transaction_date).getTime();
-          bValue = new Date(b.transaction_date).getTime();
-          break;
-        case 'amount':
-          aValue = a.btc_amount;
-          bValue = b.btc_amount;
-          break;
-        case 'pnl':
-          aValue = calculatePnL(a);
-          bValue = calculatePnL(b);
-          break;
-        case 'price':
-          aValue = a.main_currency_price_per_btc || a.original_price_per_btc;
-          bValue = b.main_currency_price_per_btc || b.original_price_per_btc;
-          break;
-        case 'type':
-          aValue = a.type;
-          bValue = b.type;
-          break;
-        default:
-          return 0;
-      }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      return sortOrder === 'asc' ? (aValue as number) - (bValue as number) : (bValue as number) - (aValue as number);
-    });
+    }
+    return true;
+  });
+
+  // Use filtered transactions (sorting is done server-side)
+  const filteredAndSortedTransactions = filteredTransactions;
 
   const netPosition = summaryStats.totalBtcBought - summaryStats.totalBtcSold;
   const avgBuyPrice = summaryStats.totalBtcBought > 0 ? summaryStats.totalInvested / summaryStats.totalBtcBought : 0;
