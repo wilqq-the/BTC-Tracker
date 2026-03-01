@@ -99,7 +99,7 @@ interface BitcoinTransaction {
   pnl_main?: number;
 }
 
-type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off' | 'dca';
 
 // Column configuration
 type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
@@ -491,9 +491,17 @@ export default function TransactionsPage() {
       const result = await response.json();
       
       if (result.success) {
-        const message = duplicateCheckMode === 'off' 
-          ? `Successfully imported ${result.imported} transactions.`
-          : `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        let message: string;
+        if (duplicateCheckMode === 'off') {
+          message = `Successfully imported ${result.imported} transactions.`;
+        } else if (duplicateCheckMode === 'dca') {
+          const parts = [`Successfully imported ${result.imported} transactions.`];
+          if (result.updated > 0) parts.push(`${result.updated} Auto-DCA entries updated.`);
+          if (result.skipped > 0) parts.push(`${result.skipped} duplicates skipped.`);
+          message = parts.join(' ');
+        } else {
+          message = `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        }
         alert(message);
         setShowImportModal(false);
         setImportFile(null);
@@ -1393,6 +1401,7 @@ export default function TransactionsPage() {
                     <SelectItem value="strict">Strict — All fields must match</SelectItem>
                     <SelectItem value="standard">Standard — Core fields must match (recommended)</SelectItem>
                     <SelectItem value="loose">Loose — Only date and amount</SelectItem>
+                    <SelectItem value="dca">DCA — Date &amp; fiat amount (updates Auto-DCA entries)</SelectItem>
                     <SelectItem value="off">Off — Import all</SelectItem>
                   </SelectContent>
                 </Select>
