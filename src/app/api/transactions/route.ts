@@ -121,11 +121,16 @@ export async function GET(request: NextRequest) {
       ];
     }
 
+    const walletInclude = {
+      fromWallet: { select: { id: true, name: true, emoji: true, type: true } },
+      toWallet: { select: { id: true, name: true, emoji: true, type: true } },
+    };
+
     // For P&L sorting, we need to fetch all transactions, calculate P&L, sort, then paginate
     // For other sorts, we can use database sorting which is more efficient
     const shouldSortByPnL = sortBy === 'pnl';
     const MAX_PNL_SORT_LIMIT = 5000; // Limit for P&L sorting to prevent performance issues
-    
+
     let transactions;
     let pnlSortLimited = false;
     if (shouldSortByPnL) {
@@ -134,11 +139,12 @@ export async function GET(request: NextRequest) {
       if (totalCount > MAX_PNL_SORT_LIMIT) {
         pnlSortLimited = true;
       }
-      
+
       transactions = await prisma.bitcoinTransaction.findMany({
         where: whereClause,
         orderBy: [{ transactionDate: 'desc' }], // Temporary order, will sort by P&L after
-        take: MAX_PNL_SORT_LIMIT // Safety limit
+        take: MAX_PNL_SORT_LIMIT, // Safety limit
+        include: walletInclude
       });
     } else {
       // Use database sorting for efficient pagination
@@ -146,7 +152,8 @@ export async function GET(request: NextRequest) {
         where: whereClause,
         orderBy,
         take: limit,
-        skip: offset
+        skip: offset,
+        include: walletInclude
       });
     }
 
@@ -164,6 +171,8 @@ export async function GET(request: NextRequest) {
       tags: (tx as any).tags || '',
       transfer_type: (tx as any).transferType || null,
       destination_address: (tx as any).destinationAddress || null,
+      from_wallet: tx.fromWallet ? { id: tx.fromWallet.id, name: tx.fromWallet.name, emoji: tx.fromWallet.emoji, type: tx.fromWallet.type } : null,
+      to_wallet: tx.toWallet ? { id: tx.toWallet.id, name: tx.toWallet.name, emoji: tx.toWallet.emoji, type: tx.toWallet.type } : null,
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));
