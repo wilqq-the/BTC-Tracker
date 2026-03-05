@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Exchange Auto-Sync**  (Beta) — Connect exchange API keys to automatically import BTC spot trades. Supports Binance, Kraken, Coinbase, Bybit, and Gemini
 - **Exchange Connections UI** — New "Exchanges" tab in Settings to manage connections, test credentials, and trigger syncs
 
+### 🔧 Improvements
+- **More interactive calendar** - now calendar have months/years as a dropdown for quicker going back in time
+- **Sort/filter works cross page** - filter/sort was working on the single page, now it's cross-paged on the server side
+- **Wallet column in transactions** - new optional "Wallet" column showing source/destination wallet per transaction (toggle via column picker)
+- **Named wallets in portfolio sidebar** - wallet distribution section now shows each named wallet with its BTC balance
+
 ## [0.6.9] - 2026-02-23
 
 ### 🐛 Bug Fixes

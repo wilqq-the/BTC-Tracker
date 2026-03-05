@@ -104,7 +104,11 @@ export async function GET(request: NextRequest) {
         { createdAt: 'desc' }
       ],
       take: limit,
-      skip: offset
+      skip: offset,
+      include: {
+        fromWallet: { select: { id: true, name: true, emoji: true, type: true } },
+        toWallet: { select: { id: true, name: true, emoji: true, type: true } },
+      }
     });
 
     // Convert Prisma results to match the expected format
@@ -121,6 +125,8 @@ export async function GET(request: NextRequest) {
       tags: (tx as any).tags || '',
       transfer_type: (tx as any).transferType || null,
       destination_address: (tx as any).destinationAddress || null,
+      from_wallet: tx.fromWallet ? { id: tx.fromWallet.id, name: tx.fromWallet.name, emoji: tx.fromWallet.emoji, type: tx.fromWallet.type } : null,
+      to_wallet: tx.toWallet ? { id: tx.toWallet.id, name: tx.toWallet.name, emoji: tx.toWallet.emoji, type: tx.toWallet.type } : null,
       created_at: tx.createdAt,
       updated_at: tx.updatedAt
     }));

@@ -318,36 +318,48 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             </div>
           </div>
           
-          {/* Cold/Hot Wallet Distribution */}
-          {(portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
+          {/* Wallet Distribution */}
+          {(portfolioData.walletBreakdown?.length > 0 || portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
             <>
               <Separator />
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Wallet Distribution
+                  Wallets
                 </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span className="text-xs text-muted-foreground">Cold Wallet</span>
-                  </div>
-                  <div className="font-mono text-sm font-medium">
-                    {portfolioData.coldWalletBtc.toFixed(8)} ₿
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span className="text-xs text-muted-foreground">Hot Wallet</span>
-                  </div>
-                  <div className="font-mono text-sm font-medium">
-                    {Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿
-                  </div>
-                </div>
-                {portfolioData.coldWalletBtc > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {((portfolioData.coldWalletBtc / convertedData.totalBTC) * 100).toFixed(1)}% in cold storage
-                  </p>
+                {portfolioData.walletBreakdown?.length > 0 ? (
+                  portfolioData.walletBreakdown.map((w: { id: number; name: string; emoji: string | null; type: string; btcBalance: number; includeInPortfolio: boolean }) => (
+                    <div key={w.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm shrink-0">{w.emoji || (w.type === 'cold' ? '❄️' : '🔥')}</span>
+                        <span className="text-xs text-muted-foreground truncate">{w.name}</span>
+                        {!w.includeInPortfolio && <span className="text-xs text-muted-foreground/50 shrink-0">(excl.)</span>}
+                      </div>
+                      <div className="font-mono text-xs font-medium shrink-0 ml-2">
+                        {w.btcBalance.toFixed(8)} ₿
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                        <span className="text-xs text-muted-foreground">Cold Wallet</span>
+                      </div>
+                      <div className="font-mono text-xs font-medium">
+                        {portfolioData.coldWalletBtc.toFixed(8)} ₿
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-primary"></div>
+                        <span className="text-xs text-muted-foreground">Hot Wallet</span>
+                      </div>
+                      <div className="font-mono text-xs font-medium">
+                        {Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </>

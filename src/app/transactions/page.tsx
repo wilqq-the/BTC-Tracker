@@ -90,6 +90,8 @@ interface BitcoinTransaction {
   updated_at: string;
   transfer_type?: string;
   destination_address?: string;
+  from_wallet?: { id: number; name: string; emoji: string | null; type: string } | null;
+  to_wallet?: { id: number; name: string; emoji: string | null; type: string } | null;
   secondary_currency?: string;
   secondary_currency_price_per_btc?: number;
   secondary_currency_total_amount?: number;
@@ -102,7 +104,7 @@ interface BitcoinTransaction {
 type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
 
 // Column configuration
-type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
+type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'wallet' | 'notes';
 
 interface ColumnConfig {
   id: ColumnId;
@@ -119,6 +121,7 @@ const COLUMNS: ColumnConfig[] = [
   { id: 'price', label: 'Price', defaultVisible: true, sortable: true, colSpan: 2 },
   { id: 'value', label: 'Value', defaultVisible: true, sortable: false, colSpan: 2 },
   { id: 'pnl', label: 'P&L', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'wallet', label: 'Wallet', defaultVisible: false, sortable: false, colSpan: 2 },
   { id: 'notes', label: 'Notes', defaultVisible: false, sortable: false, colSpan: 2 },
 ];
 
@@ -975,6 +978,7 @@ export default function TransactionsPage() {
                   P&L {sortBy === 'pnl' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
                 </div>
               )}
+              {columnVisibility.wallet && <div>Wallet</div>}
               {columnVisibility.notes && <div>Notes</div>}
               <div className="text-right">Actions</div>
             </div>
@@ -1128,6 +1132,30 @@ export default function TransactionsPage() {
                                   {formatPercentage(pnlPercent)}
                                 </p>
                               </div>
+                            )}
+                          </div>
+                        )}
+                        {columnVisibility.wallet && (
+                          <div className="min-w-0">
+                            {(transaction.from_wallet || transaction.to_wallet) ? (
+                              <div className="text-xs space-y-0.5">
+                                {transaction.from_wallet && (
+                                  <p className="truncate text-muted-foreground" title={transaction.from_wallet.name}>
+                                    <span className="text-foreground/50">from </span>
+                                    {transaction.from_wallet.emoji || (transaction.from_wallet.type === 'cold' ? '❄️' : '🔥')}{' '}
+                                    <span className="font-medium">{transaction.from_wallet.name}</span>
+                                  </p>
+                                )}
+                                {transaction.to_wallet && (
+                                  <p className="truncate text-muted-foreground" title={transaction.to_wallet.name}>
+                                    <span className="text-foreground/50">to </span>
+                                    {transaction.to_wallet.emoji || (transaction.to_wallet.type === 'cold' ? '❄️' : '🔥')}{' '}
+                                    <span className="font-medium">{transaction.to_wallet.name}</span>
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </div>
                         )}
