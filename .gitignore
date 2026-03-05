@@ -48,6 +48,7 @@ next-env.d.ts
 .cursor/
 .claude/
 CLAUDE.md
+.mcp.json
 
 # Uploaded files
 data/uploads/*
