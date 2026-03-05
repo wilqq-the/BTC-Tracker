@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.7.0] - 2026-02-25
 
+### 🐛 Bug Fixes
+- **Net Holdings currency mismatch** — "Net Holdings" fiat value on the Transactions page was always calculated using the raw USD BTC price regardless of display currency setting, causing it to be inconsistent with "Total Invested" and "Unrealized P&L" for non-USD users ([#206](https://github.com/wilqq-the/BTC-Tracker/issues/206))
+
 ### ✨ New Features
 - **Exchange Auto-Sync**  (Beta) — Connect exchange API keys to automatically import BTC spot trades. Supports Binance, Kraken, Coinbase, Bybit, and Gemini
 - **Exchange Connections UI** — New "Exchanges" tab in Settings to manage connections, test credentials, and trigger syncs

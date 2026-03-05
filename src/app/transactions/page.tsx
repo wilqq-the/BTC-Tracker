@@ -142,7 +142,7 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL' | 'TRANSFER'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [currentBtcPrice, setCurrentBtcPrice] = useState(105000);
+  const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -206,7 +206,6 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     loadTransactions();
-    loadCurrentBitcoinPrice();
   }, []);
 
   useEffect(() => {
@@ -320,6 +319,9 @@ export default function TransactionsPage() {
         const secondaryCurrency = metrics.secondaryCurrency || mainCurrency;
 
         setSecondaryExchangeRate(metrics.mainToSecondaryRate || 1);
+        if (metrics.currentBtcPrice) {
+          setCurrentBtcPrice(metrics.currentBtcPrice);
+        }
 
         setSummaryStats({
           totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0),
@@ -374,18 +376,6 @@ export default function TransactionsPage() {
       setTransactions([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCurrentBitcoinPrice = async () => {
-    try {
-      const response = await fetch('/api/bitcoin-price');
-      const result = await response.json();
-      if (result.success && result.data?.price) {
-        setCurrentBtcPrice(result.data.price);
-      }
-    } catch (error) {
-      console.error('Error loading current Bitcoin price:', error);
     }
   };
 
