@@ -45,7 +45,7 @@ interface PortfolioSidebarProps {
 }
 
 const WALLET_COLORS = [
-  'bg-blue-500', 'bg-orange-400', 'bg-emerald-500', 'bg-violet-500',
+  'bg-blue-500', 'bg-btc-500', 'bg-emerald-500', 'bg-violet-500',
   'bg-pink-500', 'bg-amber-500', 'bg-cyan-500', 'bg-rose-500',
 ];
 
@@ -114,7 +114,7 @@ function WalletSection({ portfolioData, totalBTC }: { portfolioData: any; totalB
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="size-2 rounded-full bg-orange-400" />
+                <div className="size-2 rounded-full bg-btc-500" />
                 <span className="text-xs text-muted-foreground">Hot Wallet</span>
               </div>
               <span className="font-mono text-xs font-medium">{Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿</span>
