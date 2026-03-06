@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: btc-tracker
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    # Persistent disk is required for SQLite — available on Starter plan and above.
+    # Free plan has ephemeral storage: data is lost on restart/redeploy.
+    disk:
+      name: btc-tracker-data
+      mountPath: /app/data
+      sizeGB: 1
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        value: file:/app/data/bitcoin-tracker.db
+      - key: PORT
+        value: 3000
+      - key: HOSTNAME
+        value: 0.0.0.0
+      # Auto-generated secure secret — no action needed
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      # Set this to your Render service URL after first deploy
+      # e.g. https://btc-tracker.onrender.com
+      - key: NEXTAUTH_URL
+        sync: false

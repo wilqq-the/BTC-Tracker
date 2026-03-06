@@ -1,7 +1,7 @@
 # Changelog
 
 All notable changes to the BTC Tracker project will be documented in this file.
-
+ 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ✨ New Features
 - **Exchange Auto-Sync**  (Beta) — Connect exchange API keys to automatically import BTC spot trades. Supports Binance, Kraken, Coinbase, Bybit, and Gemini
 - **Exchange Connections UI** — New "Exchanges" tab in Settings to manage connections, test credentials, and trigger syncs
+
+### 🚀 Deployment
+- **One-click cloud deployment** — added Railway, Render, and Coolify deploy buttons and blueprints; non-technical users can now deploy to the cloud without touching Docker or a terminal
+  - `railway.toml` for Railway (auto-detected Dockerfile build, volume mount at `/app/data`)
+  - `render.yaml` blueprint for Render (Docker build, auto-generated `NEXTAUTH_SECRET`, persistent disk)
+  - Coolify guide using the existing `docker-compose.yml` (zero new config needed)
+  - Full setup guides with step-by-step instructions, env var reference, and troubleshooting in `deploy/`
 
 ### 🔧 Improvements
 - **More interactive calendar** - now calendar have months/years as a dropdown for quicker going back in time

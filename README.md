@@ -20,8 +20,23 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 **Special thanks to [@dennysubke](https://github.com/dennysubke) for helping bring BTC Tracker to Umbrel!**
 
-
 *Install BTC Tracker with one click on your Umbrel home server*
+
+## Cloud Deployment
+
+Deploy to the cloud with one click — no Docker knowledge required.
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/wilqq-the/BTC-Tracker)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/wilqq-the/BTC-Tracker)
+
+| Platform | Free tier | Persistent storage | Notes |
+|---|---|---|---|
+| [Railway](deploy/railway/SETUP.md) | Trial credits | Yes (volumes) | Easiest — recommended for beginners |
+| [Render](deploy/render/SETUP.md) | Yes (ephemeral) | Paid plans only | Free tier loses data on restart |
+| [Coolify](deploy/coolify/SETUP.md) | Self-hosted | Yes (host volume) | Best for full privacy and control |
+
+> After deploying, open the app URL and register — the first user becomes admin automatically.
+> See [deploy/README.md](deploy/README.md) for full setup guides and environment variable reference.
 
 ## Features
 
