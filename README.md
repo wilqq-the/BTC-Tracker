@@ -26,7 +26,7 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 
 Deploy to the cloud with one click — no Docker knowledge required.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/wilqq-the/BTC-Tracker)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new?template=https://github.com/wilqq-the/BTC-Tracker)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/wilqq-the/BTC-Tracker)
 
 | Platform | Free tier | Persistent storage | Notes |

@@ -4,13 +4,13 @@ Railway is the easiest way to deploy BTC Tracker to the cloud. It builds directl
 
 ## One-click deploy
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/wilqq-the/BTC-Tracker)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/new?template=https://github.com/wilqq-the/BTC-Tracker)
 
 ## Manual steps
 
 ### 1. Create a new project
 
-1. Go to [railway.app](https://railway.app) and log in
+1. Go to [railway.com](https://railway.com) and log in
 2. Click **New Project** → **Deploy from GitHub repo**
 3. Select `wilqq-the/BTC-Tracker`
 4. Railway detects `railway.toml` and `Dockerfile` automatically
