@@ -1,0 +1,52 @@
+appId: com.btctracker.app
+productName: BTC Tracker
+copyright: Copyright (c) 2024-2026 wilqq-the
+
+directories:
+  output: dist-electron
+
+npmRebuild: false
+asar: false
+
+files:
+  - electron/**/*
+  - .next/standalone/**/*
+  - "!.next/standalone/node_modules/electron"
+  - "!.next/standalone/node_modules/electron-builder"
+
+extraResources:
+  - from: prisma/schema.prisma
+    to: prisma/schema.prisma
+  - from: prisma/migrations
+    to: prisma/migrations
+    filter:
+      - "**/*"
+  - from: prisma-bundle/
+    to: prisma-cli/node_modules/
+    filter:
+      - "**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: installer/icon.ico
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BTC Tracker
+  differentialPackage: false
+  installerIcon: installer/icon.ico
+  uninstallerIcon: installer/icon.ico
+  installerHeaderIcon: installer/icon.ico
+  installerSidebar: installer/installerSidebar.bmp
+  uninstallerSidebar: installer/installerSidebar.bmp
+  license: LICENSE
+  include: installer/installer.nsh
