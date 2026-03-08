@@ -1,18 +1,18 @@
 const { app, BrowserWindow, Tray, Menu, shell, dialog } = require('electron');
 const path = require('path');
-const { spawn } = require('child_process');
+const fs = require('fs');
+const { spawn, execFileSync } = require('child_process');
 const net = require('net');
 
-// Keep references to prevent garbage collection
 let mainWindow = null;
 let tray = null;
 let serverProcess = null;
 let isQuitting = false;
+let logStream = null;
 
 const PORT = 3456;
 const SERVER_URL = `http://localhost:${PORT}`;
 
-// Single instance lock - prevent multiple instances
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
@@ -25,13 +25,28 @@ app.on('second-instance', () => {
   }
 });
 
+// ─── Logging ────────────────────────────────────────────────────────────────
+
+function initLogging() {
+  const logDir = path.join(app.getPath('userData'), 'logs');
+  fs.mkdirSync(logDir, { recursive: true });
+  const logFile = path.join(logDir, 'app.log');
+  logStream = fs.createWriteStream(logFile, { flags: 'a' });
+  logStream.write(`\n--- ${new Date().toISOString()} ---\n`);
+}
+
+function log(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}`;
+  console.log(line);
+  if (logStream) logStream.write(line + '\n');
+}
+
 // ─── Paths ──────────────────────────────────────────────────────────────────
 
 function getServerDir() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'nextjs-standalone');
   }
-  // Dev mode: use the .next/standalone output
   return path.join(__dirname, '..', '.next', 'standalone');
 }
 
@@ -40,6 +55,12 @@ function getDataDir() {
 }
 
 // ─── Server Management ─────────────────────────────────────────────────────
+
+function getNodeEnv() {
+  return {
+    ELECTRON_RUN_AS_NODE: '1',
+  };
+}
 
 function isPortAvailable(port) {
   return new Promise((resolve) => {
@@ -81,10 +102,10 @@ function waitForServer(url, timeoutMs = 30000) {
 async function startServer() {
   const available = await isPortAvailable(PORT);
   if (!available) {
-    console.log(`Port ${PORT} is already in use, attempting to connect...`);
+    log(`Port ${PORT} in use, checking for existing server...`);
     try {
       await waitForServer(SERVER_URL, 5000);
-      console.log('Existing server found, using it');
+      log('Existing server found');
       return;
     } catch {
       dialog.showErrorBox(
@@ -99,14 +120,13 @@ async function startServer() {
   const serverDir = getServerDir();
   const dataDir = getDataDir();
 
-  // Ensure data directory exists
-  const fs = require('fs');
   fs.mkdirSync(dataDir, { recursive: true });
 
   const dbPath = path.join(dataDir, 'btctracker.db');
 
   const env = {
     ...process.env,
+    ...getNodeEnv(),
     NODE_ENV: 'production',
     PORT: String(PORT),
     HOSTNAME: '127.0.0.1',
@@ -115,29 +135,37 @@ async function startServer() {
     NEXTAUTH_SECRET: getOrCreateSecret(dataDir),
   };
 
-  console.log('Starting Next.js server from:', serverDir);
-  console.log('Database at:', dbPath);
+  log(`Server dir: ${serverDir}`);
+  log(`Database: ${dbPath}`);
+  log(`Electron exe: ${process.execPath}`);
 
-  // Run migrations first
+  // Run migrations
   try {
     const migrateScript = path.join(serverDir, 'scripts', 'migrate.js');
     if (fs.existsSync(migrateScript)) {
-      console.log('Running database migrations...');
-      const { execSync } = require('child_process');
-      execSync(`node "${migrateScript}"`, {
+      log('Running migrations...');
+      execFileSync(process.execPath, [migrateScript], {
         cwd: serverDir,
         env,
         stdio: 'pipe',
         timeout: 30000,
       });
-      console.log('Migrations complete');
+      log('Migrations complete');
+    } else {
+      log(`Migration script not found at ${migrateScript}`);
     }
   } catch (err) {
-    console.error('Migration error (continuing anyway):', err.message);
+    log(`Migration error: ${err.message}`);
+    if (err.stderr) log(`Migration stderr: ${err.stderr.toString()}`);
   }
 
-  // Start the Next.js standalone server
+  // Start Next.js standalone server
   const serverScript = path.join(serverDir, 'server.js');
+  if (!fs.existsSync(serverScript)) {
+    throw new Error(`Server script not found: ${serverScript}`);
+  }
+
+  log(`Starting server: ${serverScript}`);
   serverProcess = spawn(process.execPath, [serverScript], {
     cwd: serverDir,
     env,
@@ -146,29 +174,31 @@ async function startServer() {
   });
 
   serverProcess.stdout.on('data', (data) => {
-    console.log(`[server] ${data.toString().trim()}`);
+    log(`[server] ${data.toString().trim()}`);
   });
 
   serverProcess.stderr.on('data', (data) => {
-    console.error(`[server] ${data.toString().trim()}`);
+    log(`[server:err] ${data.toString().trim()}`);
   });
 
-  serverProcess.on('exit', (code) => {
-    console.log(`Server process exited with code ${code}`);
+  serverProcess.on('exit', (code, signal) => {
+    log(`Server exited: code=${code} signal=${signal}`);
     serverProcess = null;
     if (!isQuitting) {
-      dialog.showErrorBox('BTC Tracker', 'The server has stopped unexpectedly. The application will close.');
+      const logPath = path.join(app.getPath('userData'), 'logs', 'app.log');
+      dialog.showErrorBox(
+        'BTC Tracker',
+        `The server has stopped unexpectedly (exit code: ${code}).\n\nCheck logs at:\n${logPath}`
+      );
       app.quit();
     }
   });
 
-  // Wait for server to be ready
   await waitForServer(SERVER_URL);
-  console.log('Server is ready');
+  log('Server is ready');
 }
 
 function getOrCreateSecret(dataDir) {
-  const fs = require('fs');
   const secretFile = path.join(dataDir, '.secret');
   try {
     return fs.readFileSync(secretFile, 'utf-8').trim();
@@ -182,14 +212,15 @@ function getOrCreateSecret(dataDir) {
 
 function stopServer() {
   if (serverProcess) {
-    console.log('Stopping server...');
-    serverProcess.kill('SIGTERM');
-    // Force kill after 5 seconds
-    setTimeout(() => {
-      if (serverProcess) {
-        serverProcess.kill('SIGKILL');
-      }
-    }, 5000);
+    log('Stopping server...');
+    if (process.platform === 'win32') {
+      spawn('taskkill', ['/pid', String(serverProcess.pid), '/f', '/t'], { windowsHide: true });
+    } else {
+      serverProcess.kill('SIGTERM');
+      setTimeout(() => {
+        if (serverProcess) serverProcess.kill('SIGKILL');
+      }, 5000);
+    }
   }
 }
 
@@ -202,7 +233,6 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
     title: 'BTC Tracker',
-    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -216,13 +246,11 @@ function createWindow() {
     mainWindow.show();
   });
 
-  // Open external links in the default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
   });
 
-  // Minimize to tray instead of closing
   mainWindow.on('close', (event) => {
     if (!isQuitting) {
       event.preventDefault();
@@ -239,10 +267,11 @@ function createWindow() {
 
 function createTray() {
   const iconPath = path.join(__dirname, 'icon.png');
+  if (!fs.existsSync(iconPath)) return;
+
   try {
     tray = new Tray(iconPath);
   } catch {
-    // Tray icon may not exist in dev; skip
     return;
   }
 
@@ -283,10 +312,21 @@ function createTray() {
 // ─── App Lifecycle ──────────────────────────────────────────────────────────
 
 app.whenReady().then(async () => {
+  initLogging();
+  log(`BTC Tracker starting (v${app.getVersion()})`);
+  log(`Platform: ${process.platform} ${process.arch}`);
+  log(`Packaged: ${app.isPackaged}`);
+  log(`User data: ${app.getPath('userData')}`);
+
   try {
     await startServer();
   } catch (err) {
-    dialog.showErrorBox('BTC Tracker - Startup Error', err.message);
+    log(`Startup error: ${err.message}`);
+    const logPath = path.join(app.getPath('userData'), 'logs', 'app.log');
+    dialog.showErrorBox(
+      'BTC Tracker - Startup Error',
+      `${err.message}\n\nCheck logs at:\n${logPath}`
+    );
     app.quit();
     return;
   }
@@ -301,9 +341,8 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  // On macOS, keep running in tray
   if (process.platform !== 'darwin') {
-    // Don't quit - keep running in tray
+    // Keep running in tray
   }
 });
 
