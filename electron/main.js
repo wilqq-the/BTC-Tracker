@@ -139,26 +139,35 @@ async function startServer() {
   log(`Database: ${dbPath}`);
   log(`Electron exe: ${process.execPath}`);
 
-  // Run migrations
+  // Apply database schema
   try {
-    const migrateScript = app.isPackaged
-      ? path.join(process.resourcesPath, 'scripts', 'migrate.js')
-      : path.join(__dirname, '..', 'scripts', 'migrate.js');
-    if (fs.existsSync(migrateScript)) {
-      log('Running migrations...');
-      execFileSync(process.execPath, [migrateScript], {
-        cwd: dataDir,
-        env,
-        stdio: 'pipe',
-        timeout: 30000,
-      });
-      log('Migrations complete');
-    } else {
-      log(`Migration script not found at ${migrateScript}`);
+    log('Applying database schema...');
+    const schemaPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'prisma', 'schema.prisma')
+      : path.join(__dirname, '..', 'prisma', 'schema.prisma');
+
+    const prismaCli = app.isPackaged
+      ? path.join(process.resourcesPath, 'prisma-cli', 'build', 'index.js')
+      : path.join(__dirname, '..', 'node_modules', 'prisma', 'build', 'index.js');
+
+    const prismaEnv = { ...env };
+    if (app.isPackaged) {
+      prismaEnv.PRISMA_ENGINES_DIR = path.join(process.resourcesPath, 'prisma-engines');
     }
+
+    log(`Schema: ${schemaPath}`);
+    log(`Prisma CLI: ${prismaCli}`);
+
+    execFileSync(process.execPath, [prismaCli, 'db', 'push', '--schema', schemaPath, '--skip-generate', '--accept-data-loss'], {
+      cwd: dataDir,
+      env: prismaEnv,
+      stdio: 'pipe',
+      timeout: 30000,
+    });
+    log('Database schema applied');
   } catch (err) {
-    log(`Migration error: ${err.message}`);
-    if (err.stderr) log(`Migration stderr: ${err.stderr.toString()}`);
+    log(`Schema push error: ${err.message}`);
+    if (err.stderr) log(`Schema push stderr: ${err.stderr.toString()}`);
   }
 
   // Start Next.js standalone server

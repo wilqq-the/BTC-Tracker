@@ -19,12 +19,20 @@ files:
   - "!.next/standalone/node_modules/electron-builder"
 
 extraResources:
-  - from: prisma
-    to: prisma
+  - from: prisma/schema.prisma
+    to: prisma/schema.prisma
+  - from: prisma/migrations
+    to: prisma/migrations
     filter:
       - "**/*"
-  - from: scripts/migrate.js
-    to: scripts/migrate.js
+  - from: node_modules/prisma
+    to: prisma-cli
+    filter:
+      - "**/*"
+  - from: node_modules/@prisma/engines
+    to: prisma-engines
+    filter:
+      - "**/*"
 
 win:
   target:
