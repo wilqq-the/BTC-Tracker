@@ -1,0 +1,60 @@
+appId: com.btctracker.app
+productName: BTC Tracker
+copyright: Copyright (c) 2024-2026 wilqq-the
+
+directories:
+  output: dist-electron
+
+files:
+  - electron/**/*
+
+extraResources:
+  - from: .next/standalone
+    to: nextjs-standalone
+    filter:
+      - "**/*"
+  - from: .next/static
+    to: nextjs-standalone/.next/static
+    filter:
+      - "**/*"
+  - from: public
+    to: nextjs-standalone/public
+    filter:
+      - "**/*"
+  - from: prisma
+    to: nextjs-standalone/prisma
+    filter:
+      - "**/*"
+  - from: scripts/migrate.js
+    to: nextjs-standalone/scripts/migrate.js
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+nsis:
+  oneClick: true
+  perMachine: false
+  allowToChangeInstallationDirectory: false
+  deleteAppDataOnUninstall: false
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: BTC Tracker
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.finance
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Finance

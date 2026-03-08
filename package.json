@@ -28,8 +28,11 @@
     "db:studio": "prisma studio",
     "db:prod-setup": "node scripts/prod-setup.js",
     "db:migrate": "node scripts/migrate.js",
-    "auth:generate-jwt": "node scripts/generate-jwt.js"
+    "auth:generate-jwt": "node scripts/generate-jwt.js",
+    "electron:dev": "npm run build && electron .",
+    "electron:build": "npm run build && electron-builder --config electron-builder.yml"
   },
+  "main": "electron/main.js",
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@internationalized/date": "^3.8.2",
