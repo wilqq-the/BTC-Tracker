@@ -71,6 +71,12 @@ jobs:
           }
         shell: pwsh
 
+      - name: Rename node_modules in standalone to avoid electron-builder filtering
+        run: |
+          Rename-Item ".next/standalone/node_modules" "_node_modules"
+          Get-ChildItem ".next/standalone" -Depth 0 | ForEach-Object { Write-Host $_.Name }
+        shell: pwsh
+
       - name: Install Electron and builder
         run: npm install --save-dev electron@latest electron-builder@latest
 
@@ -84,9 +90,9 @@ jobs:
           $resourceDir = "dist-electron/win-unpacked/resources/nextjs-standalone"
           Write-Host "--- packaged standalone root ---"
           Get-ChildItem $resourceDir -Depth 0 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Name }
-          Write-Host "--- packaged standalone node_modules ---"
-          Get-ChildItem "$resourceDir/node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
-          if (!(Test-Path "$resourceDir/node_modules/next")) {
+          Write-Host "--- packaged _node_modules ---"
+          Get-ChildItem "$resourceDir/_node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
+          if (!(Test-Path "$resourceDir/_node_modules/next")) {
             Write-Error "next module missing from packaged app!"
             exit 1
           }

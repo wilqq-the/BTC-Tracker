@@ -20,7 +20,6 @@ extraResources:
     to: nextjs-standalone
     filter:
       - "**/*"
-      - "**/node_modules/**"
   - from: .next/static
     to: nextjs-standalone/.next/static
     filter:
