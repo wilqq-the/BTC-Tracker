@@ -59,6 +59,9 @@ jobs:
           Write-Host "Standalone bundle size after trim: ${sizeMB} MB"
         shell: pwsh
 
+      - name: Collect Prisma CLI dependencies
+        run: node scripts/collect-prisma-deps.js node_modules prisma-bundle
+
       - name: Install Electron and builder
         run: npm install --save-dev electron@latest electron-builder@latest
 
@@ -76,6 +79,7 @@ jobs:
           if (Test-Path "$appDir/.next/standalone/node_modules/next") { Write-Host "next module: OK" } else { Write-Error "next module missing!"; exit 1 }
           if (Test-Path "$resDir/prisma/schema.prisma") { Write-Host "prisma schema: OK" } else { Write-Error "prisma schema missing!"; exit 1 }
           if (Test-Path "$resDir/prisma-node_modules/prisma/build/index.js") { Write-Host "prisma CLI: OK" } else { Write-Error "prisma CLI missing!"; exit 1 }
+          if (Test-Path "$resDir/prisma-node_modules/@prisma/debug") { Write-Host "prisma debug: OK" } else { Write-Error "@prisma/debug missing!"; exit 1 }
           $sizeMB = [math]::Round((Get-ChildItem "dist-electron/win-unpacked" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 1)
           Write-Host "Total unpacked size: ${sizeMB} MB"
         shell: pwsh

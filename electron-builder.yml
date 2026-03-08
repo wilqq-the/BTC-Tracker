@@ -21,12 +21,8 @@ extraResources:
     to: prisma/migrations
     filter:
       - "**/*"
-  - from: node_modules/prisma
-    to: prisma-node_modules/prisma
-    filter:
-      - "**/*"
-  - from: node_modules/@prisma/engines
-    to: prisma-node_modules/@prisma/engines
+  - from: prisma-bundle/
+    to: prisma-node_modules/
     filter:
       - "**/*"
 
