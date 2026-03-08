@@ -6,34 +6,21 @@ directories:
   output: dist-electron
 
 npmRebuild: false
-buildDependenciesFromSource: false
+asar: false
 
 files:
   - electron/**/*
-  - "!node_modules"
-
-asarUnpack:
-  - "**/*.node"
+  - .next/standalone/**/*
+  - "!.next/standalone/node_modules/electron"
+  - "!.next/standalone/node_modules/electron-builder"
 
 extraResources:
-  - from: .next/standalone
-    to: nextjs-standalone
-    filter:
-      - "**/*"
-  - from: .next/static
-    to: nextjs-standalone/.next/static
-    filter:
-      - "**/*"
-  - from: public
-    to: nextjs-standalone/public
-    filter:
-      - "**/*"
   - from: prisma
-    to: nextjs-standalone/prisma
+    to: prisma
     filter:
       - "**/*"
   - from: scripts/migrate.js
-    to: nextjs-standalone/scripts/migrate.js
+    to: scripts/migrate.js
 
 win:
   target:

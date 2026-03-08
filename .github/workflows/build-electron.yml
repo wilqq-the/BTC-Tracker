@@ -31,50 +31,20 @@ jobs:
           NEXTAUTH_SECRET: "build-secret-not-used-at-runtime"
         run: npm run build
 
-      - name: Verify standalone output
+      - name: Prepare standalone bundle
         run: |
-          if (!(Test-Path ".next/standalone/server.js")) {
-            Write-Error "Next.js standalone output not found!"
-            exit 1
+          Copy-Item -Path ".next/static" -Destination ".next/standalone/.next/static" -Recurse -Force
+          Copy-Item -Path "public" -Destination ".next/standalone/public" -Recurse -Force
+          if (!(Test-Path ".next/standalone/node_modules/.prisma")) {
+            Copy-Item -Path "node_modules/.prisma" -Destination ".next/standalone/node_modules/.prisma" -Recurse -Force
           }
-          Write-Host "Standalone server.js found"
-          Write-Host "--- standalone root ---"
+          if (!(Test-Path ".next/standalone/node_modules/@prisma")) {
+            Copy-Item -Path "node_modules/@prisma" -Destination ".next/standalone/node_modules/@prisma" -Recurse -Force
+          }
+          Write-Host "--- standalone contents ---"
           Get-ChildItem ".next/standalone" -Depth 0 | ForEach-Object { Write-Host $_.Name }
-          Write-Host "--- standalone node_modules (top-level) ---"
-          Get-ChildItem ".next/standalone/node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
-          if (!(Test-Path ".next/standalone/node_modules/next")) {
-            Write-Error "next module missing from standalone!"
-            exit 1
-          }
-          Write-Host "next module present in standalone"
-        shell: pwsh
-
-      - name: Copy Prisma engines to standalone
-        run: |
-          # Prisma query engine must be available in the standalone bundle
-          $prismaEngines = Get-ChildItem -Path "node_modules/.prisma" -Recurse -Filter "*.exe" -ErrorAction SilentlyContinue
-          if ($prismaEngines) {
-            foreach ($engine in $prismaEngines) {
-              Write-Host "Found Prisma engine: $($engine.FullName)"
-            }
-          }
-          # Also copy the prisma client to standalone node_modules
-          $standalonePrisma = ".next/standalone/node_modules/.prisma"
-          if (!(Test-Path $standalonePrisma)) {
-            Write-Host "Copying .prisma to standalone..."
-            Copy-Item -Path "node_modules/.prisma" -Destination $standalonePrisma -Recurse -Force
-          }
-          $standalonePrismaClient = ".next/standalone/node_modules/@prisma"
-          if (!(Test-Path $standalonePrismaClient)) {
-            Write-Host "Copying @prisma to standalone..."
-            Copy-Item -Path "node_modules/@prisma" -Destination $standalonePrismaClient -Recurse -Force
-          }
-        shell: pwsh
-
-      - name: Rename node_modules in standalone to avoid electron-builder filtering
-        run: |
-          Rename-Item ".next/standalone/node_modules" "_node_modules"
-          Get-ChildItem ".next/standalone" -Depth 0 | ForEach-Object { Write-Host $_.Name }
+          Write-Host "--- node_modules (first 20) ---"
+          Get-ChildItem ".next/standalone/node_modules" -Depth 0 | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
         shell: pwsh
 
       - name: Install Electron and builder
@@ -85,18 +55,16 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --config electron-builder.yml
 
-      - name: Verify packaged resources
+      - name: Verify packaged output
         run: |
-          $resourceDir = "dist-electron/win-unpacked/resources/nextjs-standalone"
-          Write-Host "--- packaged standalone root ---"
-          Get-ChildItem $resourceDir -Depth 0 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Name }
-          Write-Host "--- packaged _node_modules ---"
-          Get-ChildItem "$resourceDir/_node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
-          if (!(Test-Path "$resourceDir/_node_modules/next")) {
+          $appDir = "dist-electron/win-unpacked/resources/app"
+          if (Test-Path "$appDir/.next/standalone/node_modules/next") {
+            Write-Host "next module: OK"
+          } else {
             Write-Error "next module missing from packaged app!"
+            Get-ChildItem "$appDir" -Depth 1 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
             exit 1
           }
-          Write-Host "Packaged resources look good"
         shell: pwsh
 
       - name: Upload Windows installer
@@ -105,10 +73,3 @@ jobs:
           name: BTC-Tracker-Windows-Setup
           path: dist-electron/*.exe
           retention-days: 14
-
-      - name: Upload unpacked (for debugging)
-        uses: actions/upload-artifact@v4
-        with:
-          name: BTC-Tracker-Windows-Unpacked
-          path: dist-electron/win-unpacked
-          retention-days: 7

@@ -44,10 +44,8 @@ function log(msg) {
 // ─── Paths ──────────────────────────────────────────────────────────────────
 
 function getServerDir() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, 'nextjs-standalone');
-  }
-  return path.join(__dirname, '..', '.next', 'standalone');
+  const appPath = app.getAppPath();
+  return path.join(appPath, '.next', 'standalone');
 }
 
 function getDataDir() {
@@ -128,7 +126,7 @@ async function startServer() {
     ...process.env,
     ...getNodeEnv(),
     NODE_ENV: 'production',
-    NODE_PATH: path.join(serverDir, '_node_modules'),
+    NODE_PATH: path.join(serverDir, 'node_modules'),
     PORT: String(PORT),
     HOSTNAME: '127.0.0.1',
     DATABASE_URL: `file:${dbPath}`,
@@ -142,7 +140,9 @@ async function startServer() {
 
   // Run migrations
   try {
-    const migrateScript = path.join(serverDir, 'scripts', 'migrate.js');
+    const migrateScript = app.isPackaged
+      ? path.join(process.resourcesPath, 'scripts', 'migrate.js')
+      : path.join(__dirname, '..', 'scripts', 'migrate.js');
     if (fs.existsSync(migrateScript)) {
       log('Running migrations...');
       execFileSync(process.execPath, [migrateScript], {
