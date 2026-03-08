@@ -22,7 +22,7 @@ extraResources:
     filter:
       - "**/*"
   - from: prisma-bundle/
-    to: prisma-node_modules/
+    to: prisma-cli/node_modules/
     filter:
       - "**/*"
 

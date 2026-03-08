@@ -147,7 +147,7 @@ async function startServer() {
       : path.join(__dirname, '..', 'prisma', 'schema.prisma');
 
     const prismaModules = app.isPackaged
-      ? path.join(process.resourcesPath, 'prisma-node_modules')
+      ? path.join(process.resourcesPath, 'prisma-cli', 'node_modules')
       : path.join(__dirname, '..', 'node_modules');
 
     const prismaCli = path.join(prismaModules, 'prisma', 'build', 'index.js');
