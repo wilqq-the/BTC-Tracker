@@ -31,17 +31,24 @@ win:
     - target: nsis
       arch:
         - x64
+  icon: installer/icon.ico
   artifactName: "${productName}-Setup-${version}.${ext}"
 
 nsis:
-  oneClick: true
+  oneClick: false
+  allowToChangeInstallationDirectory: true
   perMachine: false
-  allowToChangeInstallationDirectory: false
   deleteAppDataOnUninstall: false
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BTC Tracker
   differentialPackage: false
+  installerIcon: installer/icon.ico
+  uninstallerIcon: installer/icon.ico
+  installerHeaderIcon: installer/icon.ico
+  installerSidebar: installer/installerSidebar.bmp
+  uninstallerSidebar: installer/installerSidebar.bmp
+  license: LICENSE
 
 mac:
   target:
