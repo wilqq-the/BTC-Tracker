@@ -6,7 +6,11 @@ directories:
   output: dist-electron
 
 npmRebuild: false
-asar: false
+asar: true
+asarUnpack:
+  - "**/*.node"
+  - "**/node_modules/.prisma/**/*"
+  - "**/node_modules/@prisma/engines/**/*"
 
 files:
   - electron/**/*

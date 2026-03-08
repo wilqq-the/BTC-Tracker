@@ -135,6 +135,7 @@ async function startServer() {
   };
 
   log(`Server dir: ${serverDir}`);
+  log(`Data dir: ${dataDir}`);
   log(`Database: ${dbPath}`);
   log(`Electron exe: ${process.execPath}`);
 
@@ -146,7 +147,7 @@ async function startServer() {
     if (fs.existsSync(migrateScript)) {
       log('Running migrations...');
       execFileSync(process.execPath, [migrateScript], {
-        cwd: serverDir,
+        cwd: dataDir,
         env,
         stdio: 'pipe',
         timeout: 30000,
@@ -168,7 +169,7 @@ async function startServer() {
 
   log(`Starting server: ${serverScript}`);
   serverProcess = spawn(process.execPath, [serverScript], {
-    cwd: serverDir,
+    cwd: dataDir,
     env,
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,
