@@ -340,6 +340,7 @@ function stopServer() {
 // ─── Window ─────────────────────────────────────────────────────────────────
 
 function createWindow() {
+  Menu.setApplicationMenu(null);
   const state = loadWindowState();
 
   mainWindow = new BrowserWindow({

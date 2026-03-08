@@ -49,6 +49,7 @@ nsis:
   installerSidebar: installer/installerSidebar.bmp
   uninstallerSidebar: installer/installerSidebar.bmp
   license: LICENSE
+  include: installer/installer.nsh
 
 mac:
   target:
