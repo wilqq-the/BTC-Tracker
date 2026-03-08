@@ -12,11 +12,15 @@ files:
   - electron/**/*
   - "!node_modules"
 
+asarUnpack:
+  - "**/*.node"
+
 extraResources:
   - from: .next/standalone
     to: nextjs-standalone
     filter:
       - "**/*"
+      - "**/node_modules/**"
   - from: .next/static
     to: nextjs-standalone/.next/static
     filter:
