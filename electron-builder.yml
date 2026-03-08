@@ -5,8 +5,6 @@ copyright: Copyright (c) 2024-2026 wilqq-the
 directories:
   output: dist-electron
 
-# The Next.js standalone server runs its own Node.js (not Electron's),
-# so we don't need electron-rebuild to recompile native modules.
 npmRebuild: false
 buildDependenciesFromSource: false
 
