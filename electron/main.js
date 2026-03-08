@@ -264,7 +264,7 @@ function createWindow() {
   });
 
   mainWindow.on('close', (event) => {
-    if (!isQuitting) {
+    if (!isQuitting && tray) {
       event.preventDefault();
       mainWindow.hide();
     }
@@ -353,8 +353,8 @@ app.on('before-quit', () => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    // Keep running in tray
+  if (!tray) {
+    app.quit();
   }
 });
 
