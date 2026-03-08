@@ -45,6 +45,7 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BTC Tracker
+  differentialPackage: false
 
 mac:
   target:
