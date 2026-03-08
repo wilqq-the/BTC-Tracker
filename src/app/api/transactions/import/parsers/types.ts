@@ -49,6 +49,7 @@ export interface ImportResult {
   success: boolean;
   imported: number;
   skipped: number;
+  updated?: number;
   errors: string[];
   details: {
     total_transactions: number;
