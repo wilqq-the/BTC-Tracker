@@ -117,6 +117,8 @@ jobs:
   build-electron:
     runs-on: windows-latest
     if: github.event_name == 'release'
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
