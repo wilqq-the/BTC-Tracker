@@ -146,17 +146,18 @@ async function startServer() {
       ? path.join(process.resourcesPath, 'prisma', 'schema.prisma')
       : path.join(__dirname, '..', 'prisma', 'schema.prisma');
 
-    const prismaCli = app.isPackaged
-      ? path.join(process.resourcesPath, 'prisma-cli', 'build', 'index.js')
-      : path.join(__dirname, '..', 'node_modules', 'prisma', 'build', 'index.js');
+    const prismaModules = app.isPackaged
+      ? path.join(process.resourcesPath, 'prisma-node_modules')
+      : path.join(__dirname, '..', 'node_modules');
+
+    const prismaCli = path.join(prismaModules, 'prisma', 'build', 'index.js');
 
     const prismaEnv = { ...env };
-    if (app.isPackaged) {
-      prismaEnv.PRISMA_ENGINES_DIR = path.join(process.resourcesPath, 'prisma-engines');
-    }
+    prismaEnv.NODE_PATH = prismaModules;
 
     log(`Schema: ${schemaPath}`);
     log(`Prisma CLI: ${prismaCli}`);
+    log(`Prisma modules: ${prismaModules}`);
 
     execFileSync(process.execPath, [prismaCli, 'db', 'push', '--schema', schemaPath, '--skip-generate', '--accept-data-loss'], {
       cwd: dataDir,
@@ -178,7 +179,7 @@ async function startServer() {
 
   log(`Starting server: ${serverScript}`);
   serverProcess = spawn(process.execPath, [serverScript], {
-    cwd: dataDir,
+    cwd: serverDir,
     env,
     stdio: ['pipe', 'pipe', 'pipe'],
     windowsHide: true,

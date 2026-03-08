@@ -6,11 +6,7 @@ directories:
   output: dist-electron
 
 npmRebuild: false
-asar: true
-asarUnpack:
-  - "**/*.node"
-  - "**/node_modules/.prisma/**/*"
-  - "**/node_modules/@prisma/engines/**/*"
+asar: false
 
 files:
   - electron/**/*
@@ -26,11 +22,11 @@ extraResources:
     filter:
       - "**/*"
   - from: node_modules/prisma
-    to: prisma-cli
+    to: prisma-node_modules/prisma
     filter:
       - "**/*"
   - from: node_modules/@prisma/engines
-    to: prisma-engines
+    to: prisma-node_modules/@prisma/engines
     filter:
       - "**/*"
 
