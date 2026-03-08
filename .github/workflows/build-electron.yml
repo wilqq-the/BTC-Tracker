@@ -38,6 +38,15 @@ jobs:
             exit 1
           }
           Write-Host "Standalone server.js found"
+          Write-Host "--- standalone root ---"
+          Get-ChildItem ".next/standalone" -Depth 0 | ForEach-Object { Write-Host $_.Name }
+          Write-Host "--- standalone node_modules (top-level) ---"
+          Get-ChildItem ".next/standalone/node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
+          if (!(Test-Path ".next/standalone/node_modules/next")) {
+            Write-Error "next module missing from standalone!"
+            exit 1
+          }
+          Write-Host "next module present in standalone"
         shell: pwsh
 
       - name: Copy Prisma engines to standalone
@@ -69,6 +78,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win --config electron-builder.yml
+
+      - name: Verify packaged resources
+        run: |
+          $resourceDir = "dist-electron/win-unpacked/resources/nextjs-standalone"
+          Write-Host "--- packaged standalone root ---"
+          Get-ChildItem $resourceDir -Depth 0 -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.Name }
+          Write-Host "--- packaged standalone node_modules ---"
+          Get-ChildItem "$resourceDir/node_modules" -Depth 0 -ErrorAction SilentlyContinue | Select-Object -First 20 | ForEach-Object { Write-Host $_.Name }
+          if (!(Test-Path "$resourceDir/node_modules/next")) {
+            Write-Error "next module missing from packaged app!"
+            exit 1
+          }
+          Write-Host "Packaged resources look good"
+        shell: pwsh
 
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4

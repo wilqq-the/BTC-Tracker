@@ -128,6 +128,7 @@ async function startServer() {
     ...process.env,
     ...getNodeEnv(),
     NODE_ENV: 'production',
+    NODE_PATH: path.join(serverDir, 'node_modules'),
     PORT: String(PORT),
     HOSTNAME: '127.0.0.1',
     DATABASE_URL: `file:${dbPath}`,
