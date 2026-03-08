@@ -153,6 +153,118 @@ function closeSplash() {
   }
 }
 
+// ─── Database Migrations ────────────────────────────────────────────────────
+
+const ALL_MIGRATIONS = [
+  '20250623085038_initial_schema',
+  '20250915183939_add_user_isolation',
+  '20250916071210_add_admin_fields',
+  '20251010112742_add_transaction_tags',
+  '20251010122914_add_goals',
+  '20251010124310_add_scenario_to_goals',
+  '20251013085253_add_dashboard_layout',
+  '20251107000000_add_transfer_and_cold_wallet_fields',
+  '20251107213701_add_recurring_transactions',
+  '20251207000000_add_two_factor_auth',
+  '20260222000000_add_api_keys',
+  '20260223000000_add_multiple_wallets',
+  '20260225000000_add_exchange_connections',
+];
+
+function prismaExec(prismaCli, args, prismaEnv, cwd) {
+  try {
+    const result = execFileSync(process.execPath, [prismaCli, ...args], {
+      cwd,
+      env: prismaEnv,
+      stdio: 'pipe',
+      timeout: 60000,
+    });
+    return { success: true, output: result.toString() };
+  } catch (err) {
+    const stderr = err.stderr ? err.stderr.toString() : '';
+    const stdout = err.stdout ? err.stdout.toString() : '';
+    return { success: false, output: stdout + stderr, error: err.message };
+  }
+}
+
+function extractFailedMigration(errorOutput) {
+  const patterns = [/Migration name:\s*(\S+)/, /`(\d{14}_\w+)`/, /migration "([^"]+)"/i];
+  for (const pattern of patterns) {
+    const match = errorOutput.match(pattern);
+    if (match) return match[1].trim();
+  }
+  return null;
+}
+
+function runMigrations(prismaCli, schemaPath, prismaEnv, cwd) {
+  const schemaArgs = ['--schema', schemaPath];
+  const MAX_ATTEMPTS = 15;
+
+  // Step 1: Run prisma migrate deploy with recovery
+  let migrated = false;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    log(`Applying migrations (attempt ${attempt})...`);
+    const result = prismaExec(prismaCli, ['migrate', 'deploy', ...schemaArgs], prismaEnv, cwd);
+
+    if (result.success) {
+      log('Migrations applied');
+      migrated = true;
+      break;
+    }
+
+    const err = result.output;
+
+    // P3018: table/index already exists — mark as applied
+    if (err.includes('P3018') || err.includes('already exists')) {
+      const migration = extractFailedMigration(err);
+      if (migration) {
+        log(`Resolving "${migration}" (already exists)...`);
+        prismaExec(prismaCli, ['migrate', 'resolve', '--applied', migration, ...schemaArgs], prismaEnv, cwd);
+        continue;
+      }
+    }
+
+    // P3005: database not empty, needs baselining
+    if (err.includes('P3005')) {
+      log(`Baselining ${ALL_MIGRATIONS.length} migrations...`);
+      for (const m of ALL_MIGRATIONS) {
+        prismaExec(prismaCli, ['migrate', 'resolve', '--applied', m, ...schemaArgs], prismaEnv, cwd);
+      }
+      continue;
+    }
+
+    // P3009: failed migrations blocking deploy
+    if (err.includes('P3009') || err.includes('found failed migrations')) {
+      const migration = extractFailedMigration(err);
+      if (migration) {
+        log(`Resolving failed migration "${migration}"...`);
+        prismaExec(prismaCli, ['migrate', 'resolve', '--applied', migration, ...schemaArgs], prismaEnv, cwd);
+      } else {
+        for (const m of ALL_MIGRATIONS) {
+          prismaExec(prismaCli, ['migrate', 'resolve', '--applied', m, ...schemaArgs], prismaEnv, cwd);
+        }
+      }
+      continue;
+    }
+
+    log(`Migration error: ${err}`);
+    break;
+  }
+
+  if (!migrated) {
+    log('Migration deploy failed, falling back to db push');
+  }
+
+  // Step 2: Safety net — db push to ensure all schema elements exist
+  log('Verifying schema...');
+  const pushResult = prismaExec(prismaCli, ['db', 'push', '--skip-generate', ...schemaArgs], prismaEnv, cwd);
+  if (!pushResult.success && pushResult.output.includes('--accept-data-loss')) {
+    log('Applying schema updates with data loss acceptance...');
+    prismaExec(prismaCli, ['db', 'push', '--skip-generate', '--accept-data-loss', ...schemaArgs], prismaEnv, cwd);
+  }
+  log('Database ready');
+}
+
 // ─── Server Management ─────────────────────────────────────────────────────
 
 function getNodeEnv() {
@@ -240,37 +352,25 @@ async function startServer() {
   log(`Database: ${dbPath}`);
   log(`Electron exe: ${process.execPath}`);
 
-  // Apply database schema
-  try {
-    log('Applying database schema...');
-    const schemaPath = app.isPackaged
-      ? path.join(process.resourcesPath, 'prisma', 'schema.prisma')
-      : path.join(__dirname, '..', 'prisma', 'schema.prisma');
+  // Apply database migrations
+  const schemaPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'prisma', 'schema.prisma')
+    : path.join(__dirname, '..', 'prisma', 'schema.prisma');
 
-    const prismaModules = app.isPackaged
-      ? path.join(process.resourcesPath, 'prisma-cli', 'node_modules')
-      : path.join(__dirname, '..', 'node_modules');
+  const prismaModules = app.isPackaged
+    ? path.join(process.resourcesPath, 'prisma-cli', 'node_modules')
+    : path.join(__dirname, '..', 'node_modules');
 
-    const prismaCli = path.join(prismaModules, 'prisma', 'build', 'index.js');
+  const prismaCli = path.join(prismaModules, 'prisma', 'build', 'index.js');
 
-    const prismaEnv = { ...env };
-    prismaEnv.NODE_PATH = prismaModules;
+  const prismaEnv = { ...env };
+  prismaEnv.NODE_PATH = prismaModules;
 
-    log(`Schema: ${schemaPath}`);
-    log(`Prisma CLI: ${prismaCli}`);
-    log(`Prisma modules: ${prismaModules}`);
+  log(`Schema: ${schemaPath}`);
+  log(`Prisma CLI: ${prismaCli}`);
+  log(`Prisma modules: ${prismaModules}`);
 
-    execFileSync(process.execPath, [prismaCli, 'db', 'push', '--schema', schemaPath, '--skip-generate', '--accept-data-loss'], {
-      cwd: dataDir,
-      env: prismaEnv,
-      stdio: 'pipe',
-      timeout: 30000,
-    });
-    log('Database schema applied');
-  } catch (err) {
-    log(`Schema push error: ${err.message}`);
-    if (err.stderr) log(`Schema push stderr: ${err.stderr.toString()}`);
-  }
+  runMigrations(prismaCli, schemaPath, prismaEnv, dataDir);
 
   // Start Next.js standalone server
   const serverScript = path.join(serverDir, 'server.js');
