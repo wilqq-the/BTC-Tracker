@@ -130,7 +130,7 @@ npm run dev  # Migrations run automatically
 
 Download the installer from the [latest release](https://github.com/wilqq-the/BTC-Tracker/releases/latest) — no Docker or browser required. Everything runs locally on your machine.
 
-Open `http://localhost:3000` and register the first user (becomes admin automatically).
+Open app and register the first user (becomes admin automatically).
 
 ## How multi-user works
 
