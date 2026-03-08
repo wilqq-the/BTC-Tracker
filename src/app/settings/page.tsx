@@ -4,14 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
+import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon } from 'lucide-react';
+import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'admin';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin';
 
 interface SettingsResponse {
   success: boolean;
@@ -133,6 +134,7 @@ export default function SettingsPage() {
     { id: 'account', label: 'Account', icon: UserIcon },
     { id: 'currency', label: 'Currency', icon: DollarSignIcon },
     { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
+    { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
     ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
   ];
@@ -240,6 +242,10 @@ export default function SettingsPage() {
             />
           )}
           
+          {activeTab === 'exchanges' && (
+            <ExchangeConnectionsPanel />
+          )}
+
           {activeTab === 'display' && (
             <DisplaySettingsPanel
               settings={settings.display}

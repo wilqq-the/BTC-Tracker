@@ -62,6 +62,9 @@ const ALL_MIGRATIONS = [
   '20251107000000_add_transfer_and_cold_wallet_fields',
   '20251107213701_add_recurring_transactions',
   '20251207000000_add_two_factor_auth',
+  '20260222000000_add_api_keys',
+  '20260223000000_add_multiple_wallets',
+  '20260225000000_add_exchange_connections',
 ];
 
 

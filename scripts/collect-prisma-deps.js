@@ -1,18 +1,13 @@
 #!/usr/bin/env node
 /**
- * Collects all transitive runtime dependencies of the prisma CLI
- * by recursively reading each package's package.json dependencies field.
- *
- * Used in the Docker build (prisma-runtime stage) so the Dockerfile
- * needs no manually maintained dependency list. When prisma is upgraded,
- * this script automatically picks up any new transitive deps.
+ * Collects all transitive runtime dependencies of the prisma CLI.
+ * Cross-platform (works on Windows and Unix).
  *
  * Usage: node scripts/collect-prisma-deps.js <src-node-modules> <dest-dir>
  */
 
 const fs = require('fs');
 const path = require('path');
-const { execSync } = require('child_process');
 
 const src = process.argv[2] || '/app/node_modules';
 const dst = process.argv[3] || '/prisma-runtime/node_modules';
@@ -32,14 +27,10 @@ function collect(name) {
 collect('prisma');
 
 for (const name of seen) {
+  const from = path.join(src, name);
   const to = path.join(dst, name);
   fs.mkdirSync(path.dirname(to), { recursive: true });
-  execSync(
-    'cp -r ' +
-      JSON.stringify(path.join(src, name)) +
-      ' ' +
-      JSON.stringify(path.dirname(to))
-  );
+  fs.cpSync(from, to, { recursive: true });
 }
 
 console.log('prisma-runtime: ' + seen.size + ' packages collected');

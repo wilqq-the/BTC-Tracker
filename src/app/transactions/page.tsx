@@ -90,6 +90,8 @@ interface BitcoinTransaction {
   updated_at: string;
   transfer_type?: string;
   destination_address?: string;
+  from_wallet?: { id: number; name: string; emoji: string | null; type: string } | null;
+  to_wallet?: { id: number; name: string; emoji: string | null; type: string } | null;
   secondary_currency?: string;
   secondary_currency_price_per_btc?: number;
   secondary_currency_total_amount?: number;
@@ -99,10 +101,10 @@ interface BitcoinTransaction {
   pnl_main?: number;
 }
 
-type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off';
+type DuplicateCheckMode = 'strict' | 'standard' | 'loose' | 'off' | 'dca';
 
 // Column configuration
-type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'notes';
+type ColumnId = 'date' | 'type' | 'amount' | 'price' | 'value' | 'pnl' | 'wallet' | 'notes';
 
 interface ColumnConfig {
   id: ColumnId;
@@ -119,6 +121,7 @@ const COLUMNS: ColumnConfig[] = [
   { id: 'price', label: 'Price', defaultVisible: true, sortable: true, colSpan: 2 },
   { id: 'value', label: 'Value', defaultVisible: true, sortable: false, colSpan: 2 },
   { id: 'pnl', label: 'P&L', defaultVisible: true, sortable: true, colSpan: 2 },
+  { id: 'wallet', label: 'Wallet', defaultVisible: false, sortable: false, colSpan: 2 },
   { id: 'notes', label: 'Notes', defaultVisible: false, sortable: false, colSpan: 2 },
 ];
 
@@ -139,7 +142,7 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL' | 'TRANSFER'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'pnl' | 'price' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [currentBtcPrice, setCurrentBtcPrice] = useState(105000);
+  const [currentBtcPrice, setCurrentBtcPrice] = useState(0);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
@@ -203,7 +206,6 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     loadTransactions();
-    loadCurrentBitcoinPrice();
   }, []);
 
   useEffect(() => {
@@ -219,6 +221,17 @@ export default function TransactionsPage() {
       setCurrentPage(1);
     }
   }, [filterType, dateRange, customDateFrom, customDateTo]);
+
+  // Reload when sort changes - reset to page 1
+  useEffect(() => {
+    if (!loading) {
+      if (currentPage === 1) {
+        loadTransactions(1, itemsPerPage);
+      } else {
+        setCurrentPage(1); // Will trigger loadTransactions via the currentPage useEffect
+      }
+    }
+  }, [sortBy, sortOrder]);
   
   const getDateRangeBoundaries = useCallback(() => {
     const now = new Date();
@@ -306,6 +319,9 @@ export default function TransactionsPage() {
         const secondaryCurrency = metrics.secondaryCurrency || mainCurrency;
 
         setSecondaryExchangeRate(metrics.mainToSecondaryRate || 1);
+        if (metrics.currentBtcPrice) {
+          setCurrentBtcPrice(metrics.currentBtcPrice);
+        }
 
         setSummaryStats({
           totalBtcBought: metrics.totalBtc + (metrics.totalBtcSold || 0),
@@ -329,6 +345,8 @@ export default function TransactionsPage() {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
+        sortBy: sortBy,
+        sortOrder: sortOrder,
       });
 
       if (filterType !== 'ALL') params.append('type', filterType);
@@ -358,18 +376,6 @@ export default function TransactionsPage() {
       setTransactions([]);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadCurrentBitcoinPrice = async () => {
-    try {
-      const response = await fetch('/api/bitcoin-price');
-      const result = await response.json();
-      if (result.success && result.data?.price) {
-        setCurrentBtcPrice(result.data.price);
-      }
-    } catch (error) {
-      console.error('Error loading current Bitcoin price:', error);
     }
   };
 
@@ -491,9 +497,17 @@ export default function TransactionsPage() {
       const result = await response.json();
       
       if (result.success) {
-        const message = duplicateCheckMode === 'off' 
-          ? `Successfully imported ${result.imported} transactions.`
-          : `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        let message: string;
+        if (duplicateCheckMode === 'off') {
+          message = `Successfully imported ${result.imported} transactions.`;
+        } else if (duplicateCheckMode === 'dca') {
+          const parts = [`Successfully imported ${result.imported} transactions.`];
+          if (result.updated > 0) parts.push(`${result.updated} Auto-DCA entries updated.`);
+          if (result.skipped > 0) parts.push(`${result.skipped} duplicates skipped.`);
+          message = parts.join(' ');
+        } else {
+          message = `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
+        }
         alert(message);
         setShowImportModal(false);
         setImportFile(null);
@@ -546,61 +560,33 @@ export default function TransactionsPage() {
       setSortBy(column);
       setSortOrder('desc');
     }
+    // Reset to page 1 when sorting changes
+    setCurrentPage(1);
   };
 
-  const filteredAndSortedTransactions = transactions
-    .filter(t => {
-      if (selectedTags.length > 0) {
-        const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
-        if (!selectedTags.some(selectedTag => txTags.includes(selectedTag))) return false;
+  // Only filter client-side (tags and search), sorting is now done server-side
+  const filteredTransactions = transactions.filter(t => {
+    if (selectedTags.length > 0) {
+      const txTags = t.tags ? t.tags.split(',').map(tag => tag.trim()) : [];
+      if (!selectedTags.some(selectedTag => txTags.includes(selectedTag))) return false;
+    }
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesNotes = t.notes?.toLowerCase().includes(query);
+      const matchesAmount = t.btc_amount.toString().includes(query);
+      const matchesCurrency = t.original_currency?.toLowerCase().includes(query);
+      const matchesDate = t.transaction_date.includes(query);
+      const matchesPrice = t.original_price_per_btc.toString().includes(query);
+      const matchesTags = t.tags?.toLowerCase().includes(query);
+      if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
+        return false;
       }
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesNotes = t.notes?.toLowerCase().includes(query);
-        const matchesAmount = t.btc_amount.toString().includes(query);
-        const matchesCurrency = t.original_currency?.toLowerCase().includes(query);
-        const matchesDate = t.transaction_date.includes(query);
-        const matchesPrice = t.original_price_per_btc.toString().includes(query);
-        const matchesTags = t.tags?.toLowerCase().includes(query);
-        if (!matchesNotes && !matchesAmount && !matchesCurrency && !matchesDate && !matchesPrice && !matchesTags) {
-          return false;
-        }
-      }
-      return true;
-    })
-    .sort((a, b) => {
-      let aValue: number | string, bValue: number | string;
-      
-      switch (sortBy) {
-        case 'date':
-          aValue = new Date(a.transaction_date).getTime();
-          bValue = new Date(b.transaction_date).getTime();
-          break;
-        case 'amount':
-          aValue = a.btc_amount;
-          bValue = b.btc_amount;
-          break;
-        case 'pnl':
-          aValue = calculatePnL(a);
-          bValue = calculatePnL(b);
-          break;
-        case 'price':
-          aValue = a.main_currency_price_per_btc || a.original_price_per_btc;
-          bValue = b.main_currency_price_per_btc || b.original_price_per_btc;
-          break;
-        case 'type':
-          aValue = a.type;
-          bValue = b.type;
-          break;
-        default:
-          return 0;
-      }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-      }
-      return sortOrder === 'asc' ? (aValue as number) - (bValue as number) : (bValue as number) - (aValue as number);
-    });
+    }
+    return true;
+  });
+
+  // Use filtered transactions (sorting is done server-side)
+  const filteredAndSortedTransactions = filteredTransactions;
 
   const netPosition = summaryStats.totalBtcBought - summaryStats.totalBtcSold;
   const avgBuyPrice = summaryStats.totalBtcBought > 0 ? summaryStats.totalInvested / summaryStats.totalBtcBought : 0;
@@ -975,6 +961,7 @@ export default function TransactionsPage() {
                   P&L {sortBy === 'pnl' && (sortOrder === 'asc' ? <ArrowUpIcon className="size-3" /> : <ArrowDownIcon className="size-3" />)}
                 </div>
               )}
+              {columnVisibility.wallet && <div>Wallet</div>}
               {columnVisibility.notes && <div>Notes</div>}
               <div className="text-right">Actions</div>
             </div>
@@ -1128,6 +1115,30 @@ export default function TransactionsPage() {
                                   {formatPercentage(pnlPercent)}
                                 </p>
                               </div>
+                            )}
+                          </div>
+                        )}
+                        {columnVisibility.wallet && (
+                          <div className="min-w-0">
+                            {(transaction.from_wallet || transaction.to_wallet) ? (
+                              <div className="text-xs space-y-0.5">
+                                {transaction.from_wallet && (
+                                  <p className="truncate text-muted-foreground" title={transaction.from_wallet.name}>
+                                    <span className="text-foreground/50">from </span>
+                                    {transaction.from_wallet.emoji || (transaction.from_wallet.type === 'cold' ? '❄️' : '🔥')}{' '}
+                                    <span className="font-medium">{transaction.from_wallet.name}</span>
+                                  </p>
+                                )}
+                                {transaction.to_wallet && (
+                                  <p className="truncate text-muted-foreground" title={transaction.to_wallet.name}>
+                                    <span className="text-foreground/50">to </span>
+                                    {transaction.to_wallet.emoji || (transaction.to_wallet.type === 'cold' ? '❄️' : '🔥')}{' '}
+                                    <span className="font-medium">{transaction.to_wallet.name}</span>
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/50">—</span>
                             )}
                           </div>
                         )}
@@ -1393,6 +1404,7 @@ export default function TransactionsPage() {
                     <SelectItem value="strict">Strict — All fields must match</SelectItem>
                     <SelectItem value="standard">Standard — Core fields must match (recommended)</SelectItem>
                     <SelectItem value="loose">Loose — Only date and amount</SelectItem>
+                    <SelectItem value="dca">DCA — Date &amp; fiat amount (updates Auto-DCA entries)</SelectItem>
                     <SelectItem value="off">Off — Import all</SelectItem>
                   </SelectContent>
                 </Select>

@@ -96,12 +96,13 @@ export class StrikeParser extends BaseParser {
   }
 
   /**
-   * Parse Strike date format "Jan 01 2026 10:33:55" → "2026-01-01"
+   * Parse Strike date format "Jan 01 2026 10:33:55" (UTC) → "2026-01-01"
+   * Appends " UTC" so JavaScript doesn't interpret the string as local time.
    */
   private parseStrikeDate(dateStr: string): string {
     if (!dateStr) return '';
 
-    const d = new Date(dateStr);
+    const d = new Date(dateStr + ' UTC');
     if (isNaN(d.getTime())) {
       return super.parseDate(dateStr);
     }

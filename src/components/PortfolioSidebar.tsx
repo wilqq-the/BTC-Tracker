@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { RefreshCwIcon, XIcon, PlusIcon, TrendingUpIcon, WalletIcon, CoinsIcon } from 'lucide-react';
+import { RefreshCwIcon, XIcon, PlusIcon, TrendingUpIcon, WalletIcon, CoinsIcon, ChevronDownIcon } from 'lucide-react';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { BitcoinPriceClient, BitcoinPriceData } from '@/lib/bitcoin-price-client';
 import { PortfolioSummaryData } from '@/lib/bitcoin-price-service';
@@ -10,6 +10,7 @@ import AddTransactionModal from './AddTransactionModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 interface ConvertedPortfolioData {
   totalBTC: number;
@@ -41,6 +42,88 @@ interface ConvertedPortfolioData {
 
 interface PortfolioSidebarProps {
   onClose?: () => void;
+}
+
+const WALLET_COLORS = [
+  'bg-blue-500', 'bg-btc-500', 'bg-emerald-500', 'bg-violet-500',
+  'bg-pink-500', 'bg-amber-500', 'bg-cyan-500', 'bg-rose-500',
+];
+
+type WalletEntry = { id: number; name: string; emoji: string | null; type: string; btcBalance: number; includeInPortfolio: boolean };
+
+function WalletSection({ portfolioData, totalBTC }: { portfolioData: any; totalBTC: number }) {
+  const [open, setOpen] = useState(false);
+  const wallets: WalletEntry[] = portfolioData.walletBreakdown ?? [];
+  const hasNamed = wallets.length > 0;
+
+  // Build segments for the mini bar
+  type Segment = { id: number; name: string; btcBalance: number };
+  const segments: Segment[] = hasNamed
+    ? wallets.filter(w => w.includeInPortfolio && w.btcBalance > 0).map(w => ({ id: w.id, name: w.name, btcBalance: w.btcBalance }))
+    : [
+        { id: -1, name: 'Cold', btcBalance: portfolioData.coldWalletBtc as number },
+        { id: -2, name: 'Hot',  btcBalance: Math.abs(portfolioData.hotWalletBtc as number) },
+      ];
+  const barTotal = segments.reduce((s, w) => s + w.btcBalance, 0) || 1;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger className="w-full group">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">
+            Wallets{hasNamed ? ` (${wallets.length})` : ''}
+          </p>
+          <ChevronDownIcon className={`size-3 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </div>
+        {/* Mini distribution bar — always visible */}
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden flex gap-px">
+          {segments.map((w, i) => (
+            <div
+              key={w.id}
+              className={`${WALLET_COLORS[i % WALLET_COLORS.length]} transition-all duration-300`}
+              style={{ width: `${(w.btcBalance / barTotal) * 100}%` }}
+              title={`${w.name}: ${w.btcBalance.toFixed(8)} ₿`}
+            />
+          ))}
+        </div>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent className="mt-2 space-y-1.5">
+        {hasNamed ? (
+          wallets.map((w, i) => (
+            <div key={w.id} className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`size-2 rounded-full shrink-0 ${WALLET_COLORS[i % WALLET_COLORS.length]}`} />
+                <span className="text-sm shrink-0">{w.emoji || (w.type === 'cold' ? '❄️' : '🔥')}</span>
+                <span className="text-xs text-muted-foreground truncate">{w.name}</span>
+                {!w.includeInPortfolio && <span className="text-xs text-muted-foreground/40 shrink-0">(excl.)</span>}
+              </div>
+              <div className="font-mono text-xs font-medium shrink-0 ml-2">
+                {w.btcBalance.toFixed(8)} ₿
+              </div>
+            </div>
+          ))
+        ) : (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-blue-500" />
+                <span className="text-xs text-muted-foreground">Cold Wallet</span>
+              </div>
+              <span className="font-mono text-xs font-medium">{portfolioData.coldWalletBtc.toFixed(8)} ₿</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="size-2 rounded-full bg-btc-500" />
+                <span className="text-xs text-muted-foreground">Hot Wallet</span>
+              </div>
+              <span className="font-mono text-xs font-medium">{Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿</span>
+            </div>
+          </>
+        )}
+      </CollapsibleContent>
+    </Collapsible>
+  );
 }
 
 export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
@@ -318,38 +401,11 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
             </div>
           </div>
           
-          {/* Cold/Hot Wallet Distribution */}
-          {(portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
+          {/* Wallet Distribution — collapsible */}
+          {(portfolioData.walletBreakdown?.length > 0 || portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
             <>
               <Separator />
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide">
-                  Wallet Distribution
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                    <span className="text-xs text-muted-foreground">Cold Wallet</span>
-                  </div>
-                  <div className="font-mono text-sm font-medium">
-                    {portfolioData.coldWalletBtc.toFixed(8)} ₿
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <span className="text-xs text-muted-foreground">Hot Wallet</span>
-                  </div>
-                  <div className="font-mono text-sm font-medium">
-                    {Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿
-                  </div>
-                </div>
-                {portfolioData.coldWalletBtc > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {((portfolioData.coldWalletBtc / convertedData.totalBTC) * 100).toFixed(1)}% in cold storage
-                  </p>
-                )}
-              </div>
+              <WalletSection portfolioData={portfolioData} totalBTC={convertedData.totalBTC} />
             </>
           )}
           

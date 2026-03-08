@@ -5,6 +5,22 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-02-25
+
+### 🐛 Bug Fixes
+- **Net Holdings currency mismatch** — "Net Holdings" fiat value on the Transactions page was always calculated using the raw USD BTC price regardless of display currency setting, causing it to be inconsistent with "Total Invested" and "Unrealized P&L" for non-USD users ([#206](https://github.com/wilqq-the/BTC-Tracker/issues/206))
+
+### ✨ New Features
+- **Windows Desktop App** — Native Electron app with system tray, auto-start, splash screen, and branded NSIS installer
+- **Exchange Auto-Sync**  (Beta) — Connect exchange API keys to automatically import BTC spot trades. Supports Binance, Kraken, Coinbase, Bybit, and Gemini
+- **Exchange Connections UI** — New "Exchanges" tab in Settings to manage connections, test credentials, and trigger syncs
+
+### 🔧 Improvements
+- **More interactive calendar** - now calendar have months/years as a dropdown for quicker going back in time
+- **Sort/filter works cross page** - filter/sort was working on the single page, now it's cross-paged on the server side
+- **Wallet column in transactions** - new optional "Wallet" column showing source/destination wallet per transaction (toggle via column picker)
+- **Named wallets in portfolio sidebar** - wallet distribution section now shows each named wallet with its BTC balance
+
 ## [0.6.9] - 2026-02-23
 
 ### 🐛 Bug Fixes

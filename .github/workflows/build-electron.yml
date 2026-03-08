@@ -1,0 +1,93 @@
+name: Build Electron App
+
+on:
+  push:
+    branches:
+      - feature/electron-desktop
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Build Next.js
+        env:
+          DATABASE_URL: "file:./build-dummy.db"
+          NEXTAUTH_SECRET: "build-secret-not-used-at-runtime"
+        run: npm run build
+
+      - name: Prepare standalone bundle
+        run: |
+          Copy-Item -Path ".next/static" -Destination ".next/standalone/.next/static" -Recurse -Force
+          Copy-Item -Path "public" -Destination ".next/standalone/public" -Recurse -Force
+          if (!(Test-Path ".next/standalone/node_modules/.prisma")) {
+            Copy-Item -Path "node_modules/.prisma" -Destination ".next/standalone/node_modules/.prisma" -Recurse -Force
+          }
+          if (!(Test-Path ".next/standalone/node_modules/@prisma")) {
+            Copy-Item -Path "node_modules/@prisma" -Destination ".next/standalone/node_modules/@prisma" -Recurse -Force
+          }
+          Write-Host "--- standalone contents ---"
+          Get-ChildItem ".next/standalone" -Depth 0 | ForEach-Object { Write-Host $_.Name }
+        shell: pwsh
+
+      - name: Trim standalone bundle
+        run: |
+          $standalone = ".next/standalone"
+          # Remove unnecessary files to reduce installer size
+          $patterns = @("README.md", "README", "CHANGELOG.md", "CHANGELOG", "LICENSE", "LICENSE.md", "*.map", "*.ts", "!*.d.ts", "*.md", ".npmignore", ".eslintrc*", ".prettierrc*", "tsconfig.json", "jest.config.*", ".github", "__tests__", "test", "tests", "docs", "doc", "example", "examples")
+          foreach ($pattern in $patterns) {
+            Get-ChildItem -Path "$standalone/node_modules" -Recurse -Filter $pattern -ErrorAction SilentlyContinue |
+              Where-Object { -not $_.PSIsContainer -or $_.Name -in @(".github", "__tests__", "test", "tests", "docs", "doc", "example", "examples") } |
+              Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+          }
+          $sizeMB = [math]::Round((Get-ChildItem $standalone -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+          Write-Host "Standalone bundle size after trim: ${sizeMB} MB"
+        shell: pwsh
+
+      - name: Collect Prisma CLI dependencies
+        run: node scripts/collect-prisma-deps.js node_modules prisma-bundle
+
+      - name: Install Electron and builder
+        run: npm install --save-dev electron@latest electron-builder@latest
+
+      - name: Build Electron app
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win --config electron-builder.yml
+
+      - name: Verify packaged output
+        run: |
+          $resDir = "dist-electron/win-unpacked/resources"
+          $appDir = "$resDir/app"
+          Write-Host "--- resources ---"
+          Get-ChildItem $resDir -Depth 0 | ForEach-Object { Write-Host $_.Name }
+          if (Test-Path "$appDir/.next/standalone/node_modules/next") { Write-Host "next module: OK" } else { Write-Error "next module missing!"; exit 1 }
+          if (Test-Path "$resDir/prisma/schema.prisma") { Write-Host "prisma schema: OK" } else { Write-Error "prisma schema missing!"; exit 1 }
+          if (Test-Path "$resDir/prisma-cli/node_modules/prisma/build/index.js") { Write-Host "prisma CLI: OK" } else { Write-Error "prisma CLI missing!"; exit 1 }
+          if (Test-Path "$resDir/prisma-cli/node_modules/@prisma/debug") { Write-Host "prisma debug: OK" } else { Write-Error "@prisma/debug missing!"; exit 1 }
+          if (Test-Path "$resDir/prisma-cli/node_modules/c12") { Write-Host "c12 (ESM dep): OK" } else { Write-Error "c12 missing!"; exit 1 }
+          $sizeMB = [math]::Round((Get-ChildItem "dist-electron/win-unpacked" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 1)
+          Write-Host "Total unpacked size: ${sizeMB} MB"
+        shell: pwsh
+
+      - name: Upload Windows installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: BTC-Tracker-Windows-Setup
+          path: dist-electron/*.exe
+          retention-days: 14
