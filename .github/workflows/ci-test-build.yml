@@ -2,9 +2,13 @@ name: CI - Test & Build
 
 on:
   push:
-    branches: [ "**" ]  # Run on every commit to any branch (** also matches slashes, e.g. feature/*)
-  pull_request:
-    branches: [ "**" ]
+    branches: [ main, dev ]  # mainline only; feature branches are covered via their PR
+  pull_request:              # every PR, any base
+
+# Cancel an in-progress run when a newer commit is pushed to the same ref
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test-and-build:
