@@ -2,9 +2,9 @@ name: CI - Test & Build
 
 on:
   push:
-    branches: [ "*" ]  # Run on every commit to any branch
+    branches: [ "**" ]  # Run on every commit to any branch (** also matches slashes, e.g. feature/*)
   pull_request:
-    branches: [ "*" ]
+    branches: [ "**" ]
 
 jobs:
   test-and-build:
