@@ -134,33 +134,58 @@ export class BackupService {
   // ---------------------------------------------------------------------------
 
   /**
-   * Copy the live DB into `targetPath` as a consistent single file.
-   * Prefers `VACUUM INTO`; falls back to a WAL checkpoint + file copy if the
-   * driver refuses VACUUM inside an implicit transaction.
+   * Copy `dbPath` (open on `client`) into `targetPath` as a consistent single
+   * file. Prefers `VACUUM INTO`; falls back to a WAL checkpoint + file copy if
+   * the driver refuses VACUUM inside an implicit transaction.
    */
-  static async vacuumInto(targetPath: string): Promise<void> {
+  static async vacuumIntoWith(client: PrismaClient, dbPath: string, targetPath: string): Promise<void> {
     const escaped = targetPath.replace(/'/g, "''");
     try {
-      await prisma.$executeRawUnsafe(`VACUUM INTO '${escaped}'`);
+      await client.$executeRawUnsafe(`VACUUM INTO '${escaped}'`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       if (/transaction/i.test(msg)) {
         // Fallback: force a full checkpoint then copy the (now consistent) file.
-        await prisma.$executeRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE)');
-        await fsp.copyFile(this.resolveDbPath(), targetPath);
+        await client.$executeRawUnsafe('PRAGMA wal_checkpoint(TRUNCATE)');
+        await fsp.copyFile(dbPath, targetPath);
         return;
       }
       throw error;
     }
   }
 
-  static async createSnapshot(opts: { kind?: BackupKind; gzip?: boolean; label?: string } = {}): Promise<SnapshotMetadata> {
-    const kind: BackupKind = opts.kind ?? 'manual';
-    const gzip = opts.gzip ?? false;
+  /** Convenience wrapper that snapshots the live database. */
+  static vacuumInto(targetPath: string): Promise<void> {
+    return this.vacuumIntoWith(prisma, this.resolveDbPath(), targetPath);
+  }
 
-    await this.ensureBackupDir();
-    const backupDir = this.getBackupDir();
-    const dbPath = this.resolveDbPath();
+  /** Snapshot the live database (default client/paths). */
+  static createSnapshot(opts: { kind?: BackupKind; gzip?: boolean; label?: string } = {}): Promise<SnapshotMetadata> {
+    return this.createSnapshotFrom({
+      client: prisma,
+      dbPath: this.resolveDbPath(),
+      backupDir: this.getBackupDir(),
+      ...opts,
+    });
+  }
+
+  /**
+   * Snapshot an arbitrary database (explicit client + paths). Used by
+   * createSnapshot for the live DB, and by tests/restore against isolated DBs.
+   */
+  static async createSnapshotFrom(params: {
+    client: PrismaClient;
+    dbPath: string;
+    backupDir: string;
+    kind?: BackupKind;
+    gzip?: boolean;
+    label?: string;
+  }): Promise<SnapshotMetadata> {
+    const { client, dbPath, backupDir } = params;
+    const kind: BackupKind = params.kind ?? 'manual';
+    const gzip = params.gzip ?? false;
+
+    await fsp.mkdir(backupDir, { recursive: true });
 
     // Disk-space guard: the VACUUM/copy step writes a full-size file first
     // (gzip only shrinks it afterwards), so require ~1.2x the DB size either way.
@@ -178,7 +203,7 @@ export class BackupService {
     const tmpPath = path.join(backupDir, `.tmp-${stamp}.db`);
 
     try {
-      await this.vacuumInto(tmpPath);
+      await this.vacuumIntoWith(client, dbPath, tmpPath);
 
       if (gzip) {
         await pipeline(createReadStream(tmpPath), createGzip(), createWriteStream(finalPath));
@@ -195,11 +220,11 @@ export class BackupService {
         sizeBytes,
         createdAt: new Date().toISOString(),
         appVersion: await this.getAppVersion(),
-        schemaVersion: await this.getSchemaVersion(),
+        schemaVersion: await this.schemaVersionOf(client),
         gzip,
         kind,
         sha256,
-        ...(opts.label ? { label: opts.label } : {}),
+        ...(params.label ? { label: params.label } : {}),
       };
 
       await fsp.writeFile(`${finalPath}.json`, JSON.stringify(metadata, null, 2), 'utf-8');
@@ -333,10 +358,9 @@ export class BackupService {
   }
 
   /**
-   * The destructive core. Sequence: validate (out-of-band) → safety backup →
-   * stop schedulers → disconnect → swap file (+ clear WAL sidecars) → reconnect
-   * → migrate up if older → restart services. Rolls back to the safety backup on
-   * any post-swap failure.
+   * Production restore wrapper: holds the single-flight lock, stops/restarts
+   * background schedulers around the swap, and delegates the destructive work to
+   * restoreCore against the live database.
    */
   private static async performRestore(stagedPath: string, sourceName: string): Promise<RestoreResult> {
     if (RESTORE_LOCK) {
@@ -345,54 +369,83 @@ export class BackupService {
     }
     RESTORE_LOCK = true;
 
-    const dbPath = this.resolveDbPath();
     const { prisma } = await import('./prisma');
+    let stopped = false;
 
     try {
-      // 1. Validate the staged file without touching the live connection.
-      const { stagedLatest } = await this.validateStagedDb(stagedPath);
-      const currentLatest = await this.getSchemaVersion();
-      const needsUpgrade = stagedLatest !== 'unknown' && stagedLatest !== currentLatest;
-
-      // 2. Safety backup of the CURRENT database. Abort if it can't be made.
-      let safety: SnapshotMetadata;
-      try {
-        safety = await this.createSnapshot({ kind: 'safety', gzip: false });
-      } catch (e) {
-        throw new Error(`Aborting restore: failed to create safety backup: ${e instanceof Error ? e.message : 'unknown'}`);
-      }
-
-      // 3. Stop background work that touches the DB.
-      await this.stopSchedulers();
-
-      // 4. Swap the file in, then bring the schema up to date if the backup is older.
-      try {
-        await prisma.$disconnect();
-        await this.swapInFile(stagedPath, dbPath);
-        await prisma.$connect();
-        await prisma.$queryRawUnsafe('SELECT 1');
-        if (needsUpgrade) await this.runMigrations();
-        await this.restartServices();
-        return { success: true, restoredFrom: sourceName, safetyBackup: safety.filename, upgraded: needsUpgrade };
-      } catch (err) {
-        // 5. Roll back to the safety backup.
-        try {
-          await prisma.$disconnect().catch(() => {});
-          await this.swapInFile(this.getSnapshotPath(safety.filename), dbPath);
-          await prisma.$connect();
-          await this.restartServices();
-        } catch (rollbackErr) {
-          throw new Error(
-            `Restore FAILED and automatic rollback also FAILED. Your data may be inconsistent. ` +
-            `Restore the safety backup "${safety.filename}" manually. Original error: ${err instanceof Error ? err.message : 'unknown'}; ` +
-            `rollback error: ${rollbackErr instanceof Error ? rollbackErr.message : 'unknown'}`
-          );
-        }
-        throw new Error(`Restore failed (rolled back to safety backup "${safety.filename}"): ${err instanceof Error ? err.message : 'unknown'}`);
-      }
+      const result = await this.restoreCore({
+        stagedPath,
+        client: prisma,
+        dbPath: this.resolveDbPath(),
+        backupDir: this.getBackupDir(),
+        // Stop schedulers only AFTER validation passes (so a bad upload doesn't
+        // needlessly bounce the app's background work).
+        onBeforeSwap: async () => { stopped = true; await this.stopSchedulers(); },
+        runMigrations: () => this.runMigrations(),
+      });
+      return { success: true, restoredFrom: sourceName, safetyBackup: result.safetyBackup, upgraded: result.upgraded };
     } finally {
+      if (stopped) await this.restartServices();
       RESTORE_LOCK = false;
       await fsp.unlink(stagedPath).catch(() => {});
+    }
+  }
+
+  /**
+   * The DB-agnostic destructive core (no scheduler/service concerns, no global
+   * singletons) so it can be exercised in isolation against a throwaway DB.
+   * Sequence: validate (out-of-band) → [onBeforeSwap] → safety backup →
+   * disconnect → swap file (+ clear WAL sidecars) → reconnect → migrate up if
+   * older. Rolls back to the safety backup on any post-swap failure.
+   */
+  static async restoreCore(params: {
+    stagedPath: string;
+    client: PrismaClient;
+    dbPath: string;
+    backupDir: string;
+    onBeforeSwap?: () => Promise<void>;
+    runMigrations?: () => Promise<void>;
+  }): Promise<{ safetyBackup: string; upgraded: boolean }> {
+    const { stagedPath, client, dbPath, backupDir } = params;
+
+    // 1. Validate the staged file out-of-band (throws here = nothing mutated yet).
+    const { stagedLatest } = await this.validateStagedDb(stagedPath);
+    const currentLatest = await this.schemaVersionOf(client);
+    const needsUpgrade = stagedLatest !== 'unknown' && stagedLatest !== currentLatest;
+
+    if (params.onBeforeSwap) await params.onBeforeSwap();
+
+    // 2. Safety backup of the CURRENT database. Abort if it can't be made.
+    let safety: SnapshotMetadata;
+    try {
+      safety = await this.createSnapshotFrom({ client, dbPath, backupDir, kind: 'safety', gzip: false });
+    } catch (e) {
+      throw new Error(`Aborting restore: failed to create safety backup: ${e instanceof Error ? e.message : 'unknown'}`);
+    }
+    const safetyPath = path.join(backupDir, safety.filename);
+
+    // 3. Swap the file in, then bring the schema up to date if the backup is older.
+    try {
+      await client.$disconnect();
+      await this.swapInFile(stagedPath, dbPath);
+      await client.$connect();
+      await client.$queryRawUnsafe('SELECT 1');
+      if (needsUpgrade && params.runMigrations) await params.runMigrations();
+      return { safetyBackup: safety.filename, upgraded: needsUpgrade };
+    } catch (err) {
+      // 4. Roll back to the safety backup.
+      try {
+        await client.$disconnect().catch(() => {});
+        await this.swapInFile(safetyPath, dbPath);
+        await client.$connect();
+      } catch (rollbackErr) {
+        throw new Error(
+          `Restore FAILED and automatic rollback also FAILED. Your data may be inconsistent. ` +
+          `Restore the safety backup "${safety.filename}" manually. Original error: ${err instanceof Error ? err.message : 'unknown'}; ` +
+          `rollback error: ${rollbackErr instanceof Error ? rollbackErr.message : 'unknown'}`
+        );
+      }
+      throw new Error(`Restore failed (rolled back to safety backup "${safety.filename}"): ${err instanceof Error ? err.message : 'unknown'}`);
     }
   }
 
@@ -550,9 +603,13 @@ export class BackupService {
     }
   }
 
-  static async getSchemaVersion(): Promise<string> {
+  static getSchemaVersion(): Promise<string> {
+    return this.schemaVersionOf(prisma);
+  }
+
+  static async schemaVersionOf(client: PrismaClient): Promise<string> {
     try {
-      const rows = await prisma.$queryRawUnsafe<Array<{ migration_name: string }>>(
+      const rows = await client.$queryRawUnsafe<Array<{ migration_name: string }>>(
         'SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL ORDER BY finished_at DESC LIMIT 1'
       );
       return rows[0]?.migration_name ?? 'unknown';
