@@ -4,16 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
+import BackupRestorePanel from '@/components/BackupRestorePanel';
 import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
 import WalletsPanel from '@/components/WalletsPanel';
 import ApiKeysPanel from '@/components/ApiKeysPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon } from 'lucide-react';
+import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon, DatabaseIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin' | 'wallets' | 'apiKeys';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin' | 'wallets' | 'apiKeys' | 'backup';
 
 interface SettingsResponse {
   success: boolean;
@@ -137,7 +138,10 @@ export default function SettingsPage() {
     { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
-    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
+    ...(userData?.isAdmin ? [
+      { id: 'backup', label: 'Backup', icon: DatabaseIcon },
+      { id: 'admin', label: 'Admin', icon: ShieldIcon }
+    ] : [])
   ];
 
   // Title + description for the single encapsulated header (reflects the active tab)
@@ -150,6 +154,7 @@ export default function SettingsPage() {
     exchanges: { title: 'Exchanges', description: 'Connect exchanges to auto-sync your trades' },
     display: { title: 'Display', description: 'Customize the appearance of your tracker' },
     admin: { title: 'Admin', description: 'Manage users and system settings' },
+    backup: { title: 'Backup', description: 'Download, restore, and schedule database backups' },
   };
   const activeMeta = tabMeta[activeTab] ?? { title: 'Settings', description: 'Configure your Bitcoin tracker' };
 
@@ -278,6 +283,10 @@ export default function SettingsPage() {
               onUpdate={(updates: any) => updateSettings('notifications', updates)}
               saving={saving}
             />
+          )}
+
+          {activeTab === 'backup' && userData?.isAdmin && (
+            <BackupRestorePanel />
           )}
 
           {activeTab === 'admin' && userData?.isAdmin && (

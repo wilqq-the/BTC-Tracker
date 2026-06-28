@@ -1,5 +1,6 @@
 import { PriceScheduler } from './price-scheduler';
 import { DCAScheduler } from './dca-scheduler';
+import { BackupScheduler } from './backup-scheduler';
 import { ExchangeRateService } from './exchange-rate-service';
 import { HistoricalDataService } from './historical-data-service';
 import { SettingsService } from './settings-service';
@@ -84,6 +85,14 @@ export class AppInitializationService {
       const dcaStats = await DCAScheduler.getStatistics();
       console.log(`[DCA] Scheduler started (${dcaStats.active} active)`);
 
+      console.log('[BACKUP] Starting backup scheduler...');
+      try {
+        await BackupScheduler.start();
+        console.log('[OK] Backup scheduler ready');
+      } catch (error) {
+        console.error('[WARN] Backup scheduler failed:', error);
+      }
+
       this.setupShutdownHandlers();
 
     } catch (error) {
@@ -100,6 +109,7 @@ export class AppInitializationService {
       console.log('[STOP] Shutting down...');
       PriceScheduler.stop();
       DCAScheduler.stop();
+      BackupScheduler.stop();
       console.log('[OK] Stopped');
     };
 
@@ -127,6 +137,7 @@ export class AppInitializationService {
   static async restart(): Promise<void> {
     console.log('[SYNC] Restarting services...');
     PriceScheduler.stop();
+    BackupScheduler.stop();
     this.isInitialized = false;
     this.initPromise = null;
     await this.initialize();
