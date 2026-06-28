@@ -4,103 +4,119 @@
 
 @layer base {
   :root {
-    /* Light Mode - Clean & Professional */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
-    
+    /* Light Mode — warm "bone" base (not dead white) */
+    --background: 40 30% 99%;
+    --foreground: 240 6% 10%;
+
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
-    
+    --card-foreground: 240 6% 10%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    
-    /* Bitcoin Orange Primary */
-    --primary: 24 94% 53%;
+    --popover-foreground: 240 6% 10%;
+
+    /* Authentic Bitcoin gold-orange (hue ~33) */
+    --primary: 33 92% 50%;
     --primary-foreground: 0 0% 100%;
-    
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-    
-    --destructive: 0 84% 60%;
+
+    --secondary: 40 14% 95%;
+    --secondary-foreground: 240 6% 12%;
+
+    --muted: 40 14% 95%;
+    --muted-foreground: 240 4% 42%;
+
+    --accent: 40 14% 94%;
+    --accent-foreground: 240 6% 12%;
+
+    --destructive: 0 80% 58%;
     --destructive-foreground: 0 0% 100%;
-    
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 24 94% 53%;
-    
+
+    --border: 40 12% 90%;
+    --input: 40 12% 88%;
+    --ring: 33 92% 50%;
+
     /* Chart colors */
-    --chart-1: 24 94% 53%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 0 84% 60%;
-    --chart-4: 43 96% 56%;
-    --chart-5: 262 83% 58%;
-    
-    --radius: 0.5rem;
-    
+    --chart-1: 33 92% 50%;
+    --chart-2: 142 70% 40%;
+    --chart-3: 0 80% 58%;
+    --chart-4: 43 96% 52%;
+    --chart-5: 262 78% 58%;
+
+    --radius: 0.75rem;
+
+    /* Signature shadow + glow system (referenced by tailwind) */
+    --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.04), 0 1px 3px hsl(240 6% 10% / 0.06);
+    --shadow-md: 0 2px 4px hsl(240 6% 10% / 0.04), 0 6px 16px hsl(240 6% 10% / 0.08);
+    --shadow-lg: 0 12px 32px hsl(240 6% 10% / 0.12);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 6px 24px hsl(var(--primary) / 0.22);
+    /* Ambient page glow (subtle base; the app shell adds the main wash) */
+    --aura: radial-gradient(1000px 520px at 50% -12%, hsl(33 92% 50% / 0.05), transparent 70%);
+
     /* Sidebar */
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 24 94% 53%;
+    --sidebar: 40 24% 98%;
+    --sidebar-foreground: 240 6% 10%;
+    --sidebar-primary: 33 92% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 24 94% 53%;
+    --sidebar-accent: 40 14% 94%;
+    --sidebar-accent-foreground: 240 6% 12%;
+    --sidebar-border: 40 12% 90%;
+    --sidebar-ring: 33 92% 50%;
   }
 
   .dark {
-    /* Dark Mode - Neutral charcoal, NO blue tint */
-    --background: 0 0% 4%;              /* #0a0a0a - true black */
-    --foreground: 0 0% 95%;             /* #f2f2f2 */
-    
-    --card: 0 0% 7%;                    /* #121212 - elevated surface */
-    --card-foreground: 0 0% 95%;
-    
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 95%;
-    
-    /* Bitcoin Orange Primary - slightly brighter for dark bg */
-    --primary: 24 95% 55%;
+    /* Dark Mode — deep cool-tinted charcoal (faint blue hue = "expensive" depth) */
+    --background: 240 8% 5%;            /* ~#0c0c0e */
+    --foreground: 240 10% 96%;
+
+    --card: 240 7% 8%;                  /* ~#131316 elevated surface */
+    --card-foreground: 240 10% 96%;
+
+    --popover: 240 7% 9%;
+    --popover-foreground: 240 10% 96%;
+
+    /* Bitcoin gold — brighter on dark for that glow */
+    --primary: 33 96% 56%;
     --primary-foreground: 0 0% 100%;
-    
-    --secondary: 0 0% 12%;              /* #1f1f1f */
-    --secondary-foreground: 0 0% 95%;
-    
-    --muted: 0 0% 12%;                  /* #1f1f1f */
-    --muted-foreground: 0 0% 55%;       /* #8c8c8c */
-    
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 95%;
-    
+
+    --secondary: 240 6% 13%;
+    --secondary-foreground: 240 10% 96%;
+
+    --muted: 240 6% 13%;
+    --muted-foreground: 240 5% 60%;
+
+    --accent: 240 6% 14%;
+    --accent-foreground: 240 10% 96%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    
-    --border: 0 0% 15%;                 /* #262626 */
-    --input: 0 0% 15%;
-    --ring: 24 95% 55%;
-    
+
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+    --ring: 33 96% 56%;
+
     /* Chart colors - optimized for dark */
-    --chart-1: 24 95% 55%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 0 72% 51%;
-    --chart-4: 43 96% 60%;
-    --chart-5: 262 80% 65%;
-    
+    --chart-1: 33 96% 56%;
+    --chart-2: 142 71% 48%;
+    --chart-3: 0 72% 56%;
+    --chart-4: 43 96% 62%;
+    --chart-5: 262 80% 68%;
+
+    /* Signature shadow + glow system — rim light + deep drop for dark */
+    --shadow-sm: 0 0 0 1px hsl(0 0% 100% / 0.02), 0 1px 2px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 0 0 1px hsl(0 0% 100% / 0.03), 0 4px 14px hsl(0 0% 0% / 0.5);
+    --shadow-lg: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 16px 40px hsl(0 0% 0% / 0.6);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 8px 28px hsl(var(--primary) / 0.25);
+    /* Ambient page glow (subtle base; the app shell adds the main wash) */
+    --aura: radial-gradient(1100px 560px at 50% -12%, hsl(33 96% 56% / 0.06), transparent 72%);
+
     /* Sidebar */
-    --sidebar: 0 0% 5%;                 /* #0d0d0d */
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 24 95% 55%;
+    --sidebar: 240 9% 6%;
+    --sidebar-foreground: 240 10% 96%;
+    --sidebar-primary: 33 96% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 24 95% 55%;
+    --sidebar-accent: 240 6% 14%;
+    --sidebar-accent-foreground: 240 10% 96%;
+    --sidebar-border: 240 6% 16%;
+    --sidebar-ring: 33 96% 56%;
   }
 }
 
@@ -110,12 +126,51 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Tabular numerals so columns of figures align — finance-grade */
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Signature ambient aura behind everything */
+    background-image: var(--aura);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
-  
+
+  /* Tighter tracking on headings reads more premium */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+
   /* Prevent scrollbar from causing layout shift */
   html {
     overflow-y: scroll;
+  }
+
+  /* ── Subtle motion ─────────────────────────────────────────────
+     Restrained, not a circus: smooth interactive transitions, a soft
+     shadow/border response on cards, and a gentle lift on dashboard tiles. */
+  a, button, [data-slot="button"], [role="button"], [data-slot="card"], summary {
+    transition: color 0.15s ease, background-color 0.15s ease,
+      border-color 0.15s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  [data-slot="card"]:hover {
+    border-color: hsl(var(--foreground) / 0.12);
+  }
+  /* Dashboard widgets get the signature lift + glow on hover */
+  .react-grid-item:hover {
+    transform: translateY(-2px);
+    z-index: 3;
+  }
+  .react-grid-item.react-draggable-dragging,
+  .react-grid-item.resizing {
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
   }
 }
 
@@ -224,34 +279,146 @@
 }
 
 .react-grid-item.react-grid-placeholder {
-  background: hsl(24, 94%, 53%);
-  opacity: 0.2;
+  background: hsl(33 92% 50%);
+  opacity: 0.18;
   transition-duration: 100ms;
   z-index: 2;
   user-select: none;
   border-radius: var(--radius);
 }
 
-/* Custom scrollbar for dark mode */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Custom scrollbar — themed via tokens and identical width in BOTH light and
+   dark so toggling modes never changes the reserved gutter (no layout shift). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: hsl(0 0% 7%);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 20%);
-  border-radius: 4px;
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 30%);
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Firefox: match width behaviour across themes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
 }
 
 /* Selection color */
 ::selection {
-  background: hsl(24 94% 53% / 0.3);
+  background: hsl(33 92% 50% / 0.28);
+}
+
+/* ── Floating panel glass ────────────────────────────────────────
+   macOS-style floating chrome: header / sidebar / footer are rounded
+   panels that float on the ONE shared canvas (the ambient orb wash
+   shows through the gutters between them). More opaque than a card so
+   they read as solid floating surfaces, with a rim highlight + drop
+   shadow for lift. No borders — the gap + shadow define the edge. */
+.glass-float {
+  background-color: hsl(var(--card) / 0.72);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
+}
+.dark .glass-float {
+  background-color: hsl(var(--card) / 0.6);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06), var(--shadow-lg);
+}
+
+/* ── Dashboard widget glass ──────────────────────────────────────
+   Same elevated material as .glass, but the LIFT is owned by
+   .react-grid-item:hover (so dragging/hover never double-transforms).
+   The surface itself only responds with a border + shadow. */
+.glass-widget {
+  background-color: hsl(var(--card) / 0.72);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  border: 0;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-md);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.dark .glass-widget {
+  background-color: hsl(var(--card) / 0.6);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06), var(--shadow-md);
+}
+/* Lift the shadow when the widget's grid cell is hovered (transform lift
+   is owned by .react-grid-item:hover). Static cards stay calm. */
+.react-grid-item:hover .glass-widget {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
+}
+.dark .react-grid-item:hover .glass-widget {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-lg);
+}
+
+/* Standalone glass cards (content pages) get the same subtle lift + shadow
+   as dashboard widgets. Scoped to real <Card>s (data-slot) so toolbar divs
+   stay calm. Unlayered so it beats .glass-widget's resting shadow. */
+[data-slot="card"]:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
+}
+.dark [data-slot="card"]:hover {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-lg);
+}
+/* Inside the dashboard grid the grid item owns the lift — avoid double transform */
+.react-grid-item [data-slot="card"]:hover {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="card"]:hover { transform: none; }
+}
+
+/* Opaque card escape hatch — for <Card>s where frosted glass is wrong
+   (e.g. nested inside a modal, or on pages without the ambient canvas).
+   Defined AFTER .glass-widget so it wins when both classes are present. */
+.card-solid {
+  background-color: hsl(var(--card));
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+/* Subtle glass surface — translucent + blur + a hairline top highlight */
+.glass {
+  background-color: hsl(var(--card) / 0.62);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid hsl(var(--border) / 0.55);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.45);
+}
+.dark .glass {
+  background-color: hsl(var(--card) / 0.5);
+  border-color: hsl(0 0% 100% / 0.06);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.05);
+}
+
+/* Subtle hover "pop" for glass cards */
+.glass {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.glass:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-md);
+}
+.dark .glass:hover {
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-md);
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass:hover { transform: none; }
 }

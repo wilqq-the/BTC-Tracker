@@ -95,9 +95,9 @@ module.exports = {
           light: '#fef2f2',
         },
         bitcoin: {
-          DEFAULT: '#f2761b',
-          light: '#f59332',
-          dark: '#e35d11',
+          DEFAULT: '#f7931a',
+          light: '#f9a847',
+          dark: '#e07d0a',
         },
         
         // Neutral dark palette (no blue tint) - for legacy components
@@ -122,9 +122,21 @@ module.exports = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      // Signature shadow system (values are mode-aware via CSS vars in globals.css)
+      boxShadow: {
+        sm: "var(--shadow-sm)",
+        DEFAULT: "var(--shadow-md)",
+        md: "var(--shadow-md)",
+        lg: "var(--shadow-lg)",
+        glow: "var(--shadow-glow)",
+      },
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
         shimmer: {
@@ -133,6 +145,7 @@ module.exports = {
       },
       animation: {
         fadeIn: 'fadeIn 0.3s ease-in-out',
+        fadeInUp: 'fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         shimmer: 'shimmer 2s infinite',
       },
     },

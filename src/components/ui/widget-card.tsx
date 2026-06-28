@@ -98,13 +98,13 @@ export function WidgetCard({
   };
 
   return (
-    <Card ref={containerRef} className={cn("h-full flex flex-col overflow-hidden", className)}>
+    <Card ref={containerRef} className={cn("glass-widget rounded-2xl h-full flex flex-col overflow-hidden", className)}>
       {/* Header */}
       {(title || onRefresh) && (
         <CardHeader className="pb-2 space-y-0 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              {Icon && <Icon className="size-4 text-btc-500 shrink-0" />}
+              {Icon && <Icon className="size-4 text-primary shrink-0" />}
               <CardTitle className="text-base truncate">{title}</CardTitle>
               {badge && (
                 typeof badge === 'string' ? (
@@ -217,7 +217,7 @@ export function WidgetStats({ stats }: WidgetStatsProps) {
       case 'loss':
         return 'text-red-600 dark:text-red-400';
       case 'btc':
-        return 'text-btc-500';
+        return 'text-primary';
       default:
         return 'text-foreground';
     }
