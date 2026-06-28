@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import AppLayout from '@/components/AppLayout';
 import currencies from '@/data/currencies.json';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,6 @@ import { Separator } from '@/components/ui/separator';
 import {
   TrendingUpIcon,
   TrendingDownIcon,
-  BarChart3Icon,
   WalletIcon,
   TargetIcon,
   CalendarIcon,
@@ -163,7 +162,7 @@ export default function AnalyticsPage() {
       const result = await response.json();
       
       if (!result.success || !result.data) {
-        alert('Failed to load transactions for export');
+        toast({ title: 'Failed to load transactions for export', variant: 'destructive' });
         return;
       }
 
@@ -212,7 +211,7 @@ export default function AnalyticsPage() {
       
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      alert('Failed to export CSV');
+      toast({ title: 'Failed to export CSV', variant: 'destructive' });
     } finally {
       setExporting(false);
     }
@@ -220,14 +219,12 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
         <div className="flex items-center justify-center h-full">
           <div className="text-center space-y-3">
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-muted-foreground">Loading analytics...</p>
           </div>
         </div>
-      </AppLayout>
     );
   }
 
@@ -256,20 +253,16 @@ export default function AnalyticsPage() {
     : 100;
 
   return (
-    <AppLayout>
-      <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="px-3 pt-0 pb-6 space-y-3">
+        {/* Header — encapsulated toolbar, matching the dashboard */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 glass-widget rounded-2xl px-4 py-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-              <BarChart3Icon className="size-6 text-primary" />
-              Analytics
-            </h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-xl font-semibold tracking-tight">Analytics</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
               Portfolio performance and insights
             </p>
           </div>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -282,13 +275,13 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Key Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Total P&L */}
           <Card className={cn(
             "relative overflow-hidden",
             analyticsData?.totalPnL && analyticsData.totalPnL >= 0
-              ? "bg-gradient-to-br from-profit/10 to-profit/5 border-profit/20"
-              : "bg-gradient-to-br from-loss/10 to-loss/5 border-loss/20"
+              ? "bg-gradient-to-br from-profit/10 to-profit/5"
+              : "bg-gradient-to-br from-loss/10 to-loss/5"
           )}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
@@ -310,7 +303,7 @@ export default function AnalyticsPage() {
                   </p>
                 </div>
                 <div className={cn(
-                  "p-2.5 rounded-lg",
+                  "p-2.5 rounded-2xl",
                   analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10'
                 )}>
                   {analyticsData?.totalPnL && analyticsData.totalPnL >= 0 
@@ -338,7 +331,7 @@ export default function AnalyticsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Current holdings</p>
                 </div>
-                <div className="p-2.5 bg-muted rounded-lg">
+                <div className="p-2.5 bg-muted rounded-2xl">
                   <WalletIcon className="size-5 text-muted-foreground" />
                 </div>
               </div>
@@ -361,7 +354,7 @@ export default function AnalyticsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Closed positions</p>
                 </div>
-                <div className="p-2.5 bg-muted rounded-lg">
+                <div className="p-2.5 bg-muted rounded-2xl">
                   <TargetIcon className="size-5 text-muted-foreground" />
                 </div>
               </div>
@@ -384,7 +377,7 @@ export default function AnalyticsPage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">Yearly average</p>
                 </div>
-                <div className="p-2.5 bg-muted rounded-lg">
+                <div className="p-2.5 bg-muted rounded-2xl">
                   <CalendarIcon className="size-5 text-muted-foreground" />
                 </div>
               </div>
@@ -393,7 +386,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Portfolio Metrics Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <Card>
             <CardContent className="p-5">
               <p className="text-sm font-medium text-muted-foreground">Average Buy Price</p>
@@ -402,10 +395,10 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-btc-500/10 to-btc-600/5 border-btc-500/20">
+          <Card className="bg-gradient-to-br from-primary/10 to-primary/[0.04]">
             <CardContent className="p-5">
               <p className="text-sm font-medium text-muted-foreground">Current BTC Price</p>
-              <p className="text-xl font-bold text-btc-500 mt-1">{fc(analyticsData?.currentBtcPrice)}</p>
+              <p className="text-xl font-bold text-primary mt-1">{fc(analyticsData?.currentBtcPrice)}</p>
               <p className="text-xs text-muted-foreground mt-1">Live market price</p>
             </CardContent>
           </Card>
@@ -430,7 +423,7 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Charts & Stats Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {/* Monthly Performance Chart */}
           <Card>
             <CardHeader className="pb-2">
@@ -587,7 +580,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader className="pb-2">
             <div className="flex items-center gap-2">
-              <TrophyIcon className="size-5 text-btc-500" />
+              <TrophyIcon className="size-5 text-primary" />
               <CardTitle className="text-base">HODLing Journey</CardTitle>
             </div>
             <CardDescription>Track your progress towards Bitcoin milestones</CardDescription>
@@ -595,7 +588,7 @@ export default function AnalyticsPage() {
           <CardContent>
             <div className="space-y-6">
               {/* Current Status */}
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-btc-500/10 via-btc-500/5 to-transparent rounded-xl border border-btc-500/20">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20">
                 <div className="flex items-center gap-4">
                   <div className="text-4xl">
                     {currentMilestone?.icon || '🎯'}
@@ -604,7 +597,7 @@ export default function AnalyticsPage() {
                     <p className="text-lg font-bold">
                       {currentMilestone?.label || 'Starting Your Journey'}
                     </p>
-                    <p className="text-2xl font-bold text-btc-500">
+                    <p className="text-2xl font-bold text-primary">
                       {currentHoldings.toFixed(8)} BTC
                     </p>
                   </div>
@@ -629,7 +622,7 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div 
-                      className="h-full bg-gradient-to-r from-btc-500 to-btc-400 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
                       style={{ width: `${progressToNext}%` }}
                     />
                   </div>
@@ -647,10 +640,10 @@ export default function AnalyticsPage() {
                       key={milestone.amount}
                       className={cn(
                         "relative p-3 rounded-xl text-center transition-all",
-                        isAchieved 
-                          ? "bg-btc-500/10 border-2 border-btc-500/50" 
+                        isAchieved
+                          ? "bg-primary/10 border-2 border-primary/50"
                           : "bg-muted/50 border border-border opacity-50",
-                        isCurrent && "ring-2 ring-btc-500 ring-offset-2 ring-offset-background"
+                        isCurrent && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                       )}
                     >
                       {isAchieved && (
@@ -679,6 +672,5 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
   );
 }

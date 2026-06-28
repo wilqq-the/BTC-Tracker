@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import AppLayout from '@/components/AppLayout';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -270,7 +271,7 @@ export default function TransactionsPage() {
   const handleBulkDelete = async () => {
     if (selectedTransactions.size === 0) return;
     
-    const confirmed = confirm(`Delete ${selectedTransactions.size} transaction(s)?`);
+    const confirmed = await confirm({ title: 'Delete transactions?', description: `Delete ${selectedTransactions.size} transaction(s)? This cannot be undone.`, confirmText: 'Delete', destructive: true });
     if (!confirmed) return;
     
     try {
@@ -285,7 +286,7 @@ export default function TransactionsPage() {
       await loadTransactions();
     } catch (error) {
       console.error('Error bulk deleting:', error);
-      alert('Failed to delete transactions');
+      toast({ title: 'Failed to delete transactions', variant: 'destructive' });
     }
   };
 
@@ -385,18 +386,18 @@ export default function TransactionsPage() {
   };
 
   const handleDeleteTransaction = async (id: number) => {
-    if (confirm('Are you sure you want to delete this transaction?')) {
+    if (await confirm({ title: 'Delete transaction?', description: 'Are you sure you want to delete this transaction?', confirmText: 'Delete', destructive: true })) {
       try {
         const response = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
         const result = await response.json();
         if (result.success) {
           loadTransactions();
         } else {
-          alert(`Error: ${result.error || result.message}`);
+          toast({ title: 'Error', description: result.error || result.message, variant: 'destructive' });
         }
       } catch (error) {
         console.error('Error deleting transaction:', error);
-        alert('Failed to delete transaction. Please try again.');
+        toast({ title: 'Failed to delete transaction. Please try again.', variant: 'destructive' });
       }
     }
   };
@@ -438,7 +439,7 @@ export default function TransactionsPage() {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Error exporting transactions:', error);
-      alert('Failed to export transactions. Please try again.');
+      toast({ title: 'Failed to export transactions. Please try again.', variant: 'destructive' });
     }
   };
 
@@ -482,7 +483,7 @@ export default function TransactionsPage() {
 
   const handleImportSubmit = async () => {
     if (!importFile) {
-      alert('Please select a file to import');
+      toast({ title: 'Please select a file to import' });
       return;
     }
 
@@ -508,7 +509,7 @@ export default function TransactionsPage() {
         } else {
           message = `Successfully imported ${result.imported} transactions. ${result.skipped} duplicates skipped.`;
         }
-        alert(message);
+        toast({ title: 'Import complete', description: message, variant: 'success' });
         setShowImportModal(false);
         setImportFile(null);
         setDetectedFormat(null);
@@ -516,10 +517,10 @@ export default function TransactionsPage() {
         setImportWalletId('');
         loadTransactions();
       } else {
-        alert(`Import failed: ${result.error || result.message}`);
+        toast({ title: 'Import failed', description: result.error || result.message, variant: 'destructive' });
       }
     } catch (error) {
-      alert('Failed to import transactions. Please try again.');
+      toast({ title: 'Failed to import transactions. Please try again.', variant: 'destructive' });
     } finally {
       setImportLoading(false);
     }
@@ -548,7 +549,7 @@ export default function TransactionsPage() {
           detectFileFormat(file);
         }
       } else {
-        alert('Please upload a CSV or JSON file');
+        toast({ title: 'Please upload a CSV or JSON file' });
       }
     }
   };
@@ -593,25 +594,22 @@ export default function TransactionsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center space-y-3">
-            <div className="size-8 border-2 border-btc-500 border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading transactions...</p>
-          </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center space-y-3">
+          <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-muted-foreground">Loading transactions...</p>
         </div>
-      </AppLayout>
+      </div>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="px-3 pt-0 pb-6 space-y-3">
+        {/* Header — encapsulated toolbar, matching the dashboard */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 glass-widget rounded-2xl px-4 py-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Transactions</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <h1 className="text-xl font-semibold tracking-tight">Transactions</h1>
+            <p className="text-sm text-muted-foreground mt-0.5 tabular-nums">
               {totalItems.toLocaleString()} total transactions
             </p>
           </div>
@@ -632,23 +630,23 @@ export default function TransactionsPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Holdings Card */}
-          <Card className="col-span-2 bg-gradient-to-br from-btc-500/10 to-btc-600/5 border-btc-500/20">
+          <Card className="col-span-2 bg-gradient-to-br from-primary/10 to-primary/[0.04]">
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Net Holdings</p>
-                  <p className="text-3xl font-bold text-btc-500 mt-1">{netPosition.toFixed(8)} BTC</p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-3xl font-bold text-primary mt-1 tabular-nums">{netPosition.toFixed(8)} BTC</p>
+                  <p className="text-sm text-muted-foreground mt-1 tabular-nums">
                     ≈ {formatCurrency(netPosition * currentBtcPrice * secondaryExchangeRate, summaryStats.secondaryCurrency)}
                   </p>
                 </div>
-                <div className="p-3 bg-btc-500/10 rounded-xl">
-                  <WalletIcon className="size-6 text-btc-500" />
+                <div className="p-3 bg-primary/10 rounded-2xl">
+                  <WalletIcon className="size-6 text-primary" />
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-btc-500/10 grid grid-cols-2 gap-4">
+              <div className="mt-4 pt-4 border-t border-primary/10 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-muted-foreground">Bought</p>
                   <p className="text-sm font-semibold text-profit">{summaryStats.totalBtcBought.toFixed(6)} BTC</p>
@@ -669,7 +667,7 @@ export default function TransactionsPage() {
                   <p className="text-sm font-medium text-muted-foreground">Total Invested</p>
                   <p className="text-2xl font-bold mt-1">{formatCurrency(summaryStats.totalInvested * secondaryExchangeRate, summaryStats.secondaryCurrency)}</p>
                 </div>
-                <div className="p-2.5 bg-muted rounded-lg">
+                <div className="p-2.5 bg-muted rounded-2xl">
                   <CoinsIcon className="size-5 text-muted-foreground" />
                 </div>
               </div>
@@ -681,16 +679,16 @@ export default function TransactionsPage() {
           </Card>
 
           {/* P&L Card */}
-          <Card className={summaryStats.totalPnL >= 0 ? 'bg-profit/5 border-profit/20' : 'bg-loss/5 border-loss/20'}>
+          <Card className={summaryStats.totalPnL >= 0 ? 'bg-profit/5' : 'bg-loss/5'}>
             <CardContent className="p-5">
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Unrealized P&L</p>
-                  <p className={cn("text-2xl font-bold mt-1", summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
+                  <p className={cn("text-2xl font-bold mt-1 tabular-nums", summaryStats.totalPnL >= 0 ? 'text-profit' : 'text-loss')}>
                     {summaryStats.totalPnL >= 0 ? '+' : ''}{formatCurrency(summaryStats.totalPnL * secondaryExchangeRate, summaryStats.secondaryCurrency)}
                   </p>
                 </div>
-                <div className={cn("p-2.5 rounded-lg", summaryStats.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10')}>
+                <div className={cn("p-2.5 rounded-2xl", summaryStats.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10')}>
                   {summaryStats.totalPnL >= 0 
                     ? <TrendingUpIcon className="size-5 text-profit" />
                     : <TrendingDownIcon className="size-5 text-loss" />
@@ -913,7 +911,7 @@ export default function TransactionsPage() {
 
         {/* Bulk Actions Bar */}
         {bulkActionMode && selectedTransactions.size > 0 && (
-          <div className="flex items-center justify-between bg-muted/50 border rounded-lg px-4 py-3">
+          <div className="flex items-center justify-between glass-widget rounded-2xl px-4 py-3">
             <div className="flex items-center gap-3">
               <Button variant="ghost" size="sm" onClick={toggleSelectAll}>
                 {selectedTransactions.size === filteredAndSortedTransactions.length ? 'Deselect all' : 'Select all'}
@@ -1315,13 +1313,13 @@ export default function TransactionsPage() {
                 onDrop={handleDrop}
                 className={cn(
                   "border-2 border-dashed rounded-xl p-8 text-center transition-all",
-                  dragActive ? 'border-btc-500 bg-btc-500/5' : 'border-muted hover:border-muted-foreground/50'
+                  dragActive ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/50'
                 )}
               >
                 {importFile ? (
                   <div className="space-y-3">
-                    <div className="inline-flex items-center justify-center size-12 rounded-full bg-btc-500/10">
-                      <FileIcon className="size-6 text-btc-500" />
+                    <div className="inline-flex items-center justify-center size-12 rounded-full bg-primary/10">
+                      <FileIcon className="size-6 text-primary" />
                     </div>
                     <div>
                       <p className="font-medium">{importFile.name}</p>
@@ -1329,7 +1327,7 @@ export default function TransactionsPage() {
                     </div>
                     {formatDetecting && (
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <div className="size-4 border-2 border-btc-500 border-t-transparent rounded-full animate-spin" />
+                        <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         Detecting format...
                       </div>
                     )}
@@ -1411,7 +1409,7 @@ export default function TransactionsPage() {
               </div>
 
               {/* Supported Formats */}
-              <div className="rounded-lg bg-muted/50 p-3">
+              <div className="rounded-xl bg-muted/50 p-3">
                 <p className="text-xs font-medium mb-1">Supported formats</p>
                 <p className="text-xs text-muted-foreground">CSV: Standard, Binance, Kraken, Coinbase, Strike • JSON: Our export format</p>
               </div>
@@ -1438,7 +1436,6 @@ export default function TransactionsPage() {
           </DialogContent>
         </Dialog>
       </div>
-    </AppLayout>
   );
 }
 

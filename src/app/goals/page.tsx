@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import AppLayout from '@/components/AppLayout';
 import { formatCurrency } from '@/lib/theme';
 import DCABacktestSimulator from '@/components/DCABacktestSimulator';
 import TabNavigation from '@/components/TabNavigation';
@@ -14,6 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // Icons
 import {
@@ -316,7 +317,7 @@ export default function GoalsPage() {
   
   const saveGoalToDatabase = async () => {
     if (!calculation || !calculation.isFeasible) {
-      alert('Please calculate a valid DCA strategy first');
+      toast({ title: 'Please calculate a valid DCA strategy first' });
       return;
     }
     
@@ -349,7 +350,7 @@ export default function GoalsPage() {
       const result = await response.json();
       
       if (result.success) {
-        alert('Goal saved successfully!');
+        toast({ title: 'Goal saved', variant: 'success' });
         await loadGoals();
         setTargetBtc(1.0);
         setTimeframeYears(5);
@@ -360,31 +361,31 @@ export default function GoalsPage() {
         setGoalName('Bitcoin Savings Goal');
         setSelectedScenarioId('stable');
       } else {
-        alert('Failed to save goal: ' + result.error);
+        toast({ title: 'Failed to save goal', description: result.error, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving goal:', error);
-      alert('Failed to save goal');
+      toast({ title: 'Failed to save goal', variant: 'destructive' });
     } finally {
       setSavingGoal(false);
     }
   };
   
   const deleteGoal = async (goalId: number) => {
-    if (!confirm('Are you sure you want to delete this goal?')) return;
-    
+    if (!(await confirm({ title: 'Delete goal?', description: 'Are you sure you want to delete this goal?', confirmText: 'Delete', destructive: true }))) return;
+
     try {
       const response = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' });
       const result = await response.json();
-      
+
       if (result.success) {
         await loadGoals();
       } else {
-        alert('Failed to delete goal: ' + result.error);
+        toast({ title: 'Failed to delete goal', description: result.error, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error deleting goal:', error);
-      alert('Failed to delete goal');
+      toast({ title: 'Failed to delete goal', variant: 'destructive' });
     }
   };
   
@@ -414,7 +415,7 @@ export default function GoalsPage() {
       
       if (result.success) {
         if (result.data.goal_achieved || result.data.goal_expired) {
-          alert(result.data.message);
+          toast({ title: result.data.message });
         } else {
           setGoalRecalculations(prev => {
             const newMap = new Map(prev);
@@ -423,11 +424,11 @@ export default function GoalsPage() {
           });
         }
       } else {
-        alert('Failed to recalculate goal: ' + result.error);
+        toast({ title: 'Failed to recalculate goal', description: result.error, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error recalculating goal:', error);
-      alert('Failed to recalculate goal');
+      toast({ title: 'Failed to recalculate goal', variant: 'destructive' });
     } finally {
       setRecalculatingGoalId(null);
     }
@@ -560,24 +561,21 @@ export default function GoalsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
         <div className="flex items-center justify-center h-full">
           <div className="text-center space-y-3">
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-muted-foreground">Loading goals...</p>
           </div>
         </div>
-      </AppLayout>
     );
   }
 
   return (
-    <AppLayout>
-      <div className="p-4 md:p-6 space-y-6">
-        {/* Page Header */}
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Goals & Strategy</h1>
-          <p className="text-muted-foreground">
+      <div className="px-3 pt-0 pb-6 space-y-3">
+        {/* Page Header — encapsulated toolbar, matching the other pages */}
+        <div className="glass-widget rounded-2xl px-4 py-3">
+          <h1 className="text-xl font-semibold tracking-tight">Goals & Strategy</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Set savings goals, automate purchases, and analyze your DCA strategy
           </p>
         </div>
@@ -594,7 +592,6 @@ export default function GoalsPage() {
           initialTabId="goals"
         />
       </div>
-    </AppLayout>
   );
 
   // ============================================================
@@ -705,19 +702,19 @@ export default function GoalsPage() {
                     
                     {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="p-3 bg-muted/50 rounded-2xl">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <TargetIcon className="size-3" /> Target
                         </p>
                         <p className="font-semibold font-mono">{goal.target_btc_amount.toFixed(6)} ₿</p>
                       </div>
-                      <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="p-3 bg-muted/50 rounded-2xl">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <CalendarIcon className="size-3" /> Target Date
                         </p>
                         <p className="font-semibold">{new Date(goal.target_date).toLocaleDateString()}</p>
                       </div>
-                      <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
+                      <div className="p-3 bg-primary/5 rounded-2xl">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <CircleDollarSignIcon className="size-3" /> Monthly
                         </p>
@@ -725,7 +722,7 @@ export default function GoalsPage() {
                           {formatCurrency(goal.monthly_fiat_needed, goal.currency)}
                         </p>
                       </div>
-                      <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="p-3 bg-muted/50 rounded-2xl">
                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                           <ClockIcon className="size-3" /> Duration
                         </p>
@@ -736,9 +733,9 @@ export default function GoalsPage() {
                     {/* Current Status (if recalc) */}
                     {recalc && recalc.current && (
                       <div className={cn(
-                        "p-3 rounded-lg border",
-                        recalc.current.is_on_track 
-                          ? 'bg-profit/5 border-profit/20' 
+                        "p-3 rounded-2xl border",
+                        recalc.current.is_on_track
+                          ? 'bg-profit/5 border-profit/20'
                           : 'bg-amber-500/5 border-amber-500/20'
                       )}>
                         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -777,7 +774,7 @@ export default function GoalsPage() {
                     )}
                     
                     {goal.is_completed && (
-                      <div className="p-3 bg-profit/10 border border-profit/20 rounded-lg text-center">
+                      <div className="p-3 bg-profit/10 border border-profit/20 rounded-2xl text-center">
                         <CheckCircleIcon className="size-5 text-profit inline mr-2" />
                         <span className="text-profit font-medium">
                           Completed on {new Date(goal.completed_at!).toLocaleDateString()}
@@ -810,7 +807,7 @@ export default function GoalsPage() {
           <CardContent className="space-y-6">
             {/* Current BTC Price */}
             {currentBtcPrice > 0 && (
-              <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
+              <div className="p-4 bg-primary/5 rounded-2xl flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Current BTC Price:</span>
                 <span className="text-lg font-bold text-primary">{formatCurrency(currentBtcPrice, selectedCurrency)}</span>
               </div>
@@ -826,9 +823,9 @@ export default function GoalsPage() {
                       key={scenario.id}
                       onClick={() => setSelectedScenarioId(scenario.id)}
                       className={cn(
-                        "p-3 rounded-lg border-2 transition-all text-center",
+                        "p-3 rounded-2xl border-2 transition-all text-center",
                         selectedScenarioId === scenario.id
-                          ? 'border-primary bg-primary/5'
+                          ? 'border-primary bg-primary/10'
                           : 'border-border hover:border-primary/50'
                       )}
                     >
@@ -843,7 +840,7 @@ export default function GoalsPage() {
                 </div>
                 
                 {selectedScenarioId === 'custom' && (
-                  <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-lg space-y-2">
+                  <div className="p-4 bg-primary/5 rounded-2xl space-y-2">
                     <Label>Custom Annual Growth Rate</Label>
                     <div className="flex items-center gap-2">
                       <Input
@@ -1013,9 +1010,9 @@ export default function GoalsPage() {
             {/* Results */}
             {calculation && (
               <div className={cn(
-                "p-6 rounded-lg border",
-                calculation.isFeasible 
-                  ? 'bg-profit/5 border-profit/20' 
+                "p-6 rounded-2xl border",
+                calculation.isFeasible
+                  ? 'bg-profit/5 border-profit/20'
                   : 'bg-amber-500/5 border-amber-500/20'
               )}>
                 <div className="text-center mb-6">
@@ -1031,21 +1028,21 @@ export default function GoalsPage() {
                 {calculation.isFeasible && calculation.monthlyBtcNeeded > 0 && (
                   <>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                      <div className="p-4 bg-background rounded-lg border text-center">
+                      <div className="p-4 bg-background rounded-2xl text-center">
                         <p className="text-xs text-muted-foreground mb-1">Monthly BTC</p>
                         <p className="text-xl font-bold text-primary font-mono">{calculation.monthlyBtcNeeded.toFixed(6)} ₿</p>
                         <p className="text-xs text-muted-foreground">{(calculation.monthlyBtcNeeded * 100000000).toLocaleString()} sats</p>
                       </div>
-                      <div className="p-4 bg-background rounded-lg border text-center">
+                      <div className="p-4 bg-background rounded-2xl text-center">
                         <p className="text-xs text-muted-foreground mb-1">Monthly Investment</p>
                         <p className="text-xl font-bold text-primary">{formatCurrency(calculation.monthlyFiatNeeded, selectedCurrency)}</p>
                       </div>
-                      <div className="p-4 bg-background rounded-lg border text-center">
+                      <div className="p-4 bg-background rounded-2xl text-center">
                         <p className="text-xs text-muted-foreground mb-1">Duration</p>
                         <p className="text-xl font-bold">{calculation.totalMonths} months</p>
                         <p className="text-xs text-muted-foreground">{(calculation.totalMonths / 12).toFixed(1)} years</p>
                       </div>
-                      <div className="p-4 bg-background rounded-lg border text-center">
+                      <div className="p-4 bg-background rounded-2xl text-center">
                         <p className="text-xs text-muted-foreground mb-1">Completion</p>
                         <p className="text-lg font-bold">{calculation.projectedCompletionDate}</p>
                       </div>
@@ -1244,8 +1241,8 @@ export default function GoalsPage() {
                         <div 
                           key={index}
                           className={cn(
-                            "flex items-center justify-between p-3 rounded-lg",
-                            index === 0 ? 'bg-primary/5 border border-primary/20' : 'bg-muted/50'
+                            "flex items-center justify-between p-3 rounded-2xl",
+                            index === 0 ? 'bg-primary/5' : 'bg-muted/50'
                           )}
                         >
                           <div>
