@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { SupportedCurrency } from '@/lib/types';
 import currencies from '@/data/currencies.json';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -374,11 +375,11 @@ export default function AddTransactionModal({
         onSuccess?.();
         onClose();
       } else {
-        alert(`Error: ${result.error || result.message}`);
+        toast({ title: 'Error saving transaction', description: result.error || result.message, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
+      toast({ title: 'Failed to save transaction', description: 'Please try again.', variant: 'destructive' });
     }
   };
 
@@ -403,7 +404,7 @@ export default function AddTransactionModal({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2">
-            <CoinsIcon className="size-5 text-btc-500" />
+            <CoinsIcon className="size-5 text-primary" />
             {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
           </DialogTitle>
         </DialogHeader>
@@ -460,7 +461,7 @@ export default function AddTransactionModal({
               required
             />
             {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
-              <p className="text-xs text-muted-foreground font-mono">
+              <p className="text-xs text-muted-foreground font-mono tabular-nums">
                 = {sats.toLocaleString()} sats
               </p>
             )}
@@ -736,7 +737,7 @@ export default function AddTransactionModal({
                       <button
                     type="button"
                     onClick={useCurrentPrice}
-                        className="text-xs text-btc-500 hover:text-btc-600 hover:underline"
+                        className="text-xs text-primary hover:text-primary/80 hover:underline"
                   >
                         Use ${currentBtcPrice.toLocaleString()}
                       </button>
@@ -771,7 +772,7 @@ export default function AddTransactionModal({
                   />
                   {parseFloat(formData.btc_amount) > 0 && parseFloat(formData.total_fiat_amount) > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      ≈ <span className="font-mono font-medium text-foreground">
+                      ≈ <span className="font-mono font-medium text-foreground tabular-nums">
                         {currencyInfo.symbol}{(parseFloat(formData.total_fiat_amount) / parseFloat(formData.btc_amount)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </span> per BTC
                     </p>
@@ -848,9 +849,9 @@ export default function AddTransactionModal({
 
           {/* Cost Summary - Compact inline */}
           {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
-            <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50 border">
+            <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50">
               <span className="text-sm text-muted-foreground">Total</span>
-              <span className="font-mono font-bold text-btc-600 dark:text-btc-400">
+              <span className="font-mono font-bold text-primary dark:text-primary tabular-nums">
                 {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
@@ -911,7 +912,7 @@ export default function AddTransactionModal({
               </div>
               {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  Arrives: <span className="font-mono font-medium text-foreground">{(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC</span>
+                  Arrives: <span className="font-mono font-medium text-foreground tabular-nums">{(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC</span>
                 </p>
               )}
             </div>
@@ -979,7 +980,7 @@ export default function AddTransactionModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-btc-500 hover:bg-btc-600">
+            <Button type="submit" className="bg-primary hover:bg-primary/90">
               {editingTransaction ? 'Update' : 'Add Transaction'}
             </Button>
           </DialogFooter>

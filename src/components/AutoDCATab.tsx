@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import RecurringTransactionModal from './RecurringTransactionModal';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/theme';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -134,16 +136,16 @@ export default function AutoDCATab() {
       if (result.success) {
         await loadRecurringTransactions();
       } else {
-        alert('Failed to update: ' + result.error);
+        toast({ title: 'Failed to update', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error toggling pause:', err);
-      alert('Failed to update recurring transaction');
+      toast({ title: 'Failed to update recurring transaction', variant: 'destructive' });
     }
   };
 
   const deleteTransaction = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!(await confirm({ title: 'Delete recurring purchase?', description: `Are you sure you want to delete "${name}"?`, confirmText: 'Delete', destructive: true }))) return;
 
     try {
       const response = await fetch(`/api/recurring-transactions/${id}`, { method: 'DELETE' });
@@ -152,31 +154,31 @@ export default function AutoDCATab() {
       if (result.success) {
         await loadRecurringTransactions();
       } else {
-        alert('Failed to delete: ' + result.error);
+        toast({ title: 'Failed to delete', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error deleting:', err);
-      alert('Failed to delete recurring transaction');
+      toast({ title: 'Failed to delete recurring transaction', variant: 'destructive' });
     }
   };
 
   const executeNow = async (id: number, name: string) => {
-    if (!confirm(`Execute "${name}" now? This will create a transaction immediately.`)) return;
+    if (!(await confirm({ title: 'Execute now?', description: `Execute "${name}" now? This will create a transaction immediately.`, confirmText: 'Execute' }))) return;
 
     try {
       const response = await fetch(`/api/recurring-transactions/${id}/execute`, { method: 'POST' });
       const result = await response.json();
       
       if (result.success) {
-        alert('Transaction executed successfully!');
+        toast({ title: 'Transaction executed', variant: 'success' });
         await loadRecurringTransactions();
         await loadExecutionHistory();
       } else {
-        alert('Failed to execute: ' + result.error);
+        toast({ title: 'Failed to execute', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error executing:', err);
-      alert('Failed to execute transaction');
+      toast({ title: 'Failed to execute transaction', variant: 'destructive' });
     }
   };
 
@@ -288,7 +290,7 @@ export default function AutoDCATab() {
                             {formatFrequency(tx.frequency)}
                           </Badge>
                           {tx.goal && (
-                            <Badge variant="outline" className="gap-1 text-blue-600 border-blue-500/30">
+                            <Badge variant="outline" className="gap-1 text-primary border-primary/30">
                               <TargetIcon className="size-3" />
                               {tx.goal.name}
                             </Badge>
@@ -520,7 +522,7 @@ export default function AutoDCATab() {
             </Card>
             <Card>
               <CardContent className="py-4 text-center">
-                <p className="text-3xl font-bold text-blue-500">
+                <p className="text-3xl font-bold text-primary">
                   {new Set(transactions.map(tx => tx.frequency)).size}
                 </p>
                 <p className="text-xs text-muted-foreground">Frequencies</p>
@@ -530,10 +532,10 @@ export default function AutoDCATab() {
         )}
 
         {/* Info Box */}
-        <Card className="bg-blue-500/5 border-blue-500/20">
+        <Card className="bg-primary/5">
           <CardContent className="py-4">
             <div className="flex gap-3">
-              <InfoIcon className="size-5 text-blue-500 shrink-0 mt-0.5" />
+              <InfoIcon className="size-5 text-primary shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-sm font-semibold mb-1">How It Works</h4>
                 <p className="text-sm text-muted-foreground">

@@ -386,14 +386,14 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
   };
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
+    <Card className="glass-widget rounded-2xl h-full flex flex-col overflow-hidden">
         {showTitle && (
         <CardHeader className="pb-2 space-y-0 shrink-0">
           {/* Price and 24h Change */}
           <div className="flex items-start justify-between gap-2">
             <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <ActivityIcon className="size-4 text-btc-500 shrink-0" />
+                <ActivityIcon className="size-4 text-primary shrink-0" />
                 <h3 className="text-sm font-semibold truncate">Bitcoin Price</h3>
               </div>
               <div className="flex items-baseline gap-2 flex-wrap">
@@ -421,7 +421,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                   variant={timeRange === btn.value ? "default" : "outline"}
                 size="sm"
                   onClick={() => setTimeRange(btn.value)}
-                  className={timeRange === btn.value ? "bg-btc-500 hover:bg-btc-600" : "text-xs px-2 h-7"}
+                  className={timeRange === btn.value ? "bg-primary hover:bg-primary/90" : "text-xs px-2 h-7"}
               >
                   {btn.label}
                 </Button>
@@ -434,7 +434,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                 variant={chartType === 'area' ? "default" : "outline"}
                   size="sm"
                 onClick={() => setChartType('area')}
-                className={chartType === 'area' ? "bg-btc-500 hover:bg-btc-600 text-xs h-7" : "text-xs h-7"}
+                className={chartType === 'area' ? "bg-primary hover:bg-primary/90 text-xs h-7" : "text-xs h-7"}
               >
                 Area
               </Button>
@@ -442,7 +442,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                 variant={chartType === 'line' ? "default" : "outline"}
                 size="sm"
                 onClick={() => setChartType('line')}
-                className={chartType === 'line' ? "bg-btc-500 hover:bg-btc-600 text-xs h-7" : "text-xs h-7"}
+                className={chartType === 'line' ? "bg-primary hover:bg-primary/90 text-xs h-7" : "text-xs h-7"}
               >
                 Line
               </Button>
@@ -556,7 +556,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
           </div>
           <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">Range</p>
-                  <p className="text-sm font-bold text-btc-500">
+                  <p className="text-sm font-bold text-primary">
                     {stats.range.toFixed(1)}%
                   </p>
           </div>

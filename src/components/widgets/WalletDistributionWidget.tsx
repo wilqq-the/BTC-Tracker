@@ -27,7 +27,7 @@ interface WalletData {
 // Colour palette for individual wallet bars (cycles through these)
 const WALLET_COLORS = [
   'bg-blue-500',
-  'bg-btc-500',
+  'bg-primary',
   'bg-emerald-500',
   'bg-violet-500',
   'bg-pink-500',
@@ -88,7 +88,7 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
     if (!walletData) return { text: 'Unknown', color: 'text-muted-foreground', variant: 'secondary' as const };
     if (walletData.coldPercentage >= 80) return { text: 'Excellent', color: 'text-green-600 dark:text-green-400', variant: 'default' as const };
     if (walletData.coldPercentage >= 50) return { text: 'Good', color: 'text-blue-600 dark:text-blue-400', variant: 'default' as const };
-    if (walletData.coldPercentage >= 20) return { text: 'Fair', color: 'text-btc-500', variant: 'secondary' as const };
+    if (walletData.coldPercentage >= 20) return { text: 'Fair', color: 'text-primary', variant: 'secondary' as const };
     return { text: 'Consider Cold Storage', color: 'text-red-600 dark:text-red-400', variant: 'destructive' as const };
   };
 
@@ -134,7 +134,7 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
                     title="Cold Wallet"
                   />
                   <div
-                    className="bg-btc-500 transition-all duration-300"
+                    className="bg-primary transition-all duration-300"
                     style={{ width: `${100 - walletData.coldPercentage}%` }}
                     title="Hot Wallet"
                   />
@@ -183,7 +183,7 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="size-3 rounded-full bg-btc-500 shrink-0" />
+                    <div className="size-3 rounded-full bg-primary shrink-0" />
                     <WalletIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Hot Wallet</span>
                   </div>

@@ -277,7 +277,7 @@ export default function RecurringTransactionModal({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Display */}
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
               <AlertCircleIcon className="size-4 shrink-0" />
               {error}
             </div>
@@ -330,15 +330,15 @@ export default function RecurringTransactionModal({
 
           {/* BTC Estimate */}
           {estimatedBtc && (
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">
                   <CoinsIcon className="size-4 inline mr-1" />
-                  <span className="font-mono font-bold text-primary">{estimatedBtc} BTC</span> per purchase
+                  <span className="font-mono font-bold text-primary tabular-nums">{estimatedBtc} BTC</span> per purchase
                 </span>
                 {monthlyTotal && (
                   <span className="text-muted-foreground">
-                    <span className="font-bold text-primary">{formData.currency} {monthlyTotal}</span>/month
+                    <span className="font-bold text-primary tabular-nums">{formData.currency} {monthlyTotal}</span>/month
                   </span>
                 )}
               </div>

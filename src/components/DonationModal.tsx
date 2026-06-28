@@ -49,7 +49,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
-            <HeartHandshakeIcon className="size-6 text-btc-500" />
+            <HeartHandshakeIcon className="size-6 text-primary" />
               Support Development
           </DialogTitle>
           <DialogDescription>
@@ -76,12 +76,12 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           <TabsContent value="bitcoin" className="space-y-4 mt-4">
             {/* Bitcoin/Lightning Toggle */}
               <div className="flex justify-center">
-              <div className="inline-flex rounded-lg border p-1 bg-muted">
+              <div className="inline-flex rounded-xl p-1 bg-muted">
                 <Button
                   variant={!showLightning ? "default" : "ghost"}
                   size="sm"
                     onClick={() => setShowLightning(false)}
-                  className={!showLightning ? "bg-btc-500 hover:bg-btc-600" : ""}
+                  className={!showLightning ? "bg-primary hover:bg-primary/90" : ""}
                 >
                   <BitcoinIcon className="size-4 mr-1.5" />
                   Bitcoin
@@ -100,10 +100,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
 
               {!showLightning ? (
                 /* Bitcoin On-chain */
-              <Card>
+              <Card className="card-solid">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-center">
-                    <div className="bg-white dark:bg-card p-4 rounded-lg border">
+                    <div className="bg-white dark:bg-card p-4 rounded-xl border">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=bitcoin:${bitcoinAddress}`}
@@ -117,7 +117,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                   
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-center">Bitcoin Address</p>
-                    <div className="bg-muted rounded-lg p-3">
+                    <div className="bg-muted rounded-xl p-3">
                       <p className="font-mono text-xs break-all text-center">
                       {bitcoinAddress}
                       </p>
@@ -136,10 +136,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
               </Card>
               ) : (
                 /* Lightning Network */
-              <Card className="border-yellow-200 dark:border-yellow-800">
+              <Card className="card-solid border-yellow-200 dark:border-yellow-800">
                 <CardContent className="p-6 space-y-4">
                   <div className="flex justify-center">
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('lightning:' + lightningAddress)}`}
@@ -156,7 +156,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       <ZapIcon className="size-4 text-yellow-500" />
                       Lightning Address
                     </p>
-                    <div className="bg-muted rounded-lg p-3">
+                    <div className="bg-muted rounded-xl p-3">
                       <p className="font-mono text-sm text-center">
                       {lightningAddress}
                       </p>
@@ -177,7 +177,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           </TabsContent>
 
           <TabsContent value="github" className="space-y-4 mt-4">
-            <Card>
+            <Card className="card-solid">
               <CardContent className="p-6 space-y-6 text-center">
                 <div className="flex justify-center">
                   <div className="p-4 rounded-full bg-muted">
@@ -229,10 +229,10 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
           </TabsContent>
 
           <TabsContent value="coffee" className="space-y-4 mt-4">
-            <Card className="border-yellow-200 dark:border-yellow-800">
+            <Card className="card-solid border-yellow-200 dark:border-yellow-800">
               <CardContent className="p-6 space-y-6">
                 <div className="flex justify-center">
-                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-800">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(coffeeUrl)}`}
@@ -284,7 +284,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
             <Badge variant="outline" className="ml-2">Open Source</Badge>
           </div>
           <div className="flex items-center gap-1.5">
-            <HeartHandshakeIcon className="size-3.5 text-btc-500" />
+            <HeartHandshakeIcon className="size-3.5 text-primary" />
             <span>Made for the Bitcoin community</span>
           </div>
         </div>

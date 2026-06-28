@@ -95,7 +95,7 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
   const getProgressColor = (progress: number) => {
     if (progress >= 80) return 'bg-green-500';
     if (progress >= 50) return 'bg-blue-500';
-    return 'bg-btc-500';
+    return 'bg-primary';
   };
 
   const getProgressBadge = (progress: number) => {
@@ -181,7 +181,7 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
             <div className="p-2 text-center">
               <Link
                 href="/goals"
-                className="text-xs text-btc-500 hover:text-btc-600 font-medium"
+                className="text-xs text-primary hover:text-primary/80 font-medium"
               >
                 +{goals.length - maxGoals} more goals
               </Link>
