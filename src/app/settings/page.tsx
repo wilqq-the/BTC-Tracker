@@ -5,14 +5,15 @@ import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
 import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
-import AppLayout from '@/components/AppLayout';
+import WalletsPanel from '@/components/WalletsPanel';
+import ApiKeysPanel from '@/components/ApiKeysPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon } from 'lucide-react';
+import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin' | 'wallets' | 'apiKeys';
 
 interface SettingsResponse {
   success: boolean;
@@ -27,6 +28,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  // Primary action for the encapsulated header, registered by the active panel
+  const [headerAction, setHeaderAction] = useState<{ label: string; onClick: () => void } | null>(null);
 
   useEffect(() => {
     loadSettings();
@@ -109,29 +112,27 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full">
           <div className="text-center space-y-3">
             <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
             <p className="text-muted-foreground">Loading settings...</p>
           </div>
         </div>
-      </AppLayout>
     );
   }
 
   if (!settings) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full">
           <p className="text-muted-foreground">Failed to load settings</p>
         </div>
-      </AppLayout>
     );
   }
 
   const tabs = [
     { id: 'account', label: 'Account', icon: UserIcon },
+    { id: 'wallets', label: 'Wallets', icon: WalletIcon },
+    { id: 'apiKeys', label: 'API Access', icon: KeyIcon },
     { id: 'currency', label: 'Currency', icon: DollarSignIcon },
     { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
@@ -139,93 +140,110 @@ export default function SettingsPage() {
     ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
   ];
 
+  // Title + description for the single encapsulated header (reflects the active tab)
+  const tabMeta: Record<string, { title: string; description: string }> = {
+    account: { title: 'Account', description: 'Manage your account information and security' },
+    wallets: { title: 'Wallets', description: 'Manage your cold and hot storage wallets' },
+    apiKeys: { title: 'API Access', description: 'Manage API keys for automation integrations' },
+    currency: { title: 'Currency', description: 'Configure currencies for your portfolio' },
+    priceData: { title: 'Price Data', description: 'Configure how Bitcoin price data is collected and stored' },
+    exchanges: { title: 'Exchanges', description: 'Connect exchanges to auto-sync your trades' },
+    display: { title: 'Display', description: 'Customize the appearance of your tracker' },
+    admin: { title: 'Admin', description: 'Manage users and system settings' },
+  };
+  const activeMeta = tabMeta[activeTab] ?? { title: 'Settings', description: 'Configure your Bitcoin tracker' };
+
   return (
-    <AppLayout>
-      {/* Settings Content with Secondary Sidebar */}
-      <div className="flex flex-col lg:flex-row h-full">
-        {/* Mobile Tab Navigation */}
-        <div className="lg:hidden bg-card border-b p-4 overflow-x-auto">
-          <div className="flex gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.id as SettingsTab)}
-                  className="whitespace-nowrap"
-                >
-                  <Icon className="size-4 mr-2" />
-                  {tab.label}
-                </Button>
-              );
-            })}
+      <div className="px-3 pt-0 pb-6">
+        {/* Encapsulated header */}
+        <div className="glass-widget rounded-2xl px-4 py-3 mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">{activeMeta.title}</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">{activeMeta.description}</p>
           </div>
-        </div>
-        
-        {/* Desktop Settings Navigation Sidebar */}
-        <div className="hidden lg:block w-64 bg-card border-r p-6 overflow-y-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <SettingsIcon className="size-5" />
-                Settings
-              </h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Configure your Bitcoin tracker
-            </p>
-          </div>
-
-          {/* Settings Navigation */}
-          <nav className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as SettingsTab)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                  )}
-                >
-                  <Icon className="size-4" />
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
-
-          {/* Settings Footer */}
-          <div className="mt-8 pt-6 border-t space-y-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetToDefaults}
-              disabled={saving}
-              className="w-full"
-            >
+          <div className="flex items-center gap-2 shrink-0">
+            {headerAction && (
+              <Button size="sm" onClick={headerAction.onClick}>
+                <PlusIcon className="size-4 mr-1" />
+                {headerAction.label}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={resetToDefaults} disabled={saving}>
               Reset to Defaults
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Settings auto-save on change
-            </p>
-            <p className="text-xs text-muted-foreground text-center">
-              Version: {packageJson.version}{packageJson.version.includes('69') && ' 😏'}
-            </p>
           </div>
         </div>
 
-        {/* Main Settings Content */}
-        <div className="flex-1 p-4 lg:p-6 overflow-auto">
+        <div className="flex flex-col lg:flex-row gap-3 items-start">
+          {/* Mobile Tab Navigation — glass segmented control */}
+          <div className="lg:hidden w-full glass-widget rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
+            <div className="flex gap-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as SettingsTab)}
+                    className={cn(
+                      "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium transition-colors",
+                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Desktop Settings Navigation — floating glass sidebar */}
+          <div className="hidden lg:flex w-60 shrink-0 flex-col glass-widget rounded-2xl p-3 lg:sticky lg:top-0">
+            <nav className="space-y-1">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as SettingsTab)}
+                    className={cn(
+                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                      isActive
+                        ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/20'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
+                    )}
+                  >
+                    <Icon className="size-4" />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+
+            <div className="mt-6 pt-4 border-t border-border/50 space-y-2">
+              <p className="text-xs text-muted-foreground text-center">Settings auto-save on change</p>
+              <p className="text-xs text-muted-foreground text-center">
+                Version: {packageJson.version}{packageJson.version.includes('69') && ' 😏'}
+              </p>
+            </div>
+          </div>
+
+          {/* Main Settings Content — open canvas */}
+          <div className="flex-1 min-w-0">
           {activeTab === 'account' && (
             <UserAccountSettingsPanel />
           )}
-          
+
+          {activeTab === 'wallets' && (
+            <WalletsPanel onHeaderAction={setHeaderAction} />
+          )}
+
+          {activeTab === 'apiKeys' && (
+            <ApiKeysPanel onHeaderAction={setHeaderAction} />
+          )}
+
           {activeTab === 'currency' && (
             <CurrencySettingsPanel
               settings={settings.currency}
@@ -243,7 +261,7 @@ export default function SettingsPage() {
           )}
           
           {activeTab === 'exchanges' && (
-            <ExchangeConnectionsPanel />
+            <ExchangeConnectionsPanel onHeaderAction={setHeaderAction} />
           )}
 
           {activeTab === 'display' && (
@@ -265,8 +283,8 @@ export default function SettingsPage() {
           {activeTab === 'admin' && userData?.isAdmin && (
             <AdminPanel />
           )}
+          </div>
         </div>
       </div>
-    </AppLayout>
   );
 }
