@@ -240,10 +240,10 @@ export default function BackupRestorePanel() {
           ) : (
             <div className="space-y-2">
               {snapshots.map((s) => (
-                <div key={s.filename} className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
+                <div key={s.filename} className="flex items-center justify-between gap-2 rounded-xl bg-muted/40 p-3 text-sm">
                   <div className="min-w-0">
                     <div className="font-medium truncate">{s.filename}</div>
-                    <div className="text-muted-foreground text-xs">
+                    <div className="text-muted-foreground text-xs tabular-nums">
                       {new Date(s.createdAt).toLocaleString()} · {formatBytes(s.sizeBytes)} · {s.kind}
                       {s.appVersion !== 'unknown' ? ` · v${s.appVersion}` : ''}
                     </div>
@@ -282,7 +282,7 @@ export default function BackupRestorePanel() {
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFileSelected(e.dataTransfer.files?.[0]); }}
             onClick={() => fileInputRef.current?.click()}
-            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center text-sm transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-muted'}`}
+            className={`cursor-pointer rounded-xl border-2 border-dashed p-6 text-center text-sm transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-muted'}`}
           >
             <UploadIcon className="size-6 mx-auto mb-2 text-muted-foreground" />
             Drop a <code>.db</code> or <code>.db.gz</code> backup here, or click to choose
