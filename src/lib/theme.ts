@@ -7,10 +7,10 @@ export const darkTheme = {
   colors: {
     // Background colors
     background: {
-      primary: '#0f0f0f',      // Main dark background
-      secondary: '#1a1a1a',    // Cards, panels
-      tertiary: '#262626',     // Hover states, borders
-      sidebar: '#141414',      // Sidebar background
+      primary: '#0c0c0e',      // Main dark background (cool-tinted)
+      secondary: '#131316',    // Cards, panels
+      tertiary: '#1d1d22',     // Hover states, borders
+      sidebar: '#0e0e12',      // Sidebar background
     },
     
     // Text colors
@@ -23,7 +23,7 @@ export const darkTheme = {
     
     // Brand colors (Orange theme)
     brand: {
-      primary: '#f97316',      // Main orange (Bitcoin theme)
+      primary: '#f7931a',      // Main orange (Bitcoin theme)
       secondary: '#fb923c',    // Lighter orange
       dark: '#ea580c',         // Darker orange
       light: '#fed7aa',        // Very light orange
@@ -62,13 +62,13 @@ export const darkTheme = {
     border: {
       primary: '#404040',      // Main borders
       secondary: '#2a2a2a',    // Subtle borders
-      accent: '#f97316',       // Accent borders (orange)
+      accent: '#f7931a',       // Accent borders (orange)
     },
     
     // Chart colors
     chart: {
-      line: '#f97316',         // Main chart line (orange)
-      area: '#f9731620',       // Chart area fill (orange with alpha)
+      line: '#f7931a',         // Main chart line (orange)
+      area: '#f7931a20',       // Chart area fill (orange with alpha)
       grid: '#2a2a2a',         // Chart grid lines
       buy: '#22c55e',          // Buy markers
       sell: '#ef4444',         // Sell markers
@@ -162,7 +162,7 @@ export const lightTheme = {
     
     // Brand colors (Orange theme - same as dark)
     brand: {
-      primary: '#f97316',      // Main orange (Bitcoin theme)
+      primary: '#f7931a',      // Main orange (Bitcoin theme)
       secondary: '#fb923c',    // Lighter orange
       dark: '#ea580c',         // Darker orange
       light: '#fed7aa',        // Very light orange
@@ -201,13 +201,13 @@ export const lightTheme = {
     border: {
       primary: '#e2e8f0',      // Main borders
       secondary: '#f1f5f9',    // Subtle borders
-      accent: '#f97316',       // Accent borders (orange)
+      accent: '#f7931a',       // Accent borders (orange)
     },
     
     // Chart colors
     chart: {
-      line: '#f97316',         // Main chart line (orange)
-      area: '#f9731620',       // Chart area fill (orange with alpha)
+      line: '#f7931a',         // Main chart line (orange)
+      area: '#f7931a20',       // Chart area fill (orange with alpha)
       grid: '#e2e8f0',         // Chart grid lines
       buy: '#22c55e',          // Buy markers
       sell: '#ef4444',         // Sell markers

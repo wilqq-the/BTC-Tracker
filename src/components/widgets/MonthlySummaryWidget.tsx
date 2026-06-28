@@ -136,7 +136,7 @@ export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
           {/* Average Buy Price */}
           <div>
             <p className="text-xs text-muted-foreground mb-1">Average Buy Price</p>
-            <div className="text-base font-semibold text-btc-500">{formatCurrency(stats.avgBuyPrice, stats.currency)}</div>
+            <div className="text-base font-semibold text-primary">{formatCurrency(stats.avgBuyPrice, stats.currency)}</div>
           </div>
 
           <Separator />

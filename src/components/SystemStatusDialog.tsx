@@ -117,7 +117,7 @@ function StatusIndicator({ status }: { status: 'running' | 'stopped' | 'error' |
 
 function SubsystemCard({ subsystem, icon: Icon }: { subsystem: SubsystemStatus; icon: React.ElementType }) {
   return (
-    <div className="flex items-start justify-between p-3 rounded-lg bg-muted/50 border border-border/50">
+    <div className="flex items-start justify-between p-3 rounded-xl bg-muted/50">
       <div className="flex items-start gap-3">
         <div className={cn(
           'p-2 rounded-md',
@@ -141,7 +141,7 @@ function SubsystemCard({ subsystem, icon: Icon }: { subsystem: SubsystemStatus; 
             </p>
           )}
           {subsystem.details?.activeTransactions !== undefined && (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
               {subsystem.details.activeTransactions} active, {subsystem.details.pausedTransactions} paused
             </p>
           )}
@@ -254,7 +254,7 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
           <div className="space-y-6">
             {/* App Status Overview */}
             <div className="grid grid-cols-3 gap-4">
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
+              <div className="p-3 rounded-xl bg-muted/50 text-center">
                 <div className={cn(
                   'text-xs font-medium uppercase tracking-wide mb-1',
                   status.app.isInitialized ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
@@ -263,13 +263,13 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
                 </div>
                 <div className="text-lg font-semibold">App</div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
+              <div className="p-3 rounded-xl bg-muted/50 text-center">
                 <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                   Uptime
                 </div>
-                <div className="text-lg font-semibold">{formatUptime(status.uptime)}</div>
+                <div className="text-lg font-semibold tabular-nums">{formatUptime(status.uptime)}</div>
               </div>
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
+              <div className="p-3 rounded-xl bg-muted/50 text-center">
                 <div className={cn(
                   'text-xs font-medium uppercase tracking-wide mb-1',
                   status.database.status === 'connected' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
@@ -282,18 +282,18 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
 
             {/* Current Price */}
             {status.priceData.currentPrice && (
-              <div className="p-4 rounded-lg bg-gradient-to-r from-btc-500/10 to-btc-600/5 border border-btc-500/20">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                       Current BTC Price
                     </div>
-                    <div className="text-2xl font-bold text-btc-500">
+                    <div className="text-2xl font-bold text-primary tabular-nums">
                       {formatPrice(status.priceData.currentPrice.price)}
                     </div>
                     {status.priceData.currentPrice.change24h !== undefined && (
                       <div className={cn(
-                        'text-sm font-medium',
+                        'text-sm font-medium tabular-nums',
                         status.priceData.currentPrice.change24h >= 0 ? 'text-profit' : 'text-loss'
                       )}>
                         {status.priceData.currentPrice.change24h >= 0 ? '+' : ''}
@@ -334,20 +334,20 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
                   Data Statistics
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
-                    <div className="text-2xl font-bold">{status.database.stats.totalTransactions}</div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.totalTransactions}</div>
                     <div className="text-xs text-muted-foreground">Transactions</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
-                    <div className="text-2xl font-bold">{status.database.stats.intradayRecords}</div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.intradayRecords}</div>
                     <div className="text-xs text-muted-foreground">Intraday Records</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
-                    <div className="text-2xl font-bold">{status.database.stats.historicalRecords}</div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.historicalRecords}</div>
                     <div className="text-xs text-muted-foreground">Historical Records</div>
                   </div>
-                  <div className="p-3 rounded-lg bg-muted/50 border border-border/50 text-center">
-                    <div className="text-2xl font-bold">{status.database.stats.activeRecurring}</div>
+                  <div className="p-3 rounded-xl bg-muted/50 text-center">
+                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.activeRecurring}</div>
                     <div className="text-xs text-muted-foreground">Active DCA</div>
                   </div>
                 </div>
@@ -356,13 +356,13 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
 
             {/* Exchange Rates */}
             {status.exchangeRates.ratesCount > 0 && (
-              <div className="p-3 rounded-lg bg-muted/50 border border-border/50">
+              <div className="p-3 rounded-xl bg-muted/50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <DollarSignIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Exchange Rates</span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground tabular-nums">
                     {status.exchangeRates.ratesCount} rates stored
                     {status.exchangeRates.lastUpdate && (
                       <> · Updated {formatDateTime(status.exchangeRates.lastUpdate)}</>

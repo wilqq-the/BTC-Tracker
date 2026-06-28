@@ -84,11 +84,21 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
     >
       {metrics && (
         <div className="space-y-3 text-sm flex-1">
-          {/* Total Holdings */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Total Holdings</p>
-            <div className="text-lg font-bold">{metrics.totalBtc.toFixed(8)} ₿</div>
-            <div className="text-xs text-muted-foreground">{formatCurrency(metrics.portfolioValue * rate, currency)}</div>
+          {/* Hero: portfolio value */}
+          <div className="relative overflow-hidden rounded-xl border border-primary/15 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Portfolio Value</p>
+            <div className="text-3xl font-bold tracking-tight tabular-nums leading-none">
+              {formatCurrency(metrics.portfolioValue * rate, currency)}
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="font-semibold text-primary tabular-nums">{metrics.totalBtc.toFixed(8)} ₿</span>
+              <span className="text-muted-foreground">·</span>
+              <span className={`font-medium tabular-nums ${
+                metrics.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+              }`}>
+                {metrics.roi >= 0 ? '+' : ''}{metrics.roi.toFixed(2)}% ROI
+              </span>
+            </div>
           </div>
 
           <Separator />
@@ -165,7 +175,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
             </div>
             <div className="flex justify-between">
               <span className="text-xs text-muted-foreground">Current</span>
-              <span className="text-xs font-medium text-btc-500">{formatCurrency(metrics.currentBtcPrice * rate, currency)}</span>
+              <span className="text-xs font-medium text-primary">{formatCurrency(metrics.currentBtcPrice * rate, currency)}</span>
             </div>
           </div>
 

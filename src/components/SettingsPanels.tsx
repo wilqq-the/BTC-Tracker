@@ -12,6 +12,7 @@ import { useTheme } from './ui/ThemeProvider';
 import { useDarkThemePreset } from '@/hooks/use-dark-theme-preset';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -188,7 +189,7 @@ export function CurrencySettingsPanel({
   };
 
   const deleteCustomCurrency = async (id: number, code: string) => {
-    if (confirm(`Are you sure you want to delete custom currency ${code}?`)) {
+    if (await confirm({ title: 'Delete currency?', description: `Delete custom currency ${code}?`, confirmText: 'Delete', destructive: true })) {
       try {
         const response = await fetch(`/api/custom-currencies/${id}`, {
           method: 'DELETE'
@@ -255,11 +256,6 @@ export function CurrencySettingsPanel({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Currency Settings</h3>
-        <p className="text-muted-foreground">Configure currencies for your portfolio</p>
-      </div>
-      
       {/* Main & Secondary Currency */}
       <Card>
         <CardHeader>
@@ -396,7 +392,7 @@ export function CurrencySettingsPanel({
 
           {/* Add Form */}
           {showAddCurrency && (
-            <div className="p-4 bg-muted/50 rounded-lg border">
+            <div className="p-4 bg-muted/50 rounded-2xl border">
               <div className="flex items-start gap-2 mb-3">
                 <LightbulbIcon className="size-4 text-primary shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">
@@ -516,7 +512,7 @@ export function CurrencySettingsPanel({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-3 bg-muted/50 rounded-lg">
+          <div className="p-3 bg-muted/50 rounded-2xl">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-sm font-medium">Data Source:</span>
               <span className="text-sm text-primary">ExchangeRate-API.com</span>
@@ -649,10 +645,6 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Price Data Settings</h3>
-        <p className="text-muted-foreground">Configure how Bitcoin price data is collected and stored</p>
-      </div>
 
       {/* Historical Data */}
       <Card>
@@ -695,14 +687,14 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                 }).then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert(`Successfully fetched ${result.data.recordsAdded} records of historical data`);
+                      toast({ title: 'Historical data fetched', description: `Successfully fetched ${result.data.recordsAdded} records of historical data`, variant: 'success' });
                     } else {
-                      alert(`Error: ${result.error}`);
+                      toast({ title: 'Failed to fetch historical data', description: result.error, variant: 'destructive' });
                     }
                   })
                   .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to start historical data fetch');
+                    toast({ title: 'Failed to start historical data fetch', variant: 'destructive' });
                   });
               }}
               disabled={saving}
@@ -719,7 +711,7 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                   .then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert(`Historical data: ${result.data.recordCount} records, last updated: ${result.data.lastUpdate}`);
+                      toast({ title: 'Data status', description: `Historical data: ${result.data.recordCount} records, last updated: ${result.data.lastUpdate}` });
                     }
                   });
               }}
@@ -758,7 +750,7 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
             </div>
           </div>
 
-          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
+          <div className="p-3 bg-muted/50 rounded-2xl space-y-1">
             <p className="text-sm">Hourly data collection (24 points/day)</p>
             <p className="text-xs text-muted-foreground">Auto-cleanup daily (current day only)</p>
           </div>
@@ -774,14 +766,14 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                 }).then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert('Data update completed successfully!');
+                      toast({ title: 'Data update completed successfully!', variant: 'success' });
                     } else {
-                      alert(`Error: ${result.error}`);
+                      toast({ title: 'Failed to update data', description: result.error, variant: 'destructive' });
                     }
                   })
                   .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to trigger data update');
+                    toast({ title: 'Failed to trigger data update', variant: 'destructive' });
                   });
               }}
               disabled={saving}
@@ -839,10 +831,6 @@ export function DisplaySettingsPanel({
   
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Display Settings</h3>
-        <p className="text-muted-foreground">Customize the appearance of your tracker</p>
-      </div>
 
       <Card>
         <CardHeader>
@@ -916,19 +904,24 @@ export function DisplaySettingsPanel({
                       : "border-border hover:border-primary/50"
                   )}
                 >
-                  {/* Color preview dots */}
-                  <div className="flex gap-1 mb-2">
-                    <div 
+                  {/* Color preview: accent (emphasized) + surfaces */}
+                  <div className="flex items-center gap-1 mb-2">
+                    <div
+                      className="size-4 rounded-full border border-black/10 dark:border-white/20 shadow-sm"
+                      style={{ backgroundColor: `hsl(${preset.colors.primary})` }}
+                      title="Accent"
+                    />
+                    <div
                       className="size-3 rounded-full border border-black/10 dark:border-white/20"
                       style={{ backgroundColor: `hsl(${preset.colors.background})` }}
                     />
-                    <div 
+                    <div
                       className="size-3 rounded-full border border-black/10 dark:border-white/20"
                       style={{ backgroundColor: `hsl(${preset.colors.card})` }}
                     />
-                    <div 
+                    <div
                       className="size-3 rounded-full border border-black/10 dark:border-white/20"
-                      style={{ backgroundColor: `hsl(${preset.colors.border})` }}
+                      style={{ backgroundColor: `hsl(${preset.colors.accent})` }}
                     />
                   </div>
                   <span className="font-medium text-sm">{preset.name}</span>
@@ -961,10 +954,6 @@ export function NotificationSettingsPanel({
 }) {
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Notification Settings</h3>
-        <p className="text-muted-foreground">Configure alerts and notifications</p>
-      </div>
 
       <Card>
         <CardContent className="py-12">
@@ -1248,7 +1237,7 @@ export function UserAccountSettingsPanel() {
   }
 
   const handleRemovePin = async () => {
-    if (!confirm('Are you sure you want to remove your PIN? You will only be able to sign in with your password.')) {
+    if (!(await confirm({ title: 'Remove PIN?', description: 'You will only be able to sign in with your password.', confirmText: 'Remove', destructive: true }))) {
       return
     }
 
@@ -1284,10 +1273,6 @@ export function UserAccountSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Account Settings</h3>
-        <p className="text-muted-foreground">Manage your account information and security</p>
-      </div>
 
       {/* Profile Information */}
       <Card>

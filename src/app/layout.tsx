@@ -4,6 +4,8 @@ import './globals.css'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import { AuthProvider } from '@/components/AuthProvider'
 import { Toaster } from '@/components/ui/toaster'
+import { ConfirmDialogHost } from '@/components/ui/confirm-dialog'
+import AppShell from '@/components/AppShell'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -24,11 +26,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.className} antialiased`}>
         <AuthProvider>
           <ThemeProvider>
-            {children}
+            <AppShell>{children}</AppShell>
             <Toaster />
+            <ConfirmDialogHost />
           </ThemeProvider>
         </AuthProvider>
       </body>

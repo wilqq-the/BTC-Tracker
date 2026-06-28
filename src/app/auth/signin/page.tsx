@@ -220,14 +220,14 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Background decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="text-center pb-2">
           {/* Logo */}
-          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-2xl flex items-center justify-center shadow-lg shadow-btc-500/20">
+          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="text-white font-bold text-3xl">₿</span>
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>

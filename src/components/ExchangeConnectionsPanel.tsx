@@ -80,7 +80,11 @@ interface Wallet {
   emoji: string | null;
 }
 
-export default function ExchangeConnectionsPanel() {
+interface ExchangeConnectionsPanelProps {
+  onHeaderAction?: (action: { label: string; onClick: () => void } | null) => void;
+}
+
+export default function ExchangeConnectionsPanel({ onHeaderAction }: ExchangeConnectionsPanelProps) {
   const [connections, setConnections] = useState<ExchangeConnection[]>([]);
   const [supportedExchanges, setSupportedExchanges] = useState<SupportedExchange[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
@@ -131,6 +135,13 @@ export default function ExchangeConnectionsPanel() {
     loadConnections();
     loadWallets();
   }, [loadConnections, loadWallets]);
+
+  // Surface the primary action in the settings page header
+  useEffect(() => {
+    onHeaderAction?.({ label: 'Add Connection', onClick: () => setShowAddDialog(true) });
+    return () => onHeaderAction?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleAddConnection = async () => {
     if (!addForm.exchangeName || !addForm.apiKey || !addForm.apiSecret) {
@@ -306,20 +317,6 @@ export default function ExchangeConnectionsPanel() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Exchange Connections</h3>
-          <p className="text-sm text-muted-foreground">
-            Connect your exchange accounts to automatically sync Bitcoin trades
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <PlusIcon className="size-4 mr-2" />
-          Add Connection
-        </Button>
-      </div>
-
       {/* Connections List */}
       {connections.length === 0 ? (
         <Card>

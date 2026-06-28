@@ -77,14 +77,14 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 dark:text-green-400';
     if (score >= 6) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 4) return 'text-btc-500';
+    if (score >= 4) return 'text-primary';
     return 'text-red-600 dark:text-red-400';
   };
 
   const getScoreBgColor = (score: number) => {
     if (score >= 8) return 'bg-green-500';
     if (score >= 6) return 'bg-blue-500';
-    if (score >= 4) return 'bg-btc-500';
+    if (score >= 4) return 'bg-primary';
     return 'bg-red-500';
   };
 
@@ -191,7 +191,7 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
             {analysis.summary && (
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Avg Buy</p>
-                <div className="text-lg font-bold text-btc-500">
+                <div className="text-lg font-bold text-primary">
                   {formatCurrency(analysis.summary.avgBuyPrice, analysis.currency)}
                 </div>
               </div>

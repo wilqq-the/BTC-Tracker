@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LayoutDashboardIcon,
   SaveIcon,
   PlusIcon,
   Settings2Icon,
@@ -25,6 +24,8 @@ import {
   CalendarIcon,
   RefreshCwIcon,
   ShieldIcon,
+  GripVerticalIcon,
+  XIcon,
 } from 'lucide-react';
 import {
   GRID_COLS,
@@ -34,6 +35,8 @@ import {
   getWidgetDefinitionById,
 } from '@/lib/dashboard-constants';
 import { DashboardLayout, LayoutItem, WidgetType } from '@/lib/dashboard-types';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // Icon mapping for widget definitions
 const WIDGET_ICONS: Record<string, React.ReactNode> = {
@@ -50,7 +53,7 @@ const WIDGET_ICONS: Record<string, React.ReactNode> = {
 
 // Widget loading placeholder
 const WidgetLoading = () => (
-  <div className="h-full p-4 flex items-center justify-center animate-pulse bg-card border rounded-lg">
+  <div className="h-full p-4 flex items-center justify-center animate-pulse glass-widget rounded-2xl">
     <div className="text-sm text-muted-foreground">Loading...</div>
   </div>
 );
@@ -186,19 +189,25 @@ export default function DashboardGrid() {
       const result = await response.json();
       if (result.success) {
         setHasChanges(false);
+        toast({ title: 'Dashboard saved', variant: 'success' });
       } else {
-        alert('Failed to save layout');
+        toast({ title: 'Failed to save layout', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving layout:', error);
-      alert('Failed to save layout');
+      toast({ title: 'Failed to save layout', variant: 'destructive' });
     } finally {
       setIsSaving(false);
     }
   };
 
   const resetLayout = async () => {
-    if (!confirm('Reset dashboard to default layout?')) return;
+    if (!(await confirm({
+      title: 'Reset dashboard?',
+      description: 'This restores the default widget layout. Your customizations will be lost.',
+      confirmText: 'Reset',
+      destructive: true,
+    }))) return;
     try {
       await fetch('/api/dashboard/layout', { method: 'DELETE' });
       setLayout(DEFAULT_LAYOUT);
@@ -254,9 +263,14 @@ export default function DashboardGrid() {
     setShowAddWidget(false);
   }, []);
 
-  const toggleEditMode = () => {
+  const toggleEditMode = async () => {
     if (isEditMode && hasChanges) {
-      if (confirm('Save changes before exiting edit mode?')) {
+      if (await confirm({
+        title: 'Save changes?',
+        description: 'You have unsaved layout changes. Save them before exiting edit mode?',
+        confirmText: 'Save',
+        cancelText: 'Discard',
+      })) {
         saveLayout();
       }
     }
@@ -294,14 +308,11 @@ export default function DashboardGrid() {
   }
 
   return (
-    <div className="relative p-4 pb-8">
+    <div className="relative px-3 pt-0 pb-8">
       {/* Dashboard Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-card border rounded-lg p-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 glass-widget rounded-2xl p-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <LayoutDashboardIcon className="size-5 text-btc-500" />
-            Dashboard
-          </h2>
+          <h2 className="text-lg font-semibold">Dashboard</h2>
           {isEditMode && <Badge variant="default" className="text-xs">EDIT MODE</Badge>}
           {hasChanges && <Badge variant="secondary" className="text-xs">Unsaved</Badge>}
         </div>
@@ -384,14 +395,17 @@ export default function DashboardGrid() {
                 
                 return (
                   <div key={widget.id} className="h-full w-full relative">
-                    {/* Edit mode header overlay */}
+                    {/* Edit mode header overlay — frosted gold drag bar */}
                     {isEditMode && (
-                      <div className="absolute top-0 left-0 right-0 z-20 bg-btc-500 text-white px-3 py-1.5 flex items-center justify-between drag-handle cursor-move rounded-t-lg">
-                        <span className="text-xs font-medium">{def?.title}</span>
+                      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between gap-2 px-3 py-1.5 drag-handle cursor-move rounded-t-2xl border-b border-primary/20 bg-primary/10 backdrop-blur-md">
+                        <span className="flex items-center gap-1.5 text-xs font-medium text-primary">
+                          <GripVerticalIcon className="size-3.5 opacity-60" />
+                          {def?.title}
+                        </span>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-5 text-white hover:bg-white/20"
+                          className="size-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             e.preventDefault();
@@ -400,7 +414,7 @@ export default function DashboardGrid() {
                           onMouseDown={(e) => e.stopPropagation()}
                           onTouchStart={(e) => e.stopPropagation()}
                         >
-                          ×
+                          <XIcon className="size-3.5" />
                         </Button>
                       </div>
                     )}
@@ -419,7 +433,7 @@ export default function DashboardGrid() {
       {/* Edit mode help */}
       {isEditMode && (
         <div className="mt-4 px-4">
-          <div className="bg-btc-500/10 border border-btc-500/30 rounded-lg p-3">
+          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
             <p className="text-sm">
               <strong>Drag</strong> widgets by header to move. <strong>Resize</strong> by dragging edges. Click <strong>×</strong> to remove.
             </p>

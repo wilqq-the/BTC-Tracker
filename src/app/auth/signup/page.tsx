@@ -95,21 +95,21 @@ export default function SignUpPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Background decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       <Card className="w-full max-w-md border-border/50 shadow-xl">
         <CardHeader className="text-center pb-2">
           {/* Logo */}
-          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-2xl flex items-center justify-center shadow-lg shadow-btc-500/20">
+          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-primary to-primary/80 rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
             <span className="text-white font-bold text-3xl">₿</span>
           </div>
           
           {isFirstUser ? (
             <>
               <div className="flex items-center justify-center gap-2 mb-2">
-                <SparklesIcon className="size-5 text-btc-500" />
+                <SparklesIcon className="size-5 text-primary" />
                 <CardTitle className="text-2xl">Welcome!</CardTitle>
               </div>
               <CardDescription>
@@ -129,8 +129,8 @@ export default function SignUpPage() {
         <CardContent className="space-y-6">
           {/* First User Badge */}
           {isFirstUser && (
-            <div className="flex items-center gap-3 p-3 bg-btc-500/10 border border-btc-500/20 rounded-lg">
-              <ShieldCheckIcon className="size-5 text-btc-500 shrink-0" />
+            <div className="flex items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+              <ShieldCheckIcon className="size-5 text-primary shrink-0" />
               <div>
                 <p className="text-sm font-medium">Admin Account</p>
                 <p className="text-xs text-muted-foreground">This will be the primary administrator account</p>

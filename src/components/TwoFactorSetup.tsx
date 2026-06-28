@@ -186,7 +186,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
             <div className="flex items-center gap-3">
               {isEnabled ? (
                 <div className="size-10 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -251,7 +251,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
           </DialogHeader>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
               <AlertTriangleIcon className="size-4 shrink-0" />
               {error}
             </div>
@@ -259,7 +259,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
 
           {step === 'qr' && (
             <div className="space-y-4">
-              <div className="flex justify-center p-4 bg-white rounded-lg">
+              <div className="flex justify-center p-4 bg-white rounded-xl">
                 {qrCode && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={qrCode} alt="2FA QR Code" className="w-48 h-48" />
@@ -308,7 +308,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
 
           {step === 'backup' && (
             <div className="space-y-4">
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                 <div className="flex items-start gap-2 text-yellow-600 dark:text-yellow-500">
                   <AlertTriangleIcon className="size-5 shrink-0 mt-0.5" />
                   <div className="text-sm">
@@ -318,7 +318,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-lg">
+              <div className="grid grid-cols-2 gap-2 p-4 bg-muted rounded-xl">
                 {backupCodes.map((code, i) => (
                   <code key={i} className="text-sm font-mono text-center py-1">
                     {code}
@@ -392,7 +392,7 @@ export default function TwoFactorSetup({ isEnabled, onStatusChange }: TwoFactorS
           </DialogHeader>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
               <AlertTriangleIcon className="size-4 shrink-0" />
               {error}
             </div>
