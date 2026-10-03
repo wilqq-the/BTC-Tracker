@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
         fees_currency: tx.feesCurrency,
         transaction_date: tx.transactionDate.toISOString().split('T')[0],
         notes: tx.notes || '',
+        tags: (tx as any).tags || '',
         transfer_type: (tx as any).transferType || null,
         destination_address: (tx as any).destinationAddress || null,
         from_wallet: tx.fromWallet
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
           fees_currency: tx.fees_currency || tx.original_currency,
           transaction_date: tx.transaction_date,
           notes: tx.notes || '',
+          tags: tx.tags || '',
           transfer_type: tx.transfer_type || null,
           destination_address: tx.destination_address || null,
           from_wallet: tx.from_wallet,
@@ -147,7 +149,8 @@ export async function GET(request: NextRequest) {
         'From Wallet',
         'From Wallet Type',
         'To Wallet',
-        'To Wallet Type'
+        'To Wallet Type',
+        'Tags'
       ];
 
       // Helper to escape CSV values (quote if contains comma, quote, or newline)
@@ -178,7 +181,8 @@ export async function GET(request: NextRequest) {
         escapeCsvValue(tx.from_wallet?.name || ''),
         escapeCsvValue(tx.from_wallet?.type || ''),
         escapeCsvValue(tx.to_wallet?.name || ''),
-        escapeCsvValue(tx.to_wallet?.type || '')
+        escapeCsvValue(tx.to_wallet?.type || ''),
+        escapeCsvValue(tx.tags || '')
       ]);
 
       const csvContent = [

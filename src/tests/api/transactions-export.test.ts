@@ -56,6 +56,7 @@ const FROM_WALLET = 14
 const FROM_WALLET_TYPE = 15
 const TO_WALLET = 16
 const TO_WALLET_TYPE = 17
+const TAGS = 18
 
 describe('Transactions Export API', () => {
   let testUser: any
@@ -146,6 +147,7 @@ describe('Transactions Export API', () => {
         'From Wallet Type',
         'To Wallet',
         'To Wallet Type',
+        'Tags',
       ])
     })
 
@@ -190,12 +192,24 @@ describe('Transactions Export API', () => {
       expect(row![TO_WALLET_TYPE]).toBe('cold')
     })
 
+    it('carries the comma-separated tag list, correctly quoted', async () => {
+      const tagged = await createTestTransaction({
+        userId: testUser.id,
+        type: 'BUY',
+        tags: 'DCA,Long-term',
+      })
+
+      const row = (await csvRowsById()).get(String(tagged.id))
+      expect(row).toBeDefined()
+      expect(row![TAGS]).toBe('DCA,Long-term')
+    })
+
     it('leaves the wallet columns empty when no wallet is assigned', async () => {
       const orphan = await createTestTransaction({ userId: testUser.id, type: 'BUY' })
 
       const row = (await csvRowsById()).get(String(orphan.id))
       expect(row).toBeDefined()
-      expect(row!.slice(FROM_WALLET)).toEqual(['', '', '', ''])
+      expect(row!.slice(FROM_WALLET)).toEqual(['', '', '', '', ''])
     })
   })
 
@@ -221,6 +235,18 @@ describe('Transactions Export API', () => {
         name: 'Ledger Nano',
         type: 'cold',
       })
+    })
+
+    it('carries tags as a string', async () => {
+      const tagged = await createTestTransaction({
+        userId: testUser.id,
+        type: 'BUY',
+        tags: 'DCA,Long-term',
+      })
+
+      const tx = (await jsonTransactions()).find((t: any) => t.id === tagged.id)
+      expect(tx).toBeDefined()
+      expect(tx.tags).toBe('DCA,Long-term')
     })
 
     it('returns null wallets when none are assigned', async () => {
