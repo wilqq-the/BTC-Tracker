@@ -12,6 +12,13 @@
  *   GET /address/:address/utxo
  *   GET /tx/:txid
  *
+ * A 404/400 on the paged `/txs/chain` route is ambiguous: esplora answers 404
+ * for an address it has never indexed, but a self-hosted mempool without a full
+ * indexer answers 404 for *every* address because the route does not exist.
+ * The client therefore probes the subset surface (`/address/:addr/txs` +
+ * `/utxo` + `/tx/:txid`) before concluding a first page has no data; see
+ * `getConfirmedTxsMempoolFallback`.
+ *
  * Everything is denominated in satoshis, never BTC. The client is strictly
  * read-only: it never signs, builds or broadcasts a transaction.
  */
@@ -211,7 +218,16 @@ export class EsploraClient {
       try {
         page = await this.getJson<EsploraTx[]>(path);
       } catch (error) {
-        if (error instanceof EsploraError && error.status === 404) {
+        if (error instanceof EsploraError && (error.status === 404 || error.status === 400)) {
+          // A 404 on the very first page is either an address the backend never
+          // saw (truly empty history) or a backend that does not implement the
+          // paged route at all (self-hosted mempool without a full indexer).
+          // Probe the subset surface before concluding "no history" — the first
+          // sync of such an address would otherwise import nothing. On later
+          // pages a missing cursor legitimately ends the walk.
+          if (!cursor) {
+            return this.getConfirmedTxsMempoolFallback(address, maxTxs);
+          }
           break;
         }
         throw error;
@@ -237,6 +253,65 @@ export class EsploraClient {
     }
 
     return maxTxs !== undefined ? collected.slice(0, maxTxs) : collected;
+  }
+
+  /**
+   * Recover the confirmed history of an address on an esplora-subset backend.
+   *
+   * Some self-hosted mempool builds expose the mempool-native `/address/:addr/txs`
+   * page and `/utxo` but not esplora's paged `/txs/chain`. Each unspent output
+   * points at its funding transaction, so fetching those through `/tx/:txid`
+   * recovers the history even when the recent page does not fit the whole
+   * address. Spent-away history is still a server limitation: only what the
+   * recent page and the UTXOs reference is reachable through this route.
+   * Never throws — an unsupported route degrades to an empty list, not an error.
+   */
+  private async getConfirmedTxsMempoolFallback(address: string, maxTxs?: number): Promise<EsploraTx[]> {
+    const [recent, utxos] = await Promise.all([
+      this.getJsonSafe<EsploraTx[]>(`/address/${encodeURIComponent(address)}/txs`),
+      this.getUtxos(address),
+    ]);
+
+    const byId = new Map<string, EsploraTx>();
+    for (const tx of recent ?? []) {
+      if (tx.status?.confirmed === true) {
+        byId.set(tx.txid, tx);
+      }
+    }
+
+    // Newest funding inputs first, so a capped read keeps the most recent ones.
+    const missing = utxos
+      .filter((utxo) => !byId.has(utxo.txid))
+      .sort((a, b) => (b.status?.block_height ?? 0) - (a.status?.block_height ?? 0));
+
+    for (const utxo of missing) {
+      if (maxTxs !== undefined && byId.size >= maxTxs) {
+        break;
+      }
+      const tx = await this.getJsonSafe<EsploraTx>(`/tx/${encodeURIComponent(utxo.txid)}`);
+      if (tx && tx.status?.confirmed === true) {
+        byId.set(tx.txid, tx);
+      }
+    }
+
+    // esplora lists confirmed history newest first; match that ordering so the
+    // caller can rely on the newest entry being the first one.
+    const confirmed = Array.from(byId.values()).sort(
+      (a, b) => (b.status?.block_height ?? 0) - (a.status?.block_height ?? 0)
+    );
+    return maxTxs !== undefined ? confirmed.slice(0, maxTxs) : confirmed;
+  }
+
+  /** 404/400-safe GET that resolves to null, used to probe subset endpoints. */
+  private async getJsonSafe<T>(path: string): Promise<T | null> {
+    try {
+      return await this.getJson<T>(path);
+    } catch (error) {
+      if (error instanceof EsploraError && (error.status === 404 || error.status === 400)) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   /**
