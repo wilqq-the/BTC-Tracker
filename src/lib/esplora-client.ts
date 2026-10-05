@@ -258,29 +258,49 @@ export class EsploraClient {
   /**
    * Recover the confirmed history of an address on an esplora-subset backend.
    *
-   * Some self-hosted mempool builds expose the mempool-native `/address/:addr/txs`
-   * page and `/utxo` but not esplora's paged `/txs/chain`. Each unspent output
-   * points at its funding transaction, so fetching those through `/tx/:txid`
-   * recovers the history even when the recent page does not fit the whole
-   * address. Spent-away history is still a server limitation: only what the
-   * recent page and the UTXOs reference is reachable through this route.
-   * Never throws — an unsupported route degrades to an empty list, not an error.
+   * Such a backend (self-hosted mempool) knows the full history in its own
+   * database but only serves it through the mempool-native `/address/:addr/txs`
+   * route, paginated with `?after_txid=`. Walk those pages newest first, then
+   * complement with the funding transaction of every unspent output when a
+   * backend serves the recent page without honouring the cursor. Only
+   * confirmed transactions are kept; esplora lists them newest first, which the
+   * caller relies on for its cursor bookkeeping. Never throws: an unsupported
+   * route degrades to an empty list, matching esplora's 404-on-never-seen.
    */
   private async getConfirmedTxsMempoolFallback(address: string, maxTxs?: number): Promise<EsploraTx[]> {
-    const [recent, utxos] = await Promise.all([
-      this.getJsonSafe<EsploraTx[]>(`/address/${encodeURIComponent(address)}/txs`),
-      this.getUtxos(address),
-    ]);
-
     const byId = new Map<string, EsploraTx>();
-    for (const tx of recent ?? []) {
-      if (tx.status?.confirmed === true) {
-        byId.set(tx.txid, tx);
+
+    let after: string | undefined;
+    for (let pageIndex = 0; pageIndex < 200; pageIndex++) {
+      const path =
+        `/address/${encodeURIComponent(address)}/txs` +
+        (after ? `?after_txid=${encodeURIComponent(after)}` : '');
+      const txs = await this.getJsonSafe<EsploraTx[]>(path);
+      if (!Array.isArray(txs) || txs.length === 0) {
+        break;
       }
+
+      for (const tx of txs) {
+        if (tx.status?.confirmed === true) {
+          byId.set(tx.txid, tx);
+        }
+      }
+
+      const cursor = txs[txs.length - 1]?.txid;
+      // A repeated cursor means the backend ignored `after_txid` and serves the
+      // same recent page again — stop before looping forever.
+      if (!cursor || cursor === after) {
+        break;
+      }
+      if (maxTxs !== undefined && byId.size >= maxTxs) {
+        break;
+      }
+      after = cursor;
     }
 
-    // Newest funding inputs first, so a capped read keeps the most recent ones.
-    const missing = utxos
+    // Complement: when the recent page was not paginated, each unspent output
+    // still points at its funding transaction, which `/tx/:txid` can fetch.
+    const missing = (await this.getUtxos(address))
       .filter((utxo) => !byId.has(utxo.txid))
       .sort((a, b) => (b.status?.block_height ?? 0) - (a.status?.block_height ?? 0));
 

@@ -141,9 +141,10 @@ describe('EsploraClient error handling', () => {
 });
 
 describe('EsploraClient mempool subset fallback', () => {
-  // A self-hosted mempool without a full indexer exposes /address/:addr/txs,
-  // /utxo and /tx/:txid but 404s on the paged esplora routes. The client used
-  // to read that as "this address has no history" and import nothing.
+  // A self-hosted mempool without a full indexer exposes the mempool-native
+  // /address/:addr/txs (paginated with after_txid), /utxo and /tx/:txid but
+  // 404s on the paged esplora routes. The client used to read that as "this
+  // address has no history" and import nothing.
   const recentTx: any = {
     txid: 'bb'.repeat(32),
     version: 2,
@@ -190,13 +191,21 @@ describe('EsploraClient mempool subset fallback', () => {
       },
     ],
   };
+  // Three txs spread over two after_txid pages for the paging walk.
+  const pageTxs = [0, 1, 2].map((i) => ({
+    ...recentTx,
+    txid: `f${i}${'f'.repeat(62)}`.slice(0, 64),
+    status: { confirmed: true, block_height: 800000 - i, block_time: 1700000001 - i },
+  }));
 
   let server: http.Server;
   let client: EsploraClient;
 
   beforeAll(async () => {
     server = http.createServer((req, res) => {
-      const path = (req.url || '/').split('?')[0];
+      const full = req.url || '/';
+      const path = full.split('?')[0];
+      const query = new URLSearchParams(full.split('?')[1] || '');
 
       if (path === '/address/bc1qsubset') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -221,10 +230,22 @@ describe('EsploraClient mempool subset fallback', () => {
         );
       }
       if (path === '/address/bc1qsubset/txs') {
+        // Honest after_txid paging: page 1 = pageTxs[0..1], page 2 = pageTxs[2].
+        const after = query.get('after_txid');
+        const page = after ? pageTxs.slice(2) : pageTxs.slice(0, 2);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        return res.end(JSON.stringify([recentTx]));
+        return res.end(JSON.stringify(page));
       }
       if (path === '/address/bc1qsubset/utxo') {
+        return res.end('[]');
+      }
+      // A backend that never honours after_txid: /txs always returns the recent
+      // page, so only the /utxo funding transactions reveal the older history.
+      if (path === '/address/bc1qfunded/txs') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end('[]');
+      }
+      if (path === '/address/bc1qfunded/utxo') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(
           JSON.stringify([
@@ -268,15 +289,18 @@ describe('EsploraClient mempool subset fallback', () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
-  it('recovers confirmed history from /txs + /utxo funding transactions', async () => {
+  it('walks the after_txid pages and recovers the full confirmed history', async () => {
     const txs = await client.getConfirmedTxs('bc1qsubset', 50);
-    // Newest first: the recent page entry, then the funding tx of the UTXO.
-    expect(txs.map((t) => t.txid)).toEqual([recentTx.txid, oldFundingTx.txid]);
+    const txids = txs.map((t) => t.txid);
+    // Both pages (2 + 1), newest first, no utxo funding mixed in.
+    expect(txids).toEqual([pageTxs[0].txid, pageTxs[1].txid, pageTxs[2].txid]);
+    expect(new Set(txids).size).toBe(txids.length);
   });
 
-  it('does not duplicate a txid already present in the recent page', async () => {
-    const txids = (await client.getConfirmedTxs('bc1qsubset', 50)).map((t) => t.txid);
-    expect(new Set(txids).size).toBe(txids.length);
+  it('complements with the utxo funding transaction when not paginated', async () => {
+    // A backend that ignores after_txid still serves the utxo funding txs.
+    const txs = await client.getConfirmedTxs('bc1qfunded', 50);
+    expect(txs.map((t) => t.txid)).toEqual([oldFundingTx.txid]);
   });
 
   it('still reads a truly unknown address as empty on a subset backend', async () => {
