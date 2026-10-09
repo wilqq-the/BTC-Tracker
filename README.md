@@ -56,55 +56,55 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 ## Screenshots
 
 ![Dashboard](screenshots/dashboard.png)
-*Main portfolio dashboard with real-time Bitcoin tracking*
+*Customisable dashboard: portfolio value, price chart with your buys, quick actions, wallets, DCA score and milestones*
 
 <details>
-<summary>Transactions - Import and management</summary>
+<summary>Transactions - import, filters and history</summary>
 
 ![Transactions](screenshots/transactions.png)
-*Transaction management and CSV import from exchanges*
+*Every buy, sale and wallet move in one table, with CSV import from 9 exchange formats*
 </details>
 
 <details>
-<summary>Analytics - Charts and performance</summary>
+<summary>Analytics - returns and performance</summary>
 
 ![Analytics](screenshots/analytics.png)
-*Advanced portfolio analytics and performance charts*
+*Total return, your average price vs today, each month's buys at today's price and your stack over time*
 </details>
 
 <details>
-<summary>DCA Analysis - Performance breakdown</summary>
+<summary>DCA analysis - how well you're buying</summary>
 
 ![Analysis](screenshots/analysis.png)
-*DCA performance analysis and statistics*
+*DCA score with timing and consistency, what-if scenarios and purchase distribution*
 </details>
 
 <details>
-<summary>Goals - Savings targets</summary>
+<summary>Goals - savings targets</summary>
 
 ![Goals](screenshots/goals.png)
-*Set and track your Bitcoin savings goals*
+*Set a target like 1 BTC by 2030 and track your progress*
 </details>
 
 <details>
-<summary>Auto DCA - Recurring transactions</summary>
+<summary>Auto DCA - recurring purchases</summary>
 
 ![Auto DCA](screenshots/autodca.png)
-*Automated recurring transaction scheduling*
+*Recurring buys that record themselves at the current price*
 </details>
 
 <details>
-<summary>Admin Panel - Multi-user management</summary>
+<summary>Admin - multi-user management</summary>
 
 ![Admin Panel](screenshots/admin.png)
-*Multi-user management interface (admin only)*
+*Manage the users on your server (admin only)*
 </details>
 
 <details>
-<summary>Currencies - Multi-currency support</summary>
+<summary>Currencies - multi-currency support</summary>
 
 ![Currencies](screenshots/currencies.png)
-*Multi-currency support and custom currency management*
+*Calculate in one currency, show another, and add your own*
 </details>
 
 ## Quick Start

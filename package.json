@@ -25,6 +25,7 @@
     "db:reset": "node scripts/reset-db.js",
     "db:reset-clean": "node scripts/reset-db.js --no-seed",
     "db:seed": "tsx prisma/seed.ts",
+    "demo:seed": "tsx scripts/seed-demo.ts",
     "db:studio": "prisma studio",
     "db:prod-setup": "node scripts/prod-setup.js",
     "db:migrate": "node scripts/migrate.js",
