@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BTCProjectionService } from '@/lib/btc-projection-service';
+import { withAuth } from '@/lib/auth-helpers';
 
 // GET - Fetch all price scenarios
 export async function GET(request: NextRequest) {
+  return withAuth(request, () => getScenarios(request));
+}
+
+async function getScenarios(request: NextRequest) {
   try {
     const scenarios = await BTCProjectionService.getScenarios();
     

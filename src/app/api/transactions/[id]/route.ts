@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { BitcoinTransaction, TransactionFormData, TransactionResponse } from '@/lib/types';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { withAuth } from '@/lib/auth-helpers';
+import { walletsBelongToUser } from '@/lib/wallet-helpers';
 
 // Helper function to get exchange rate
 const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD'): Promise<number> => {
@@ -150,6 +151,15 @@ export async function PUT(
     
     // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
     const feesCurrency = isTransfer ? 'BTC' : formData.currency;
+
+    // Wallets referenced by the transaction must belong to the current user
+    if (!(await walletsBelongToUser(userId, [(formData as any).from_wallet_id, (formData as any).to_wallet_id]))) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid wallet',
+        message: 'Wallet not found'
+      } as TransactionResponse, { status: 400 });
+    }
 
     // Update transaction using Prisma - only store original data for this user
     const updatedTransaction = await prisma.bitcoinTransaction.update({

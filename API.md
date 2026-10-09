@@ -36,6 +36,10 @@ Add it to every request:
 Authorization: Bearer eyJhbGci...
 ```
 
+API keys created in **Settings → API Access** (`btct_...`) work the same way.
+
+Every endpoint except `/api/auth/*` (sign-in, registration) and `/api/health` requires authentication. Server-wide operations — changing price-data settings, resetting or replacing settings, managing custom currencies, refreshing price/historical data, scheduler control, backups and user administration — require an admin account and return `403` otherwise.
+
 ---
 
 ## Transactions

@@ -165,7 +165,10 @@ export default function SettingsPage() {
     { id: 'wallets', label: 'Wallets', icon: WalletIcon },
     { id: 'apiKeys', label: 'API access', icon: KeyIcon },
     { id: 'currency', label: 'Currency', icon: DollarSignIcon },
-    { id: 'priceData', label: 'Price data', icon: BarChart3Icon },
+    // Price data collection is server-wide, so only admins can change it
+    ...(userData?.isAdmin ? [
+      { id: 'priceData' as const, label: 'Price data', icon: BarChart3Icon },
+    ] : []),
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
     ...(userData?.isAdmin ? [
@@ -188,7 +191,8 @@ export default function SettingsPage() {
     backup: { title: 'Backup', description: 'Download, restore and schedule full database backups.' },
   };
   const activeMeta = tabMeta[activeTab];
-  const canReset = RESETTABLE_TABS.includes(activeTab);
+  // Settings are server-wide, so resetting them is admin-only
+  const canReset = RESETTABLE_TABS.includes(activeTab) && !!userData?.isAdmin;
 
   return (
     <div ref={rootRef} className="space-y-4 pb-6">
@@ -264,7 +268,7 @@ export default function SettingsPage() {
             />
           )}
 
-          {activeTab === 'priceData' && (
+          {activeTab === 'priceData' && userData?.isAdmin && (
             <PriceDataSettingsPanel
               settings={settings.priceData}
               onUpdate={(updates: any) => updateSettings('priceData', updates)}
