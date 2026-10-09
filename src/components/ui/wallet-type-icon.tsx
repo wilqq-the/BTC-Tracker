@@ -15,3 +15,17 @@ export function WalletTypeIcon({ type, className }: { type?: string | null; clas
     />
   );
 }
+
+/**
+ * Icon + wallet name, centred on the text with a gap — use inside select
+ * options (Radix copies it into the closed select too) and anywhere else a
+ * wallet is named on one line.
+ */
+export function WalletLabel({ type, name, className }: { type?: string | null; name: React.ReactNode; className?: string }) {
+  return (
+    <span className={cn('flex min-w-0 items-center gap-2', className)}>
+      <WalletTypeIcon type={type} />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
