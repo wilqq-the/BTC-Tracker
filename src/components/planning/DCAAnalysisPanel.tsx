@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { RingChart } from '@/components/ui/ring-chart';
 import { WidgetEmptyState } from '@/components/ui/widget-card';
 import { PlanningIcon, btc, pct, sentenceCase, sign, tone } from './planning-icons';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 export interface DCAAnalysisResult {
   score: {
@@ -102,6 +103,7 @@ const insightTone: Record<string, string> = {
 };
 
 export default function DCAAnalysisPanel({ analysis, loading, error, currency, onRefresh }: DCAAnalysisPanelProps) {
+  const { formatBtc } = useBtcUnit();
   const money = (n: number) => formatCurrency(Math.abs(n), analysis?.currency || currency);
   const hasPurchases = !!analysis && (analysis.consistency?.totalPurchases ?? 0) > 0;
 
@@ -279,7 +281,7 @@ export default function DCAAnalysisPanel({ analysis, loading, error, currency, o
                       {sign(scenario.pnl)}{money(scenario.pnl)}
                     </p>
                     <p className="text-xs text-muted-foreground tabular-nums">
-                      {pct(scenario.pnlPercentage)} with {btc(scenario.btcHoldings)} BTC
+                      {pct(scenario.pnlPercentage)} with {formatBtc(scenario.btcHoldings, { trim: true })}
                     </p>
                   </div>
                 </div>

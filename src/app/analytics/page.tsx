@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import MilestonesWidget from '@/components/widgets/MilestonesWidget';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface MonthBreakdown {
   month: string;        // YYYY-MM
@@ -74,9 +75,17 @@ interface Transaction {
 // Green for gains, red for losses, quiet grey for exactly zero
 const tone = (n: number) => (n > 0 ? 'text-tint-green-fg' : n < 0 ? 'text-tint-red-fg' : 'text-muted-foreground');
 const signed = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '');
+// Axis labels in sats get big fast: 45,000,000 → "45M"
+const compactSats = (btcAmount: number) => {
+  const sats = Math.round(btcAmount * 100_000_000);
+  if (sats >= 1_000_000) return `${parseFloat((sats / 1_000_000).toFixed(1))}M`;
+  if (sats >= 1_000) return `${parseFloat((sats / 1_000).toFixed(1))}k`;
+  return String(sats);
+};
 const btc = (n: number) => (n >= 1 ? n.toFixed(2) : n.toFixed(8)).replace(/\.?0+$/, '') || '0';
 
 export default function AnalyticsPage() {
+  const { unit, formatBtc } = useBtcUnit();
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -236,10 +245,10 @@ export default function AnalyticsPage() {
     { label: 'Sells', value: String(data.totalSells) },
     { label: 'Holding for', value: `${data.holdingDays} days` },
     { label: 'First buy', value: firstBuy },
-    { label: 'Largest buy', value: `${btc(data.largestPurchase)} BTC` },
-    { label: 'Average buy size', value: `${btc(data.avgBuyAmount)} BTC` },
-    { label: 'Bought in total', value: `${btc(data.totalBtcBought)} BTC` },
-    { label: 'Sold in total', value: `${btc(data.totalBtcSold)} BTC` },
+    { label: 'Largest buy', value: formatBtc(data.largestPurchase, { trim: true }) },
+    { label: 'Average buy size', value: formatBtc(data.avgBuyAmount, { trim: true }) },
+    { label: 'Bought in total', value: formatBtc(data.totalBtcBought, { trim: true }) },
+    { label: 'Sold in total', value: formatBtc(data.totalBtcSold, { trim: true }) },
   ];
 
   return (
@@ -356,7 +365,7 @@ export default function AnalyticsPage() {
                         return (
                           <div className="rounded-2xl bg-popover p-3 text-sm shadow-lg">
                             <div className="font-bold">{m.label}</div>
-                            <div className="text-muted-foreground">Bought {btc(m.bought)} BTC at {money(m.avgPrice)}</div>
+                            <div className="text-muted-foreground">Bought {formatBtc(m.bought, { trim: true })} at {money(m.avgPrice)}</div>
                             <div className={cn('font-bold', tone(m.gain))}>{signed(m.gain)}{Math.abs(m.gain).toFixed(1)}% today</div>
                           </div>
                         );
@@ -409,7 +418,7 @@ export default function AnalyticsPage() {
                   </defs>
                   <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => btc(v)} />
+                  <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => (unit === 'sats' ? compactSats(v) : btc(v))} />
                   <Tooltip
                     cursor={{ stroke: 'hsl(var(--border))' }}
                     content={({ active, payload }) => {
@@ -418,7 +427,7 @@ export default function AnalyticsPage() {
                       return (
                         <div className="rounded-2xl bg-popover p-3 text-sm shadow-lg">
                           <div className="font-bold">{p.label}</div>
-                          <div className="text-muted-foreground">{btc(p.btc)} BTC held</div>
+                          <div className="text-muted-foreground">{formatBtc(p.btc, { trim: true })} held</div>
                         </div>
                       );
                     }}

@@ -21,6 +21,7 @@ import { confirm } from '@/components/ui/confirm-dialog';
 import GoalCard, { Goal, GoalRecalculation } from '@/components/planning/GoalCard';
 import DCAAnalysisPanel, { DCAAnalysisResult } from '@/components/planning/DCAAnalysisPanel';
 import { ScenarioIcon, btc, pct, sentenceCase } from '@/components/planning/planning-icons';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 // Icons
 import {
@@ -72,6 +73,7 @@ const FREQUENCY_OPTIONS: { label: string; value: DCAFrequency }[] = [
 ];
 
 export default function GoalsPage() {
+  const { formatBtc, formatBtcAlt } = useBtcUnit();
   const [loading, setLoading] = useState(true);
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number>(0);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -776,12 +778,11 @@ export default function GoalsPage() {
 
   function renderCalculationResult(result: DCACalculation) {
     const showFigures = result.isFeasible && result.monthlyBtcNeeded > 0;
-    const sats = Math.round(result.monthlyBtcNeeded * 100_000_000);
     const tiles = [
       {
         label: 'Bitcoin each month',
-        value: `${btc(result.monthlyBtcNeeded)} BTC`,
-        note: `${sats.toLocaleString()} sats`,
+        value: formatBtc(result.monthlyBtcNeeded, { trim: true }),
+        note: formatBtcAlt(result.monthlyBtcNeeded),
         strong: true,
       },
       {

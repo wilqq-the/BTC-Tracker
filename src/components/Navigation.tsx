@@ -33,6 +33,7 @@ import UserAvatar from '@/components/UserAvatar';
 import AddTransactionModal from '@/components/AddTransactionModal';
 import { emitTransactionsChanged } from '@/lib/app-events';
 import { useFerroPill, FerroPillLayer } from '@/components/ui/ferro-pill';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 import { cn } from '@/lib/utils';
 
 interface NavigationProps {
@@ -51,6 +52,7 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const isDark = mounted && resolvedTheme === 'dark';
+  const { unit, toggleUnit } = useBtcUnit();
 
   // Ferrofluid highlight: reaches toward the hovered item, settles on the active page
   const { containerRef: navListRef, blobRef, dropRef, moveTo, hide } = useFerroPill<HTMLDivElement>();
@@ -158,6 +160,19 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
           >
             <PlusIcon className="size-4 sm:mr-1.5" strokeWidth={2.5} />
             <span className="hidden sm:inline">Add transaction</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            className={cn(
+              'h-11 min-w-11 rounded-full bg-secondary px-3 font-extrabold hover:bg-accent',
+              unit === 'sats' ? 'text-[13px]' : 'text-lg'
+            )}
+            onClick={toggleUnit}
+            title={unit === 'btc' ? 'Show amounts in sats' : 'Show amounts in BTC'}
+            aria-label={unit === 'btc' ? 'Showing BTC. Switch to sats' : 'Showing sats. Switch to BTC'}
+          >
+            {unit === 'btc' ? '₿' : 'sats'}
           </Button>
 
           <Button

@@ -95,6 +95,9 @@ Errors say what happened and how to fix it. Join facts with words/commas, not `�
 - `WidgetCard` (`ui/widget-card`) — dashboard widgets: text-only title, optional
   header link via `badge`, `WidgetEmptyState` for empty data.
 - `WalletTypeIcon` (`ui/wallet-type-icon`) — wallet markers.
+- **Bitcoin amounts:** always format with `useBtcUnit()` → `formatBtc(amount)` (and
+  `formatBtcAlt` for a secondary line in the other unit), never `toFixed(8) + ' BTC'`.
+  It follows the user's BTC/sats choice (header ₿ button, Settings → Display).
 - `useCountUp`, `usePortfolioMetrics` (`src/hooks`), `emitTransactionsChanged` /
   `onTransactionsChanged` (`lib/app-events`) to refresh after adding a transaction.
 - Feedback: `toast` (`@/hooks/use-toast`) and `confirm` (`@/components/ui/confirm-dialog`)

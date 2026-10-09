@@ -26,6 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import { confirm } from '@/components/ui/confirm-dialog';
 import { toast } from '@/hooks/use-toast';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface Wallet {
   id: number;
@@ -44,6 +45,7 @@ interface WalletsPanelProps {
 }
 
 export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
+  const { unit, formatBtc } = useBtcUnit();
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [walletsLoading, setWalletsLoading] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -152,7 +154,6 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
     }
   };
 
-  const formatBtc = (n: number) => (n === 0 ? '0' : n.toFixed(8));
 
   return (
     <div className="space-y-4">
@@ -207,7 +208,7 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
                       'text-[15px] font-bold tabular-nums',
                       wallet.btcBalance === 0 && 'text-muted-foreground'
                     )}>
-                      {formatBtc(wallet.btcBalance)} <span className="text-[13px] font-semibold text-muted-foreground">BTC</span>
+                      {wallet.btcBalance === 0 ? '0' : formatBtc(wallet.btcBalance, { withUnit: false })} <span className="text-[13px] font-semibold text-muted-foreground">{unit === 'btc' ? 'BTC' : 'sats'}</span>
                     </span>
                     <div className="flex items-center">
                       <Button

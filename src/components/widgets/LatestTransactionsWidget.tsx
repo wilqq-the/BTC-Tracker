@@ -8,6 +8,7 @@ import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
 import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { onTransactionsChanged } from '@/lib/app-events';
 import Link from 'next/link';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface Transaction {
   id: number;
@@ -29,6 +30,7 @@ interface Transaction {
  * Shows recent transactions with P&L
  */
 export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -125,7 +127,7 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
                   {badge.label}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-[15px] font-bold tabular-nums">{transaction.btc_amount.toFixed(8)} BTC</div>
+                  <div className="truncate text-[15px] font-bold tabular-nums">{formatBtc(transaction.btc_amount)}</div>
                   <div className="truncate text-[13px] text-muted-foreground">
                     {new Date(transaction.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     {', at '}{formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}

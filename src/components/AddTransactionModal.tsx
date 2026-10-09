@@ -30,6 +30,7 @@ import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/theme';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 /**
  * Format a Date to YYYY-MM-DD string in LOCAL timezone (not UTC)
@@ -113,6 +114,7 @@ export default function AddTransactionModal({
   editingTransaction,
   initialType,
 }: AddTransactionModalProps) {
+  const { formatBtc } = useBtcUnit();
   // Helper to determine transfer category from transfer_type
   const getTransferCategory = (transferType?: string): 'INTERNAL' | 'EXTERNAL' => {
     if (transferType === 'TRANSFER_IN' || transferType === 'TRANSFER_OUT') {
@@ -868,7 +870,7 @@ export default function AddTransactionModal({
                 <p className="text-[13px] text-muted-foreground">
                   Arrives:{' '}
                   <span className="font-semibold text-foreground tabular-nums">
-                    {(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC
+                    {formatBtc(parseFloat(formData.btc_amount) - parseFloat(formData.fees))}
                   </span>
                 </p>
               )}

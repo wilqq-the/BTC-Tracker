@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
 import { WalletIcon, TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface PortfolioMetrics {
   totalBtc: number;
@@ -32,6 +33,7 @@ interface PortfolioMetrics {
  * Shows key portfolio metrics and performance
  */
 export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [metrics, setMetrics] = useState<PortfolioMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -91,7 +93,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
               {formatCurrency(metrics.portfolioValue * rate, currency)}
             </div>
             <div className="mt-2 flex items-center gap-2 text-xs">
-              <span className="font-semibold text-primary tabular-nums">{metrics.totalBtc.toFixed(8)} ₿</span>
+              <span className="font-semibold text-primary tabular-nums">{formatBtc(metrics.totalBtc)}</span>
               <span className="text-muted-foreground">·</span>
               <span className={`font-medium tabular-nums ${
                 metrics.roi >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
