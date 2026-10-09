@@ -27,6 +27,7 @@ import { TagsInput } from '@/components/ui/tags-input';
 import { CurrencySelector } from '@/components/ui/currency-selector';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { WalletLabel } from '@/components/ui/wallet-type-icon';
+import { DEFAULT_TRANSFER_FEE_MODE, type TransferFeeMode } from '@/lib/transfer-fees';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/theme';
@@ -65,6 +66,7 @@ interface TransactionFormData {
   tags: string;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
   transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
+  transfer_fee_mode?: TransferFeeMode; // How a BTC network fee was paid (#168)
   destination_address?: string;
   from_wallet_id?: number | null;
   to_wallet_id?: number | null;
@@ -102,6 +104,7 @@ const initialFormData: TransactionFormData = {
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
   transfer_category: 'INTERNAL',
+  transfer_fee_mode: DEFAULT_TRANSFER_FEE_MODE,
   destination_address: '',
   from_wallet_id: null,
   to_wallet_id: null,
@@ -137,6 +140,8 @@ export default function AddTransactionModal({
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
       transfer_category: getTransferCategory(editingTransaction.transfer_type),
+      // Transfers saved before fee modes existed took the fee from the amount
+      transfer_fee_mode: editingTransaction.transfer_fee_mode || 'DEDUCTED',
       destination_address: editingTransaction.destination_address || '',
       from_wallet_id: editingTransaction.from_wallet_id || null,
       to_wallet_id: editingTransaction.to_wallet_id || null,
@@ -180,6 +185,7 @@ export default function AddTransactionModal({
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
         transfer_category: getTransferCategory(editingTransaction.transfer_type),
+        transfer_fee_mode: editingTransaction.transfer_fee_mode || 'DEDUCTED',
         destination_address: editingTransaction.destination_address || '',
         from_wallet_id: editingTransaction.from_wallet_id || null,
         to_wallet_id: editingTransaction.to_wallet_id || null,
@@ -865,14 +871,45 @@ export default function AddTransactionModal({
                 placeholder="0.00001"
                 className="tabular-nums"
               />
-              {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-                <p className="text-[13px] text-muted-foreground">
-                  Arrives:{' '}
-                  <span className="font-semibold text-foreground tabular-nums">
-                    {formatBtc(parseFloat(formData.btc_amount) - parseFloat(formData.fees))}
-                  </span>
-                </p>
-              )}
+              {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (() => {
+                const amount = parseFloat(formData.btc_amount);
+                const fee = parseFloat(formData.fees);
+                // Incoming transfers: the sender pays; BTC leaves one of your
+                // wallets otherwise, so ask how the fee was paid (#168)
+                const leavesYourWallet = formData.transfer_type !== 'TRANSFER_IN';
+                const onTop = leavesYourWallet && formData.transfer_fee_mode === 'ON_TOP';
+                return (
+                  <div className="space-y-2 pt-1">
+                    {leavesYourWallet && (
+                      <SegmentedControl<TransferFeeMode>
+                        size="sm"
+                        aria-label="How the network fee was paid"
+                        options={[
+                          { label: 'Paid on top', value: 'ON_TOP' },
+                          { label: 'Taken from amount', value: 'DEDUCTED' },
+                        ]}
+                        value={formData.transfer_fee_mode ?? DEFAULT_TRANSFER_FEE_MODE}
+                        onChange={(mode) => setFormData(prev => ({ ...prev, transfer_fee_mode: mode }))}
+                      />
+                    )}
+                    <p className="text-[13px] text-muted-foreground">
+                      {leavesYourWallet && (
+                        <>
+                          Leaves:{' '}
+                          <span className="font-semibold text-foreground tabular-nums">
+                            {formatBtc(onTop ? amount + fee : amount)}
+                          </span>
+                          {' · '}
+                        </>
+                      )}
+                      Arrives:{' '}
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {formatBtc(onTop ? amount : amount - fee)}
+                      </span>
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

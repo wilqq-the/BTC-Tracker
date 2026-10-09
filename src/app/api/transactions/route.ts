@@ -6,6 +6,7 @@ import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
 import { withAuth } from '@/lib/auth-helpers';
 import { walletsBelongToUser } from '@/lib/wallet-helpers';
+import { btcArriving, btcLeaving, isTransferFeeMode } from '@/lib/transfer-fees';
 
 // Enhanced transaction interface with secondary currency values
 interface EnhancedTransaction extends BitcoinTransaction {
@@ -173,6 +174,7 @@ export async function GET(request: NextRequest) {
       notes: tx.notes || '',
       tags: (tx as any).tags || '',
       transfer_type: (tx as any).transferType || null,
+      transfer_fee_mode: tx.transferFeeMode || null,
       destination_address: (tx as any).destinationAddress || null,
       from_wallet: tx.fromWallet ? { id: tx.fromWallet.id, name: tx.fromWallet.name, emoji: tx.fromWallet.emoji, type: tx.fromWallet.type } : null,
       to_wallet: tx.toWallet ? { id: tx.toWallet.id, name: tx.toWallet.name, emoji: tx.toWallet.emoji, type: tx.toWallet.type } : null,
@@ -313,6 +315,21 @@ export async function POST(request: NextRequest) {
       } as TransactionResponse, { status: 400 });
     }
 
+    // How a BTC network fee was paid (#168). Only meaningful when BTC leaves
+    // one of your wallets (internal or outgoing transfer); omitted = original
+    // behaviour (fee taken from the amount)
+    const rawFeeMode = (formData as any).transfer_fee_mode;
+    if (rawFeeMode != null && rawFeeMode !== '' && !isTransferFeeMode(rawFeeMode)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid transfer fee mode',
+        message: "transfer_fee_mode must be 'ON_TOP' or 'DEDUCTED'"
+      } as TransactionResponse, { status: 400 });
+    }
+    const transferFeeMode = isTransfer && formData.transfer_type !== 'TRANSFER_IN' && isTransferFeeMode(rawFeeMode)
+      ? rawFeeMode
+      : null;
+
     // Convert string values to numbers
     const btcAmount = parseFloat(formData.btc_amount);
     // For external transfers (TRANSFER_IN/OUT), allow reference price; internal transfers have no price
@@ -359,6 +376,7 @@ export async function POST(request: NextRequest) {
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
+        transferFeeMode,
         destinationAddress: isTransfer ? (formData.destination_address || null) : null,
         fromWalletId: (formData as any).from_wallet_id || null,
         toWalletId: (formData as any).to_wallet_id || null,
@@ -378,6 +396,7 @@ export async function POST(request: NextRequest) {
       notes: newTransaction.notes || '',
       tags: (newTransaction as any).tags || '',
       transfer_type: (newTransaction as any).transferType || null,
+      transfer_fee_mode: newTransaction.transferFeeMode || null,
       destination_address: (newTransaction as any).destinationAddress || null,
       from_wallet_id: (newTransaction as any).fromWalletId || null,
       to_wallet_id: (newTransaction as any).toWalletId || null,
@@ -434,11 +453,10 @@ async function calculateTransactionSummary(userId: number): Promise<TransactionS
           totalFeesBTC += tx.fees;
         }
         
-        const txWithTransfer = tx as any; // Type assertion for new fields
-        if (txWithTransfer.transferType === 'TO_COLD_WALLET') {
-          coldWalletBTC += (tx.btcAmount - tx.fees);
-        } else if (txWithTransfer.transferType === 'FROM_COLD_WALLET') {
-          coldWalletBTC -= tx.btcAmount;
+        if (tx.transferType === 'TO_COLD_WALLET') {
+          coldWalletBTC += btcArriving(tx);
+        } else if (tx.transferType === 'FROM_COLD_WALLET') {
+          coldWalletBTC -= btcLeaving(tx);
         }
       }
       

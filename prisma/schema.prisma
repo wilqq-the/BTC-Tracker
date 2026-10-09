@@ -36,6 +36,10 @@ model BitcoinTransaction {
   // Transfer-specific fields
   transferType          String?  @map("transfer_type") // 'TO_COLD_WALLET', 'FROM_COLD_WALLET', 'BETWEEN_WALLETS', 'TRANSFER_IN', 'TRANSFER_OUT'
   destinationAddress    String?  @map("destination_address") // Optional: wallet address for tracking
+  // How a BTC network fee was paid on an internal or outgoing transfer:
+  // 'ON_TOP' - btcAmount arrives, btcAmount + fee leaves the source (exchange style)
+  // 'DEDUCTED' or null - btcAmount leaves, btcAmount - fee arrives (original behaviour)
+  transferFeeMode       String?  @map("transfer_fee_mode")
 
   // Wallet relationships (new multi-wallet system)
   // For internal transfers: both fromWalletId and toWalletId are set
