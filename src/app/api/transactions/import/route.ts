@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'File parsing failed',
-        message: `Error parsing ${fileExtension?.toUpperCase()} file: ${parseError}`
+        message: parseError instanceof Error ? parseError.message : `Could not read the ${fileExtension?.toUpperCase()} file.`
       }, { status: 400 });
     }
 

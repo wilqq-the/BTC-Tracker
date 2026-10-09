@@ -570,7 +570,7 @@ export default function TransactionsPage() {
         setImportWalletId('');
         emitTransactionsChanged();
       } else {
-        toast({ title: 'Import failed', description: result.error || result.message, variant: 'destructive' });
+        toast({ title: 'Import failed', description: result.message || result.error, variant: 'destructive' });
       }
     } catch (error) {
       toast({ title: 'Failed to import transactions. Please try again.', variant: 'destructive' });
