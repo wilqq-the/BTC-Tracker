@@ -1,14 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { WidgetCard, WidgetEmptyState } from '@/components/ui/widget-card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
+import { WidgetCard } from '@/components/ui/widget-card';
+import { RingChart } from '@/components/ui/ring-chart';
 import { WidgetProps } from '@/lib/dashboard-types';
-import { TrendingUpIcon, TargetIcon, ExternalLinkIcon } from 'lucide-react';
-import { formatCurrency } from '@/lib/theme';
+import { onTransactionsChanged } from '@/lib/app-events';
 import Link from 'next/link';
 
 interface DCAAnalysis {
@@ -45,6 +41,7 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
 
   useEffect(() => {
     loadAnalysis();
+    return onTransactionsChanged(loadAnalysis);
   }, []);
 
   const loadAnalysis = async () => {
@@ -74,38 +71,28 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
     onRefresh?.();
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 8) return 'text-green-600 dark:text-green-400';
-    if (score >= 6) return 'text-blue-600 dark:text-blue-400';
-    if (score >= 4) return 'text-primary';
-    return 'text-red-600 dark:text-red-400';
-  };
-
-  const getScoreBgColor = (score: number) => {
-    if (score >= 8) return 'bg-green-500';
-    if (score >= 6) return 'bg-blue-500';
-    if (score >= 4) return 'bg-primary';
-    return 'bg-red-500';
-  };
+  // Score colour: red (poor) → orange (fair) → green (good)
+  const scoreColor = (score: number) =>
+    score >= 6 ? 'hsl(var(--chart-2))' : score >= 4 ? 'hsl(var(--primary))' : 'hsl(var(--destructive))';
+  const scoreTrack = (score: number) =>
+    score >= 6 ? 'hsl(var(--tint-green))' : score >= 4 ? 'hsl(var(--tint-orange))' : 'hsl(var(--tint-red))';
 
   const getScoreLabel = (score: number) => {
     if (score >= 8) return 'Excellent';
     if (score >= 6) return 'Good';
     if (score >= 4) return 'Fair';
-    return 'Poor';
+    return 'Needs consistency';
   };
+
+  const rows = analysis ? [
+    { label: 'Timing', value: analysis.score.timing.toFixed(1) },
+    { label: 'Consistency', value: analysis.score.consistency.toFixed(1) },
+    ...(analysis.consistency ? [{ label: 'Buys', value: String(analysis.consistency.totalPurchases) }] : []),
+  ] : [];
 
   return (
     <WidgetCard
-      title="DCA Performance"
-      icon={TargetIcon}
-      badge={
-        analysis && (
-          <Badge variant={analysis.score.overall >= 6 ? "default" : "secondary"}>
-            {analysis.score.overall.toFixed(1)}/10
-          </Badge>
-        )
-      }
+      title="DCA score"
       loading={loading}
       error={error || (!analysis ? "No DCA data available" : null)}
       onRefresh={handleRefresh}
@@ -113,100 +100,31 @@ export default function DCAAnalysisWidget({ id, onRefresh }: WidgetProps) {
       contentClassName="overflow-auto"
     >
       {analysis && (
-        <div className="space-y-3 flex-1">
-          {/* Overall Score Bar */}
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-muted-foreground">DCA Strategy Score</span>
-              <div className={`text-2xl font-bold ${getScoreColor(analysis.score.overall)}`}>
-                {analysis.score.overall.toFixed(1)}/10
-              </div>
+        <div className="flex flex-1 flex-col justify-between gap-4">
+          <div className="flex items-center gap-5">
+            <RingChart
+              segments={[{ value: analysis.score.overall, color: scoreColor(analysis.score.overall) }]}
+              total={10}
+              size={112}
+              thickness={12}
+              roundedCaps
+              trackColor={scoreTrack(analysis.score.overall)}
+            >
+              <span className="text-[26px] font-extrabold tabular-nums">{analysis.score.overall.toFixed(1)}</span>
+            </RingChart>
+            <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-sm">
+              <span className="font-bold">{getScoreLabel(analysis.score.overall)}</span>
+              {rows.map((r) => (
+                <div key={r.label} className="flex justify-between gap-4">
+                  <span className="font-semibold text-muted-foreground">{r.label}</span>
+                  <span className="font-bold tabular-nums">{r.value}</span>
+                </div>
+              ))}
             </div>
-            <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-              <div 
-                className={`h-2 rounded-full transition-all ${getScoreBgColor(analysis.score.overall)}`}
-                style={{ width: `${(analysis.score.overall / 10) * 100}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              {getScoreLabel(analysis.score.overall)} - Keep up the consistent buying!
-            </p>
           </div>
-
-          <Separator />
-
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Timing Score */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Timing</p>
-              <div className="flex items-baseline gap-2">
-                <div className={`text-lg font-bold ${getScoreColor(analysis.score.timing)}`}>
-                  {analysis.score.timing.toFixed(1)}
-                </div>
-                {analysis.timing && (
-                  <span className="text-xs text-muted-foreground">
-                    ({analysis.timing.btcBoughtBelowCurrent.toFixed(0)}% below)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Consistency Score */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Consistency</p>
-              <div className="flex items-baseline gap-2">
-                <div className={`text-lg font-bold ${getScoreColor(analysis.score.consistency)}`}>
-                  {analysis.score.consistency.toFixed(1)}
-                </div>
-                {analysis.consistency && (
-                  <span className="text-xs text-muted-foreground">
-                    ({analysis.consistency.totalPurchases} buys)
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Performance */}
-            <div>
-              <p className="text-xs text-muted-foreground mb-1">Performance</p>
-              <div className="flex items-baseline gap-2">
-                <div className={`text-lg font-bold ${getScoreColor(analysis.score.performance)}`}>
-                  {analysis.score.performance.toFixed(1)}
-                </div>
-                {analysis.summary && (
-                  <span className={`text-xs font-medium ${
-                    analysis.summary.totalPnLPercent >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
-                    {analysis.summary.totalPnLPercent >= 0 ? '+' : ''}
-                    {analysis.summary.totalPnLPercent.toFixed(1)}%
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Avg Buy Price */}
-            {analysis.summary && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Avg Buy</p>
-                <div className="text-lg font-bold text-primary">
-                  {formatCurrency(analysis.summary.avgBuyPrice, analysis.currency)}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Full Analysis Link */}
-          <Button asChild variant="outline" size="sm" className="w-full">
-            <Link href="/goals">
-              View Full Analysis
-              <ExternalLinkIcon className="size-3.5 ml-2" />
-            </Link>
-          </Button>
+          <Link href="/goals" className="text-sm font-bold text-primary-strong hover:underline">
+            {analysis.score.consistency < 5 ? 'Set up Auto DCA' : 'See the full analysis'}
+          </Link>
         </div>
       )}
     </WidgetCard>
