@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
+import { WalletLabel, WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import {
   Select,
   SelectContent,
@@ -1329,8 +1329,7 @@ export default function TransactionsPage() {
                   <SelectContent>
                     {importWallets.map(w => (
                       <SelectItem key={w.id} value={w.id.toString()}>
-                        <WalletTypeIcon type={w.type} />
-                        {w.name}
+                        <WalletLabel type={w.type} name={w.name} />
                       </SelectItem>
                     ))}
                   </SelectContent>

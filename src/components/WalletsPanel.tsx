@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select';
 import { WalletIcon, PencilIcon, TrashIcon, AlertCircleIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
+import { WalletLabel, WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import { confirm } from '@/components/ui/confirm-dialog';
 import { toast } from '@/hooks/use-toast';
 import { useBtcUnit } from '@/hooks/use-btc-unit';
@@ -265,12 +265,10 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="cold">
-                    <WalletTypeIcon type="cold" />
-                    Cold storage
+                    <WalletLabel type="cold" name="Cold storage" />
                   </SelectItem>
                   <SelectItem value="hot">
-                    <WalletTypeIcon type="hot" />
-                    Hot wallet
+                    <WalletLabel type="hot" name="Hot wallet" />
                   </SelectItem>
                 </SelectContent>
               </Select>

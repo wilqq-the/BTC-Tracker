@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { confirm } from '@/components/ui/confirm-dialog';
-import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
+import { WalletLabel, WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import {
   Dialog,
   DialogContent,
@@ -579,8 +579,7 @@ export default function ExchangeConnectionsPanel({ onHeaderAction }: ExchangeCon
                   <SelectItem value="none">No wallet</SelectItem>
                   {wallets.map((wallet) => (
                     <SelectItem key={wallet.id} value={wallet.id.toString()}>
-                      <WalletTypeIcon type={wallet.type} />
-                      {wallet.name}
+                      <WalletLabel type={wallet.type} name={wallet.name} />
                     </SelectItem>
                   ))}
                 </SelectContent>
