@@ -1,6 +1,7 @@
 'use client';
 
 import { flushSync } from 'react-dom';
+import { applyPresetForMode } from '@/components/ui/ThemeProvider';
 
 /**
  * Light/dark switch as a circular reveal: the new theme grows out of the
@@ -19,9 +20,11 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pointerdown', (e) => { lastPointer = { x: e.clientX, y: e.clientY }; }, { capture: true, passive: true });
 }
 
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-export function switchThemeWithReveal(apply: () => void, origin?: { x: number; y: number }): void {
+export function switchThemeWithReveal(
+  mode: 'light' | 'dark',
+  apply: () => void,
+  origin?: { x: number; y: number }
+): void {
   const doc = document as ViewTransitionDoc;
   if (!doc.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     apply();
@@ -39,13 +42,14 @@ export function switchThemeWithReveal(apply: () => void, origin?: { x: number; y
   freeze.textContent = '*, *::before, *::after { transition: none !important; }';
   document.head.appendChild(freeze);
 
-  const transition = doc.startViewTransition(async () => {
+  const transition = doc.startViewTransition(() => {
     flushSync(apply);
-    // Theme presets are applied a frame after the class changes; let them
-    // land before the "after" snapshot so the reveal shows the final colours
-    await nextFrame();
-    await nextFrame();
-    await nextFrame();
+    // Rendering is paused until this callback returns, so frame callbacks
+    // never fire here (waiting on one stalls the page for seconds). Apply the
+    // colour preset synchronously so the "after" snapshot has final colours.
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(mode);
+    applyPresetForMode(mode);
   });
 
   transition.ready.then(() => {

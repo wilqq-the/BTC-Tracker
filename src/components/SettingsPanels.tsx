@@ -818,7 +818,7 @@ export function DisplaySettingsPanel({
                 value={mode}
                 onChange={(next) => {
                   if (saving || next === mode) return;
-                  switchThemeWithReveal(() => setTheme(next));
+                  switchThemeWithReveal(next, () => setTheme(next));
                   onUpdate({ theme: next });
                 }}
               />

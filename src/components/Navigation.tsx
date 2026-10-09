@@ -186,7 +186,8 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
             className="relative size-11 rounded-full bg-secondary hover:bg-accent"
             onClick={(e) => {
               const r = e.currentTarget.getBoundingClientRect();
-              switchThemeWithReveal(() => setTheme(isDark ? 'light' : 'dark'), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+              const next = isDark ? 'light' : 'dark';
+              switchThemeWithReveal(next, () => setTheme(next), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
             }}
             title={mounted ? `Switch to ${isDark ? 'light' : 'dark'} mode` : undefined}
             aria-label="Toggle theme"
