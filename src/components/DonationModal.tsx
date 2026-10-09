@@ -116,7 +116,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                   </div>
                   
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-center">Bitcoin Address</p>
+                    <p className="text-sm font-medium text-center">Bitcoin address</p>
                     <div className="bg-muted rounded-xl p-3">
                       <p className="font-mono text-xs break-all text-center">
                       {bitcoinAddress}
@@ -129,7 +129,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       size="sm"
                     >
                       <CopyIcon className="size-4 mr-2" />
-                      {copied === 'bitcoin' ? 'Copied!' : 'Copy Address'}
+                      {copied === 'bitcoin' ? 'Copied' : 'Copy address'}
                     </Button>
                   </div>
                 </CardContent>
@@ -168,7 +168,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                       size="sm"
                     >
                       <CopyIcon className="size-4 mr-2" />
-                      {copied === 'lightning' ? 'Copied!' : 'Copy Lightning Address'}
+                      {copied === 'lightning' ? 'Copied' : 'Copy Lightning address'}
                     </Button>
                   </div>
                 </CardContent>
@@ -186,7 +186,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Open Source Project</h3>
+                  <h3 className="text-lg font-semibold">Open-source project</h3>
                   <p className="text-sm text-muted-foreground">
                     Star the repository, contribute code, or report issues
                   </p>
@@ -281,7 +281,7 @@ export default function DonationModal({ isOpen, onClose }: DonationModalProps) {
             <span className="font-medium">BTC Tracker</span>
             <Separator orientation="vertical" className="h-3" />
             <span>v{packageJson.version}</span>
-            <Badge variant="outline" className="ml-2">Open Source</Badge>
+            <Badge variant="outline" className="ml-2">Open source</Badge>
           </div>
           <div className="flex items-center gap-1.5">
             <HeartHandshakeIcon className="size-3.5 text-primary" />

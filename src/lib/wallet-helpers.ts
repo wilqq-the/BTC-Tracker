@@ -1,8 +1,8 @@
 import { prisma } from '@/lib/prisma';
 
 const DEFAULT_WALLETS = [
-  { name: 'Cold Wallet', type: 'cold', emoji: '❄️', note: 'Default cold storage wallet' },
-  { name: 'Hot Wallet', type: 'hot', emoji: '🔥', note: 'Default hot wallet' },
+  { name: 'Cold Wallet', type: 'cold', emoji: null, note: 'Default cold storage wallet' },
+  { name: 'Hot Wallet', type: 'hot', emoji: null, note: 'Default hot wallet' },
 ];
 
 /** Ensure the user has at least the two default wallets (migration helper). */

@@ -52,7 +52,7 @@ export class BTCProjectionService {
     return [
       {
         id: 'bear',
-        name: 'Bear Market',
+        name: 'Bear market',
         icon: 'trending-down',
         description: 'Pessimistic scenario with price decline',
         annualGrowthRate: -0.30, // -30% per year
@@ -81,7 +81,7 @@ export class BTCProjectionService {
       },
       {
         id: 'moderate',
-        name: 'Moderate Growth',
+        name: 'Moderate growth',
         icon: 'trending-up',
         description: 'Typical bull cycle growth',
         annualGrowthRate: historicalRates.moderate || 0.40, // +40% per year
@@ -92,7 +92,7 @@ export class BTCProjectionService {
       },
       {
         id: 'bull',
-        name: 'Bull Market',
+        name: 'Bull market',
         icon: 'rocket',
         description: 'Aggressive growth scenario',
         annualGrowthRate: historicalRates.bull || 1.00, // +100% per year
