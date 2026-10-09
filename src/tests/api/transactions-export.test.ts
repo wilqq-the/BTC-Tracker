@@ -148,6 +148,7 @@ describe('Transactions Export API', () => {
         'To Wallet',
         'To Wallet Type',
         'Tags',
+        'Transfer Fee Mode',
       ])
     })
 
@@ -209,7 +210,7 @@ describe('Transactions Export API', () => {
 
       const row = (await csvRowsById()).get(String(orphan.id))
       expect(row).toBeDefined()
-      expect(row!.slice(FROM_WALLET)).toEqual(['', '', '', '', ''])
+      expect(row!.slice(FROM_WALLET)).toEqual(['', '', '', '', '', ''])
     })
   })
 

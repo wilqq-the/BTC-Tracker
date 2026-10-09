@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { btcArriving, btcLeaving } from './transfer-fees';
 
 export interface BitcoinPriceData {
   price: number;
@@ -471,7 +472,8 @@ export class BitcoinPriceService {
             btcAmount: true,
             fees: true,
             feesCurrency: true,
-            transferType: true
+            transferType: true,
+            transferFeeMode: true
           }
         })
       ]);
@@ -480,10 +482,10 @@ export class BitcoinPriceService {
       // 
       // IMPORTANT: Transfer logic explanation
       // ========================================
-      // When transferring Bitcoin:
-      //   - btcAmount = total amount LEAVING source wallet
-      //   - fees = network fees paid (always in BTC)
-      //   - Amount arriving at destination = btcAmount - fees
+      // When transferring Bitcoin, how much leaves and how much arrives
+      // depends on the transfer's fee mode (lib/transfer-fees): with the
+      // original mode (shown below) btcAmount leaves and btcAmount - fee
+      // arrives; with ON_TOP btcAmount arrives and btcAmount + fee leaves.
       //
       // Example: Transfer all BTC from hot to cold wallet
       //   - Had: 0.43134872 BTC in hot wallet
@@ -500,13 +502,10 @@ export class BitcoinPriceService {
         }
         
         // Track cold wallet movements
-        // btcAmount is total leaving source, so destination gets (btcAmount - fees)
         if (tx.transferType === 'TO_COLD_WALLET') {
-          // Amount received in cold wallet = sent amount - fees
-          coldWalletBTC += (tx.btcAmount - tx.fees);
+          coldWalletBTC += btcArriving(tx);
         } else if (tx.transferType === 'FROM_COLD_WALLET') {
-          // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
-          coldWalletBTC -= tx.btcAmount;
+          coldWalletBTC -= btcLeaving(tx);
         }
       }
 
