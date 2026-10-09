@@ -12,7 +12,7 @@ export interface ImportTransaction {
   fees_currency: string;
   transaction_date: string;
   notes: string;
-  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | null;
+  transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT' | null;
   destination_address?: string | null;
 }
 

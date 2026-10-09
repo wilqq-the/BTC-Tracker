@@ -293,6 +293,12 @@ async function importTransactions(
       } else if (transferType === 'FROM_COLD_WALLET') {
         fromWalletId = coldWalletId;
         toWalletId = walletId;
+      } else if (transferType === 'TRANSFER_OUT') {
+        // External send (e.g. a Lightning payment) leaves the imported wallet
+        fromWalletId = walletId;
+      } else if (transferType === 'TRANSFER_IN') {
+        // External receive arrives in the imported wallet
+        toWalletId = walletId;
       }
 
       await prisma.bitcoinTransaction.create({
