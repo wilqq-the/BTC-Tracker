@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -112,7 +111,6 @@ const getWidgetComponent = (type: WidgetType): React.ComponentType<any> | null =
  * Draggable & resizable widget grid using react-grid-layout
  */
 export default function DashboardGrid() {
-  const { data: session } = useSession();
   const [layout, setLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -330,9 +328,6 @@ export default function DashboardGrid() {
   }
 
   const isStacked = gridWidth > 0 && gridWidth < STACK_BREAKPOINT;
-  const firstName = (session?.user?.name || '').split(' ')[0];
-  const hour = new Date().getHours();
-  const greeting = hour < 5 ? 'Good night' : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   const renderWidget = (widget: typeof visibleWidgets[number]) => {
     const WidgetComponent = getWidgetComponent(widget.type);
@@ -394,19 +389,7 @@ export default function DashboardGrid() {
             </Button>
           </div>
         </div>
-      ) : (
-        <div className="mb-3 flex items-center justify-between gap-3 px-1">
-          <h1 className="text-lg font-bold tracking-tight">
-            {greeting}{firstName ? `, ${firstName}` : ''}
-          </h1>
-          {!isStacked && (
-            <Button variant="ghost" size="sm" className="rounded-full font-semibold text-muted-foreground hover:bg-card hover:text-foreground" onClick={toggleEditMode}>
-              <Settings2Icon className="size-4 mr-1.5" />
-              Customize
-            </Button>
-          )}
-        </div>
-      )}
+      ) : null}
 
       {/* Grid */}
       {/* The grid fades in once; the hero's count-up and chart draw are the only orchestrated motion */}
@@ -485,6 +468,16 @@ export default function DashboardGrid() {
             <div className="h-96" />
           )}
       </div>
+
+      {/* Customize lives under the widgets so the grid starts level with the sidebar */}
+      {!isEditMode && !isStacked && (
+        <div className="mt-4 flex justify-end">
+          <Button variant="ghost" size="sm" className="rounded-full font-semibold text-muted-foreground hover:bg-card hover:text-foreground" onClick={toggleEditMode}>
+            <Settings2Icon className="size-4 mr-1.5" />
+            Customize dashboard
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

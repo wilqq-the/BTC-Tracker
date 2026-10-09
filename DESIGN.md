@@ -26,8 +26,13 @@ What we deliberately avoid (they make an app look templated):
   Settings, where the settings menu takes that role), content area scrolls.
   Gutters are 16px (`p-4`, `gap-4`), 8px on phones.
 - Page content: `space-y-4 pb-6`, no own padding / max-width / background.
-- Page title row (not a card): `<h1 className="text-lg font-bold tracking-tight">`
-  on the left, page actions (outline `rounded-full` buttons) on the right.
+- **No page title rows.** The header nav already shows where you are, and a title
+  row would push the content below the sidebar's top edge. Every page starts with
+  its first card (or its tab row) level with the sidebar. Page actions live inside
+  that first card (e.g. Import/Export on the transactions summary row, Export tax
+  report in the performance card); Settings puts the tab title and actions at the
+  top of its content column, beside its own menu. Rare actions can sit under the
+  content (dashboard "Customize dashboard").
 
 ## 3. Surfaces
 
@@ -104,7 +109,7 @@ Errors say what happened and how to fix it. Join facts with words/commas, not `�
 
 ## 10. Checklist for a new page or component
 
-- [ ] Content only (no `<AppLayout>`), title row + `space-y-4`.
+- [ ] Content only (no `<AppLayout>`), no title row, first card level with the sidebar, `space-y-4`.
 - [ ] `<Card>` panels; tiles in `bg-secondary`; no gradients, no icon-tile stat rows.
 - [ ] Orange only for primary action / active / BTC; zero values muted; signed money.
 - [ ] Icons from lucide-react, no emoji; sentence case; no `·`/`→` tells.
