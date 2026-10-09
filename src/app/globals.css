@@ -385,3 +385,16 @@
 [data-ferro-pointer] * {
   cursor: none !important;
 }
+
+/* Opening a dropdown/dialog (Radix) locks page scroll: it hides the
+   scrollbar and pads the body by the scrollbar's width, which shifted the
+   whole page sideways with classic (non-overlay) scrollbars. Reserve the
+   scrollbar's space permanently instead and drop the compensation. */
+html {
+  scrollbar-gutter: stable;
+}
+
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
