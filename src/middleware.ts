@@ -46,9 +46,12 @@ export default async function middleware(req: NextRequest, event: NextFetchEvent
 
 export const config = {
   matcher: [
+    // Every app page except the sign-in/sign-up pages (and static assets)
     '/',
-    '/transactions',
-    '/settings',
+    '/transactions/:path*',
+    '/analytics/:path*',
+    '/goals/:path*',
+    '/settings/:path*',
     '/api/:path*'
   ]
 }
