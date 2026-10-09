@@ -220,15 +220,15 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       {/* Background decoration */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-1/4 -left-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-btc-500/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-1/4 size-96 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
-      <Card className="w-full max-w-md border-border/50 shadow-xl">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center pb-2">
           {/* Logo */}
-          <div className="mx-auto mb-4 size-16 bg-gradient-to-br from-btc-500 to-btc-600 rounded-2xl flex items-center justify-center shadow-lg shadow-btc-500/20">
-            <span className="text-white font-bold text-3xl">₿</span>
+          <div className="mx-auto mb-4 size-14 bg-primary rounded-2xl flex items-center justify-center">
+            <span className="text-primary-foreground font-extrabold text-3xl">₿</span>
           </div>
           <CardTitle className="text-2xl">Welcome back</CardTitle>
           <CardDescription>
@@ -262,7 +262,7 @@ export default function SignInPage() {
 
               <form onSubmit={handle2FASubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="twoFactorCode">Verification Code</Label>
+                  <Label htmlFor="twoFactorCode">Verification code</Label>
                   <Input
                     id="twoFactorCode"
                     type="text"
@@ -421,7 +421,7 @@ export default function SignInPage() {
                     Signing in...
                   </>
                 ) : (
-                  'Sign In'
+                  'Sign in'
                 )}
               </Button>
             </form>

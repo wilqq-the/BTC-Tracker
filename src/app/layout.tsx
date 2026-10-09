@@ -1,11 +1,17 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import ThemeProvider from '@/components/ui/ThemeProvider'
 import { AuthProvider } from '@/components/AuthProvider'
 import { Toaster } from '@/components/ui/toaster'
+import { ConfirmDialogHost } from '@/components/ui/confirm-dialog'
+import AppShell from '@/components/AppShell'
 
-const inter = Inter({ subsets: ['latin'] })
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-sans',
+})
 
 export const metadata: Metadata = {
   title: 'BTC Tracker',
@@ -24,11 +30,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${jakarta.variable} font-sans antialiased`}>
         <AuthProvider>
           <ThemeProvider>
-            {children}
+            <AppShell>{children}</AppShell>
             <Toaster />
+            <ConfirmDialogHost />
           </ThemeProvider>
         </AuthProvider>
       </body>

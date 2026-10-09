@@ -145,7 +145,7 @@ export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
           {/* Quick Stats */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <div className="size-2 rounded-full bg-btc-500 shrink-0" />
+              <div className="size-2 rounded-full bg-primary shrink-0" />
               <span className="text-sm font-semibold">{activeTransactions.length}</span>
               <span className="text-xs text-muted-foreground">Active</span>
             </div>
@@ -188,7 +188,7 @@ export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0 ml-2">
-                    <div className="text-xs font-semibold text-btc-500">
+                    <div className="text-xs font-semibold text-primary">
                       {formatDate(tx.nextExecution)}
                     </div>
                     <span className="text-xs text-muted-foreground">

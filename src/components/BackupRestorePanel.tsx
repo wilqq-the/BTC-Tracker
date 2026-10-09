@@ -10,8 +10,15 @@ import { Progress } from '@/components/ui/progress';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { DatabaseIcon, DownloadIcon, UploadIcon, Trash2Icon, RotateCcwIcon, AlertTriangleIcon, ClockIcon } from 'lucide-react';
+import { DatabaseIcon, DownloadIcon, UploadIcon, Trash2Icon, RotateCcwIcon, AlertTriangleIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
+
+const KIND_LABEL: Record<Snapshot['kind'], string> = {
+  manual: 'Manual',
+  scheduled: 'Automatic',
+  safety: 'Safety copy before a restore',
+};
 
 interface Snapshot {
   filename: string;
@@ -122,6 +129,7 @@ export default function BackupRestorePanel() {
   };
 
   const handleDelete = async (filename: string) => {
+    if (!(await confirm({ title: 'Delete this snapshot?', description: `${filename} is removed from the server.`, confirmText: 'Delete', destructive: true }))) return;
     const res = await fetch(`/api/backup/${encodeURIComponent(filename)}`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
@@ -196,96 +204,55 @@ export default function BackupRestorePanel() {
   };
 
   if (loading) {
-    return <div className="text-muted-foreground">Loading backups…</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading backups" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          <DatabaseIcon className="size-6" /> Backup &amp; Restore
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Full-database backups (all users&apos; data). Admin only.
-        </p>
-      </div>
-
+    <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-2">
       {/* Create & download */}
       <Card>
         <CardHeader>
-          <CardTitle>Create a backup</CardTitle>
-          <CardDescription>Download a snapshot to your computer, or keep one on the server.</CardDescription>
+          <CardTitle className="text-[17px] font-bold tracking-tight">Create a backup</CardTitle>
+          <CardDescription className="text-[13px]">A copy of the whole database, with every user&apos;s data. Download it, or keep a snapshot on the server.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button onClick={handleDownloadNew} disabled={downloading}>
-            <DownloadIcon className="size-4 mr-2" />
-            {downloading ? 'Preparing…' : 'Download backup'}
+        <CardContent className="flex flex-wrap gap-2">
+          <Button className="rounded-full font-semibold" onClick={handleDownloadNew} disabled={downloading}>
+            <DownloadIcon className="size-4" />
+            {downloading ? 'Preparing...' : 'Download backup'}
           </Button>
-          <Button variant="outline" onClick={handleCreateServerSnapshot} disabled={creating}>
-            <DatabaseIcon className="size-4 mr-2" />
-            {creating ? 'Creating…' : 'Create server snapshot'}
+          <Button variant="outline" className="rounded-full font-semibold" onClick={handleCreateServerSnapshot} disabled={creating}>
+            <DatabaseIcon className="size-4" />
+            {creating ? 'Creating...' : 'Save snapshot on server'}
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Server snapshots */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Server snapshots</CardTitle>
-          <CardDescription>Snapshots stored on this server.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {snapshots.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No snapshots yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {snapshots.map((s) => (
-                <div key={s.filename} className="flex items-center justify-between gap-2 rounded-lg border p-3 text-sm">
-                  <div className="min-w-0">
-                    <div className="font-medium truncate">{s.filename}</div>
-                    <div className="text-muted-foreground text-xs">
-                      {new Date(s.createdAt).toLocaleString()} · {formatBytes(s.sizeBytes)} · {s.kind}
-                      {s.appVersion !== 'unknown' ? ` · v${s.appVersion}` : ''}
-                    </div>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="sm" title="Download"
-                      onClick={() => downloadFromUrl(`/api/backup/${encodeURIComponent(s.filename)}/download`, s.filename).catch(() => toast({ title: 'Download failed', variant: 'destructive' }))}>
-                      <DownloadIcon className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" title="Restore"
-                      onClick={() => { setConfirmText(''); setRestoreTarget({ type: 'server', filename: s.filename }); }}>
-                      <RotateCcwIcon className="size-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" title="Delete" onClick={() => handleDelete(s.filename)}>
-                      <Trash2Icon className="size-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </CardContent>
       </Card>
 
       {/* Restore from file */}
       <Card>
         <CardHeader>
-          <CardTitle>Restore from a file</CardTitle>
-          <CardDescription className="text-destructive">
-            This replaces ALL current data for every user. Make a backup first.
+          <CardTitle className="text-[17px] font-bold tracking-tight">Restore from a file</CardTitle>
+          <CardDescription className="text-[13px]">
+            Replaces all current data for every user. Download a backup first.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click(); } }}
             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
             onDragLeave={() => setDragOver(false)}
             onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFileSelected(e.dataTransfer.files?.[0]); }}
             onClick={() => fileInputRef.current?.click()}
-            className={`cursor-pointer rounded-lg border-2 border-dashed p-6 text-center text-sm transition-colors ${dragOver ? 'border-primary bg-primary/5' : 'border-muted'}`}
+            className={`cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center text-sm transition-colors ${dragOver ? 'border-primary bg-tint-orange' : 'border-border hover:bg-secondary'}`}
           >
             <UploadIcon className="size-6 mx-auto mb-2 text-muted-foreground" />
-            Drop a <code>.db</code> or <code>.db.gz</code> backup here, or click to choose
+            Drop a <code>.db</code> or <code>.db.gz</code> backup here, or click to choose one
             <input
               ref={fileInputRef}
               type="file"
@@ -296,45 +263,94 @@ export default function BackupRestorePanel() {
           </div>
         </CardContent>
       </Card>
+      </div>
+
+      {/* Server snapshots */}
+      <Card className="gap-2">
+        <CardHeader>
+          <CardTitle className="text-[17px] font-bold tracking-tight">Snapshots on this server</CardTitle>
+        </CardHeader>
+        <CardContent className="px-2">
+          {snapshots.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-muted-foreground">No snapshots yet. Snapshots you save, and automatic ones, will appear here.</p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {snapshots.map((s) => (
+                <li key={s.filename} className="flex items-center justify-between gap-2 px-4 py-3 text-sm">
+                  <div className="min-w-0">
+                    <div className="font-semibold truncate">
+                      {new Date(s.createdAt).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className="text-muted-foreground text-[13px] tabular-nums truncate">
+                      {KIND_LABEL[s.kind] ?? s.kind}, {formatBytes(s.sizeBytes)}
+                      {s.appVersion !== 'unknown' ? `, version ${s.appVersion}` : ''}
+                    </div>
+                    <div className="text-muted-foreground text-xs truncate" title={s.filename}>{s.filename}</div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="size-9 rounded-full text-muted-foreground hover:text-foreground" title="Download" aria-label={`Download ${s.filename}`}
+                      onClick={() => downloadFromUrl(`/api/backup/${encodeURIComponent(s.filename)}/download`, s.filename).catch(() => toast({ title: 'Download failed', variant: 'destructive' }))}>
+                      <DownloadIcon className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-9 rounded-full text-muted-foreground hover:text-foreground" title="Restore" aria-label={`Restore ${s.filename}`}
+                      onClick={() => { setConfirmText(''); setRestoreTarget({ type: 'server', filename: s.filename }); }}>
+                      <RotateCcwIcon className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-9 rounded-full text-muted-foreground hover:bg-tint-red hover:text-tint-red-fg" title="Delete" aria-label={`Delete ${s.filename}`} onClick={() => handleDelete(s.filename)}>
+                      <Trash2Icon className="size-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Schedule */}
       {config && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ClockIcon className="size-5" /> Automatic backups</CardTitle>
-            <CardDescription>Periodic server snapshots with retention.</CardDescription>
+            <CardTitle className="text-[17px] font-bold tracking-tight">Automatic backups</CardTitle>
+            <CardDescription className="text-[13px]">Save a snapshot on the server on a schedule, and clear out old ones.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="bk-enabled">Enabled</Label>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="bk-enabled">Back up automatically</Label>
               <Switch id="bk-enabled" checked={config.enabled}
                 onCheckedChange={(v) => saveSchedule({ enabled: v })} disabled={savingSchedule} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="bk-interval">Every (hours)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="bk-interval">Every how many hours</Label>
                 <Input id="bk-interval" type="number" min={1} defaultValue={config.intervalHours}
                   onBlur={(e) => { const v = Number(e.target.value); if (v >= 1 && v !== config.intervalHours) saveSchedule({ intervalHours: v }); }} />
               </div>
-              <div>
-                <Label htmlFor="bk-keeplast">Keep last (count)</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="bk-keeplast">Keep the newest</Label>
                 <Input id="bk-keeplast" type="number" min={0} defaultValue={config.retention.keepLast ?? 0}
                   onBlur={(e) => saveSchedule({ retention: { ...config.retention, keepLast: Number(e.target.value) } })} />
               </div>
-              <div>
-                <Label htmlFor="bk-keepdays">Keep days</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="bk-keepdays">Keep for days</Label>
                 <Input id="bk-keepdays" type="number" min={0} defaultValue={config.retention.keepDays ?? 0}
                   onBlur={(e) => saveSchedule({ retention: { ...config.retention, keepDays: Number(e.target.value) } })} />
               </div>
             </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="bk-gzip">Compress (gzip)</Label>
+            <p className="text-xs text-muted-foreground">0 means no limit.</p>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="bk-gzip">Compress snapshots (gzip)</Label>
               <Switch id="bk-gzip" checked={config.gzip} onCheckedChange={(v) => saveSchedule({ gzip: v })} disabled={savingSchedule} />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {config.lastRunAt ? `Last run: ${new Date(config.lastRunAt).toLocaleString()}` : 'Never run yet'}
-              {config.lastError ? ` · last error: ${config.lastError}` : ''}
+            <p className="border-t border-border/60 pt-3 text-xs text-muted-foreground">
+              {config.lastRunAt ? `Last ran ${new Date(config.lastRunAt).toLocaleString()}.` : 'Hasn’t run yet.'}
             </p>
+            {config.lastError && (
+              <div className="flex items-start gap-2 rounded-2xl bg-tint-red p-3 text-[13px] text-tint-red-fg">
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                <span>The last run failed: {config.lastError}</span>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -358,7 +374,7 @@ export default function BackupRestorePanel() {
                   Note: exchange API credentials only decrypt if this backup came from an install with the
                   same <code>NEXTAUTH_SECRET</code>. You will likely need to sign in again afterwards.
                 </p>
-                <p>Type <strong>RESTORE</strong> to confirm:</p>
+                <p>Type <strong>RESTORE</strong> to confirm.</p>
               </div>
             </DialogDescription>
           </DialogHeader>
@@ -367,9 +383,9 @@ export default function BackupRestorePanel() {
           {restoring && restoreTarget?.type === 'file' && <Progress value={restoreProgress} className="mt-2" />}
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRestoreTarget(null)} disabled={restoring}>Cancel</Button>
-            <Button variant="destructive" onClick={performRestore} disabled={restoring || confirmText !== 'RESTORE'}>
-              {restoring ? 'Restoring…' : 'Restore'}
+            <Button variant="outline" className="rounded-full font-semibold" onClick={() => setRestoreTarget(null)} disabled={restoring}>Cancel</Button>
+            <Button variant="destructive" className="rounded-full font-semibold" onClick={performRestore} disabled={restoring || confirmText !== 'RESTORE'}>
+              {restoring ? 'Restoring...' : 'Replace database'}
             </Button>
           </DialogFooter>
         </DialogContent>

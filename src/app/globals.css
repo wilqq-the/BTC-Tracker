@@ -4,103 +4,136 @@
 
 @layer base {
   :root {
-    /* Light Mode - Clean & Professional */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
-    
+    /* Light Mode — warm paper canvas with solid white cards */
+    --background: 30 8% 93%;           /* #EFEDEA warm grey, not cream */
+    --foreground: 24 10% 10%;          /* #1C1917 */
+
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
-    
+    --card-foreground: 24 10% 10%;
+
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
-    
-    /* Bitcoin Orange Primary */
-    --primary: 24 94% 53%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 9%;
-    
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 9%;
-    
-    --destructive: 0 84% 60%;
+    --popover-foreground: 24 10% 10%;
+
+    /* Bitcoin orange. Text on it is dark — white on orange fails contrast */
+    --primary: 33 93% 54%;             /* #F7931A */
+    --primary-foreground: 24 10% 10%;
+    /* Readable orange for text/icons on white and on orange tints */
+    --primary-strong: 28 100% 30%;     /* #9A4A00 */
+
+    --secondary: 30 8% 95%;            /* inner tiles */
+    --secondary-foreground: 24 10% 12%;
+
+    --muted: 30 8% 95%;
+    --muted-foreground: 28 6% 37%;     /* #645E58 — 5.9:1 on white */
+
+    --accent: 30 8% 92%;
+    --accent-foreground: 24 10% 12%;
+
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 24 94% 53%;
-    
+
+    --border: 30 8% 88%;
+    --input: 30 8% 85%;
+    --ring: 33 93% 54%;
+
+    /* Soft tints for tiles, chips and badges (bg + readable fg pairs) */
+    --tint-orange: 34 100% 94%;        /* #FFF1E0 */
+    --tint-green: 140 45% 93%;         /* #E3F5E8 */
+    --tint-green-fg: 142 64% 24%;      /* #166534 */
+    --tint-red: 0 86% 96%;
+    --tint-red-fg: 0 70% 38%;
+    --tint-blue: 218 90% 95%;          /* #E8F0FE */
+    --tint-blue-fg: 224 76% 40%;
+    --tint-purple: 258 90% 96%;        /* #F1EBFE */
+    --tint-purple-fg: 263 70% 45%;
+
     /* Chart colors */
-    --chart-1: 24 94% 53%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 0 84% 60%;
-    --chart-4: 43 96% 56%;
-    --chart-5: 262 83% 58%;
-    
-    --radius: 0.5rem;
-    
+    --chart-1: 33 93% 54%;
+    --chart-2: 142 70% 40%;
+    --chart-3: 0 80% 58%;
+    --chart-4: 224 76% 48%;
+    --chart-5: 263 70% 50%;
+
+    --radius: 1rem;
+
+    /* Soft, warm elevation — depth from shadow, never from borders */
+    --shadow-sm: 0 1px 2px hsl(24 10% 10% / 0.04);
+    --shadow-md: 0 1px 2px hsl(24 10% 10% / 0.04), 0 8px 24px hsl(24 10% 10% / 0.05);
+    --shadow-lg: 0 2px 4px hsl(24 10% 10% / 0.05), 0 16px 32px hsl(24 10% 10% / 0.10);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 6px 24px hsl(var(--primary) / 0.22);
+
     /* Sidebar */
-    --sidebar: 0 0% 98%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 24 94% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 24 94% 53%;
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 24 10% 10%;
+    --sidebar-primary: 33 93% 54%;
+    --sidebar-primary-foreground: 24 10% 10%;
+    --sidebar-accent: 30 8% 95%;
+    --sidebar-accent-foreground: 24 10% 12%;
+    --sidebar-border: 30 8% 88%;
+    --sidebar-ring: 33 93% 54%;
   }
 
   .dark {
-    /* Dark Mode - Neutral charcoal, NO blue tint */
-    --background: 0 0% 4%;              /* #0a0a0a - true black */
-    --foreground: 0 0% 95%;             /* #f2f2f2 */
-    
-    --card: 0 0% 7%;                    /* #121212 - elevated surface */
-    --card-foreground: 0 0% 95%;
-    
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 95%;
-    
-    /* Bitcoin Orange Primary - slightly brighter for dark bg */
-    --primary: 24 95% 55%;
-    --primary-foreground: 0 0% 100%;
-    
-    --secondary: 0 0% 12%;              /* #1f1f1f */
-    --secondary-foreground: 0 0% 95%;
-    
-    --muted: 0 0% 12%;                  /* #1f1f1f */
-    --muted-foreground: 0 0% 55%;       /* #8c8c8c */
-    
-    --accent: 0 0% 12%;
-    --accent-foreground: 0 0% 95%;
-    
+    /* Dark Mode — warm charcoal, same solid-card language */
+    --background: 24 10% 6%;           /* #110F0E */
+    --foreground: 30 20% 95%;
+
+    --card: 24 8% 10%;                 /* #1B1917 */
+    --card-foreground: 30 20% 95%;
+
+    --popover: 24 8% 11%;
+    --popover-foreground: 30 20% 95%;
+
+    --primary: 33 93% 56%;
+    --primary-foreground: 24 10% 8%;
+    --primary-strong: 33 95% 64%;
+
+    --secondary: 24 7% 14%;
+    --secondary-foreground: 30 20% 95%;
+
+    --muted: 24 7% 14%;
+    --muted-foreground: 30 8% 63%;
+
+    --accent: 24 7% 15%;
+    --accent-foreground: 30 20% 95%;
+
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    
-    --border: 0 0% 15%;                 /* #262626 */
-    --input: 0 0% 15%;
-    --ring: 24 95% 55%;
-    
-    /* Chart colors - optimized for dark */
-    --chart-1: 24 95% 55%;
-    --chart-2: 142 71% 45%;
-    --chart-3: 0 72% 51%;
-    --chart-4: 43 96% 60%;
-    --chart-5: 262 80% 65%;
-    
+
+    --border: 24 7% 16%;
+    --input: 24 7% 18%;
+    --ring: 33 93% 56%;
+
+    --tint-orange: 30 55% 14%;
+    --tint-green: 145 40% 12%;
+    --tint-green-fg: 142 60% 65%;
+    --tint-red: 0 45% 14%;
+    --tint-red-fg: 0 85% 72%;
+    --tint-blue: 222 45% 15%;
+    --tint-blue-fg: 217 90% 74%;
+    --tint-purple: 262 35% 16%;
+    --tint-purple-fg: 262 85% 80%;
+
+    --chart-1: 33 93% 56%;
+    --chart-2: 142 71% 48%;
+    --chart-3: 0 72% 60%;
+    --chart-4: 217 90% 64%;
+    --chart-5: 262 80% 70%;
+
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 0 0 1px hsl(0 0% 100% / 0.03), 0 8px 24px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 0 0 1px hsl(0 0% 100% / 0.04), 0 16px 36px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 8px 28px hsl(var(--primary) / 0.25);
+
     /* Sidebar */
-    --sidebar: 0 0% 5%;                 /* #0d0d0d */
-    --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 24 95% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 24 95% 55%;
+    --sidebar: 24 8% 10%;
+    --sidebar-foreground: 30 20% 95%;
+    --sidebar-primary: 33 93% 56%;
+    --sidebar-primary-foreground: 24 10% 8%;
+    --sidebar-accent: 24 7% 15%;
+    --sidebar-accent-foreground: 30 20% 95%;
+    --sidebar-border: 24 7% 16%;
+    --sidebar-ring: 33 93% 56%;
   }
 }
 
@@ -110,12 +143,50 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    /* Tabular numerals so columns of figures align — finance-grade */
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
-  
+
+  /* Tighter tracking on headings */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
+
   /* Prevent scrollbar from causing layout shift */
   html {
     overflow-y: scroll;
+  }
+
+  /* ── Motion ──────────────────────────────────────────────────────
+     Springy but brief. Entrance animations live in tailwind.config.js
+     (animate-rise / animate-pop); these are the interactive transitions. */
+  a, button, [data-slot="button"], [role="button"], [data-slot="card"], summary {
+    transition: color 0.15s ease, background-color 0.15s ease,
+      border-color 0.15s ease, box-shadow 0.25s ease,
+      transform 0.25s cubic-bezier(0.2, 0.75, 0.2, 1);
+  }
+
+  /* Cards stay still; only things you can press respond to the pointer.
+     The widget shell carries the drag "pick-up" transform in edit mode. */
+  .widget-shell {
+    height: 100%;
+    transition: transform 0.25s cubic-bezier(0.2, 0.75, 0.2, 1);
+  }
+
+  /* One visible keyboard focus style for every control */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
+    }
   }
 }
 
@@ -135,21 +206,34 @@
   user-select: none;
 }
 
+/* The widget being dragged: picked-up feel */
+.react-grid-item.react-draggable-dragging {
+  z-index: 10;
+}
+.react-grid-item.react-draggable-dragging > .widget-shell {
+  transform: scale(1.02) rotate(-0.4deg);
+}
+.react-grid-item.react-draggable-dragging [data-slot="card"] {
+  box-shadow: var(--shadow-lg), 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+
 .react-grid-item > .react-resizable-handle {
   position: absolute;
   width: 20px;
   height: 20px;
+  z-index: 25;
 }
 
 .react-grid-item > .react-resizable-handle::after {
   content: "";
   position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 5px;
-  height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  right: 6px;
+  bottom: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid hsl(var(--muted-foreground) / 0.6);
+  border-bottom: 2px solid hsl(var(--muted-foreground) / 0.6);
+  border-bottom-right-radius: 2px;
 }
 
 .react-resizable-hide > .react-resizable-handle {
@@ -217,41 +301,80 @@
   transform: rotate(45deg);
 }
 
-/* Dark mode resize handles */
-.dark .react-grid-item > .react-resizable-handle::after {
-  border-right-color: rgba(255, 255, 255, 0.3);
-  border-bottom-color: rgba(255, 255, 255, 0.3);
-}
-
+/* Drop target while dragging: a soft dashed orange slot */
 .react-grid-item.react-grid-placeholder {
-  background: hsl(24, 94%, 53%);
-  opacity: 0.2;
+  background: hsl(var(--primary) / 0.12);
+  outline: 2px dashed hsl(var(--primary) / 0.55);
+  outline-offset: -2px;
+  opacity: 1;
   transition-duration: 100ms;
   z-index: 2;
   user-select: none;
-  border-radius: var(--radius);
+  border-radius: 1.5rem;
 }
 
-/* Custom scrollbar for dark mode */
-.dark ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Custom scrollbar — themed via tokens and identical width in BOTH light and
+   dark so toggling modes never changes the reserved gutter (no layout shift). */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: hsl(0 0% 7%);
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: hsl(0 0% 20%);
-  border-radius: 4px;
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: hsl(0 0% 30%);
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+/* Firefox: match width behaviour across themes */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
 }
 
 /* Selection color */
 ::selection {
-  background: hsl(24 94% 53% / 0.3);
+  background: hsl(var(--primary) / 0.28);
+}
+
+/* ── Surface materials ───────────────────────────────────────────
+   Solid surfaces with soft shadows. The class names are kept from the
+   previous glass system so every existing page picks up the new look;
+   prefer `.surface` / `.surface-muted` in new code.
+   Unlayered on purpose: these beat Tailwind bg/border/shadow utilities. */
+
+/* App chrome (header, sidebar) and content cards */
+.surface,
+.glass-float,
+.glass-widget {
+  background-color: hsl(var(--card));
+  border: 0;
+  /* A hairline edge, not a floating drop shadow — cards sit on the canvas */
+  box-shadow: 0 0 0 1px hsl(var(--border) / 0.6), var(--shadow-sm);
+}
+
+/* Opaque card with a hairline — for cards nested inside a modal */
+.card-solid {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-sm);
+}
+
+/* Nested, tinted surface inside a card (stat tiles, list groups) */
+.surface-muted,
+.glass {
+  background-color: hsl(var(--secondary));
+  border: 0;
+  box-shadow: none;
 }

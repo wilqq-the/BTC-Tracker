@@ -14,6 +14,7 @@ export type DCAFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 export interface PriceScenario {
   id: string;
   name: string;
+  /** Icon key, mapped to a lucide icon in the UI (see components/planning/planning-icons) */
   icon: string;
   description: string;
   annualGrowthRate: number; // e.g., 0.40 = 40% growth
@@ -51,8 +52,8 @@ export class BTCProjectionService {
     return [
       {
         id: 'bear',
-        name: 'Bear Market',
-        icon: '🐻',
+        name: 'Bear market',
+        icon: 'trending-down',
         description: 'Pessimistic scenario with price decline',
         annualGrowthRate: -0.30, // -30% per year
         color: 'text-red-600 dark:text-red-400',
@@ -61,7 +62,7 @@ export class BTCProjectionService {
       {
         id: 'conservative',
         name: 'Conservative',
-        icon: '📉',
+        icon: 'shield',
         description: 'Modest growth, safe planning',
         annualGrowthRate: historicalRates.conservative || 0.10, // +10% per year
         color: 'text-orange-600 dark:text-orange-400',
@@ -72,7 +73,7 @@ export class BTCProjectionService {
       {
         id: 'stable',
         name: 'Stable',
-        icon: '📊',
+        icon: 'minus',
         description: 'Current price holds steady',
         annualGrowthRate: 0.00, // 0% (flat)
         color: 'text-gray-600 dark:text-gray-400',
@@ -80,8 +81,8 @@ export class BTCProjectionService {
       },
       {
         id: 'moderate',
-        name: 'Moderate Growth',
-        icon: '📈',
+        name: 'Moderate growth',
+        icon: 'trending-up',
         description: 'Typical bull cycle growth',
         annualGrowthRate: historicalRates.moderate || 0.40, // +40% per year
         color: 'text-blue-600 dark:text-blue-400',
@@ -91,8 +92,8 @@ export class BTCProjectionService {
       },
       {
         id: 'bull',
-        name: 'Bull Market',
-        icon: '🚀',
+        name: 'Bull market',
+        icon: 'rocket',
         description: 'Aggressive growth scenario',
         annualGrowthRate: historicalRates.bull || 1.00, // +100% per year
         color: 'text-green-600 dark:text-green-400',
@@ -103,7 +104,7 @@ export class BTCProjectionService {
       {
         id: 'custom',
         name: 'Custom',
-        icon: '⚙️',
+        icon: 'sliders',
         description: 'Set your own growth rate',
         annualGrowthRate: 0.00, // Will be set by user
         color: 'text-purple-600 dark:text-purple-400',

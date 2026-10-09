@@ -4,32 +4,36 @@ import React, { useState, useEffect } from 'react';
 import RecurringTransactionModal from './RecurringTransactionModal';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/theme';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Icons
 import {
-  BotIcon,
-  PlusIcon,
-  PlayIcon,
+  AlertCircleIcon,
+  CheckCircle2Icon,
+  InfoIcon,
   PauseIcon,
-  EditIcon,
-  TrashIcon,
-  ZapIcon,
-  CalendarIcon,
+  PencilIcon,
+  PlayIcon,
+  PlusIcon,
   RepeatIcon,
   TargetIcon,
-  CheckCircleIcon,
-  ClockIcon,
-  AlertCircleIcon,
-  InfoIcon,
-  TrendingUpIcon,
-  CoinsIcon,
-  HistoryIcon,
+  Trash2Icon,
+  ZapIcon,
 } from 'lucide-react';
+import { WidgetEmptyState } from '@/components/ui/widget-card';
+import { btc } from '@/components/planning/planning-icons';
+
+const PER_PERIOD: Record<string, string> = {
+  daily: 'a day',
+  weekly: 'a week',
+  biweekly: 'every 2 weeks',
+  monthly: 'a month',
+};
 
 interface RecurringTransaction {
   id: number;
@@ -134,16 +138,16 @@ export default function AutoDCATab() {
       if (result.success) {
         await loadRecurringTransactions();
       } else {
-        alert('Failed to update: ' + result.error);
+        toast({ title: 'Failed to update', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error toggling pause:', err);
-      alert('Failed to update recurring transaction');
+      toast({ title: 'Failed to update recurring transaction', variant: 'destructive' });
     }
   };
 
   const deleteTransaction = async (id: number, name: string) => {
-    if (!confirm(`Are you sure you want to delete "${name}"?`)) return;
+    if (!(await confirm({ title: 'Delete recurring purchase?', description: `Are you sure you want to delete "${name}"?`, confirmText: 'Delete', destructive: true }))) return;
 
     try {
       const response = await fetch(`/api/recurring-transactions/${id}`, { method: 'DELETE' });
@@ -152,31 +156,31 @@ export default function AutoDCATab() {
       if (result.success) {
         await loadRecurringTransactions();
       } else {
-        alert('Failed to delete: ' + result.error);
+        toast({ title: 'Failed to delete', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error deleting:', err);
-      alert('Failed to delete recurring transaction');
+      toast({ title: 'Failed to delete recurring transaction', variant: 'destructive' });
     }
   };
 
   const executeNow = async (id: number, name: string) => {
-    if (!confirm(`Execute "${name}" now? This will create a transaction immediately.`)) return;
+    if (!(await confirm({ title: 'Buy now?', description: `Run "${name}" now. This adds a transaction at the current price straight away.`, confirmText: 'Buy now' }))) return;
 
     try {
       const response = await fetch(`/api/recurring-transactions/${id}/execute`, { method: 'POST' });
       const result = await response.json();
       
       if (result.success) {
-        alert('Transaction executed successfully!');
+        toast({ title: 'Purchase added', variant: 'success' });
         await loadRecurringTransactions();
         await loadExecutionHistory();
       } else {
-        alert('Failed to execute: ' + result.error);
+        toast({ title: 'Purchase failed', description: result.error, variant: 'destructive' });
       }
     } catch (err) {
       console.error('Error executing:', err);
-      alert('Failed to execute transaction');
+      toast({ title: 'Purchase failed', description: 'Please try again.', variant: 'destructive' });
     }
   };
 
@@ -222,27 +226,34 @@ export default function AutoDCATab() {
 
   const activeTransactions = transactions.filter(t => t.isActive && !t.isPaused);
   const pausedTransactions = transactions.filter(t => t.isActive && t.isPaused);
+  const totalExecutions = transactions.reduce((sum, tx) => sum + tx.executionCount, 0);
+
+  // "€10.00 a day", "€50.00 every 2 weeks"
+  const formatSchedule = (tx: RecurringTransaction) =>
+    `${formatCurrency(tx.amount, tx.currency)} ${PER_PERIOD[tx.frequency] ?? formatFrequency(tx.frequency).toLowerCase()}`;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center space-y-3">
-          <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-muted-foreground">Loading recurring transactions...</p>
-        </div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading recurring purchases" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardContent className="py-12">
-          <div className="text-center space-y-4">
-            <AlertCircleIcon className="size-12 text-destructive mx-auto" />
-            <p className="text-muted-foreground">{error}</p>
-            <Button onClick={loadRecurringTransactions}>Try Again</Button>
-          </div>
+      <Card className="rounded-2xl">
+        <CardContent className="py-10">
+          <WidgetEmptyState
+            icon={AlertCircleIcon}
+            title="Recurring purchases couldn't load"
+            description={`${error}. Check that the server is running, then try again.`}
+            action={
+              <Button variant="outline" size="sm" className="rounded-full" onClick={loadRecurringTransactions}>
+                Try again
+              </Button>
+            }
+          />
         </CardContent>
       </Card>
     );
@@ -250,298 +261,219 @@ export default function AutoDCATab() {
 
   return (
     <>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold flex items-center gap-2">
-              <BotIcon className="size-6" />
-              Automatic DCA
-            </h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              Set up recurring Bitcoin purchases that execute automatically
-            </p>
-          </div>
-          <Button onClick={handleAddNew}>
-            <PlusIcon className="size-4 mr-2" />
-            Add Recurring Purchase
-          </Button>
+      <div className="space-y-4">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+          <p className="text-sm text-muted-foreground">
+            {transactions.length === 0
+              ? 'Buy bitcoin automatically on a schedule.'
+              : `${activeTransactions.length} active, ${pausedTransactions.length} paused, ${totalExecutions} ${totalExecutions === 1 ? 'purchase' : 'purchases'} made so far.`}
+          </p>
+          {transactions.length > 0 && (
+            <Button size="sm" className="rounded-full font-bold" onClick={handleAddNew}>
+              <PlusIcon className="size-4" />
+              Add recurring purchase
+            </Button>
+          )}
         </div>
 
-        {/* Active Transactions */}
+        {/* Empty state */}
+        {transactions.length === 0 && (
+          <Card className="rounded-2xl">
+            <CardContent className="py-12">
+              <WidgetEmptyState
+                icon={RepeatIcon}
+                title="No recurring purchases yet"
+                description="Pick an amount and a schedule. Each purchase is added to your transactions at the current bitcoin price."
+                action={
+                  <Button size="sm" className="rounded-full font-bold" onClick={handleAddNew}>
+                    <PlusIcon className="size-4" />
+                    Create your first recurring purchase
+                  </Button>
+                }
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Active */}
         {activeTransactions.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold flex items-center gap-2">
-              <PlayIcon className="size-4 text-profit" />
-              Active ({activeTransactions.length})
+          <section className="space-y-3">
+            <h3 className="px-1 text-[15px] font-bold">
+              Active <span className="font-semibold text-muted-foreground">{activeTransactions.length}</span>
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {activeTransactions.map((tx) => (
-                <Card key={tx.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg">{tx.name}</CardTitle>
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="secondary" className="gap-1">
-                            <RepeatIcon className="size-3" />
-                            {formatFrequency(tx.frequency)}
-                          </Badge>
-                          {tx.goal && (
-                            <Badge variant="outline" className="gap-1 text-blue-600 border-blue-500/30">
-                              <TargetIcon className="size-3" />
-                              {tx.goal.name}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
+                <Card key={tx.id} className="rounded-2xl">
+                  <CardHeader>
+                    <CardTitle className="truncate text-[17px] font-bold tracking-tight">{tx.name}</CardTitle>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold">
+                        <RepeatIcon className="size-3.5 text-muted-foreground" />
+                        {formatFrequency(tx.frequency)}
+                      </span>
+                      {tx.goal && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-tint-orange px-2.5 py-1 text-xs font-semibold text-primary-strong">
+                          <TargetIcon className="size-3.5" />
+                          {tx.goal.name}
+                        </span>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {/* Amount & Stats */}
-                    <div className="flex items-center justify-between py-3 border-y">
+                    <div className="flex items-end justify-between gap-4">
                       <div>
-                        <p className="text-2xl font-bold">{formatCurrency(tx.amount, tx.currency)}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-2xl font-extrabold tracking-tight tabular-nums">{formatCurrency(tx.amount, tx.currency)}</p>
+                        <p className="text-[13px] text-muted-foreground">
                           per {{ daily: 'day', weekly: 'week', biweekly: '2 weeks', monthly: 'month' }[tx.frequency] ?? tx.frequency}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-semibold text-muted-foreground">{tx.executionCount}x</p>
-                        <p className="text-xs text-muted-foreground">executed</p>
-                      </div>
-                    </div>
-
-                    {/* Next Execution */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Next Purchase</p>
-                        <p className="text-sm font-medium flex items-center gap-1">
-                          <CalendarIcon className="size-3" />
-                          {formatDate(tx.nextExecution)}
+                        <p className={cn('text-[15px] font-bold tabular-nums', tx.executionCount === 0 && 'text-muted-foreground')}>
+                          {tx.executionCount} {tx.executionCount === 1 ? 'time' : 'times'}
                         </p>
+                        <p className="text-[13px] text-muted-foreground">bought so far</p>
                       </div>
-                      {tx.maxOccurrences && (
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-                          <p className="text-sm font-medium">{tx.maxOccurrences - tx.executionCount} left</p>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => togglePause(tx.id, tx.isPaused)}
-                        className="flex-1"
-                      >
-                        <PauseIcon className="size-4 mr-1" />
+                    <dl className="grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl bg-secondary p-3">
+                        <dt className="text-[13px] font-semibold text-muted-foreground">Next purchase</dt>
+                        <dd className="mt-0.5 text-[15px] font-bold">{formatDate(tx.nextExecution)}</dd>
+                      </div>
+                      <div className="rounded-2xl bg-secondary p-3">
+                        <dt className="text-[13px] font-semibold text-muted-foreground">Ends</dt>
+                        <dd className="mt-0.5 text-[15px] font-bold">
+                          {tx.maxOccurrences
+                            ? `After ${tx.maxOccurrences - tx.executionCount} more`
+                            : tx.endDate
+                              ? formatDate(tx.endDate)
+                              : 'Never'}
+                        </dd>
+                      </div>
+                    </dl>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => togglePause(tx.id, tx.isPaused)}>
+                        <PauseIcon className="size-4" />
                         Pause
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(tx)}
-                        className="flex-1"
-                      >
-                        <EditIcon className="size-4 mr-1" />
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => handleEdit(tx)}>
+                        <PencilIcon className="size-4" />
                         Edit
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => executeNow(tx.id, tx.name)}
-                        className="flex-1 text-primary"
-                      >
-                        <ZapIcon className="size-4 mr-1" />
-                        Run Now
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => executeNow(tx.id, tx.name)}>
+                        <ZapIcon className="size-4" />
+                        Buy now
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="ml-auto rounded-full text-muted-foreground hover:text-destructive"
                         onClick={() => deleteTransaction(tx.id, tx.name)}
-                        className="text-destructive hover:text-destructive"
+                        aria-label={`Delete ${tx.name}`}
                       >
-                        <TrashIcon className="size-4" />
+                        <Trash2Icon className="size-4" />
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Paused Transactions */}
+        {/* Paused */}
         {pausedTransactions.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="font-semibold flex items-center gap-2 text-muted-foreground">
-              <PauseIcon className="size-4" />
-              Paused ({pausedTransactions.length})
+          <section className="space-y-3">
+            <h3 className="px-1 text-[15px] font-bold">
+              Paused <span className="font-semibold text-muted-foreground">{pausedTransactions.length}</span>
             </h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {pausedTransactions.map((tx) => (
-                <Card key={tx.id} className="opacity-60">
-                  <CardContent className="py-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-semibold">{tx.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatCurrency(tx.amount, tx.currency)} · {formatFrequency(tx.frequency)}
-                        </p>
+                <Card key={tx.id} className="rounded-2xl py-5">
+                  <CardContent className="space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-bold">{tx.name}</p>
+                        <p className="text-sm text-muted-foreground tabular-nums">{formatSchedule(tx)}</p>
                       </div>
-                      <Badge variant="outline" className="text-amber-600 border-amber-500/30">
-                        <PauseIcon className="size-3 mr-1" />
+                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                        <PauseIcon className="size-3.5" />
                         Paused
-                      </Badge>
+                      </span>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => togglePause(tx.id, tx.isPaused)}
-                        className="flex-1"
-                      >
-                        <PlayIcon className="size-4 mr-1" />
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" className="rounded-full font-bold" onClick={() => togglePause(tx.id, tx.isPaused)}>
+                        <PlayIcon className="size-4" />
                         Resume
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(tx)}
-                        className="flex-1"
-                      >
-                        <EditIcon className="size-4 mr-1" />
+                      <Button variant="outline" size="sm" className="rounded-full" onClick={() => handleEdit(tx)}>
+                        <PencilIcon className="size-4" />
                         Edit
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
+                        className="ml-auto rounded-full text-muted-foreground hover:text-destructive"
                         onClick={() => deleteTransaction(tx.id, tx.name)}
-                        className="text-destructive hover:text-destructive"
+                        aria-label={`Delete ${tx.name}`}
                       >
-                        <TrashIcon className="size-4" />
+                        <Trash2Icon className="size-4" />
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Empty State */}
-        {transactions.length === 0 && (
-          <Card>
-            <CardContent className="py-16">
-              <div className="text-center space-y-4">
-                <div className="size-16 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
-                  <BotIcon className="size-8 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-1">No Recurring Purchases Yet</h3>
-                  <p className="text-muted-foreground max-w-sm mx-auto">
-                    Set up automatic Bitcoin purchases to implement your DCA strategy
-                  </p>
-                </div>
-                <Button onClick={handleAddNew}>
-                  <PlusIcon className="size-4 mr-2" />
-                  Create Your First Recurring Purchase
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Recent Executions */}
+        {/* Recent executions */}
         {recentExecutions.length > 0 && (
-          <Card>
+          <Card className="rounded-2xl">
             <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <HistoryIcon className="size-4" />
-                Recent Auto-Purchases
-              </CardTitle>
+              <CardTitle className="text-[17px] font-bold tracking-tight">Recent automatic purchases</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="divide-y">
+              <ul className="divide-y">
                 {recentExecutions.map((exec) => {
-                  const date = new Date(exec.transactionDate);
-                  const formattedDate = date.toLocaleDateString('en-US', { 
+                  const formattedDate = new Date(exec.transactionDate).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                   });
-                  
+
                   return (
-                    <div key={exec.id} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
+                    <li key={exec.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
                       <div className="flex items-center gap-3">
-                        <CheckCircleIcon className="size-5 text-profit" />
+                        <CheckCircle2Icon className="size-5 shrink-0 text-tint-green-fg" />
                         <div>
-                          <p className="text-sm font-medium">
-                            Bought <span className="font-mono font-bold">{exec.btcAmount.toFixed(8)} BTC</span>
+                          <p className="text-sm font-semibold">
+                            Bought <span className="font-bold text-primary-strong tabular-nums">{btc(exec.btcAmount)} BTC</span>
                           </p>
                           <p className="text-xs text-muted-foreground">{formattedDate}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold">{formatCurrency(exec.originalTotalAmount, exec.originalCurrency)}</p>
-                        <p className="text-xs text-muted-foreground">Automatic</p>
-                      </div>
-                    </div>
+                      <p className="text-sm font-bold tabular-nums">
+                        {formatCurrency(exec.originalTotalAmount, exec.originalCurrency)}
+                      </p>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </CardContent>
           </Card>
         )}
 
-        {/* Statistics */}
-        {transactions.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="py-4 text-center">
-                <p className="text-3xl font-bold text-primary">{activeTransactions.length}</p>
-                <p className="text-xs text-muted-foreground">Active</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-4 text-center">
-                <p className="text-3xl font-bold text-amber-500">{pausedTransactions.length}</p>
-                <p className="text-xs text-muted-foreground">Paused</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-4 text-center">
-                <p className="text-3xl font-bold text-profit">
-                  {transactions.reduce((sum, tx) => sum + tx.executionCount, 0)}
-                </p>
-                <p className="text-xs text-muted-foreground">Total Purchases</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="py-4 text-center">
-                <p className="text-3xl font-bold text-blue-500">
-                  {new Set(transactions.map(tx => tx.frequency)).size}
-                </p>
-                <p className="text-xs text-muted-foreground">Frequencies</p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Info Box */}
-        <Card className="bg-blue-500/5 border-blue-500/20">
-          <CardContent className="py-4">
-            <div className="flex gap-3">
-              <InfoIcon className="size-5 text-blue-500 shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-sm font-semibold mb-1">How It Works</h4>
-                <p className="text-sm text-muted-foreground">
-                  Your recurring purchases execute automatically at the scheduled time. 
-                  The system fetches the current Bitcoin price and creates a transaction for you. 
-                  You can pause, edit, or delete at any time.
-                </p>
-              </div>
+        {/* How it works */}
+        <Card className="rounded-2xl py-5">
+          <CardContent className="flex gap-3">
+            <InfoIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
+            <div>
+              <h4 className="text-sm font-bold">How it works</h4>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Each recurring purchase runs at its scheduled time: the app fetches the current bitcoin price and adds
+                the transaction for you. You can pause, edit or delete it at any time.
+              </p>
             </div>
           </CardContent>
         </Card>

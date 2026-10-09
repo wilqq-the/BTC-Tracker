@@ -5,7 +5,8 @@ import { WidgetCard, WidgetEmptyState } from '@/components/ui/widget-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { WidgetProps } from '@/lib/dashboard-types';
-import { TargetIcon, ExternalLinkIcon, TrendingUpIcon, TrendingDownIcon, MinusIcon, ZapIcon, RocketIcon } from 'lucide-react';
+import { TargetIcon, ExternalLinkIcon, ZapIcon } from 'lucide-react';
+import { ScenarioIcon } from '@/components/planning/planning-icons';
 import Link from 'next/link';
 
 interface Goal {
@@ -81,21 +82,10 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
     return Math.min(progress, 100);
   };
 
-  const getScenarioIcon = (scenario: string) => {
-    switch (scenario) {
-      case 'bear': return TrendingDownIcon;
-      case 'conservative': return TrendingDownIcon;
-      case 'stable': return MinusIcon;
-      case 'moderate': return TrendingUpIcon;
-      case 'bull': return RocketIcon;
-      default: return TargetIcon;
-    }
-  };
-
   const getProgressColor = (progress: number) => {
     if (progress >= 80) return 'bg-green-500';
     if (progress >= 50) return 'bg-blue-500';
-    return 'bg-btc-500';
+    return 'bg-primary';
   };
 
   const getProgressBadge = (progress: number) => {
@@ -106,29 +96,29 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
 
   return (
     <WidgetCard
-      title="Savings Goals"
-      icon={TargetIcon}
-      badge={goals.length > 0 && <Badge variant="secondary">{goals.length} active</Badge>}
+      title="Savings goals"
+      badge={goals.length > 0 && (
+        <Link href="/goals" className="ml-auto shrink-0 text-sm font-bold text-primary-strong hover:underline">
+          View all
+        </Link>
+      )}
       loading={loading}
       error={null}
       onRefresh={handleRefresh}
       refreshing={refreshing}
       noPadding
       contentClassName="overflow-hidden"
-      footer={
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <Link href="/goals">
-            {goals.length === 0 ? 'Create First Goal' : 'View All Goals'}
-            <ExternalLinkIcon className="size-3.5 ml-2" />
-          </Link>
-        </Button>
-      }
     >
       {goals.length === 0 ? (
         <WidgetEmptyState
           icon={TargetIcon}
-          title="No active goals yet"
-          description="Create your first savings goal to start tracking progress"
+          title="No goals yet"
+          description="Set a target, like 1 BTC by 2030, and track how close you are."
+          action={
+            <Button asChild size="sm" className="rounded-full font-bold">
+              <Link href="/goals">Create a goal</Link>
+            </Button>
+          }
         />
       ) : (
         <div className="divide-y overflow-auto flex-1">
@@ -137,14 +127,13 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
             const daysUntilTarget = Math.ceil(
               (new Date(goal.target_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
             );
-            const ScenarioIcon = getScenarioIcon(goal.price_scenario);
 
             return (
               <div key={goal.id} className="p-3 hover:bg-accent transition-colors">
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <ScenarioIcon className="size-4 text-muted-foreground shrink-0" />
+                      <ScenarioIcon id={goal.price_scenario} className="size-4 text-muted-foreground shrink-0" />
                       <h4 className="text-sm font-medium truncate">
                         {goal.name}
                       </h4>
@@ -181,7 +170,7 @@ export default function GoalsOverviewWidget({ id, onRefresh }: WidgetProps) {
             <div className="p-2 text-center">
               <Link
                 href="/goals"
-                className="text-xs text-btc-500 hover:text-btc-600 font-medium"
+                className="text-xs text-primary hover:text-primary/80 font-medium"
               >
                 +{goals.length - maxGoals} more goals
               </Link>

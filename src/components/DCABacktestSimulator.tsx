@@ -1,10 +1,33 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ThemedCard, ThemedText, ThemedButton } from './ui/ThemeProvider';
+import { HistoryIcon, RefreshCwIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/theme';
+import { toast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { WidgetEmptyState } from '@/components/ui/widget-card';
+import { btc, pct, sign, tone } from '@/components/planning/planning-icons';
 
 type DCAFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
+
+const FREQUENCY_OPTIONS: { label: string; value: DCAFrequency }[] = [
+  { label: 'Daily', value: 'daily' },
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Every 2 weeks', value: 'biweekly' },
+  { label: 'Monthly', value: 'monthly' },
+];
+
+const FREQUENCY_NOUN: Record<DCAFrequency, string> = {
+  daily: 'daily',
+  weekly: 'weekly',
+  biweekly: 'fortnightly',
+  monthly: 'monthly',
+};
 
 interface DCABacktestSimulatorProps {
   defaultCurrency?: string;
@@ -15,13 +38,14 @@ export default function DCABacktestSimulator({ defaultCurrency = 'USD' }: DCABac
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState<number>(100);
   const [frequency, setFrequency] = useState<DCAFrequency>('monthly');
+  const [ranFrequency, setRanFrequency] = useState<DCAFrequency>('monthly');
   const [result, setResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const runBacktest = async () => {
     setLoading(true);
     setResult(null);
-    
+
     try {
       const response = await fetch('/api/dca-backtest', {
         method: 'POST',
@@ -36,229 +60,196 @@ export default function DCABacktestSimulator({ defaultCurrency = 'USD' }: DCABac
       });
 
       const data = await response.json();
-      
+
       if (data.success) {
         setResult(data.data);
+        setRanFrequency(frequency);
       } else {
-        alert(data.error || 'Failed to run backtest');
+        toast({ title: 'Backtest failed', description: data.error, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Backtest error:', error);
-      alert('Error running backtest. Please try again.');
+      toast({ title: 'Backtest failed', description: 'Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
-  const getFrequencyLabel = (freq: DCAFrequency) => {
-    switch (freq) {
-      case 'daily': return 'Daily';
-      case 'weekly': return 'Weekly';
-      case 'biweekly': return 'Bi-weekly';
-      case 'monthly': return 'Monthly';
-    }
-  };
+  const money = (n: number) => formatCurrency(Math.abs(n), defaultCurrency);
 
   return (
-    <ThemedCard>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h3 className="text-lg font-semibold text-btc-text-primary mb-1 flex items-center">
-            <span className="mr-2">🔮</span>
-            Historical DCA Backtest
-          </h3>
-          <ThemedText variant="muted" className="text-sm">
-            Simulate a DCA strategy using real historical Bitcoin prices
-          </ThemedText>
-        </div>
-
-        {/* Input Form */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Start Date */}
-          <div>
-            <label className="block text-sm font-medium text-btc-text-primary mb-2">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              max={endDate}
-              className="w-full px-3 py-2 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-            />
+    <div className="space-y-4">
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-[17px] font-bold tracking-tight">Backtest a DCA plan</CardTitle>
+          <CardDescription className="text-[13px]">
+            See how buying a fixed amount on a schedule would have worked out, using real historical prices.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="dca-start-date" className="text-sm font-bold">Start date</Label>
+              <Input
+                id="dca-start-date"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                max={endDate}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dca-end-date" className="text-sm font-bold">End date</Label>
+              <Input
+                id="dca-end-date"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                min={startDate}
+                max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dca-amount" className="text-sm font-bold">
+                Amount per purchase <span className="font-medium text-muted-foreground">({defaultCurrency})</span>
+              </Label>
+              <Input
+                id="dca-amount"
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(parseFloat(e.target.value))}
+                min={1}
+                step={10}
+                className="tabular-nums"
+              />
+            </div>
           </div>
 
-          {/* End Date */}
-          <div>
-            <label className="block text-sm font-medium text-btc-text-primary mb-2">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              min={startDate}
-              max={new Date().toISOString().split('T')[0]}
-              className="w-full px-3 py-2 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-            />
-          </div>
-
-          {/* Investment Amount */}
-          <div>
-            <label className="block text-sm font-medium text-btc-text-primary mb-2">
-              Investment Amount ({defaultCurrency})
-            </label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(parseFloat(e.target.value))}
-              min={1}
-              step={10}
-              className="w-full px-3 py-2 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-            />
-          </div>
-
-          {/* Frequency */}
-          <div>
-            <label className="block text-sm font-medium text-btc-text-primary mb-2">
-              Frequency
-            </label>
-            <select
+          <div className="space-y-2">
+            <span className="block text-sm font-bold">How often</span>
+            <SegmentedControl<DCAFrequency>
+              aria-label="How often to buy"
+              options={FREQUENCY_OPTIONS}
               value={frequency}
-              onChange={(e) => setFrequency(e.target.value as DCAFrequency)}
-              className="w-full px-3 py-2 bg-btc-bg-secondary border border-btc-border-primary rounded-lg text-btc-text-primary focus:ring-2 focus:ring-bitcoin focus:border-bitcoin"
-            >
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="biweekly">Bi-weekly</option>
-              <option value="monthly">Monthly</option>
-            </select>
+              onChange={setFrequency}
+            />
           </div>
-        </div>
 
-        {/* Run Button */}
-        <ThemedButton
-          onClick={runBacktest}
-          disabled={loading}
-          className="w-full"
-        >
-          {loading ? 'Running Backtest...' : 'Run Historical Backtest'}
-        </ThemedButton>
+          <Button onClick={runBacktest} disabled={loading} className="h-11 w-full rounded-full font-bold">
+            {loading ? (
+              <><RefreshCwIcon className="size-4 animate-spin" /> Running backtest...</>
+            ) : (
+              'Run backtest'
+            )}
+          </Button>
 
-        {/* Results */}
-        {result && (
-          <div className="space-y-4 pt-4 border-t border-btc-border-primary">
-            {/* Summary Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-btc-bg-secondary rounded-lg p-3">
-                <ThemedText variant="muted" className="text-xs mb-1">Total Invested</ThemedText>
-                <div className="text-lg font-bold text-btc-text-primary">
-                  {formatCurrency(result.totalInvested, defaultCurrency)}
-                </div>
-              </div>
-              <div className="bg-btc-bg-secondary rounded-lg p-3">
-                <ThemedText variant="muted" className="text-xs mb-1">Total BTC</ThemedText>
-                <div className="text-lg font-bold text-bitcoin">
-                  {result.totalBtc.toFixed(8)} ₿
-                </div>
-              </div>
-              <div className="bg-btc-bg-secondary rounded-lg p-3">
-                <ThemedText variant="muted" className="text-xs mb-1">Current Value</ThemedText>
-                <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                  {formatCurrency(result.currentValue, defaultCurrency)}
-                </div>
-              </div>
-              <div className="bg-btc-bg-secondary rounded-lg p-3">
-                <ThemedText variant="muted" className="text-xs mb-1">ROI</ThemedText>
-                <div className={`text-lg font-bold ${result.roiPercent >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {result.roiPercent >= 0 ? '+' : ''}{result.roiPercent.toFixed(1)}%
-                </div>
-              </div>
+          {!result && !loading && (
+            <div className="flex rounded-2xl bg-secondary py-8">
+              <WidgetEmptyState
+                icon={HistoryIcon}
+                title="Results appear here"
+                description="You'll see how much bitcoin the plan would have bought, what it's worth today, and how it compares with investing everything on the start date."
+              />
             </div>
+          )}
+        </CardContent>
+      </Card>
 
-            {/* DCA vs Lump Sum Comparison */}
-            <div className="bg-btc-bg-secondary rounded-lg p-4">
-              <h4 className="text-sm font-semibold text-btc-text-primary mb-3">
-                💡 DCA vs. Lump Sum Comparison
-              </h4>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <ThemedText variant="secondary" className="text-sm">Your {getFrequencyLabel(frequency)} DCA:</ThemedText>
-                  <div className="text-right">
-                    <div className="font-semibold text-bitcoin">{result.totalBtc.toFixed(8)} ₿</div>
-                    <div className="text-xs text-btc-text-secondary">{formatCurrency(result.currentValue, defaultCurrency)}</div>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center">
-                  <ThemedText variant="secondary" className="text-sm">If you bought all on start date:</ThemedText>
-                  <div className="text-right">
-                    <div className="font-semibold text-btc-text-primary">{result.comparison.lumpSumBtc.toFixed(8)} ₿</div>
-                    <div className="text-xs text-btc-text-secondary">{formatCurrency(result.comparison.lumpSumValue, defaultCurrency)}</div>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-btc-border-primary flex justify-between items-center">
-                  <ThemedText variant="secondary" className="text-sm font-semibold">DCA Benefit:</ThemedText>
-                  <div className={`text-sm font-bold ${result.comparison.dcaBenefit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {result.comparison.dcaBenefit >= 0 ? '+' : ''}{formatCurrency(Math.abs(result.comparison.dcaBenefit), defaultCurrency)}
-                    <span className="text-xs ml-1">
-                      ({result.comparison.dcaBenefitPercent >= 0 ? '+' : ''}{result.comparison.dcaBenefitPercent.toFixed(1)}%)
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Purchase Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div>
-                <ThemedText variant="muted" className="text-xs mb-1">Total Purchases</ThemedText>
-                <div className="text-sm font-semibold text-btc-text-primary">
-                  {result.purchaseCount}
-                </div>
-              </div>
-              <div>
-                <ThemedText variant="muted" className="text-xs mb-1">Avg Buy Price</ThemedText>
-                <div className="text-sm font-semibold text-btc-text-primary">
-                  {formatCurrency(result.avgBuyPrice, defaultCurrency)}
-                </div>
-              </div>
-              <div>
-                <ThemedText variant="muted" className="text-xs mb-1">Best Price</ThemedText>
-                <div className="text-sm font-semibold text-green-600 dark:text-green-400">
-                  {formatCurrency(result.summary.bestPurchasePrice, defaultCurrency)}
-                </div>
-              </div>
-              <div>
-                <ThemedText variant="muted" className="text-xs mb-1">Worst Price</ThemedText>
-                <div className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                  {formatCurrency(result.summary.worstPurchasePrice, defaultCurrency)}
-                </div>
-              </div>
-            </div>
-
-            {/* Key Insights */}
-            <div className="bg-bitcoin/10 border border-bitcoin/30 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">📊</span>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-btc-text-primary mb-2">Key Insights</h4>
-                  <ul className="space-y-1 text-sm text-btc-text-secondary">
-                    <li>• You made {result.purchaseCount} purchases over {result.summary.totalDays} days</li>
-                    <li>• Average interval: {result.summary.averageInterval.toFixed(0)} days between purchases</li>
-                    <li>• Your profit/loss: {result.roi >= 0 ? '+' : ''}{formatCurrency(result.roi, defaultCurrency)} ({result.roiPercent >= 0 ? '+' : ''}{result.roiPercent.toFixed(2)}%)</li>
-                    <li>• {result.comparison.dcaBenefit >= 0 
-                      ? `DCA performed ${formatCurrency(result.comparison.dcaBenefit, defaultCurrency)} better than lump sum`
-                      : `Lump sum would have performed ${formatCurrency(Math.abs(result.comparison.dcaBenefit), defaultCurrency)} better`
-                    }</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </ThemedCard>
+      {result && renderResult(result)}
+    </div>
   );
-}
 
+  function renderResult(r: any) {
+    const benefit: number = r.comparison.dcaBenefit;
+    const tiles = [
+      { label: 'Invested', value: money(r.totalInvested) },
+      { label: 'Bitcoin bought', value: `${btc(r.totalBtc)} BTC`, className: 'text-primary-strong' },
+      { label: 'Profit or loss', value: `${sign(r.roi)}${money(r.roi)}`, className: tone(r.roi) },
+      { label: 'Purchases', value: String(r.purchaseCount) },
+    ];
+    const prices = [
+      { label: 'Average price', value: money(r.avgBuyPrice) },
+      { label: 'Lowest price', value: money(r.summary.bestPurchasePrice) },
+      { label: 'Highest price', value: money(r.summary.worstPurchasePrice) },
+    ];
+
+    return (
+      <Card className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="text-[17px] font-bold tracking-tight">Results</CardTitle>
+          <CardDescription className="text-[13px]">
+            {r.purchaseCount} {FREQUENCY_NOUN[ranFrequency]} purchases over {r.summary.totalDays} days, about every{' '}
+            {Math.max(1, Math.round(r.summary.averageInterval || 0))} days.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Headline */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[15px] font-semibold text-muted-foreground">Worth today</span>
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="text-4xl font-extrabold leading-none tracking-tight tabular-nums">{money(r.currentValue)}</span>
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-1 text-sm font-bold tabular-nums',
+                  r.roiPercent > 0 ? 'bg-tint-green text-tint-green-fg' : r.roiPercent < 0 ? 'bg-tint-red text-tint-red-fg' : 'bg-secondary text-muted-foreground'
+                )}
+              >
+                {pct(r.roiPercent)}
+              </span>
+            </div>
+          </div>
+
+          <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            {tiles.map((tile) => (
+              <div key={tile.label} className="rounded-2xl bg-secondary p-4">
+                <dt className="text-[13px] font-semibold text-muted-foreground">{tile.label}</dt>
+                <dd className={cn('mt-1 text-lg font-extrabold tabular-nums', tile.className)}>{tile.value}</dd>
+              </div>
+            ))}
+          </dl>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {/* DCA vs lump sum */}
+            <div className="space-y-3 rounded-2xl bg-secondary p-4">
+              <h3 className="text-sm font-bold">Compared with buying it all at once</h3>
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Buying {FREQUENCY_NOUN[ranFrequency]}</span>
+                <span className="text-right">
+                  <span className="font-bold tabular-nums">{btc(r.totalBtc)} BTC</span>
+                  <span className="block text-xs text-muted-foreground tabular-nums">{money(r.currentValue)}</span>
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">Everything on the start date</span>
+                <span className="text-right">
+                  <span className="font-bold tabular-nums">{btc(r.comparison.lumpSumBtc)} BTC</span>
+                  <span className="block text-xs text-muted-foreground tabular-nums">{money(r.comparison.lumpSumValue)}</span>
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 border-t pt-3 text-sm">
+                <span className="font-semibold">
+                  {benefit > 0 ? 'DCA came out ahead' : benefit < 0 ? 'Lump sum came out ahead' : 'Both came out the same'}
+                </span>
+                <span className={cn('font-bold tabular-nums', tone(benefit))}>
+                  {sign(benefit)}{money(benefit)}{' '}
+                  <span className="text-xs font-semibold">{pct(r.comparison.dcaBenefitPercent)}</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Prices paid */}
+            <div className="space-y-3 rounded-2xl bg-secondary p-4">
+              <h3 className="text-sm font-bold">Prices you would have paid</h3>
+              {prices.map((p) => (
+                <div key={p.label} className="flex items-baseline justify-between gap-3 text-sm">
+                  <span className="text-muted-foreground">{p.label}</span>
+                  <span className="font-bold tabular-nums">{p.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+}
