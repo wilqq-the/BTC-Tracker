@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New README screenshots and a demo account seed (`npm run demo:seed`) ([#228](https://github.com/wilqq-the/BTC-Tracker/pull/228))
 
 ### 🐛 Bug Fixes
+- **Transfer fees** — choose whether a transfer's network fee was paid on top (the amount arrives, as on Kraken and Coinbase — the new default) or taken from the amount. Transfers you already saved keep their balances ([#244](https://github.com/wilqq-the/BTC-Tracker/pull/244), closes [#168](https://github.com/wilqq-the/BTC-Tracker/issues/168))
 - **Display currency** is now used everywhere, including the price chart tooltip and the goal card ([#241](https://github.com/wilqq-the/BTC-Tracker/pull/241))
 - **Analytics** no longer counts transfers as sales, and sorts by converted price ([#225](https://github.com/wilqq-the/BTC-Tracker/pull/225))
 - The page no longer shifts sideways when a dropdown or dialog opens with always-visible scrollbars ([#239](https://github.com/wilqq-the/BTC-Tracker/pull/239))
