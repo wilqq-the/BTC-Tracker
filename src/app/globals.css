@@ -394,7 +394,8 @@ html {
   scrollbar-gutter: stable;
 }
 
-body[data-scroll-locked] {
+/* "html body" outranks the identical selector Radix injects later */
+html body[data-scroll-locked] {
   margin-right: 0 !important;
   padding-right: 0 !important;
 }
