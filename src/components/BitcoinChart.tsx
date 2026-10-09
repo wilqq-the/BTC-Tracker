@@ -455,24 +455,26 @@ export default function BitcoinChart({
             
             <div className="space-y-1 text-muted-foreground text-xs">
               <div className="flex justify-between gap-4">
-                <span>Total BTC:</span>
+                <span>Amount</span>
                 <span className="font-medium text-foreground">{formatBtc(tx.totalBtc)}</span>
            </div>
+              {/* Transaction amounts are in the main currency; show them in the
+                  display currency like the rest of the chart */}
               <div className="flex justify-between gap-4">
-                <span>Avg Price ({mainCurrency}):</span>
+                <span>Avg price</span>
                 <span className="font-medium text-foreground">
-                  {tx.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(tx.avgPrice * mainToSecondaryRate, displayCurrency)}
                 </span>
              </div>
               <div className="flex justify-between gap-4">
-                <span>Total ({mainCurrency}):</span>
+                <span>Total</span>
                 <span className="font-medium text-foreground">
-                  {tx.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(tx.totalValue * mainToSecondaryRate, displayCurrency)}
                 </span>
              </div>
               {tx.type !== 'SELL' && priceForComparison > 0 && (
                 <div className="flex justify-between gap-4 pt-1 border-t mt-1">
-                  <span>P&L:</span>
+                  <span>P&L</span>
                   <span className={cn("font-medium", isProfitable ? "text-green-500" : "text-red-500")}>
                     {isProfitable ? '+' : ''}{(((priceForComparison - tx.avgPrice) / tx.avgPrice) * 100).toFixed(2)}%
                   </span>

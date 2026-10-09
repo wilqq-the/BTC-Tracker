@@ -31,6 +31,23 @@ import {
   TargetIcon,
 } from 'lucide-react';
 
+type ExchangeRate = { from_currency: string; to_currency: string; rate: number };
+
+/** Convert between currencies with the stored rates (direct, reverse or via USD); null if unknown */
+function convertWithRates(rates: ExchangeRate[], amount: number, from: string, to: string): number | null {
+  if (from === to) return amount;
+  const rate = (a: string, b: string): number | null => {
+    const direct = rates.find((r) => r.from_currency === a && r.to_currency === b);
+    if (direct) return direct.rate;
+    const reverse = rates.find((r) => r.from_currency === b && r.to_currency === a);
+    return reverse && reverse.rate ? 1 / reverse.rate : null;
+  };
+  const r = rate(from, to);
+  if (r !== null) return amount * r;
+  const viaUsd = from !== 'USD' && to !== 'USD' ? [rate(from, 'USD'), rate('USD', to)] : [null, null];
+  return viaUsd[0] !== null && viaUsd[1] !== null ? amount * viaUsd[0] * viaUsd[1] : null;
+}
+
 interface PriceScenario {
   id: string;
   name: string;
@@ -104,6 +121,9 @@ export default function GoalsPage() {
   const [goalRecalculations, setGoalRecalculations] = useState<Map<number, GoalRecalculation>>(new Map());
   const [recalculatingGoalId, setRecalculatingGoalId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<string>('goals');
+  // Exchange rates, so amounts stored in another currency (e.g. a goal's
+  // plan) can be shown in the display currency
+  const [rates, setRates] = useState<ExchangeRate[]>([]);
 
   useEffect(() => {
     loadCurrentBitcoinPrice();
@@ -125,25 +145,15 @@ export default function GoalsPage() {
         setSelectedCurrency(displayCurrency);
 
         let btcPrice = result.data.currentBtcPrice;
-        if (mainCurrency !== displayCurrency) {
-          try {
-            const ratesRes = await fetch('/api/exchange-rates');
-            const ratesData = await ratesRes.json();
-            if (ratesData.rates && Array.isArray(ratesData.rates)) {
-              const direct = ratesData.rates.find(
-                (r: any) => r.from_currency === mainCurrency && r.to_currency === displayCurrency
-              );
-              if (direct) {
-                btcPrice = btcPrice * direct.rate;
-              } else {
-                const reverse = ratesData.rates.find(
-                  (r: any) => r.from_currency === displayCurrency && r.to_currency === mainCurrency
-                );
-                if (reverse) btcPrice = btcPrice / reverse.rate;
-              }
-            }
-          } catch { /* keep original price */ }
-        }
+        try {
+          const ratesRes = await fetch('/api/exchange-rates');
+          const ratesData = await ratesRes.json();
+          if (ratesData.rates && Array.isArray(ratesData.rates)) {
+            setRates(ratesData.rates);
+            const converted = convertWithRates(ratesData.rates, btcPrice, mainCurrency, displayCurrency);
+            if (converted !== null) btcPrice = converted;
+          }
+        } catch { /* keep original price */ }
         setCurrentBtcPrice(btcPrice);
       }
     } catch (error) {
@@ -532,6 +542,7 @@ export default function GoalsPage() {
             goal={goal}
             recalc={goalRecalculations.get(goal.id)}
             currency={selectedCurrency}
+            toDisplay={(amount, from) => convertWithRates(rates, amount, from, selectedCurrency)}
             recalculating={recalculatingGoalId === goal.id}
             onRecalculate={() => recalculateGoal(goal.id)}
             onDelete={() => deleteGoal(goal.id)}

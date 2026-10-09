@@ -43,6 +43,8 @@ interface GoalCardProps {
   goal: Goal;
   recalc?: GoalRecalculation;
   currency: string;
+  /** Converts an amount from another currency into `currency`; null if no rate */
+  toDisplay?: (amount: number, from: string) => number | null;
   recalculating: boolean;
   onRecalculate: () => void;
   onDelete: () => void;
@@ -51,7 +53,7 @@ interface GoalCardProps {
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-export default function GoalCard({ goal, recalc, currency, recalculating, onRecalculate, onDelete }: GoalCardProps) {
+export default function GoalCard({ goal, recalc, currency, toDisplay, recalculating, onRecalculate, onDelete }: GoalCardProps) {
   const { formatBtc } = useBtcUnit();
   const current = recalc?.current;
   const projection = recalc?.projection;
@@ -60,10 +62,17 @@ export default function GoalCard({ goal, recalc, currency, recalculating, onReca
   const priceChange: number = current?.price_change_percent ?? 0;
   const monthlyChange: number = projection?.monthly_change_percent ?? 0;
 
+  // The plan was saved in the currency of the day; show it in today's display
+  // currency next to the live figures (fall back to the original if no rate)
+  const planInDisplay = toDisplay?.(goal.monthly_fiat_needed, goal.currency) ?? null;
+  const planMonthly = planInDisplay !== null
+    ? formatCurrency(planInDisplay, currency)
+    : formatCurrency(goal.monthly_fiat_needed, goal.currency);
+
   const tiles = [
     { label: 'Target', value: formatBtc(goal.target_btc_amount, { trim: true }), strong: true },
     { label: 'Target date', value: formatDate(goal.target_date) },
-    { label: 'Each month', value: formatCurrency(goal.monthly_fiat_needed, goal.currency) },
+    { label: 'Each month', value: planMonthly },
     { label: 'Duration', value: `${goal.total_months} months` },
   ];
 
