@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { FerroMarkers } from '@/components/ui/ferro-marker';
+import { onHighlightTransaction } from '@/lib/app-events';
 import { 
   ChartContainer,
   ChartTooltip,
@@ -19,15 +20,22 @@ import {
   YAxis,
   ComposedChart,
 } from 'recharts';
-import { TrendingUpIcon, TrendingDownIcon, ActivityIcon } from 'lucide-react';
+import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
 import { formatCurrency } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface BitcoinChartProps {
   height?: number;
   showTitle?: boolean;
   showTransactions?: boolean;
+  /** Replaces the BTC price block in the header (the dashboard hero puts the portfolio value here) */
+  headerLeft?: React.ReactNode;
+  /** Hide the high/low/range footer for a cleaner hero */
+  showStats?: boolean;
+  /** Fewer range options and no Area/Line toggle (dashboard hero) */
+  compact?: boolean;
 }
 
 type TimeRange = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '3Y' | '5Y' | 'ALL';
@@ -55,11 +63,19 @@ interface ChartDataWithTx extends ChartDataPoint {
 const chartConfig = {
   price: {
     label: "Bitcoin Price",
-    color: "hsl(24, 94%, 53%)", // Bitcoin Orange
+    color: "hsl(var(--primary))", // Bitcoin Orange
   },
 } satisfies ChartConfig;
 
-export default function BitcoinChart({ height = 400, showTitle = true, showTransactions = true }: BitcoinChartProps) {
+export default function BitcoinChart({
+  height = 400,
+  showTitle = true,
+  showTransactions = true,
+  headerLeft,
+  showStats = true,
+  compact = false,
+}: BitcoinChartProps) {
+  const { formatBtc } = useBtcUnit();
   const [rawChartData, setRawChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('6M');
@@ -73,6 +89,9 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
   const [secondaryCurrency, setSecondaryCurrency] = useState<string>('');
   const [mainToSecondaryRate, setMainToSecondaryRate] = useState<number>(1);
   const [transactions, setTransactions] = useState<any[]>([]);
+  // The line draws itself in left-to-right on load and on range change,
+  // then animation switches off so live price ticks don't replay it.
+  const [drawn, setDrawn] = useState(false);
 
   // Load current price and subscribe to updates
   useEffect(() => {
@@ -151,8 +170,15 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
 
   // Load chart data when time range changes
   useEffect(() => {
+    setDrawn(false);
     loadChartData();
   }, [timeRange]);
+
+  useEffect(() => {
+    if (loading || rawChartData.length === 0) return;
+    const timer = setTimeout(() => setDrawn(true), 1600);
+    return () => clearTimeout(timer);
+  }, [loading, rawChartData]);
 
   // Compute chart data with transactions merged (derived state, no infinite loop)
   const chartData: ChartDataWithTx[] = useMemo(() => {
@@ -218,6 +244,38 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
     const range = ((high - low) / low) * 100;
     return { high, low, range };
   }, [chartData]);
+
+  // Magnetic transaction markers: when the pointer is within SNAP_PX of a
+  // transaction, the tooltip snaps to it instead of the day under the cursor.
+  const SNAP_PX = 20;
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [snapIndex, setSnapIndex] = useState<number | null>(null);
+  const txIndexes = useMemo(
+    () => chartData.reduce<number[]>((acc, d, i) => (d.transaction ? [...acc, i] : acc), []),
+    [chartData]
+  );
+  const snapped = snapIndex !== null ? chartData[snapIndex] : undefined;
+
+  // A transaction pointed at from elsewhere (its row hovered): its marker pulses
+  const [highlightDay, setHighlightDay] = useState<number | null>(null);
+  useEffect(() => onHighlightTransaction(setHighlightDay), []);
+
+  const handleChartMouseMove = (state: any) => {
+    const hovered = state?.activeTooltipIndex;
+    if (!showTransactions || typeof hovered !== 'number' || txIndexes.length === 0) {
+      setSnapIndex(null);
+      return;
+    }
+    // ~64px of the width is the y-axis; the rest is the plot
+    const plotWidth = Math.max(1, (plotRef.current?.clientWidth ?? 600) - 64);
+    const pxPerPoint = plotWidth / Math.max(1, chartData.length - 1);
+    let nearest = txIndexes[0];
+    for (const i of txIndexes) {
+      if (Math.abs(i - hovered) < Math.abs(nearest - hovered)) nearest = i;
+    }
+    const next = Math.abs(nearest - hovered) * pxPerPoint <= SNAP_PX ? nearest : null;
+    setSnapIndex((prev) => (prev === next ? prev : next));
+  };
 
   // Check if there are any transactions in the visible data
   const hasTransactions = useMemo(() => {
@@ -286,6 +344,19 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
 
   const isPositive = priceChangePercent24h >= 0;
 
+  // Chart data is stored in USD; show axis/stats/tooltip in the display currency
+  const displayCurrency = secondaryCurrency || mainCurrency;
+  const usdToDisplay = (currentPrice > 0 && currentPriceMain > 0 ? currentPriceMain / currentPrice : 1) * mainToSecondaryRate;
+  const currencySymbol = formatCurrency(0, displayCurrency).replace(/[\d.,\s]/g, '') || '$';
+  const compactMoney = (usd: number) => `${currencySymbol}${Math.round((usd * usdToDisplay) / 1000)}k`;
+  const wholeMoney = (usd: number) => formatCurrency(usd * usdToDisplay, displayCurrency).replace(/\.\d{2}(?=\D*$)/, '');
+  // avgBuyPrice is in the main currency; the chart's y-axis is USD
+  const avgBuyUsd = currentPriceMain > 0 && currentPrice > 0 ? avgBuyPrice * (currentPrice / currentPriceMain) : avgBuyPrice;
+
+  const visibleRanges = compact
+    ? timeRangeButtons.filter((b) => ['1W', '1M', '3M', '6M', '1Y', 'ALL'].includes(b.value))
+    : timeRangeButtons;
+
   // Custom dot renderer for the line/area - only renders dots for transactions
   const renderTransactionDot = (props: any) => {
     const { cx, cy, payload } = props;
@@ -301,6 +372,34 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
       fill = '#8b5cf6'; // Purple for MIXED
     }
 
+    // Lets the ferrofluid overlay find this marker
+    const ferroAttrs = { 'data-ferro-marker': '', 'data-ferro-id': String(payload.timestamp), 'data-ferro-color': fill };
+
+    if (highlightDay === payload.timestamp) {
+      return (
+        <g key={`tx-${payload.timestamp}`}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={size}
+            fill={fill}
+            className="animate-marker-pulse"
+            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+          />
+          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} {...ferroAttrs} />
+        </g>
+      );
+    }
+
+    if (snapped && snapped.timestamp === payload.timestamp) {
+      return (
+        <g key={`tx-${payload.timestamp}`}>
+          <circle cx={cx} cy={cy} r={11} fill={fill} fillOpacity={0.2} />
+          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} {...ferroAttrs} />
+        </g>
+      );
+    }
+
     return (
       <circle
         key={`tx-${payload.timestamp}`}
@@ -310,6 +409,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
         fill={fill}
         stroke="white"
         strokeWidth={1}
+        {...ferroAttrs}
       />
     );
   };
@@ -317,7 +417,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
   // Custom tooltip content
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
-    const data = payload[0].payload as ChartDataWithTx;
+    const data = (snapped ?? payload[0].payload) as ChartDataWithTx;
     const tx = data.transaction;
     // Use currentPriceMain (BTC price in user's main currency) for consistent P&L calculation
     // This ensures we compare EUR with EUR, USD with USD, etc.
@@ -325,7 +425,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
     const isProfitable = tx && tx.avgPrice < priceForComparison;
     
     return (
-      <div className="bg-popover border border-border rounded-lg shadow-lg p-3 text-sm min-w-[200px]">
+      <div className="bg-popover rounded-2xl shadow-lg p-3.5 text-sm min-w-[200px]">
         {/* Date and Price */}
         <p className="font-medium mb-1">
           {new Date(data.timestamp).toLocaleDateString('en-US', {
@@ -336,7 +436,7 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
         </p>
         <p className="text-muted-foreground mb-2">
           Price: <span className="font-medium text-foreground">
-            ${data.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {formatCurrency(data.price * usdToDisplay, displayCurrency)}
           </span>
         </p>
         
@@ -355,24 +455,26 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
             
             <div className="space-y-1 text-muted-foreground text-xs">
               <div className="flex justify-between gap-4">
-                <span>Total BTC:</span>
-                <span className="font-medium text-foreground">{tx.totalBtc.toFixed(8)}</span>
+                <span>Amount</span>
+                <span className="font-medium text-foreground">{formatBtc(tx.totalBtc)}</span>
            </div>
+              {/* Transaction amounts are in the main currency; show them in the
+                  display currency like the rest of the chart */}
               <div className="flex justify-between gap-4">
-                <span>Avg Price ({mainCurrency}):</span>
+                <span>Avg price</span>
                 <span className="font-medium text-foreground">
-                  {tx.avgPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(tx.avgPrice * mainToSecondaryRate, displayCurrency)}
                 </span>
              </div>
               <div className="flex justify-between gap-4">
-                <span>Total ({mainCurrency}):</span>
+                <span>Total</span>
                 <span className="font-medium text-foreground">
-                  {tx.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {formatCurrency(tx.totalValue * mainToSecondaryRate, displayCurrency)}
                 </span>
              </div>
               {tx.type !== 'SELL' && priceForComparison > 0 && (
                 <div className="flex justify-between gap-4 pt-1 border-t mt-1">
-                  <span>P&L:</span>
+                  <span>P&L</span>
                   <span className={cn("font-medium", isProfitable ? "text-green-500" : "text-red-500")}>
                     {isProfitable ? '+' : ''}{(((priceForComparison - tx.avgPrice) / tx.avgPrice) * 100).toFixed(2)}%
                   </span>
@@ -385,89 +487,75 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
     );
   };
 
-  return (
-    <Card className="h-full flex flex-col overflow-hidden">
-        {showTitle && (
-        <CardHeader className="pb-2 space-y-0 shrink-0">
-          {/* Price and 24h Change */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="space-y-1 min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <ActivityIcon className="size-4 text-btc-500 shrink-0" />
-                <h3 className="text-sm font-semibold truncate">Bitcoin Price</h3>
-              </div>
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-2xl font-bold">
-                  {formatCurrency(currentPriceMain * mainToSecondaryRate, secondaryCurrency || mainCurrency)}
-                </span>
-                <Badge variant={isPositive ? "default" : "destructive"} className="gap-1 shrink-0">
-                  {isPositive ? <TrendingUpIcon className="size-3" /> : <TrendingDownIcon className="size-3" />}
-                  {isPositive ? '+' : ''}{priceChangePercent24h.toFixed(2)}%
-                </Badge>
-                </div>
-              <p className="text-xs text-muted-foreground">
-                {isPositive ? '+' : '-'}{formatCurrency(Math.abs(priceChange24h) * (currentPrice > 0 ? currentPriceMain / currentPrice : 1) * mainToSecondaryRate, secondaryCurrency || mainCurrency)} (24h)
-              </p>
-              </div>
-            </div>
-            
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2 pt-3">
-            {/* Time Range */}
-            <div className="flex flex-wrap gap-1">
-              {timeRangeButtons.map((btn) => (
-                <Button
-                  key={btn.value}
-                  variant={timeRange === btn.value ? "default" : "outline"}
-                size="sm"
-                  onClick={() => setTimeRange(btn.value)}
-                  className={timeRange === btn.value ? "bg-btc-500 hover:bg-btc-600" : "text-xs px-2 h-7"}
-              >
-                  {btn.label}
-                </Button>
-            ))}
-          </div>
+  const priceBlock = (
+    <div className="space-y-1.5 min-w-0">
+      <h3 className="text-[15px] font-semibold text-muted-foreground">Bitcoin price</h3>
+      <div className="flex items-center gap-2.5 flex-wrap">
+        <span className="text-3xl font-extrabold tracking-tight">
+          {formatCurrency(currentPriceMain * mainToSecondaryRate, secondaryCurrency || mainCurrency)}
+        </span>
+        <span className={cn(
+          "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-bold",
+          isPositive ? "bg-tint-green text-tint-green-fg" : "bg-tint-red text-tint-red-fg"
+        )}>
+          {isPositive ? <TrendingUpIcon className="size-3.5" /> : <TrendingDownIcon className="size-3.5" />}
+          {isPositive ? '+' : ''}{priceChangePercent24h.toFixed(2)}%
+        </span>
+      </div>
+      <p className="text-sm text-muted-foreground">
+        {isPositive ? '+' : '-'}{formatCurrency(Math.abs(priceChange24h) * (currentPrice > 0 ? currentPriceMain / currentPrice : 1) * mainToSecondaryRate, secondaryCurrency || mainCurrency)} in 24h
+      </p>
+    </div>
+  );
 
-            {/* Chart Type */}
-            <div className="flex gap-1 ml-auto shrink-0">
-              <Button
-                variant={chartType === 'area' ? "default" : "outline"}
+  return (
+    <Card className="rounded-2xl h-full flex flex-col gap-4 overflow-hidden">
+      {showTitle && (
+        <CardHeader className="space-y-0 shrink-0">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1 basis-[300px]">{headerLeft ?? priceBlock}</div>
+            <div className="flex flex-col items-end gap-2">
+              <SegmentedControl<TimeRange>
+                aria-label="Time range"
+                options={visibleRanges.map((b) => ({ ...b, label: b.value === 'ALL' ? 'All' : b.label }))}
+                value={timeRange}
+                onChange={setTimeRange}
+              />
+              {!compact && (
+                <SegmentedControl<ChartType>
+                  aria-label="Chart type"
                   size="sm"
-                onClick={() => setChartType('area')}
-                className={chartType === 'area' ? "bg-btc-500 hover:bg-btc-600 text-xs h-7" : "text-xs h-7"}
-              >
-                Area
-              </Button>
-              <Button
-                variant={chartType === 'line' ? "default" : "outline"}
-                size="sm"
-                onClick={() => setChartType('line')}
-                className={chartType === 'line' ? "bg-btc-500 hover:bg-btc-600 text-xs h-7" : "text-xs h-7"}
-              >
-                Line
-              </Button>
+                  options={[{ label: 'Area', value: 'area' }, { label: 'Line', value: 'line' }]}
+                  value={chartType}
+                  onChange={setChartType}
+                />
+              )}
+            </div>
           </div>
-        </div>
         </CardHeader>
       )}
 
-      <CardContent className="flex-1 min-h-0 pb-4 flex flex-col overflow-hidden relative">
+      <CardContent className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
         {loading ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-sm text-muted-foreground">Loading chart...</div>
           </div>
         ) : (
           <>
-            <div className="flex-1 min-h-[120px] w-full">
+            <div ref={plotRef} className="relative flex-1 min-h-[120px] w-full">
               <ChartContainer config={chartConfig} className="h-full w-full">
-                <ComposedChart data={chartData}>
+                <ComposedChart
+                  data={chartData}
+                  onMouseMove={handleChartMouseMove}
+                  onMouseLeave={() => setSnapIndex(null)}
+                >
                   <defs>
                     <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-price)" stopOpacity={0.8} />
-                      <stop offset="95%" stopColor="var(--color-price)" stopOpacity={0.1} />
+                      <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.28} />
+                      <stop offset="100%" stopColor="var(--color-price)" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
                   <XAxis
                     dataKey="date"
                     tickLine={false}
@@ -479,84 +567,96 @@ export default function BitcoinChart({ height = 400, showTitle = true, showTrans
                     tickLine={false}
                     axisLine={false}
                     tickMargin={8}
-                    tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                    tickFormatter={(value) => compactMoney(value)}
                     domain={stats ? [
                       Math.floor(stats.low * 0.98 / 1000) * 1000,
                       Math.ceil(stats.high * 1.02 / 1000) * 1000
                     ] : ['auto', 'auto']}
                   />
                   {avgBuyPrice > 0 && (
-                    <ReferenceLine 
-                      y={avgBuyPrice} 
-                      stroke="hsl(142, 71%, 45%)" 
-                      strokeDasharray="3 3"
-                      label={{ value: 'Avg Buy', position: 'right', fill: 'hsl(142, 71%, 45%)', fontSize: 12 }}
+                    <ReferenceLine
+                      y={avgBuyUsd}
+                      stroke="hsl(var(--muted-foreground))"
+                      strokeDasharray="4 4"
+                      label={{ value: 'Your avg', position: 'insideTopLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     />
                   )}
-                  <ChartTooltip content={<CustomTooltip />} />
+                  <ChartTooltip content={<CustomTooltip />} cursor={!snapped} />
+                  {snapped && (
+                    <ReferenceLine x={snapped.date} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.5} />
+                  )}
                   {chartType === 'area' ? (
                     <Area
                       dataKey="price"
                       type="monotone"
                       fill="url(#fillPrice)"
-                      fillOpacity={0.4}
+                      fillOpacity={1}
                       stroke="var(--color-price)"
-                      strokeWidth={2}
+                      strokeWidth={3}
+                      strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={showTransactions ? { r: 4, fill: 'var(--color-price)' } : { r: 4 }}
-                      isAnimationActive={false}
+                      activeDot={false}
+                      isAnimationActive={!drawn}
+                      animationDuration={1400}
+                      animationEasing="ease-out"
                     />
                   ) : (
                     <Line
                       dataKey="price"
                       type="monotone"
                       stroke="var(--color-price)"
-                      strokeWidth={2}
+                      strokeWidth={3}
+                      strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={showTransactions ? { r: 4, fill: 'var(--color-price)' } : { r: 4 }}
-                      isAnimationActive={false}
+                      activeDot={false}
+                      isAnimationActive={!drawn}
+                      animationDuration={1400}
+                      animationEasing="ease-out"
                     />
                   )}
                 </ComposedChart>
               </ChartContainer>
+              {showTransactions && (
+                <FerroMarkers containerRef={plotRef} snappedId={snapped ? String(snapped.timestamp) : null} />
+              )}
       </div>
 
-            {/* Transaction Legend */}
+            {/* Transaction Legend — only the marker types actually on the chart */}
             {hasTransactions && (
-              <div className="flex items-center justify-center gap-4 py-3 text-xs text-muted-foreground shrink-0">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span>Buy</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span>Sell</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-purple-500" />
-                  <span>Mixed</span>
-                </div>
+              <div className="flex items-center justify-center gap-4 py-3 text-xs font-medium text-muted-foreground shrink-0">
+                {[
+                  { type: 'BUY', label: 'Buy', color: 'bg-green-500' },
+                  { type: 'SELL', label: 'Sell', color: 'bg-red-500' },
+                  { type: 'MIXED', label: 'Buy & sell', color: 'bg-violet-500' },
+                ]
+                  .filter((item) => chartData.some((d) => d.transaction?.type === item.type))
+                  .map((item) => (
+                    <div key={item.type} className="flex items-center gap-1.5">
+                      <div className={cn('size-2.5 rounded-full', item.color)} />
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
               </div>
             )}
 
             {/* Stats Footer */}
-            {stats && (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 pt-4 border-t shrink-0">
+            {stats && showStats && (
+              <div className="grid grid-cols-3 gap-2 rounded-2xl bg-secondary p-3 shrink-0">
           <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">{timeRange} High</p>
-                  <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                    ${stats.high.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  <p className="text-sm font-bold text-tint-green-fg">
+                    {wholeMoney(stats.high)}
                   </p>
           </div>
           <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">{timeRange} Low</p>
-                  <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                    ${stats.low.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  <p className="text-sm font-bold text-tint-red-fg">
+                    {wholeMoney(stats.low)}
                   </p>
           </div>
           <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-1">Range</p>
-                  <p className="text-sm font-bold text-btc-500">
+                  <p className="text-sm font-bold text-primary-strong">
                     {stats.range.toFixed(1)}%
                   </p>
           </div>

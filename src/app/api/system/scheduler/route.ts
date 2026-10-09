@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppInitializationService } from '@/lib/app-initialization';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { withAuth, withAdminAuth, AuthUser } from '@/lib/auth-helpers';
 
 export async function GET(request: NextRequest) {
+  return withAuth(request, () => getSchedulerStatus());
+}
+
+// Scheduler control affects the whole server, so it is admin-only.
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, (_userId, user) => controlScheduler(request, user));
+}
+
+async function getSchedulerStatus() {
   try {
     // Get scheduler status
     const status = AppInitializationService.getStatus();
@@ -23,23 +31,14 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function controlScheduler(request: NextRequest, user: AuthUser) {
   try {
-    // Require authentication for scheduler control
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({
-        success: false,
-        error: 'Authentication required',
-      }, { status: 401 });
-    }
-
     const body = await request.json();
     const { action } = body;
 
     switch (action) {
       case 'restart':
-        console.log('[SYNC] Manual scheduler restart requested by user:', session.user?.email);
+        console.log('[SYNC] Manual scheduler restart requested by user:', user.email);
         await AppInitializationService.restart();
         return NextResponse.json({
           success: true,
@@ -48,7 +47,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'update':
-        console.log('[SYNC] Manual data update requested by user:', session.user?.email);
+        console.log('[SYNC] Manual data update requested by user:', user.email);
         await AppInitializationService.triggerDataUpdate();
         return NextResponse.json({
           success: true,
@@ -56,7 +55,7 @@ export async function POST(request: NextRequest) {
         });
 
       case 'initialize':
-        console.log('[START] Manual initialization requested by user:', session.user?.email);
+        console.log('[START] Manual initialization requested by user:', user.email);
         await AppInitializationService.initialize();
         return NextResponse.json({
           success: true,

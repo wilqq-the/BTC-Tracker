@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
+import { withAuth } from '@/lib/auth-helpers';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getExchangeRates(request));
+}
+
+// Refreshing rates is triggered from the per-user currency settings panel,
+// so any authenticated user may do it.
+export async function POST(request: NextRequest) {
+  return withAuth(request, () => updateExchangeRates(request));
+}
+
+async function getExchangeRates(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const from = searchParams.get('from');
@@ -34,7 +45,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function updateExchangeRates(request: NextRequest): Promise<NextResponse> {
   try {
     const { action } = await request.json();
 

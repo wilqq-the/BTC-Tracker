@@ -223,6 +223,34 @@ export class StrikeParser extends BaseParser {
       }
     }
 
+    // --- Receive: bitcoin arriving in Strike ---
+    // On-chain (has a transaction hash) mirrors Send: coming back from your own
+    // cold storage. Lightning has no hash and is treated as incoming bitcoin.
+    if (transactionType === 'receive' && amountBtcRaw > 0) {
+      const hash = this.getField(transaction, 'transaction hash');
+      const pricePerBtc = priceFromColumn > 0 ? priceFromColumn : 0;
+
+      const result: ImportTransaction = {
+        type: 'TRANSFER',
+        btc_amount: amountBtcRaw,
+        original_price_per_btc: pricePerBtc,
+        original_currency: currency,
+        original_total_amount: 0,
+        fees: 0,
+        fees_currency: currency,
+        transaction_date: transactionDate,
+        notes: `Strike Receive${txId ? ` (${txId})` : ''}`,
+        transfer_type: hash ? 'FROM_COLD_WALLET' : 'TRANSFER_IN',
+        destination_address: null,
+      };
+
+      try {
+        return this.validateTransaction(result);
+      } catch {
+        return null;
+      }
+    }
+
     // --- Initiated target order: negative fiat, no BTC, description match ---
     if (
       fiatAmountRaw < 0 &&

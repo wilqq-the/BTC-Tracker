@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { BitcoinTransaction, TransactionFormData, TransactionResponse } from '@/lib/types';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { withAuth } from '@/lib/auth-helpers';
+import { walletsBelongToUser } from '@/lib/wallet-helpers';
+import { isTransferFeeMode } from '@/lib/transfer-fees';
 
 // Helper function to get exchange rate
 const getExchangeRate = async (fromCurrency: string, toCurrency: string = 'USD'): Promise<number> => {
@@ -56,6 +58,7 @@ export async function GET(
       notes: transaction.notes || '',
       tags: (transaction as any).tags || '',
       transfer_type: (transaction as any).transferType || null,
+      transfer_fee_mode: (transaction as any).transferFeeMode || null,
       destination_address: (transaction as any).destinationAddress || null,
       from_wallet_id: (transaction as any).fromWalletId || null,
       to_wallet_id: (transaction as any).toWalletId || null,
@@ -129,6 +132,23 @@ export async function PUT(
       } as TransactionResponse, { status: 400 });
     }
 
+    // Transfer fee mode (#168): validate when given; when omitted, keep the
+    // stored value so older clients can't silently reset it
+    const rawFeeMode = (formData as any).transfer_fee_mode;
+    if (rawFeeMode != null && rawFeeMode !== '' && !isTransferFeeMode(rawFeeMode)) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid transfer fee mode',
+        message: "transfer_fee_mode must be 'ON_TOP' or 'DEDUCTED'"
+      } as TransactionResponse, { status: 400 });
+    }
+    const feeModeApplies = isTransfer && formData.transfer_type !== 'TRANSFER_IN';
+    const transferFeeModeUpdate = !feeModeApplies
+      ? { transferFeeMode: null }
+      : rawFeeMode === undefined
+        ? {}
+        : { transferFeeMode: isTransferFeeMode(rawFeeMode) ? rawFeeMode : null };
+
     // Convert string values to numbers
     const btcAmount = parseFloat(formData.btc_amount);
     // For external transfers (TRANSFER_IN/OUT), allow reference price; internal transfers have no price
@@ -151,6 +171,15 @@ export async function PUT(
     // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
     const feesCurrency = isTransfer ? 'BTC' : formData.currency;
 
+    // Wallets referenced by the transaction must belong to the current user
+    if (!(await walletsBelongToUser(userId, [(formData as any).from_wallet_id, (formData as any).to_wallet_id]))) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid wallet',
+        message: 'Wallet not found'
+      } as TransactionResponse, { status: 400 });
+    }
+
     // Update transaction using Prisma - only store original data for this user
     const updatedTransaction = await prisma.bitcoinTransaction.update({
       where: { 
@@ -169,6 +198,7 @@ export async function PUT(
         notes: formData.notes || '',
         tags: formData.tags || null,
         transferType: isTransfer ? formData.transfer_type : null,
+        ...transferFeeModeUpdate,
         destinationAddress: isTransfer ? (formData.destination_address || null) : null,
         fromWalletId: (formData as any).from_wallet_id || null,
         toWalletId: (formData as any).to_wallet_id || null,
@@ -197,6 +227,7 @@ export async function PUT(
       notes: updatedTransaction.notes || '',
       tags: (updatedTransaction as any).tags || '',
       transfer_type: (updatedTransaction as any).transferType || null,
+      transfer_fee_mode: (updatedTransaction as any).transferFeeMode || null,
       destination_address: (updatedTransaction as any).destinationAddress || null,
       from_wallet_id: (updatedTransaction as any).fromWalletId || null,
       to_wallet_id: (updatedTransaction as any).toWalletId || null,

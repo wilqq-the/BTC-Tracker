@@ -66,6 +66,7 @@ export interface MonthlyBreakdown {
 
 export interface Recommendation {
   type: 'success' | 'warning' | 'info' | 'tip';
+  /** Icon key, mapped to a lucide icon in the UI (see components/planning/planning-icons) */
   icon: string;
   message: string;
 }
@@ -434,7 +435,7 @@ export class DCAAnalysisService {
 
     return [
       {
-        name: 'Your DCA Strategy',
+        name: 'Your DCA strategy',
         description: 'Actual performance with your purchases',
         totalInvested,
         btcHoldings: totalBtc,
@@ -444,7 +445,7 @@ export class DCAAnalysisService {
         difference: 0
       },
       {
-        name: 'Lump Sum',
+        name: 'Lump sum',
         description: `All money invested on ${firstPaidTx.transactionDate.toLocaleDateString()}`,
         totalInvested,
         btcHoldings: lumpSumBtc,
@@ -454,7 +455,7 @@ export class DCAAnalysisService {
         difference: lumpSumValue - currentValue
       },
       {
-        name: 'Perfect Timing',
+        name: 'Perfect timing',
         description: 'All money invested at lowest price',
         totalInvested,
         btcHoldings: perfectBtc,
@@ -609,20 +610,20 @@ export class DCAAnalysisService {
     if (score.overall >= 8) {
       recommendations.push({
         type: 'success',
-        icon: '🎉',
-        message: `Excellent DCA strategy! You're in the top tier with a ${score.overall}/10 score.`
+        icon: 'party',
+        message: `Excellent DCA strategy: you're in the top tier with a ${score.overall}/10 score.`
       });
     } else if (score.overall >= 6) {
       recommendations.push({
         type: 'success',
-        icon: '✅',
-        message: `Good DCA strategy! Score: ${score.overall}/10. Keep it up!`
+        icon: 'check',
+        message: `Good DCA strategy, scoring ${score.overall}/10. Keep it up.`
       });
     } else {
       recommendations.push({
         type: 'info',
-        icon: '💡',
-        message: `Your DCA score is ${score.overall}/10. There's room for improvement!`
+        icon: 'lightbulb',
+        message: `Your DCA score is ${score.overall}/10, with room to improve.`
       });
     }
 
@@ -630,20 +631,20 @@ export class DCAAnalysisService {
     if (timing.btcBoughtBelowCurrent >= 60) {
       recommendations.push({
         type: 'success',
-        icon: '🎯',
-        message: `Excellent timing! You bought ${timing.btcBoughtBelowCurrent.toFixed(0)}% of your BTC on dips (below 7-day average).`
+        icon: 'target',
+        message: `Excellent timing: you bought ${timing.btcBoughtBelowCurrent.toFixed(0)}% of your BTC on dips (below 7-day average).`
       });
     } else if (timing.btcBoughtBelowCurrent >= 45) {
       recommendations.push({
         type: 'info',
-        icon: '✅',
-        message: `Good timing! ${timing.btcBoughtBelowCurrent.toFixed(0)}% bought on dips vs ${timing.btcBoughtAboveCurrent.toFixed(0)}% on pumps.`
+        icon: 'check',
+        message: `Good timing: ${timing.btcBoughtBelowCurrent.toFixed(0)}% bought on dips vs ${timing.btcBoughtAboveCurrent.toFixed(0)}% on pumps.`
       });
     } else if (timing.btcBoughtBelowCurrent < 35) {
       recommendations.push({
         type: 'tip',
-        icon: '💡',
-        message: `Try to buy dips! You bought ${timing.btcBoughtAboveCurrent.toFixed(0)}% during local pumps. Consider limit orders.`
+        icon: 'lightbulb',
+        message: `${timing.btcBoughtAboveCurrent.toFixed(0)}% of your bitcoin was bought during local pumps. Buying dips or using limit orders would lower your average.`
       });
     }
 
@@ -651,14 +652,14 @@ export class DCAAnalysisService {
     if (consistency.missedMonths > 3) {
       recommendations.push({
         type: 'warning',
-        icon: '📅',
-        message: `You missed ${consistency.missedMonths} months. Consider setting up automatic purchases!`
+        icon: 'calendar',
+        message: `You missed ${consistency.missedMonths} months. Automatic purchases would keep you on schedule.`
       });
     } else if (consistency.consistency >= 80) {
       recommendations.push({
         type: 'success',
-        icon: '📊',
-        message: `Excellent consistency! You're investing regularly with ${consistency.consistency.toFixed(0)}% regularity.`
+        icon: 'bar-chart',
+        message: `Excellent consistency: you're investing regularly with ${consistency.consistency.toFixed(0)}% regularity.`
       });
     }
 
@@ -666,7 +667,7 @@ export class DCAAnalysisService {
     if (consistency.longestGap > 60) {
       recommendations.push({
         type: 'warning',
-        icon: '⏰',
+        icon: 'clock',
         message: `Your longest gap was ${consistency.longestGap} days. Try to maintain regular investments.`
       });
     }
@@ -676,20 +677,20 @@ export class DCAAnalysisService {
     if (costBasisDiscount > 30) {
       recommendations.push({
         type: 'success',
-        icon: '💰',
-        message: `Excellent cost basis! Your avg buy price is ${costBasisDiscount.toFixed(1)}% below current price.`
+        icon: 'coins',
+        message: `Excellent cost basis: your average buy price is ${costBasisDiscount.toFixed(1)}% below current price.`
       });
     } else if (costBasisDiscount < -10) {
       recommendations.push({
         type: 'tip',
-        icon: '📈',
-        message: `Your avg buy price is ${Math.abs(costBasisDiscount).toFixed(1)}% above current. Keep HODLing and DCA-ing down!`
+        icon: 'trending-up',
+        message: `Your avg buy price is ${Math.abs(costBasisDiscount).toFixed(1)}% above current. Regular buys at lower prices will bring it down.`
       });
     } else if (costBasisDiscount >= 0) {
       recommendations.push({
         type: 'success',
-        icon: '✨',
-        message: `You're in profit! Avg buy price is ${costBasisDiscount.toFixed(1)}% below current price.`
+        icon: 'sparkles',
+        message: `You're in profit: your average buy price is ${costBasisDiscount.toFixed(1)}% below current price.`
       });
     }
     
@@ -697,14 +698,14 @@ export class DCAAnalysisService {
     if (score.performance >= 8) {
       recommendations.push({
         type: 'success',
-        icon: '🏆',
-        message: `Outstanding accumulation! Your cost basis quality is top-tier (${score.performance}/10).`
+        icon: 'trophy',
+        message: `Outstanding accumulation: your cost basis quality is top-tier (${score.performance}/10).`
       });
     } else if (score.performance < 4) {
       recommendations.push({
         type: 'info',
-        icon: '⏳',
-        message: `Your average buy is above current price. Keep accumulating - time in market matters!`
+        icon: 'hourglass',
+        message: `Your average buy is above current price. Keep accumulating; time in the market matters.`
       });
     }
 
@@ -712,14 +713,14 @@ export class DCAAnalysisService {
     if (consistency.recentActivity === 0) {
       recommendations.push({
         type: 'tip',
-        icon: '💡',
-        message: `No purchases in the last 30 days. Consider resuming your DCA strategy!`
+        icon: 'lightbulb',
+        message: `No purchases in the last 30 days. Resuming your DCA plan keeps your average steady.`
       });
     } else if (consistency.recentActivity >= 3) {
       recommendations.push({
         type: 'success',
-        icon: '🔥',
-        message: `Strong recent activity! ${consistency.recentActivity} purchases in the last 30 days.`
+        icon: 'flame',
+        message: `Strong recent activity: ${consistency.recentActivity} purchases in the last 30 days.`
       });
     }
 
@@ -773,8 +774,8 @@ export class DCAAnalysisService {
       monthlyBreakdown: [],
       recommendations: [{
         type: 'info',
-        icon: '💡',
-        message: 'Start your DCA journey by making your first Bitcoin purchase!'
+        icon: 'lightbulb',
+        message: 'Record your first bitcoin purchase to see your DCA analysis.'
       }],
       summary: {
         totalInvested: 0,

@@ -12,6 +12,7 @@ import { useTheme } from './ui/ThemeProvider';
 import { useDarkThemePreset } from '@/hooks/use-dark-theme-preset';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // shadcn/ui components
 import { Button } from '@/components/ui/button';
@@ -19,34 +20,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import type { BtcUnit } from '@/lib/btc-unit';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 // Icons
-import { 
-  DollarSignIcon, 
-  RefreshCwIcon, 
-  PlusIcon, 
+import {
+  RefreshCwIcon,
+  PlusIcon,
   TrashIcon,
   AlertTriangleIcon,
-  LightbulbIcon,
   CheckIcon,
-  SettingsIcon,
-  SunIcon,
-  MoonIcon,
-  BellIcon,
   BellOffIcon,
-  UserIcon,
-  LockIcon,
-  KeyIcon,
   CameraIcon,
   XIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  ActivityIcon,
   DatabaseIcon,
-  ClockIcon,
   ServerIcon,
-  PaletteIcon
 } from 'lucide-react';
+import { switchThemeWithReveal } from '@/lib/theme-transition';
 
 interface SettingsPanelProps<T> {
   settings: T;
@@ -54,17 +47,23 @@ interface SettingsPanelProps<T> {
   saving: boolean;
 }
 
+// Shared styles for the settings cards
+const titleClass = 'text-[17px] font-bold tracking-tight';
+const descriptionClass = 'text-[13px]';
+const selectClass =
+  'h-10 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground disabled:opacity-50';
+const hintClass = 'text-xs text-muted-foreground';
+
 // Currency Settings Panel
-export function CurrencySettingsPanel({ 
-  settings, 
-  onUpdate, 
-  saving 
-}: { 
-  settings: CurrencySettings; 
+export function CurrencySettingsPanel({
+  settings,
+  onUpdate,
+  saving
+}: {
+  settings: CurrencySettings;
   onUpdate: (updates: Partial<CurrencySettings>) => void;
   saving: boolean;
 }) {
-  const [exchangeRateStatus, setExchangeRateStatus] = useState<string>('');
   const [isUpdatingRates, setIsUpdatingRates] = useState(false);
   const [exchangeRates, setExchangeRates] = useState<any[]>([]);
   const [showAllRates, setShowAllRates] = useState(false);
@@ -75,7 +74,6 @@ export function CurrencySettingsPanel({
     name: '',
     symbol: ''
   });
-  const [currencyStatus, setCurrencyStatus] = useState<string>('');
 
   const allCurrencies: Array<{code: SupportedCurrency, name: string, symbol: string}> = [
     { code: 'USD', name: 'US Dollar', symbol: '$' },
@@ -112,7 +110,8 @@ export function CurrencySettingsPanel({
     }
   };
 
-  const updateExchangeRates = async () => {
+  /** Refresh rates from the provider. Returns whether it worked; toasts unless silent. */
+  const updateExchangeRates = async (silent = false): Promise<boolean> => {
     setIsUpdatingRates(true);
     try {
       const response = await fetch('/api/exchange-rates', {
@@ -120,18 +119,19 @@ export function CurrencySettingsPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'update' })
       });
-      
+
       if (response.ok) {
-        setExchangeRateStatus('Exchange rates updated successfully!');
         await loadExchangeRates();
-      } else {
-        setExchangeRateStatus('Failed to update exchange rates');
+        if (!silent) toast({ title: 'Exchange rates updated', variant: 'success' });
+        return true;
       }
+      if (!silent) toast({ title: 'Couldn’t update exchange rates', description: 'The rate provider didn’t respond. Try again in a minute.', variant: 'destructive' });
+      return false;
     } catch (error) {
-      setExchangeRateStatus('Error updating exchange rates');
+      if (!silent) toast({ title: 'Couldn’t update exchange rates', description: 'Check your connection and try again.', variant: 'destructive' });
+      return false;
     } finally {
       setIsUpdatingRates(false);
-      setTimeout(() => setExchangeRateStatus(''), 3000);
     }
   };
 
@@ -149,10 +149,9 @@ export function CurrencySettingsPanel({
 
   const addCustomCurrency = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!newCurrencyForm.code || !newCurrencyForm.name || !newCurrencyForm.symbol) {
-      setCurrencyStatus('All fields are required');
-      setTimeout(() => setCurrencyStatus(''), 3000);
+      toast({ title: 'Fill in the code, name and symbol', variant: 'destructive' });
       return;
     }
 
@@ -164,48 +163,42 @@ export function CurrencySettingsPanel({
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        setCurrencyStatus(`${result.data.code} added successfully! Updating exchange rates...`);
         setNewCurrencyForm({ code: '', name: '', symbol: '' });
         setShowAddCurrency(false);
         await loadCustomCurrencies();
-        
-        try {
-          await updateExchangeRates();
-          setCurrencyStatus(`${result.data.code} added successfully! Exchange rates updated.`);
-        } catch (error) {
-          setCurrencyStatus(`${result.data.code} added successfully! Note: Exchange rate update failed.`);
-        }
+        const ratesUpdated = await updateExchangeRates(true);
+        toast({
+          title: `${result.data.code} added`,
+          description: ratesUpdated ? 'Exchange rates were updated too.' : 'Exchange rates couldn’t be updated, so it converts at 1.0 for now.',
+          variant: ratesUpdated ? 'success' : undefined,
+        });
       } else {
-        setCurrencyStatus(result.error || 'Failed to add currency');
+        toast({ title: result.error || 'Failed to add currency', variant: 'destructive' });
       }
     } catch (error) {
-      setCurrencyStatus('Error adding currency');
-    } finally {
-      setTimeout(() => setCurrencyStatus(''), 3000);
+      toast({ title: 'Failed to add currency', variant: 'destructive' });
     }
   };
 
   const deleteCustomCurrency = async (id: number, code: string) => {
-    if (confirm(`Are you sure you want to delete custom currency ${code}?`)) {
+    if (await confirm({ title: `Delete ${code}?`, description: `The custom currency ${code} will be removed.`, confirmText: 'Delete', destructive: true })) {
       try {
         const response = await fetch(`/api/custom-currencies/${id}`, {
           method: 'DELETE'
         });
 
         const result = await response.json();
-        
+
         if (result.success) {
-          setCurrencyStatus(`${code} deleted successfully`);
+          toast({ title: `${code} deleted` });
           await loadCustomCurrencies();
         } else {
-          setCurrencyStatus(result.error || 'Failed to delete currency');
+          toast({ title: result.error || 'Failed to delete currency', variant: 'destructive' });
         }
       } catch (error) {
-        setCurrencyStatus('Error deleting currency');
-      } finally {
-        setTimeout(() => setCurrencyStatus(''), 3000);
+        toast({ title: 'Failed to delete currency', variant: 'destructive' });
       }
     }
   };
@@ -219,10 +212,10 @@ export function CurrencySettingsPanel({
       ...allCurrencies.map(c => c.code),
       ...customCurrencies.map(c => c.code)
     ];
-    
+
     const validRequired = required.filter(curr => allAvailableCodes.includes(curr));
     const missing = validRequired.filter(curr => !currentSupported.includes(curr));
-    
+
     if (missing.length > 0) {
       const updatedSupported = [...currentSupported, ...missing];
       onUpdate({ supportedCurrencies: updatedSupported });
@@ -236,46 +229,39 @@ export function CurrencySettingsPanel({
   const getAvailableCurrencies = () => {
     const majorCurrencies = ['USD', 'EUR', 'PLN', 'GBP'];
     const availableCodes = Array.from(new Set([...currentSupported, ...majorCurrencies]));
-    
+
     const builtInCurrencies = allCurrencies.filter(c => availableCodes.includes(c.code));
-    
+
     const customCurrencyOptions = customCurrencies.map(c => ({
       code: c.code as any,
       name: c.name,
       symbol: c.symbol
     }));
-    
+
     const allOptions = [...builtInCurrencies, ...customCurrencyOptions];
-    const uniqueOptions = allOptions.filter((currency, index, self) => 
+    const uniqueOptions = allOptions.filter((currency, index, self) =>
       index === self.findIndex(c => c.code === currency.code)
     );
-    
+
     return uniqueOptions;
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Currency Settings</h3>
-        <p className="text-muted-foreground">Configure currencies for your portfolio</p>
-      </div>
-      
+    <div className="space-y-4">
       {/* Main & Secondary Currency */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <DollarSignIcon className="size-4" />
-            Currency Selection
-          </CardTitle>
+          <CardTitle className={titleClass}>Portfolio currencies</CardTitle>
+          <CardDescription className={descriptionClass}>One currency to calculate in, another to show next to it.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="mainCurrency">Main Currency (for calculations)</Label>
+            <Label htmlFor="mainCurrency">Main currency</Label>
             <select
               id="mainCurrency"
               value={settings.mainCurrency}
               onChange={(e) => onUpdate({ mainCurrency: e.target.value as MainCurrency })}
-              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className={selectClass}
               disabled={saving}
             >
               {mainCurrencies.map((currency) => (
@@ -284,18 +270,18 @@ export function CurrencySettingsPanel({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">
-              All calculations and database storage will use this currency. Only USD and EUR are supported.
+            <p className={hintClass}>
+              All calculations and stored values use this currency. USD or EUR.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="secondaryCurrency">Secondary Currency (for display)</Label>
+            <Label htmlFor="secondaryCurrency">Secondary currency</Label>
             <select
               id="secondaryCurrency"
               value={settings.secondaryCurrency}
               onChange={(e) => onUpdate({ secondaryCurrency: e.target.value as SupportedCurrency })}
-              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className={selectClass}
               disabled={saving}
             >
               {getAvailableCurrencies().map((currency) => (
@@ -304,8 +290,8 @@ export function CurrencySettingsPanel({
                 </option>
               ))}
             </select>
-            <p className="text-xs text-muted-foreground">
-              Values will be converted and shown in this currency alongside main currency
+            <p className={hintClass}>
+              Values are converted and shown in this currency alongside the main one.
             </p>
           </div>
         </CardContent>
@@ -314,40 +300,39 @@ export function CurrencySettingsPanel({
       {/* Supported Currencies */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Supported Currencies</CardTitle>
-          <CardDescription>Select currencies you want to use for transactions</CardDescription>
+          <CardTitle className={titleClass}>Transaction currencies</CardTitle>
+          <CardDescription className={descriptionClass}>The currencies you can enter transactions in.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
             {allCurrencies.map((currency) => {
               const isSupported = currentSupported.includes(currency.code);
               const isRequired = currency.code === settings.mainCurrency || currency.code === settings.secondaryCurrency;
-              
+
               return (
-                <label 
-                  key={currency.code} 
+                <label
+                  key={currency.code}
                   className={cn(
-                    "flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors",
-                    isSupported ? "border-primary/50 bg-primary/5" : "border-border hover:bg-muted/50",
-                    isRequired && "opacity-60 cursor-not-allowed"
+                    'flex min-h-10 items-center gap-2.5 rounded-2xl px-3 py-2.5 transition-colors',
+                    isSupported ? 'bg-tint-orange' : 'bg-secondary hover:bg-accent',
+                    isRequired ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
                   <Checkbox
                     checked={isSupported}
                     onCheckedChange={() => {
                       if (isRequired) return;
-                      const newSupported = isSupported 
-                        ? currentSupported.filter(c => c !== currency.code) 
+                      const newSupported = isSupported
+                        ? currentSupported.filter(c => c !== currency.code)
                         : [...currentSupported, currency.code];
                       onUpdate({ supportedCurrencies: newSupported });
                     }}
                     disabled={isRequired || saving}
                   />
-                  <span className="text-sm">
-                    {currency.symbol} {currency.code}
-                  </span>
+                  <span className="text-sm font-semibold">{currency.code}</span>
+                  <span className="text-sm text-muted-foreground">{currency.symbol}</span>
                   {isRequired && (
-                    <span className="text-xs text-primary ml-auto">(required)</span>
+                    <span className="ml-auto text-xs font-semibold text-primary-strong">In use</span>
                   )}
                 </label>
               );
@@ -359,149 +344,140 @@ export function CurrencySettingsPanel({
       {/* Custom Currencies */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base">Custom Currencies</CardTitle>
-              <CardDescription>Add currencies not in the built-in list</CardDescription>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className={titleClass}>Custom currencies</CardTitle>
+              <CardDescription className={descriptionClass}>Add a currency that isn&apos;t in the list above.</CardDescription>
             </div>
             <Button
-              variant={showAddCurrency ? "outline" : "default"}
+              variant="outline"
               size="sm"
+              className="rounded-full font-semibold"
               onClick={() => setShowAddCurrency(!showAddCurrency)}
               disabled={saving}
             >
               {showAddCurrency ? (
                 <>
-                  <XIcon className="size-4 mr-1" />
+                  <XIcon className="size-4" />
                   Cancel
                 </>
               ) : (
                 <>
-                  <PlusIcon className="size-4 mr-1" />
-                  Add Currency
+                  <PlusIcon className="size-4" />
+                  Add currency
                 </>
               )}
             </Button>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Warning */}
-          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-            <AlertTriangleIcon className="size-4 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-xs text-amber-600 dark:text-amber-400">
-              <strong>Exchange Rate Limitation:</strong> Custom currencies may not have live exchange rates. 
-              They will use fallback rates (1.0) until rates are manually added.
+          <div className="flex items-start gap-2.5 rounded-2xl bg-tint-orange p-3 text-[13px] text-primary-strong">
+            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+            <p>
+              Custom currencies may not have live exchange rates. Until a rate is available they convert at 1.0.
             </p>
           </div>
 
           {/* Add Form */}
           {showAddCurrency && (
-            <div className="p-4 bg-muted/50 rounded-lg border">
-              <div className="flex items-start gap-2 mb-3">
-                <LightbulbIcon className="size-4 text-primary shrink-0 mt-0.5" />
-                <p className="text-xs text-muted-foreground">
-                  Enter the currency code first - symbols and names will be automatically suggested.
-                </p>
-              </div>
-              <form onSubmit={addCustomCurrency} className="space-y-3">
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Code (3-4 letters)</Label>
-                    <Input
-                      value={newCurrencyForm.code}
-                      onChange={(e) => {
-                        const code = e.target.value.toUpperCase();
-                        setNewCurrencyForm(prev => ({ ...prev, code }));
-                        
-                        if (code.length >= 3) {
-                          const symbol = CurrencySymbolService.getCurrencySymbol(code);
-                          const name = CurrencySymbolService.getCurrencyName(code);
-                          
-                          if (symbol !== code) {
-                            setNewCurrencyForm(prev => ({ 
-                              ...prev, 
-                              symbol: prev.symbol || symbol,
-                              name: prev.name || (name !== code ? name : '')
-                            }));
-                          }
-                        } else if (code.length === 0) {
-                          setNewCurrencyForm(prev => ({ ...prev, symbol: '', name: '' }));
+            <form onSubmit={addCustomCurrency} className="space-y-3 rounded-2xl bg-secondary p-4">
+              <p className={hintClass}>
+                Start with the code: the name and symbol are filled in when we recognise it.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="customCode">Code</Label>
+                  <Input
+                    id="customCode"
+                    className="bg-card"
+                    value={newCurrencyForm.code}
+                    onChange={(e) => {
+                      const code = e.target.value.toUpperCase();
+                      setNewCurrencyForm(prev => ({ ...prev, code }));
+
+                      if (code.length >= 3) {
+                        const symbol = CurrencySymbolService.getCurrencySymbol(code);
+                        const name = CurrencySymbolService.getCurrencyName(code);
+
+                        if (symbol !== code) {
+                          setNewCurrencyForm(prev => ({
+                            ...prev,
+                            symbol: prev.symbol || symbol,
+                            name: prev.name || (name !== code ? name : '')
+                          }));
                         }
-                      }}
-                      placeholder="INR"
-                      maxLength={4}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Name</Label>
-                    <Input
-                      value={newCurrencyForm.name}
-                      onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Indian Rupee"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Symbol</Label>
-                    <Input
-                      value={newCurrencyForm.symbol}
-                      onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, symbol: e.target.value }))}
-                      placeholder={newCurrencyForm.code ? CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code) : "₹"}
-                      maxLength={5}
-                      required
-                    />
-                    {newCurrencyForm.code && !newCurrencyForm.symbol && (
-                      <p className="text-xs text-muted-foreground">
-                        Suggested: {CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code)}
-                      </p>
-                    )}
-                  </div>
+                      } else if (code.length === 0) {
+                        setNewCurrencyForm(prev => ({ ...prev, symbol: '', name: '' }));
+                      }
+                    }}
+                    placeholder="INR"
+                    maxLength={4}
+                    required
+                  />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Button type="submit" size="sm" disabled={saving}>
-                    <PlusIcon className="size-4 mr-1" />
-                    Add Currency
-                  </Button>
-                  {currencyStatus && (
-                    <span className={cn(
-                      "text-xs",
-                      currencyStatus.includes('success') ? 'text-profit' : 'text-destructive'
-                    )}>
-                      {currencyStatus}
-                    </span>
+                <div className="space-y-1.5">
+                  <Label htmlFor="customName">Name</Label>
+                  <Input
+                    id="customName"
+                    className="bg-card"
+                    value={newCurrencyForm.name}
+                    onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Indian Rupee"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="customSymbol">Symbol</Label>
+                  <Input
+                    id="customSymbol"
+                    className="bg-card"
+                    value={newCurrencyForm.symbol}
+                    onChange={(e) => setNewCurrencyForm(prev => ({ ...prev, symbol: e.target.value }))}
+                    placeholder={newCurrencyForm.code ? CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code) : '₹'}
+                    maxLength={5}
+                    required
+                  />
+                  {newCurrencyForm.code && !newCurrencyForm.symbol && (
+                    <p className={hintClass}>
+                      Suggested: {CurrencySymbolService.getCurrencySymbol(newCurrencyForm.code)}
+                    </p>
                   )}
                 </div>
-              </form>
-            </div>
+              </div>
+              <Button type="submit" size="sm" className="rounded-full font-semibold" disabled={saving}>
+                <PlusIcon className="size-4" />
+                Add currency
+              </Button>
+            </form>
           )}
 
           {/* Custom Currencies List */}
           {customCurrencies.length > 0 ? (
             <div className="space-y-2">
               {customCurrencies.map((currency) => (
-                <div key={currency.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-sm font-medium">{currency.code}</span>
-                    <span className="text-sm text-muted-foreground">
+                <div key={currency.id} className="flex items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-2.5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className="text-sm font-bold">{currency.code}</span>
+                    <span className="truncate text-sm text-muted-foreground">
                       {currency.symbol} {currency.name}
                     </span>
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
+                    aria-label={`Delete ${currency.code}`}
                     onClick={() => deleteCustomCurrency(currency.id, currency.code)}
                     disabled={saving}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    className="rounded-full text-muted-foreground hover:bg-tint-red hover:text-tint-red-fg"
                   >
                     <TrashIcon className="size-4" />
                   </Button>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-center py-4 text-muted-foreground text-sm">
-              No custom currencies added yet
+          ) : !showAddCurrency && (
+            <p className="py-2 text-sm text-muted-foreground">
+              No custom currencies yet. Ones you add will appear here.
             </p>
           )}
         </CardContent>
@@ -510,22 +486,24 @@ export function CurrencySettingsPanel({
       {/* Exchange Rates */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <RefreshCwIcon className="size-4" />
-            Exchange Rate Settings
-          </CardTitle>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className={titleClass}>Exchange rates</CardTitle>
+              <CardDescription className={descriptionClass}>Rates come from ExchangeRate-API.com, which updates several times a day.</CardDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-full font-semibold"
+              onClick={() => updateExchangeRates()}
+              disabled={isUpdatingRates || saving}
+            >
+              <RefreshCwIcon className={cn('size-4', isUpdatingRates && 'animate-spin')} />
+              {isUpdatingRates ? 'Updating...' : 'Update now'}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-medium">Data Source:</span>
-              <span className="text-sm text-primary">ExchangeRate-API.com</span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Free, reliable exchange rates updated multiple times daily.
-            </p>
-          </div>
-
           <div className="flex items-center gap-3">
             <Checkbox
               id="autoUpdateRates"
@@ -534,96 +512,65 @@ export function CurrencySettingsPanel({
               disabled={saving}
             />
             <Label htmlFor="autoUpdateRates" className="cursor-pointer">
-              Automatically update exchange rates
+              Update exchange rates automatically
             </Label>
           </div>
 
           {settings.autoUpdateRates && (
-            <div className="space-y-2">
-              <Label htmlFor="rateUpdateInterval">Update Interval</Label>
+            <div className="space-y-2 sm:max-w-xs">
+              <Label htmlFor="rateUpdateInterval">How often</Label>
               <select
                 id="rateUpdateInterval"
                 value={settings.rateUpdateInterval}
                 onChange={(e) => onUpdate({ rateUpdateInterval: parseInt(e.target.value) })}
-                className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className={selectClass}
                 disabled={saving}
               >
                 <option value={1}>Every hour</option>
                 <option value={4}>Every 4 hours (recommended)</option>
                 <option value={12}>Every 12 hours</option>
-                <option value={24}>Once daily</option>
+                <option value={24}>Once a day</option>
               </select>
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={updateExchangeRates}
-              disabled={isUpdatingRates || saving}
-            >
-              {isUpdatingRates ? (
-                <>
-                  <RefreshCwIcon className="size-4 mr-1 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <RefreshCwIcon className="size-4 mr-1" />
-                  Update Now
-                </>
-              )}
-            </Button>
-            {exchangeRateStatus && (
-              <span className={cn(
-                "text-sm",
-                exchangeRateStatus.includes('success') ? 'text-profit' : 'text-destructive'
-              )}>
-                {exchangeRateStatus}
-              </span>
-            )}
-          </div>
-
           {/* Current Rates */}
           {exchangeRates.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Current Exchange Rates</h4>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowAllRates(!showAllRates)}
-                  className="text-xs"
-                >
-                  {showAllRates ? (
-                    <>
-                      <ChevronUpIcon className="size-3 mr-1" />
-                      Show Less
-                    </>
-                  ) : (
-                    <>
-                      <ChevronDownIcon className="size-3 mr-1" />
-                      Show All
-                    </>
-                  )}
-                </Button>
-              </div>
-              <div className="bg-muted/30 rounded-lg p-3">
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  {(showAllRates ? exchangeRates : recentRates).map((rate, index) => (
-                    <div key={index} className="flex justify-between">
-                      <span className="text-muted-foreground">{rate.from_currency}/{rate.to_currency}:</span>
-                      <span className="font-mono">{rate.rate.toFixed(4)}</span>
-                    </div>
-                  ))}
-                </div>
-                {exchangeRates.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Last updated: {new Date(exchangeRates[0].last_updated).toLocaleString()}
-                  </p>
+            <div className="rounded-2xl bg-secondary p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h4 className="text-[13px] font-semibold text-muted-foreground">Current rates</h4>
+                {exchangeRates.length > recentRates.length && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowAllRates(!showAllRates)}
+                    className="h-7 rounded-full text-xs"
+                  >
+                    {showAllRates ? (
+                      <>
+                        <ChevronUpIcon className="size-3.5" />
+                        Show fewer
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDownIcon className="size-3.5" />
+                        Show all {exchangeRates.length}
+                      </>
+                    )}
+                  </Button>
                 )}
               </div>
+              <div className="grid grid-cols-1 gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                {(showAllRates ? exchangeRates : recentRates).map((rate, index) => (
+                  <div key={index} className="flex justify-between gap-3">
+                    <span className="text-muted-foreground">{rate.from_currency} to {rate.to_currency}</span>
+                    <span className="font-semibold tabular-nums">{rate.rate.toFixed(4)}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Last updated {new Date(exchangeRates[0].last_updated).toLocaleString()}
+              </p>
             </div>
           )}
         </CardContent>
@@ -648,30 +595,23 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Price Data Settings</h3>
-        <p className="text-muted-foreground">Configure how Bitcoin price data is collected and stored</p>
-      </div>
+    <div className="space-y-4">
 
       {/* Historical Data */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <DatabaseIcon className="size-4" />
-            Historical Data
-          </CardTitle>
-          <CardDescription>Configure historical price data collection for charts</CardDescription>
+          <CardTitle className={titleClass}>Price history</CardTitle>
+          <CardDescription className={descriptionClass}>Daily prices used by the charts.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="historicalDataPeriod">Historical Data Period</Label>
+          <div className="space-y-2 sm:max-w-xs">
+            <Label htmlFor="historicalDataPeriod">How far back</Label>
             <select
               id="historicalDataPeriod"
               value={localSettings.historicalDataPeriod}
               onChange={(e) => handleChange('historicalDataPeriod', e.target.value)}
               disabled={saving}
-              className="w-full h-10 px-3 bg-background border border-input rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              className={selectClass}
             >
               <option value="3M">3 months</option>
               <option value="6M">6 months</option>
@@ -680,14 +620,15 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
               <option value="5Y">5 years</option>
               <option value="ALL">All available data</option>
             </select>
-            <p className="text-xs text-muted-foreground">
-              Longer periods may take more time to download initially
+            <p className={hintClass}>
+              Longer periods take longer to download the first time.
             </p>
           </div>
 
-          <div className="pt-4 border-t flex gap-3">
+          <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
             <Button
               size="sm"
+              className="rounded-full font-semibold"
               onClick={() => {
                 fetch('/api/historical-data/fetch', {
                   method: 'POST',
@@ -695,37 +636,38 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                 }).then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert(`Successfully fetched ${result.data.recordsAdded} records of historical data`);
+                      toast({ title: 'Price history downloaded', description: `Added ${result.data.recordsAdded} daily prices.`, variant: 'success' });
                     } else {
-                      alert(`Error: ${result.error}`);
+                      toast({ title: 'Failed to download price history', description: result.error, variant: 'destructive' });
                     }
                   })
                   .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to start historical data fetch');
+                    toast({ title: 'Failed to start the price history download', variant: 'destructive' });
                   });
               }}
               disabled={saving}
             >
-              <DatabaseIcon className="size-4 mr-1" />
-              Fetch Historical Data ({localSettings.historicalDataPeriod})
+              <DatabaseIcon className="size-4" />
+              Download price history
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
+              className="rounded-full font-semibold"
               onClick={() => {
                 fetch('/api/historical-data/status')
                   .then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert(`Historical data: ${result.data.recordCount} records, last updated: ${result.data.lastUpdate}`);
+                      toast({ title: 'Price history', description: `${result.data.recordCount} daily prices stored, last updated ${result.data.lastUpdate}.` });
                     }
                   });
               }}
               disabled={saving}
             >
-              Check Status
+              Check what&apos;s stored
             </Button>
           </div>
         </CardContent>
@@ -734,38 +676,32 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
       {/* Intraday Settings */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <ClockIcon className="size-4" />
-            Intraday Data Settings
-          </CardTitle>
-          <CardDescription>Configure detailed intraday price tracking</CardDescription>
+          <CardTitle className={titleClass}>Intraday prices</CardTitle>
+          <CardDescription className={descriptionClass}>Prices through the day, for the detailed 1-day chart.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3">
             <Checkbox
               id="enableIntradayData"
+              className="mt-0.5"
               checked={localSettings.enableIntradayData}
               onCheckedChange={(checked) => handleChange('enableIntradayData', checked as boolean)}
               disabled={saving}
             />
-            <div>
+            <div className="space-y-0.5">
               <Label htmlFor="enableIntradayData" className="cursor-pointer">
-                Enable Intraday Data Collection
+                Collect intraday prices
               </Label>
-              <p className="text-xs text-muted-foreground">
-                Collect Bitcoin price data every few minutes for detailed charts
+              <p className={hintClass}>
+                One price an hour (24 a day). Only the current day is kept; older points are cleaned up daily.
               </p>
             </div>
           </div>
 
-          <div className="p-3 bg-muted/50 rounded-lg space-y-1">
-            <p className="text-sm">Hourly data collection (24 points/day)</p>
-            <p className="text-xs text-muted-foreground">Auto-cleanup daily (current day only)</p>
-          </div>
-
-          <div className="pt-4 border-t flex gap-3">
+          <div className="flex flex-wrap gap-2 border-t border-border/60 pt-4">
             <Button
               size="sm"
+              className="rounded-full font-semibold"
               onClick={() => {
                 fetch('/api/system/scheduler', {
                   method: 'POST',
@@ -774,253 +710,200 @@ export function PriceDataSettingsPanel({ settings, onUpdate, saving }: SettingsP
                 }).then(response => response.json())
                   .then(result => {
                     if (result.success) {
-                      alert('Data update completed successfully!');
+                      toast({ title: 'Prices updated', variant: 'success' });
                     } else {
-                      alert(`Error: ${result.error}`);
+                      toast({ title: 'Failed to update prices', description: result.error, variant: 'destructive' });
                     }
                   })
                   .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to trigger data update');
+                    toast({ title: 'Failed to start the price update', variant: 'destructive' });
                   });
               }}
               disabled={saving}
             >
-              <RefreshCwIcon className="size-4 mr-1" />
-              Update Now
+              <RefreshCwIcon className="size-4" />
+              Update now
             </Button>
-            
+
             <Button
               variant="outline"
               size="sm"
+              className="rounded-full font-semibold"
               onClick={() => setShowSystemStatus(true)}
               disabled={saving}
             >
-              <ServerIcon className="size-4 mr-1" />
-              System Status
+              <ServerIcon className="size-4" />
+              System status
             </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* System Status Dialog */}
-      <SystemStatusDialog 
-        open={showSystemStatus} 
-        onOpenChange={setShowSystemStatus} 
+      <SystemStatusDialog
+        open={showSystemStatus}
+        onOpenChange={setShowSystemStatus}
       />
     </div>
   );
 }
 
 // Display Settings Panel
-export function DisplaySettingsPanel({ 
-  settings, 
-  onUpdate, 
-  saving 
-}: { 
-  settings: DisplaySettings; 
+export function DisplaySettingsPanel({
+  settings,
+  onUpdate,
+  saving
+}: {
+  settings: DisplaySettings;
   onUpdate: (updates: Partial<DisplaySettings>) => void;
   saving: boolean;
 }) {
   const { theme, setTheme } = useTheme();
-  const { 
-    darkPresetId, 
-    lightPresetId, 
-    setDarkPreset, 
-    setLightPreset, 
-    darkPresets, 
-    lightPresets, 
-    mounted 
+  const { unit: btcUnit, setUnit: setBtcUnit } = useBtcUnit();
+  const {
+    darkPresetId,
+    lightPresetId,
+    setDarkPreset,
+    setLightPreset,
+    darkPresets,
+    lightPresets,
+    mounted
   } = useDarkThemePreset();
-  
-  const currentPresets = theme === 'dark' ? darkPresets : lightPresets;
-  const currentPresetId = theme === 'dark' ? darkPresetId : lightPresetId;
-  const setCurrentPreset = theme === 'dark' ? setDarkPreset : setLightPreset;
-  
+
+  const mode: 'light' | 'dark' = theme === 'dark' ? 'dark' : 'light';
+  const currentPresets = mode === 'dark' ? darkPresets : lightPresets;
+  const currentPresetId = mode === 'dark' ? darkPresetId : lightPresetId;
+  const setCurrentPreset = mode === 'dark' ? setDarkPreset : setLightPreset;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Display Settings</h3>
-        <p className="text-muted-foreground">Customize the appearance of your tracker</p>
-      </div>
+    <div className="space-y-4">
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <SettingsIcon className="size-4" />
-            Theme Mode
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => {
-                setTheme('light');
-                onUpdate({ theme: 'light' });
-              }}
-              disabled={saving}
-              className={cn(
-                "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
-                theme === 'light' 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              )}
-            >
-              <SunIcon className="size-5" />
-              <span className="font-medium">Light</span>
-              {theme === 'light' && <CheckIcon className="size-4 text-primary" />}
-            </button>
-            <button
-              onClick={() => {
-                setTheme('dark');
-                onUpdate({ theme: 'dark' });
-              }}
-              disabled={saving}
-              className={cn(
-                "flex items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all",
-                theme === 'dark' 
-                  ? "border-primary bg-primary/5" 
-                  : "border-border hover:border-primary/50"
-              )}
-            >
-              <MoonIcon className="size-5" />
-              <span className="font-medium">Dark</span>
-              {theme === 'dark' && <CheckIcon className="size-4 text-primary" />}
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className={titleClass}>Bitcoin amounts</CardTitle>
+              <CardDescription className={descriptionClass}>
+                Show amounts in bitcoin or in sats (1 BTC = 100,000,000 sats). Saved on this device; the ₿ button in the header switches it too.
+              </CardDescription>
+            </div>
+            <SegmentedControl<BtcUnit>
+              aria-label="Bitcoin unit"
+              options={[
+                { label: 'BTC', value: 'btc' },
+                { label: 'sats', value: 'sats' },
+              ]}
+              value={btcUnit}
+              onChange={setBtcUnit}
+            />
           </div>
-        </CardContent>
+        </CardHeader>
       </Card>
 
-      {/* Theme Style - Shows for both light and dark modes */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className={titleClass}>Appearance</CardTitle>
+              <CardDescription className={descriptionClass}>Each mode remembers its own colour scheme.</CardDescription>
+            </div>
+            {mounted && (
+              <SegmentedControl
+                aria-label="Appearance"
+                options={[
+                  { label: 'Light', value: 'light' },
+                  { label: 'Dark', value: 'dark' },
+                ]}
+                value={mode}
+                onChange={(next) => {
+                  if (saving || next === mode) return;
+                  switchThemeWithReveal(next, () => setTheme(next));
+                  onUpdate({ theme: next });
+                }}
+              />
+            )}
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Theme style for the current mode */}
       {mounted && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <PaletteIcon className="size-4" />
-              {theme === 'dark' ? 'Dark' : 'Light'} Theme Style
-            </CardTitle>
-            <CardDescription>
-              Choose a color scheme for {theme === 'dark' ? 'dark' : 'light'} mode
+            <CardTitle className={titleClass}>{mode === 'dark' ? 'Dark' : 'Light'} mode colours</CardTitle>
+            <CardDescription className={descriptionClass}>
+              Saved on this device and applied whenever you use {mode} mode.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {currentPresets.map((preset) => (
-                <button
-                  key={preset.id}
-                  onClick={() => setCurrentPreset(preset.id)}
-                  className={cn(
-                    "relative flex flex-col items-start p-3 rounded-lg border-2 transition-all text-left",
-                    currentPresetId === preset.id 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  {/* Color preview dots */}
-                  <div className="flex gap-1 mb-2">
-                    <div 
-                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              {currentPresets.map((preset) => {
+                const selected = currentPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    onClick={() => setCurrentPreset(preset.id)}
+                    aria-pressed={selected}
+                    className={cn(
+                      'relative flex flex-col items-start gap-2.5 rounded-2xl p-2.5 text-left transition-colors',
+                      selected ? 'bg-tint-orange' : 'bg-secondary hover:bg-accent'
+                    )}
+                  >
+                    {/* Mini preview: canvas, a card on it, the accent */}
+                    <div
+                      aria-hidden
+                      className="flex h-14 w-full items-end rounded-xl p-2 ring-1 ring-inset ring-black/5 dark:ring-white/10"
                       style={{ backgroundColor: `hsl(${preset.colors.background})` }}
-                    />
-                    <div 
-                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
-                      style={{ backgroundColor: `hsl(${preset.colors.card})` }}
-                    />
-                    <div 
-                      className="size-3 rounded-full border border-black/10 dark:border-white/20"
-                      style={{ backgroundColor: `hsl(${preset.colors.border})` }}
-                    />
-                  </div>
-                  <span className="font-medium text-sm">{preset.name}</span>
-                  <span className="text-xs text-muted-foreground">{preset.description}</span>
-                  {currentPresetId === preset.id && (
-                    <CheckIcon className="absolute top-2 right-2 size-4 text-primary" />
-                  )}
-                </button>
-              ))}
+                    >
+                      <div
+                        className="flex h-7 w-full items-center gap-1.5 rounded-lg px-2"
+                        style={{ backgroundColor: `hsl(${preset.colors.card})` }}
+                      >
+                        <span className="h-2.5 w-8 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.primary})` }} />
+                        <span className="h-2 w-6 rounded-full" style={{ backgroundColor: `hsl(${preset.colors.accent})` }} />
+                      </div>
+                    </div>
+                    <div className="px-0.5">
+                      <div className="text-sm font-semibold">{preset.name}</div>
+                      <div className="text-xs text-muted-foreground">{preset.description}</div>
+                    </div>
+                    {selected && (
+                      <span className="absolute right-4 top-4 flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                        <CheckIcon className="size-3.5" strokeWidth={3} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              Theme style is saved automatically and persists across sessions
-          </p>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
 }
 
 // Notification Settings Panel
-export function NotificationSettingsPanel({ 
-  settings, 
-  onUpdate, 
-  saving 
-}: { 
-  settings: NotificationSettings; 
+export function NotificationSettingsPanel({
+  settings,
+  onUpdate,
+  saving
+}: {
+  settings: NotificationSettings;
   onUpdate: (updates: Partial<NotificationSettings>) => void;
   saving: boolean;
 }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Notification Settings</h3>
-        <p className="text-muted-foreground">Configure alerts and notifications</p>
-      </div>
-
+    <div className="space-y-4">
       <Card>
-        <CardContent className="py-12">
-          <div className="text-center space-y-4">
-            <div className="size-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-              <BellOffIcon className="size-8 text-muted-foreground" />
-            </div>
-            <div>
-              <h4 className="font-medium mb-1">Notifications Coming Soon</h4>
-              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                Price alerts, portfolio notifications, and email/push notifications will be available in a future update.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Preview of upcoming features */}
-      <Card className="opacity-50">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <BellIcon className="size-4" />
-            Price Alerts (Coming Soon)
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Checkbox disabled />
-            <Label className="text-muted-foreground">Enable price alerts</Label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">High Price Alert ($)</Label>
-              <Input disabled value="120000" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-muted-foreground text-xs">Low Price Alert ($)</Label>
-              <Input disabled value="80000" />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Checkbox disabled />
-            <Label className="text-muted-foreground">Enable portfolio performance alerts</Label>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <Checkbox disabled />
-              <Label className="text-muted-foreground">Email notifications</Label>
-            </div>
-            <div className="flex items-center gap-3">
-              <Checkbox disabled />
-              <Label className="text-muted-foreground">Browser push notifications</Label>
-            </div>
+        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+          <BellOffIcon className="size-8 text-muted-foreground" />
+          <div>
+            <h4 className="mb-1 font-semibold">Notifications aren&apos;t available yet</h4>
+            <p className="mx-auto max-w-sm text-sm text-muted-foreground">
+              Price alerts, portfolio alerts and email or push notifications are planned for a future update.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -1035,7 +918,7 @@ export function UserAccountSettingsPanel() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [showAvatarModal, setShowAvatarModal] = useState(false)
-  
+
   const [name, setName] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
@@ -1043,7 +926,7 @@ export function UserAccountSettingsPanel() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [newPin, setNewPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
-  
+
   // 2FA state
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
 
@@ -1191,10 +1074,10 @@ export function UserAccountSettingsPanel() {
       const response = await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'change_password', 
-          currentPassword, 
-          newPassword 
+        body: JSON.stringify({
+          action: 'change_password',
+          currentPassword,
+          newPassword
         })
       })
 
@@ -1248,7 +1131,7 @@ export function UserAccountSettingsPanel() {
   }
 
   const handleRemovePin = async () => {
-    if (!confirm('Are you sure you want to remove your PIN? You will only be able to sign in with your password.')) {
+    if (!(await confirm({ title: 'Remove PIN?', description: 'You will only be able to sign in with your password.', confirmText: 'Remove', destructive: true }))) {
       return
     }
 
@@ -1277,260 +1160,256 @@ export function UserAccountSettingsPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading account" />
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-xl font-semibold mb-2">Account Settings</h3>
-        <p className="text-muted-foreground">Manage your account information and security</p>
-      </div>
+    <div className="space-y-4">
 
       {/* Profile Information */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <UserIcon className="size-4" />
-            Profile Information
-          </CardTitle>
+          <CardTitle className={titleClass}>Profile</CardTitle>
+          <CardDescription className={descriptionClass}>
+            {userData?.createdAt
+              ? `Member since ${new Date(userData.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}`
+              : 'How you appear in the app.'}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Profile Picture */}
-          <div>
-            <Label className="mb-3 block">Profile Picture</Label>
-            <div className="flex items-center gap-4">
-              <UserAvatar 
-                src={userData?.profilePicture}
-                name={userData?.displayName || userData?.name}
-                email={userData?.email}
-                size="lg"
-              />
-              <div>
-                <div className="flex gap-2 mb-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAvatarModal(true)}
-                    disabled={uploading}
-                  >
-                    <CameraIcon className="size-4 mr-1" />
-                    {uploading ? 'Uploading...' : 'Upload'}
-                  </Button>
-                  {userData?.profilePicture && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRemoveAvatar}
-                      disabled={saving}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <TrashIcon className="size-4 mr-1" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  JPG, PNG, or WebP. Max 5MB.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label>Email Address</Label>
-            <Input
-              type="email"
-              value={userData?.email || ''}
-              disabled
-              className="opacity-60"
+          <div className="flex flex-wrap items-center gap-4">
+            <UserAvatar
+              src={userData?.profilePicture}
+              name={userData?.displayName || userData?.name}
+              email={userData?.email}
+              size="lg"
             />
-            <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full font-semibold"
+                  onClick={() => setShowAvatarModal(true)}
+                  disabled={uploading}
+                >
+                  <CameraIcon className="size-4" />
+                  {uploading ? 'Uploading...' : 'Change picture'}
+                </Button>
+                {userData?.profilePicture && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleRemoveAvatar}
+                    disabled={saving}
+                    className="rounded-full font-semibold text-tint-red-fg hover:bg-tint-red hover:text-tint-red-fg"
+                  >
+                    <TrashIcon className="size-4" />
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className={hintClass}>
+                JPG, PNG or WebP, up to 5 MB.
+              </p>
+            </div>
           </div>
 
-          {/* Display Name */}
-          <form onSubmit={handleUpdateDisplayName} className="space-y-2">
-            <Label htmlFor="displayName">Display Name</Label>
-            <div className="flex gap-2">
+          <div className="grid gap-5 lg:grid-cols-2">
+            {/* Email */}
+            <div className="space-y-2 lg:col-span-2">
+              <Label htmlFor="email">Email</Label>
               <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter a personalized display name"
+                id="email"
+                type="email"
+                value={userData?.email || ''}
+                disabled
+                className="lg:max-w-md"
               />
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={saving || displayName.trim() === (userData?.displayName || '')}
-              >
-                {saving ? 'Saving...' : 'Update'}
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              This is how you&apos;ll appear throughout the app
-            </p>
-          </form>
-
-          {/* Full Name */}
-          <form onSubmit={handleUpdateName} className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <div className="flex gap-2">
-              <Input
-                id="fullName"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Enter your full name"
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                disabled={saving || !name.trim() || name === userData?.name}
-              >
-                {saving ? 'Saving...' : 'Update'}
-              </Button>
-            </div>
-          </form>
-
-          <p className="text-xs text-muted-foreground">
-            Member since: {userData?.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Change Password */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <LockIcon className="size-4" />
-            Change Password
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
-              <Input
-                id="currentPassword"
-                type="password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="Enter current password"
-              />
+              <p className={hintClass}>Your email can&apos;t be changed.</p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Enter new password"
-                minLength={6}
-              />
-            </div>
+            {/* Display Name */}
+            <form onSubmit={handleUpdateDisplayName} className="space-y-2">
+              <Label htmlFor="displayName">Display name</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="displayName"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="What should we call you?"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="rounded-full font-semibold"
+                  disabled={saving || displayName.trim() === (userData?.displayName || '')}
+                >
+                  Save
+                </Button>
+              </div>
+              <p className={hintClass}>
+                Shown in the header and around the app.
+              </p>
+            </form>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                minLength={6}
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving || !currentPassword || !newPassword || !confirmPassword}
-            >
-              {saving ? 'Changing Password...' : 'Change Password'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* PIN Settings */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <KeyIcon className="size-4" />
-                PIN Authentication
-              </CardTitle>
-              <CardDescription>
-                {userData?.hasPin ? 'PIN is currently set' : 'No PIN set'}
-              </CardDescription>
-            </div>
-            {userData?.hasPin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRemovePin}
-                disabled={saving}
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              >
-                <TrashIcon className="size-4 mr-1" />
-                Remove PIN
-              </Button>
-            )}
+            {/* Full Name */}
+            <form onSubmit={handleUpdateName} className="space-y-2">
+              <Label htmlFor="fullName">Full name</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="fullName"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your full name"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  className="rounded-full font-semibold"
+                  disabled={saving || !name.trim() || name === userData?.name}
+                >
+                  Save
+                </Button>
+              </div>
+            </form>
           </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSetPin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPin">
-                {userData?.hasPin ? 'New PIN (4-6 digits)' : 'Set PIN (4-6 digits)'}
-              </Label>
-              <Input
-                id="newPin"
-                type="password"
-                value={newPin}
-                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="••••"
-                minLength={4}
-                maxLength={6}
-                className="text-center text-xl tracking-widest"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPin">Confirm PIN</Label>
-              <Input
-                id="confirmPin"
-                type="password"
-                value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                placeholder="••••"
-                minLength={4}
-                maxLength={6}
-                className="text-center text-xl tracking-widest"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving || !newPin || !confirmPin || newPin.length < 4}
-            >
-              {saving ? 'Setting PIN...' : (userData?.hasPin ? 'Update PIN' : 'Set PIN')}
-            </Button>
-          </form>
-
-          <p className="text-xs text-muted-foreground mt-4">
-            PIN allows for quick access to your account. Use 4-6 digits that you can easily remember.
-          </p>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        {/* Change Password */}
+        <Card>
+          <CardHeader>
+            <CardTitle className={titleClass}>Password</CardTitle>
+            <CardDescription className={descriptionClass}>At least 6 characters.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">Current password</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">New password</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  minLength={6}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Repeat new password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={6}
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="rounded-full font-semibold"
+                disabled={saving || !currentPassword || !newPassword || !confirmPassword}
+              >
+                {saving ? 'Changing password...' : 'Change password'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* PIN Settings */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1.5">
+                <CardTitle className={titleClass}>PIN</CardTitle>
+                <CardDescription className={descriptionClass}>
+                  {userData?.hasPin
+                    ? 'A PIN is set. You can sign in with it instead of your password.'
+                    : 'A 4 to 6 digit PIN for signing in quickly.'}
+                </CardDescription>
+              </div>
+              {userData?.hasPin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemovePin}
+                  disabled={saving}
+                  className="rounded-full font-semibold text-tint-red-fg hover:bg-tint-red hover:text-tint-red-fg"
+                >
+                  <TrashIcon className="size-4" />
+                  Remove PIN
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSetPin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="newPin">
+                  {userData?.hasPin ? 'New PIN' : 'PIN'}
+                </Label>
+                <Input
+                  id="newPin"
+                  type="password"
+                  inputMode="numeric"
+                  value={newPin}
+                  onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="••••"
+                  minLength={4}
+                  maxLength={6}
+                  className="text-center text-xl tracking-widest"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPin">Repeat PIN</Label>
+                <Input
+                  id="confirmPin"
+                  type="password"
+                  inputMode="numeric"
+                  value={confirmPin}
+                  onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  placeholder="••••"
+                  minLength={4}
+                  maxLength={6}
+                  className="text-center text-xl tracking-widest"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                className="rounded-full font-semibold"
+                disabled={saving || !newPin || !confirmPin || newPin.length < 4}
+              >
+                {saving ? 'Saving PIN...' : (userData?.hasPin ? 'Change PIN' : 'Set PIN')}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Two-Factor Authentication */}
-      <TwoFactorSetup 
-        isEnabled={twoFactorEnabled} 
+      <TwoFactorSetup
+        isEnabled={twoFactorEnabled}
         onStatusChange={load2FAStatus}
       />
 

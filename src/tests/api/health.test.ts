@@ -3,6 +3,7 @@ import { GET as getDbHealth } from '@/app/api/health/db/route';
 import { setupTestDatabase, cleanTestDatabase } from '../test-db';
 import { AppInitializationService } from '@/lib/app-initialization';
 import { prisma } from '@/lib/prisma';
+import packageJson from '../../../package.json';
 
 // Mock the AppInitializationService
 jest.mock('@/lib/app-initialization');
@@ -42,7 +43,8 @@ describe('Health API', () => {
       expect(mockAppInitializationService.initialize).toHaveBeenCalled();
     });
 
-    it('should return version from environment variable when available', async () => {
+    it('reports the app version from package.json, not the npm environment', async () => {
+      // Docker runs the server without npm, so npm_package_version can't be relied on
       const originalVersion = process.env.npm_package_version;
       process.env.npm_package_version = '2.1.0';
       mockAppInitializationService.initialize.mockResolvedValue(undefined);
@@ -51,7 +53,7 @@ describe('Health API', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.version).toBe('2.1.0');
+      expect(data.version).toBe(packageJson.version);
 
       // Restore original value
       if (originalVersion) {
@@ -101,7 +103,7 @@ describe('Health API', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.version).toBe('1.0.0');
+      expect(data.version).toBe(packageJson.version);
       expect(data.environment).toBe('development');
 
       // Restore original values

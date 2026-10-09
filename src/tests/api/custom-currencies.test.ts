@@ -1,3 +1,6 @@
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+
 import { NextRequest } from 'next/server';
 import { GET as getCustomCurrencies, POST as postCustomCurrency } from '@/app/api/custom-currencies/route';
 import { PUT as putCustomCurrency, DELETE as deleteCustomCurrency } from '@/app/api/custom-currencies/[id]/route';

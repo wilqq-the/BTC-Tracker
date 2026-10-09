@@ -4,6 +4,7 @@ import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
 import { withAuth } from '@/lib/auth-helpers';
+import { btcArriving, btcLeaving } from '@/lib/transfer-fees';
 
 // Unified portfolio metrics that can be used by both sidebar and analytics
 export async function GET(request: NextRequest) {
@@ -53,9 +54,8 @@ export async function GET(request: NextRequest) {
     const transfersIn = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_IN');
     const transfersOut = transferTransactions.filter(tx => tx.transferType === 'TRANSFER_OUT');
 
-    // Calculate BTC fees from transfer transactions
-    // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
-    // Amount arriving at destination = btcAmount - fees
+    // Calculate BTC fees from transfer transactions. How much leaves and how
+    // much arrives depends on the transfer's fee mode (see lib/transfer-fees)
     let totalFeesBTC = 0;
 
     // Legacy cold wallet tracking (for transactions WITHOUT wallet IDs)
@@ -70,9 +70,9 @@ export async function GET(request: NextRequest) {
       // Only apply legacy calculation for transactions without wallet IDs
       if (!tx.fromWalletId && !tx.toWalletId) {
         if (tx.transferType === 'TO_COLD_WALLET') {
-          legacyColdWalletBTC += (tx.btcAmount - tx.fees);
+          legacyColdWalletBTC += btcArriving(tx);
         } else if (tx.transferType === 'FROM_COLD_WALLET') {
-          legacyColdWalletBTC -= tx.btcAmount;
+          legacyColdWalletBTC -= btcLeaving(tx);
         }
       }
     }
@@ -108,18 +108,17 @@ export async function GET(request: NextRequest) {
 
       let balance = 0;
       for (const tx of incoming) {
-        const btcFee = tx.feesCurrency.toUpperCase() === 'BTC' ? tx.fees : 0;
         if (tx.type === 'BUY') {
           balance += tx.btcAmount;
         } else if (tx.type === 'TRANSFER') {
-          balance += tx.btcAmount - btcFee;
+          balance += btcArriving(tx);
         }
       }
       for (const tx of outgoing) {
         if (tx.type === 'SELL') {
           balance -= tx.btcAmount;
         } else if (tx.type === 'TRANSFER') {
-          balance -= tx.btcAmount;
+          balance -= btcLeaving(tx);
         }
       }
       balance = Math.max(0, balance);
@@ -326,6 +325,8 @@ export async function GET(request: NextRequest) {
           sells: 0,
           totalBought: 0,
           totalSold: 0,
+          transferredIn: 0,
+          transferredOut: 0,
           avgBuyPrice: 0,
           avgSellPrice: 0,
           pnl: 0,
@@ -336,7 +337,7 @@ export async function GET(request: NextRequest) {
           data.buys++;
           data.totalBought += tx.btcAmount;
           data.avgBuyPrice = ((data.avgBuyPrice * (data.totalBought - tx.btcAmount)) + (convertedPrice * tx.btcAmount)) / data.totalBought;
-        } else {
+        } else if (tx.type === 'SELL') {
           data.sells++;
           data.totalSold += tx.btcAmount;
           data.avgSellPrice = ((data.avgSellPrice * (data.totalSold - tx.btcAmount)) + (convertedPrice * tx.btcAmount)) / data.totalSold;
@@ -345,13 +346,24 @@ export async function GET(request: NextRequest) {
           data.pnl += (sellValue - costBasis);
         }
         
+        // External transfers change holdings; moves between your own wallets don't
+        
+        if (tx.type === 'TRANSFER') {
+        
+          if (tx.transferType === 'TRANSFER_IN') data.transferredIn += tx.btcAmount;
+        
+          else if (tx.transferType === 'TRANSFER_OUT') data.transferredOut += tx.btcAmount;
+        
+        }
+
+        
         monthlyData.set(monthKey, data);
       });
       
       const monthlyBreakdown = Array.from(monthlyData.entries()).map(([month, data]) => ({
         month,
         ...data,
-        netBtc: data.totalBought - data.totalSold
+        netBtc: data.totalBought - data.totalSold + data.transferredIn - data.transferredOut
       }));
       
       // Calculate additional analytics

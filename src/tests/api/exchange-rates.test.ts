@@ -1,3 +1,6 @@
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+
 import { NextRequest } from 'next/server';
 import { GET as getExchangeRates, POST as postExchangeRates } from '@/app/api/exchange-rates/route';
 import { setupTestDatabase, cleanTestDatabase } from '../test-db';

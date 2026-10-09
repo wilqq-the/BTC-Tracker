@@ -1,18 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
+import BackupRestorePanel from '@/components/BackupRestorePanel';
 import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
-import AppLayout from '@/components/AppLayout';
+import WalletsPanel from '@/components/WalletsPanel';
+import ApiKeysPanel from '@/components/ApiKeysPanel';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon } from 'lucide-react';
+import { UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon, DatabaseIcon, RotateCcwIcon } from 'lucide-react';
+import { confirm } from '@/components/ui/confirm-dialog';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin' | 'wallets' | 'apiKeys' | 'backup';
 
 interface SettingsResponse {
   success: boolean;
@@ -21,12 +25,37 @@ interface SettingsResponse {
   error?: string;
 }
 
+// Settings that POST /api/settings resets (the whole AppSettings record)
+const RESETTABLE_TABS: SettingsTab[] = ['currency', 'priceData', 'display'];
+
+/** Nearest ancestor that actually scrolls vertically. */
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const { overflowY } = window.getComputedStyle(node);
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  // Primary action for the encapsulated header, registered by the active panel
+  const [headerAction, setHeaderAction] = useState<{ label: string; onClick: () => void } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Each tab opens at the top. The page itself doesn't scroll: the app shell is
+  // h-screen overflow-hidden and AppLayout's <main> is the scroller, so
+  // window.scrollTo would do nothing.
+  useEffect(() => {
+    const scroller = findScrollParent(rootRef.current);
+    if (scroller && scroller.scrollTop > 0) scroller.scrollTop = 0;
+  }, [activeTab]);
 
   useEffect(() => {
     loadSettings();
@@ -88,6 +117,13 @@ export default function SettingsPage() {
   };
 
   const resetToDefaults = async () => {
+    const ok = await confirm({
+      title: 'Reset settings to defaults?',
+      description: 'Currency, price data and display settings go back to their defaults. Your account, wallets, transactions and API keys are not touched.',
+      confirmText: 'Reset',
+      destructive: true,
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const response = await fetch('/api/settings', { method: 'POST' });
@@ -109,88 +145,74 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center space-y-3">
-            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading settings...</p>
-          </div>
-        </div>
-      </AppLayout>
+      <div className="flex h-96 items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading settings" />
+      </div>
     );
   }
 
   if (!settings) {
     return (
-      <AppLayout>
-        <div className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">Failed to load settings</p>
-        </div>
-      </AppLayout>
+      <div className="flex h-96 flex-col items-center justify-center gap-2 text-center">
+        <p className="font-semibold">Settings couldn&apos;t load.</p>
+        <p className="text-sm text-muted-foreground">Check that the server is running, then reload the page.</p>
+      </div>
     );
   }
 
-  const tabs = [
+  const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'account', label: 'Account', icon: UserIcon },
+    { id: 'wallets', label: 'Wallets', icon: WalletIcon },
+    { id: 'apiKeys', label: 'API access', icon: KeyIcon },
     { id: 'currency', label: 'Currency', icon: DollarSignIcon },
-    { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
+    // Price data collection is server-wide, so only admins can change it
+    ...(userData?.isAdmin ? [
+      { id: 'priceData' as const, label: 'Price data', icon: BarChart3Icon },
+    ] : []),
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
-    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
+    ...(userData?.isAdmin ? [
+      { id: 'backup' as const, label: 'Backup', icon: DatabaseIcon },
+      { id: 'admin' as const, label: 'Admin', icon: ShieldIcon },
+    ] : []),
   ];
 
-  return (
-    <AppLayout>
-      {/* Settings Content with Secondary Sidebar */}
-      <div className="flex flex-col lg:flex-row h-full">
-        {/* Mobile Tab Navigation */}
-        <div className="lg:hidden bg-card border-b p-4 overflow-x-auto">
-          <div className="flex gap-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <Button
-                  key={tab.id}
-                  variant={activeTab === tab.id ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setActiveTab(tab.id as SettingsTab)}
-                  className="whitespace-nowrap"
-                >
-                  <Icon className="size-4 mr-2" />
-                  {tab.label}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-        
-        {/* Desktop Settings Navigation Sidebar */}
-        <div className="hidden lg:block w-64 bg-card border-r p-6 overflow-y-auto">
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <SettingsIcon className="size-5" />
-                Settings
-              </h2>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Configure your Bitcoin tracker
-            </p>
-          </div>
+  // Title + description for the page title row (reflects the active tab)
+  const tabMeta: Record<SettingsTab, { title: string; description: string }> = {
+    account: { title: 'Account', description: 'Your profile, password, PIN and two-factor sign-in.' },
+    wallets: { title: 'Wallets', description: 'The cold storage and hot wallets your bitcoin lives in.' },
+    apiKeys: { title: 'API access', description: 'Keys that let scripts and automations use your tracker.' },
+    currency: { title: 'Currency', description: 'Which currencies your portfolio is calculated and shown in.' },
+    priceData: { title: 'Price data', description: 'How bitcoin price history is collected and stored.' },
+    exchanges: { title: 'Exchanges', description: 'Connect exchanges to import your trades automatically.' },
+    display: { title: 'Display', description: 'Light or dark mode and the colour scheme for each.' },
+    notifications: { title: 'Notifications', description: 'Price and portfolio alerts.' },
+    admin: { title: 'Admin', description: 'Users on this server and what they can do.' },
+    backup: { title: 'Backup', description: 'Download, restore and schedule full database backups.' },
+  };
+  const activeMeta = tabMeta[activeTab];
+  // Settings are server-wide, so resetting them is admin-only
+  const canReset = RESETTABLE_TABS.includes(activeTab) && !!userData?.isAdmin;
 
-          {/* Settings Navigation */}
-          <nav className="space-y-1">
+  return (
+    <div ref={rootRef} className="space-y-4 pb-6">
+      <div className="flex flex-col items-start gap-4 lg:flex-row">
+        {/* Settings menu: horizontal scroller on phones, a column on desktop */}
+        <Card className="w-full gap-0 rounded-2xl p-1.5 lg:sticky lg:top-0 lg:w-56 lg:shrink-0 lg:p-2">
+          <nav aria-label="Settings sections" className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as SettingsTab)}
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    activeTab === tab.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    'flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition-colors lg:w-full lg:py-2.5',
+                    isActive
+                      ? 'bg-tint-orange text-primary-strong'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
                   <Icon className="size-4" />
@@ -200,32 +222,44 @@ export default function SettingsPage() {
             })}
           </nav>
 
-          {/* Settings Footer */}
-          <div className="mt-8 pt-6 border-t space-y-3">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetToDefaults}
-              disabled={saving}
-              className="w-full"
-            >
-              Reset to Defaults
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Settings auto-save on change
-            </p>
-            <p className="text-xs text-muted-foreground text-center">
-              Version: {packageJson.version}{packageJson.version.includes('69') && ' 😏'}
-            </p>
+          <div className="mt-3 hidden space-y-1 border-t border-border/60 px-3 pb-1 pt-3 text-xs text-muted-foreground lg:block">
+            <p>Changes save automatically.</p>
+            <p className="tabular-nums">Version {packageJson.version}</p>
           </div>
-        </div>
+        </Card>
 
-        {/* Main Settings Content */}
-        <div className="flex-1 p-4 lg:p-6 overflow-auto">
-          {activeTab === 'account' && (
-            <UserAccountSettingsPanel />
-          )}
-          
+        {/* Active tab content */}
+        <div className="w-full min-w-0 flex-1 space-y-4">
+          {/* Tab title and actions, at the top of the content column */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold tracking-tight">{activeMeta.title}</h1>
+              <p className="text-[13px] text-muted-foreground">{activeMeta.description}</p>
+            </div>
+            {(headerAction || canReset) && (
+              <div className="flex shrink-0 items-center gap-2">
+                {canReset && (
+                  <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={resetToDefaults} disabled={saving}>
+                    <RotateCcwIcon className="mr-1.5 size-4" />
+                    Reset to defaults
+                  </Button>
+                )}
+                {headerAction && (
+                  <Button size="sm" className="rounded-full font-semibold" onClick={headerAction.onClick}>
+                    <PlusIcon className="mr-1.5 size-4" />
+                    {headerAction.label}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {activeTab === 'account' && <UserAccountSettingsPanel />}
+
+          {activeTab === 'wallets' && <WalletsPanel onHeaderAction={setHeaderAction} />}
+
+          {activeTab === 'apiKeys' && <ApiKeysPanel onHeaderAction={setHeaderAction} />}
+
           {activeTab === 'currency' && (
             <CurrencySettingsPanel
               settings={settings.currency}
@@ -233,18 +267,16 @@ export default function SettingsPage() {
               saving={saving}
             />
           )}
-          
-          {activeTab === 'priceData' && (
+
+          {activeTab === 'priceData' && userData?.isAdmin && (
             <PriceDataSettingsPanel
               settings={settings.priceData}
               onUpdate={(updates: any) => updateSettings('priceData', updates)}
               saving={saving}
             />
           )}
-          
-          {activeTab === 'exchanges' && (
-            <ExchangeConnectionsPanel />
-          )}
+
+          {activeTab === 'exchanges' && <ExchangeConnectionsPanel onHeaderAction={setHeaderAction} />}
 
           {activeTab === 'display' && (
             <DisplaySettingsPanel
@@ -253,7 +285,7 @@ export default function SettingsPage() {
               saving={saving}
             />
           )}
-          
+
           {activeTab === 'notifications' && (
             <NotificationSettingsPanel
               settings={settings.notifications}
@@ -262,11 +294,11 @@ export default function SettingsPage() {
             />
           )}
 
-          {activeTab === 'admin' && userData?.isAdmin && (
-            <AdminPanel />
-          )}
+          {activeTab === 'backup' && userData?.isAdmin && <BackupRestorePanel />}
+
+          {activeTab === 'admin' && userData?.isAdmin && <AdminPanel onHeaderAction={setHeaderAction} />}
         </div>
       </div>
-    </AppLayout>
+    </div>
   );
 }

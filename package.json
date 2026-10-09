@@ -1,6 +1,6 @@
 {
   "name": "btc-tracker",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "100% Private, Self-Hosted Bitcoin Portfolio Tracker",
   "author": "wilqq-the",
   "license": "MIT",
@@ -25,6 +25,7 @@
     "db:reset": "node scripts/reset-db.js",
     "db:reset-clean": "node scripts/reset-db.js --no-seed",
     "db:seed": "tsx prisma/seed.ts",
+    "demo:seed": "tsx scripts/seed-demo.ts",
     "db:studio": "prisma studio",
     "db:prod-setup": "node scripts/prod-setup.js",
     "db:migrate": "node scripts/migrate.js",
@@ -66,6 +67,7 @@
     "cmdk": "^1.0.4",
     "csv-parse": "^5.6.0",
     "date-fns": "^3.6.0",
+    "jose": "^4.15.9",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "lightweight-charts": "^5.0.7",

@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { HistoricalDataService } from '@/lib/historical-data-service';
+import { withAdminAuth, withAuth } from '@/lib/auth-helpers';
 
 // POST - Manually trigger historical data update
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, () => updateHistoricalData(request));
+}
+
+async function updateHistoricalData(request: NextRequest): Promise<NextResponse> {
   try {
     console.log('[DATA] Manual historical data update triggered via API');
     
@@ -22,7 +27,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 // GET - Check status of historical data
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getLatestHistoricalStatus());
+}
+
+async function getLatestHistoricalStatus(): Promise<NextResponse> {
   try {
     // Get latest data info
     const latestPrice = await HistoricalDataService.getLatestHistoricalPrice();

@@ -1,4 +1,5 @@
 import { prisma } from './prisma';
+import { btcArriving, btcLeaving } from './transfer-fees';
 
 export interface BitcoinPriceData {
   price: number;
@@ -471,7 +472,8 @@ export class BitcoinPriceService {
             btcAmount: true,
             fees: true,
             feesCurrency: true,
-            transferType: true
+            transferType: true,
+            transferFeeMode: true
           }
         })
       ]);
@@ -480,10 +482,10 @@ export class BitcoinPriceService {
       // 
       // IMPORTANT: Transfer logic explanation
       // ========================================
-      // When transferring Bitcoin:
-      //   - btcAmount = total amount LEAVING source wallet
-      //   - fees = network fees paid (always in BTC)
-      //   - Amount arriving at destination = btcAmount - fees
+      // When transferring Bitcoin, how much leaves and how much arrives
+      // depends on the transfer's fee mode (lib/transfer-fees): with the
+      // original mode (shown below) btcAmount leaves and btcAmount - fee
+      // arrives; with ON_TOP btcAmount arrives and btcAmount + fee leaves.
       //
       // Example: Transfer all BTC from hot to cold wallet
       //   - Had: 0.43134872 BTC in hot wallet
@@ -500,13 +502,10 @@ export class BitcoinPriceService {
         }
         
         // Track cold wallet movements
-        // btcAmount is total leaving source, so destination gets (btcAmount - fees)
         if (tx.transferType === 'TO_COLD_WALLET') {
-          // Amount received in cold wallet = sent amount - fees
-          coldWalletBTC += (tx.btcAmount - tx.fees);
+          coldWalletBTC += btcArriving(tx);
         } else if (tx.transferType === 'FROM_COLD_WALLET') {
-          // Amount left cold wallet = what was sent (btcAmount includes the full send amount)
-          coldWalletBTC -= tx.btcAmount;
+          coldWalletBTC -= btcLeaving(tx);
         }
       }
 
@@ -740,102 +739,6 @@ export class BitcoinPriceService {
     } catch (error) {
       console.error('Error storing portfolio summary:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Get portfolio summary from database
-   */
-  static async getPortfolioSummary(): Promise<PortfolioSummaryData | null> {
-    // For now, just trigger a recalculation to get current data
-    // This ensures we always have the most up-to-date portfolio with all currencies
-    try {
-      await this.calculateAndStorePortfolioSummary();
-      
-      const record = await prisma.portfolioSummary.findUnique({
-        where: { id: 1 }
-      });
-
-      if (record) {
-        // Get current settings for currency info
-        const { SettingsService } = await import('@/lib/settings-service');
-        const settings = await SettingsService.getSettings();
-        
-        // Calculate satoshis
-        const totalSatoshis = Math.round((record.totalBtc || 0) * 100000000);
-        
-        // Get exchange rates to convert stored main currency values to other currencies
-        const { ExchangeRateService } = await import('@/lib/exchange-rate-service');
-        const storedMainCurrency = record.mainCurrency || 'USD';
-        const storedSecondaryCurrency = record.secondaryCurrency || 'EUR';
-        
-        // Convert stored values if needed
-        let mainToUSDRate = 1;
-        let mainToSecondaryRate = 1;
-        if (storedMainCurrency !== 'USD') {
-          mainToUSDRate = await ExchangeRateService.getExchangeRate(storedMainCurrency, 'USD');
-        }
-        if (storedMainCurrency !== storedSecondaryCurrency) {
-          mainToSecondaryRate = await ExchangeRateService.getExchangeRate(storedMainCurrency, storedSecondaryCurrency);
-        }
-        
-        const btcPriceUSD = record.currentBtcPriceUsd || 0;
-        const btcPriceMain = btcPriceUSD * (await ExchangeRateService.getExchangeRate('USD', storedMainCurrency));
-        const btcPriceSecondary = btcPriceUSD * (await ExchangeRateService.getExchangeRate('USD', storedSecondaryCurrency));
-        
-        return {
-          totalBTC: record.totalBtc || 0,
-          totalSatoshis,
-          totalTransactions: record.totalTransactions || 0,
-          
-          // Cold/Hot Wallet Distribution
-          coldWalletBTC: record.coldWalletBtc || 0,
-          hotWalletBTC: record.hotWalletBtc || 0,
-          totalFeesBTC: record.totalBtc ? ((record.totalBtc || 0) - (record.coldWalletBtc || 0) - (record.hotWalletBtc || 0)) : 0,
-          
-          // Main currency values (stored directly in DB)
-          mainCurrency: storedMainCurrency,
-          totalInvestedMain: record.totalInvested || 0,
-          totalFeesMain: record.totalFees || 0,
-          averageBuyPriceMain: record.averageBuyPrice || 0,
-          currentBTCPriceMain: btcPriceMain,
-          currentPortfolioValueMain: record.currentPortfolioValue || 0,
-          unrealizedPnLMain: record.unrealizedPnl || 0,
-          unrealizedPnLPercentage: record.unrealizedPnlPercent || 0,
-          portfolioChange24hMain: record.portfolioChange24h || 0,
-          portfolioChange24hPercentage: record.portfolioChange24hPercent || 0,
-          
-          // Secondary currency values
-          secondaryCurrency: storedSecondaryCurrency,
-          totalInvestedSecondary: (record.totalInvested || 0) * mainToSecondaryRate,
-          totalFeesSecondary: (record.totalFees || 0) * mainToSecondaryRate,
-          averageBuyPriceSecondary: (record.averageBuyPrice || 0) * mainToSecondaryRate,
-          currentBTCPriceSecondary: btcPriceSecondary,
-          currentPortfolioValueSecondary: record.currentValueSecondary || 0,
-          unrealizedPnLSecondary: (record.unrealizedPnl || 0) * mainToSecondaryRate,
-          portfolioChange24hSecondary: (record.portfolioChange24h || 0) * mainToSecondaryRate,
-          
-          // Legacy USD fields (convert from main currency)
-          totalInvestedUSD: (record.totalInvested || 0) * mainToUSDRate,
-          totalFeesUSD: (record.totalFees || 0) * mainToUSDRate,
-          averageBuyPriceUSD: (record.averageBuyPrice || 0) * mainToUSDRate,
-          currentBTCPriceUSD: btcPriceUSD,
-          currentPortfolioValueUSD: (record.currentPortfolioValue || 0) * mainToUSDRate,
-          unrealizedPnLUSD: (record.unrealizedPnl || 0) * mainToUSDRate,
-          unrealizedPnLPercent: record.unrealizedPnlPercent || 0,
-          portfolioChange24hUSD: (record.portfolioChange24h || 0) * mainToUSDRate,
-          portfolioChange24hPercent: record.portfolioChange24hPercent || 0,
-          currentValueEUR: record.currentValueSecondary || 0, // Assuming EUR is secondary
-          currentValuePLN: 0, // Deprecated
-          
-          lastUpdated: typeof record.lastUpdated === 'string' ? record.lastUpdated : record.lastUpdated?.toISOString() || new Date().toISOString(),
-          lastPriceUpdate: typeof record.lastPriceUpdate === 'string' ? record.lastPriceUpdate : record.lastPriceUpdate?.toISOString() || new Date().toISOString()
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting portfolio summary:', error);
-      return null;
     }
   }
 

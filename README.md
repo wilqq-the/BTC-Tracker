@@ -50,61 +50,61 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 ### Privacy & Control
 - **100% self-hosted** - Your data never leaves your server
 - **Multi-user support** - First user becomes admin, create accounts for family
-- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike
+- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike, River, 21bitcoin, Cash App, Revolut X
 - **Simple backup** - Single SQLite file, easy to backup and restore
 
 ## Screenshots
 
 ![Dashboard](screenshots/dashboard.png)
-*Main portfolio dashboard with real-time Bitcoin tracking*
+*Customisable dashboard: portfolio value, price chart with your buys, quick actions, wallets, DCA score and milestones*
 
 <details>
-<summary>Transactions - Import and management</summary>
+<summary>Transactions - import, filters and history</summary>
 
 ![Transactions](screenshots/transactions.png)
-*Transaction management and CSV import from exchanges*
+*Every buy, sale and wallet move in one table, with CSV import from 9 exchange formats*
 </details>
 
 <details>
-<summary>Analytics - Charts and performance</summary>
+<summary>Analytics - returns and performance</summary>
 
 ![Analytics](screenshots/analytics.png)
-*Advanced portfolio analytics and performance charts*
+*Total return, your average price vs today, each month's buys at today's price and your stack over time*
 </details>
 
 <details>
-<summary>DCA Analysis - Performance breakdown</summary>
+<summary>DCA analysis - how well you're buying</summary>
 
 ![Analysis](screenshots/analysis.png)
-*DCA performance analysis and statistics*
+*DCA score with timing and consistency, what-if scenarios and purchase distribution*
 </details>
 
 <details>
-<summary>Goals - Savings targets</summary>
+<summary>Goals - savings targets</summary>
 
 ![Goals](screenshots/goals.png)
-*Set and track your Bitcoin savings goals*
+*Set a target like 1 BTC by 2030 and track your progress*
 </details>
 
 <details>
-<summary>Auto DCA - Recurring transactions</summary>
+<summary>Auto DCA - recurring purchases</summary>
 
 ![Auto DCA](screenshots/autodca.png)
-*Automated recurring transaction scheduling*
+*Recurring buys that record themselves at the current price*
 </details>
 
 <details>
-<summary>Admin Panel - Multi-user management</summary>
+<summary>Admin - multi-user management</summary>
 
 ![Admin Panel](screenshots/admin.png)
-*Multi-user management interface (admin only)*
+*Manage the users on your server (admin only)*
 </details>
 
 <details>
-<summary>Currencies - Multi-currency support</summary>
+<summary>Currencies - multi-currency support</summary>
 
 ![Currencies](screenshots/currencies.png)
-*Multi-currency support and custom currency management*
+*Calculate in one currency, show another, and add your own*
 </details>
 
 ## Quick Start
@@ -149,7 +149,7 @@ Open app and register the first user (becomes admin automatically).
 
 ## Importing transactions
 
-1. Export CSV from your exchange (Kraken, Binance, Coinbase, Strike)
+1. Export CSV from your exchange (Kraken, Binance, Coinbase, Strike, River, 21bitcoin, Cash App, Revolut X)
 2. Go to Transactions tab > Import
 3. Drop the CSV file - format detected automatically
 4. Review and import
@@ -191,21 +191,33 @@ This gives you complete control over your Bitcoin tracking data.
 
 ## Backup & Restore
 
-Your data lives in a single SQLite file. To backup:
+Your data lives in a single SQLite file. The easiest way to manage backups is from the app:
+
+**Settings → Backup** (admin only):
+- **Download backup** — grab a full-database snapshot to your computer
+- **Server snapshots** — create/keep snapshots on the server and download, restore, or delete them
+- **Restore from a file** — upload a backup to replace all data (a safety backup of the current database is taken automatically first)
+- **Automatic backups** — schedule periodic snapshots with retention (keep last N / keep N days)
+
+A backup is the whole database (every user's data), so restoring is admin-only and replaces everything.
+
+> **Note:** Exchange API credentials are encrypted with a key derived from `NEXTAUTH_SECRET`. A backup restored on the **same** install decrypts them fine; restoring onto an install with a **different** `NEXTAUTH_SECRET` leaves those credentials unreadable (all other data is unaffected). After a restore you may need to sign in again.
+
+You can still back up manually by copying the SQLite file:
 
 ```bash
 # Docker
-docker cp btc-tracker:/app/prisma/dev.db ./backup.db
+docker cp btc-tracker:/app/data/bitcoin-tracker.db ./backup.db
 
 # Local
 cp prisma/dev.db ./backup.db
 ```
 
-To restore, copy the file back and restart the app.
+To restore manually, copy the file back and restart the app.
 
 ## Community
 
-- [Discord](https://discord.gg/v2ByAYHA) - Chat with other users and get help
+- [Discord](https://discord.gg/cmACNxcDqq) - Chat with other users and get help
 - [GitHub Discussions](https://github.com/wilqq-the/BTC-Tracker/discussions) - Ask questions, share ideas
 - [Issue Tracker](https://github.com/wilqq-the/BTC-Tracker/issues) - Report bugs, request features
 
