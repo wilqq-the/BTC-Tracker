@@ -217,7 +217,7 @@ To restore manually, copy the file back and restart the app.
 
 ## Community
 
-- [Discord](https://discord.gg/v2ByAYHA) - Chat with other users and get help
+- [Discord](https://discord.gg/cmACNxcDqq) - Chat with other users and get help
 - [GitHub Discussions](https://github.com/wilqq-the/BTC-Tracker/discussions) - Ask questions, share ideas
 - [Issue Tracker](https://github.com/wilqq-the/BTC-Tracker/issues) - Report bugs, request features
 
