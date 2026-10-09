@@ -4,6 +4,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { FerroMarkers } from '@/components/ui/ferro-marker';
+import { onHighlightTransaction } from '@/lib/app-events';
 import { 
   ChartContainer,
   ChartTooltip,
@@ -255,6 +256,10 @@ export default function BitcoinChart({
   );
   const snapped = snapIndex !== null ? chartData[snapIndex] : undefined;
 
+  // A transaction pointed at from elsewhere (its row hovered): its marker pulses
+  const [highlightDay, setHighlightDay] = useState<number | null>(null);
+  useEffect(() => onHighlightTransaction(setHighlightDay), []);
+
   const handleChartMouseMove = (state: any) => {
     const hovered = state?.activeTooltipIndex;
     if (!showTransactions || typeof hovered !== 'number' || txIndexes.length === 0) {
@@ -369,6 +374,22 @@ export default function BitcoinChart({
 
     // Lets the ferrofluid overlay find this marker
     const ferroAttrs = { 'data-ferro-marker': '', 'data-ferro-id': String(payload.timestamp), 'data-ferro-color': fill };
+
+    if (highlightDay === payload.timestamp) {
+      return (
+        <g key={`tx-${payload.timestamp}`}>
+          <circle
+            cx={cx}
+            cy={cy}
+            r={size}
+            fill={fill}
+            className="animate-marker-pulse"
+            style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+          />
+          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} {...ferroAttrs} />
+        </g>
+      );
+    }
 
     if (snapped && snapped.timestamp === payload.timestamp) {
       return (

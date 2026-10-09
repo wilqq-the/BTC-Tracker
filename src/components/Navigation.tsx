@@ -53,6 +53,8 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const isDark = mounted && resolvedTheme === 'dark';
   const { unit, toggleUnit } = useBtcUnit();
+  // Only animate the ₿/sats label after a click, not on every page load
+  const [unitFlipped, setUnitFlipped] = useState(false);
 
   // Ferrofluid highlight: reaches toward the hovered item, settles on the active page
   const { containerRef: navListRef, blobRef, dropRef, moveTo, hide } = useFerroPill<HTMLDivElement>();
@@ -168,11 +170,13 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
               'h-11 min-w-11 rounded-full bg-secondary px-3 font-extrabold hover:bg-accent',
               unit === 'sats' ? 'text-[13px]' : 'text-lg'
             )}
-            onClick={toggleUnit}
+            onClick={() => { setUnitFlipped(true); toggleUnit(); }}
             title={unit === 'btc' ? 'Show amounts in sats' : 'Show amounts in BTC'}
             aria-label={unit === 'btc' ? 'Showing BTC. Switch to sats' : 'Showing sats. Switch to BTC'}
           >
-            {unit === 'btc' ? '₿' : 'sats'}
+            <span key={unit} className={cn('inline-block', unitFlipped && 'animate-pop')}>
+              {unit === 'btc' ? '₿' : 'sats'}
+            </span>
           </Button>
 
           <Button

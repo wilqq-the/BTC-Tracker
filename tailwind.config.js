@@ -173,6 +173,40 @@ module.exports = {
           '70%': { transform: 'scale(1.06)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        // Hover nudges for icons: one small gesture per hover, matching the icon
+        'nudge-up': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '40%': { transform: 'translateY(-4px)' },
+          '70%': { transform: 'translateY(1px)' },
+        },
+        'nudge-down': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '40%': { transform: 'translateY(4px)' },
+          '70%': { transform: 'translateY(-1px)' },
+        },
+        'nudge-x': {
+          '0%, 100%': { transform: 'translateX(0)' },
+          '30%': { transform: 'translateX(4px)' },
+          '65%': { transform: 'translateX(-3px)' },
+        },
+        hop: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '35%': { transform: 'translateY(-5px)' },
+          '60%': { transform: 'translateY(0)' },
+          '78%': { transform: 'translateY(-1.5px)' },
+        },
+        // A milestone just reached: swell and send out one ring
+        celebrate: {
+          '0%': { transform: 'scale(1)', boxShadow: '0 0 0 0 hsl(var(--primary) / 0.55)' },
+          '35%': { transform: 'scale(1.14)' },
+          '60%': { transform: 'scale(0.96)' },
+          '100%': { transform: 'scale(1)', boxShadow: '0 0 0 14px hsl(var(--primary) / 0)' },
+        },
+        // Chart marker found from elsewhere (e.g. hovering its transaction row)
+        'marker-pulse': {
+          '0%': { transform: 'scale(1)', opacity: '0.6' },
+          '100%': { transform: 'scale(3.2)', opacity: '0' },
+        },
         // Live dot ripple
         'live-pulse': {
           '0%': { boxShadow: '0 0 0 0 rgb(34 197 94 / 0.55)' },
@@ -186,6 +220,12 @@ module.exports = {
         rise: 'rise 0.7s cubic-bezier(0.2, 0.75, 0.2, 1) both',
         pop: 'pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both',
         'live-pulse': 'live-pulse 1.6s ease-out infinite',
+        'nudge-up': 'nudge-up 0.5s cubic-bezier(0.3, 1.4, 0.5, 1)',
+        'nudge-down': 'nudge-down 0.5s cubic-bezier(0.3, 1.4, 0.5, 1)',
+        'nudge-x': 'nudge-x 0.55s cubic-bezier(0.3, 1.4, 0.5, 1)',
+        hop: 'hop 0.6s ease-out',
+        celebrate: 'celebrate 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) backwards',
+        'marker-pulse': 'marker-pulse 1.2s ease-out infinite',
       },
     },
   },
