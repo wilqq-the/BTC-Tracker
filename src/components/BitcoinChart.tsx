@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { FerroMarkers } from '@/components/ui/ferro-marker';
 import { 
   ChartContainer,
   ChartTooltip,
@@ -366,11 +367,14 @@ export default function BitcoinChart({
       fill = '#8b5cf6'; // Purple for MIXED
     }
 
+    // Lets the ferrofluid overlay find this marker
+    const ferroAttrs = { 'data-ferro-marker': '', 'data-ferro-id': String(payload.timestamp), 'data-ferro-color': fill };
+
     if (snapped && snapped.timestamp === payload.timestamp) {
       return (
         <g key={`tx-${payload.timestamp}`}>
           <circle cx={cx} cy={cy} r={11} fill={fill} fillOpacity={0.2} />
-          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} />
+          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} {...ferroAttrs} />
         </g>
       );
     }
@@ -384,6 +388,7 @@ export default function BitcoinChart({
         fill={fill}
         stroke="white"
         strokeWidth={1}
+        {...ferroAttrs}
       />
     );
   };
@@ -514,7 +519,7 @@ export default function BitcoinChart({
           </div>
         ) : (
           <>
-            <div ref={plotRef} className="flex-1 min-h-[120px] w-full">
+            <div ref={plotRef} className="relative flex-1 min-h-[120px] w-full">
               <ChartContainer config={chartConfig} className="h-full w-full">
                 <ComposedChart
                   data={chartData}
@@ -588,6 +593,9 @@ export default function BitcoinChart({
                   )}
                 </ComposedChart>
               </ChartContainer>
+              {showTransactions && (
+                <FerroMarkers containerRef={plotRef} snappedId={snapped ? String(snapped.timestamp) : null} />
+              )}
       </div>
 
             {/* Transaction Legend — only the marker types actually on the chart */}
