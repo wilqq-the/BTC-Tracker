@@ -42,6 +42,15 @@ export function switchThemeWithReveal(
   freeze.textContent = '*, *::before, *::after { transition: none !important; }';
   document.head.appendChild(freeze);
 
+  // The reveal itself is a CSS animation (globals.css) driven by these
+  // variables, so it is clipped from the very first frame. Starting it from
+  // JS after `ready` left one unclipped frame: a full-screen flash.
+  const root = document.documentElement;
+  root.style.setProperty('--reveal-x', `${x}px`);
+  root.style.setProperty('--reveal-y', `${y}px`);
+  root.style.setProperty('--reveal-r', `${radius}px`);
+  root.setAttribute('data-theme-reveal', '');
+
   const transition = doc.startViewTransition(() => {
     flushSync(apply);
     // Rendering is paused until this callback returns, so frame callbacks
@@ -52,13 +61,11 @@ export function switchThemeWithReveal(
     applyPresetForMode(mode);
   });
 
-  transition.ready.then(() => {
-    document.documentElement.animate(
-      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-      { duration: 650, easing: 'cubic-bezier(0.2, 0.75, 0.2, 1)', pseudoElement: '::view-transition-new(root)' }
-    );
-  }).catch(() => {
+  transition.ready.catch(() => {
     // Transition skipped (e.g. tab hidden): the theme is already applied
   });
-  transition.finished.finally(() => freeze.remove());
+  transition.finished.finally(() => {
+    freeze.remove();
+    root.removeAttribute('data-theme-reveal');
+  });
 }
