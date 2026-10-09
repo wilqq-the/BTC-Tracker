@@ -378,3 +378,10 @@
   border: 0;
   box-shadow: none;
 }
+
+/* Liquid chart pointer (FerroMarkers): the drop replaces the system cursor.
+   !important beats the inline cursor Recharts sets on its wrapper. */
+[data-ferro-pointer],
+[data-ferro-pointer] * {
+  cursor: none !important;
+}

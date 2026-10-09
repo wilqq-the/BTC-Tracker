@@ -201,8 +201,9 @@ export function FerroMarkers({
       !!window.matchMedia?.('(pointer: fine)').matches;
     if (!enabled.current) return;
 
-    const previousCursor = container.style.cursor;
-    container.style.cursor = 'none';
+    // Hides the system pointer over the whole container, children included
+    // (Recharts sets an inline cursor on its wrapper) — see globals.css
+    container.setAttribute('data-ferro-pointer', '');
     const onMove = (e: PointerEvent) => {
       if (e.pointerType !== 'mouse') return;
       const box = container.getBoundingClientRect();
@@ -218,7 +219,7 @@ export function FerroMarkers({
     return () => {
       container.removeEventListener('pointermove', onMove);
       container.removeEventListener('pointerleave', onLeave);
-      container.style.cursor = previousCursor;
+      container.removeAttribute('data-ferro-pointer');
       cancelAnimationFrame(raf.current);
       raf.current = 0; // so a re-mount (or StrictMode's double effect) can start it again
       last.current = 0;
