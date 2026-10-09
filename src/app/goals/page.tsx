@@ -471,11 +471,6 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-4 pb-6">
-      <div className="space-y-0.5 px-1">
-        <h1 className="text-lg font-bold tracking-tight">Planning</h1>
-        <p className="text-sm text-muted-foreground">Set savings goals, automate purchases and see how your buying is going.</p>
-      </div>
-
       <TabNavigation
         aria-label="Planning sections"
         tabs={[

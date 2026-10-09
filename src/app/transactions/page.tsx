@@ -802,23 +802,6 @@ export default function TransactionsPage() {
 
   return (
     <div className="space-y-4 pb-6">
-      {/* Title row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <h1 className="text-lg font-bold tracking-tight">
-          Transactions <span className="ml-1 font-semibold text-muted-foreground tabular-nums">{totalItems.toLocaleString()}</span>
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleOpenImportModal}>
-            <UploadIcon className="mr-1.5 size-4" />
-            Import
-          </Button>
-          <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleExport} disabled={transactions.length === 0}>
-            <DownloadIcon className="mr-1.5 size-4" />
-            Export
-          </Button>
-        </div>
-      </div>
-
       <Card className="gap-0 overflow-hidden py-0">
         {/* Toolbar */}
         <div className="space-y-3 p-4 sm:p-5">
@@ -1018,9 +1001,10 @@ export default function TransactionsPage() {
             </div>
           )}
 
-          {/* Summary of the filtered set */}
-          {filteredTransactions.length > 0 && (
-            <p className="px-1 text-[13px] text-muted-foreground">
+          {/* Summary of the filtered set, with import/export on the right */}
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-1">
+          {filteredTransactions.length > 0 ? (
+            <p className="min-w-0 flex-1 text-[13px] text-muted-foreground">
               {totalPages > 1 && !isClientFiltered
                 ? <>{plural(filteredTransactions.length, 'transaction')} on this page, {totalItems.toLocaleString()} in total.</>
                 : <>{plural(filteredTransactions.length, 'transaction')}.</>}
@@ -1033,7 +1017,18 @@ export default function TransactionsPage() {
               .
               {summary.transfers > 0 && <> {plural(summary.transfers, 'transfer')} between wallets or exchanges.</>}
             </p>
-          )}
+          ) : <span />}
+            <div className="flex shrink-0 items-center gap-2">
+              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleOpenImportModal}>
+                <UploadIcon className="mr-1.5 size-4" />
+                Import
+              </Button>
+              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleExport} disabled={transactions.length === 0}>
+                <DownloadIcon className="mr-1.5 size-4" />
+                Export
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Empty state */}

@@ -192,30 +192,6 @@ export default function SettingsPage() {
 
   return (
     <div ref={rootRef} className="space-y-4 pb-6">
-      {/* Title row */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <div className="min-w-0">
-          <h1 className="text-lg font-bold tracking-tight">{activeMeta.title}</h1>
-          <p className="text-[13px] text-muted-foreground">{activeMeta.description}</p>
-        </div>
-        {(headerAction || canReset) && (
-          <div className="flex shrink-0 items-center gap-2">
-            {canReset && (
-              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={resetToDefaults} disabled={saving}>
-                <RotateCcwIcon className="mr-1.5 size-4" />
-                Reset to defaults
-              </Button>
-            )}
-            {headerAction && (
-              <Button size="sm" className="rounded-full font-semibold" onClick={headerAction.onClick}>
-                <PlusIcon className="mr-1.5 size-4" />
-                {headerAction.label}
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
       <div className="flex flex-col items-start gap-4 lg:flex-row">
         {/* Settings menu: horizontal scroller on phones, a column on desktop */}
         <Card className="w-full gap-0 rounded-2xl p-1.5 lg:sticky lg:top-0 lg:w-56 lg:shrink-0 lg:p-2">
@@ -249,7 +225,31 @@ export default function SettingsPage() {
         </Card>
 
         {/* Active tab content */}
-        <div className="w-full min-w-0 flex-1">
+        <div className="w-full min-w-0 flex-1 space-y-4">
+          {/* Tab title and actions, at the top of the content column */}
+          <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+            <div className="min-w-0">
+              <h1 className="text-lg font-bold tracking-tight">{activeMeta.title}</h1>
+              <p className="text-[13px] text-muted-foreground">{activeMeta.description}</p>
+            </div>
+            {(headerAction || canReset) && (
+              <div className="flex shrink-0 items-center gap-2">
+                {canReset && (
+                  <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={resetToDefaults} disabled={saving}>
+                    <RotateCcwIcon className="mr-1.5 size-4" />
+                    Reset to defaults
+                  </Button>
+                )}
+                {headerAction && (
+                  <Button size="sm" className="rounded-full font-semibold" onClick={headerAction.onClick}>
+                    <PlusIcon className="mr-1.5 size-4" />
+                    {headerAction.label}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
           {activeTab === 'account' && <UserAccountSettingsPanel />}
 
           {activeTab === 'wallets' && <WalletsPanel onHeaderAction={setHeaderAction} />}

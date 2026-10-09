@@ -244,19 +244,17 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-4 pb-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
-        <h1 className="text-lg font-bold tracking-tight">Analytics</h1>
-        <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={exportToCSV} disabled={exporting}>
-          <DownloadIcon className="mr-1.5 size-4" />
-          {exporting ? 'Exporting...' : 'Export tax report'}
-        </Button>
-      </div>
-
       {/* Performance */}
       <Card className="rounded-2xl">
         <CardContent className="grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
           <div className="flex flex-col gap-3">
-            <span className="text-[15px] font-semibold text-muted-foreground">Total return</span>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-[15px] font-semibold text-muted-foreground">Total return</span>
+              <Button variant="outline" size="sm" className="rounded-full font-semibold" onClick={exportToCSV} disabled={exporting}>
+                <DownloadIcon className="mr-1.5 size-4" />
+                {exporting ? 'Exporting...' : 'Export tax report'}
+              </Button>
+            </div>
             <span className={cn('text-4xl font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-5xl', tone(data.totalPnL))}>
               {signed(data.totalPnL)}{formatMoney(Math.abs(totalReturn), currency).replace(/\.\d{2}(?=\D*$)/, '')}
             </span>
