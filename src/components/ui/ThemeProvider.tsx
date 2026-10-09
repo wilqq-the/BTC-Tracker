@@ -2,7 +2,14 @@
 
 import React, { ReactNode, useEffect } from 'react';
 import { ThemeProvider as NextThemesProvider, useTheme } from 'next-themes';
-import { getThemePreset, applyThemePreset, loadSavedThemePreset, clearThemePresetOverrides } from '@/lib/theme-presets';
+import {
+  getThemePreset,
+  applyThemePreset,
+  loadSavedThemePreset,
+  clearThemePresetOverrides,
+  DEFAULT_DARK_THEME_ID,
+  DEFAULT_LIGHT_THEME_ID,
+} from '@/lib/theme-presets';
 
 // Re-export useTheme for convenience
 export { useTheme };
@@ -21,7 +28,10 @@ function ThemePresetInitializer({ children }: { children: ReactNode }) {
       const savedPresetId = loadSavedThemePreset(mode);
       const preset = getThemePreset(savedPresetId, mode);
       
-      if (preset) {
+      // The default presets ARE the design tokens in globals.css — only
+      // alternative presets override them at runtime.
+      const isDefault = savedPresetId === DEFAULT_DARK_THEME_ID || savedPresetId === DEFAULT_LIGHT_THEME_ID;
+      if (preset && !isDefault) {
         applyThemePreset(preset);
       }
     };

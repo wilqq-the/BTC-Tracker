@@ -37,35 +37,36 @@ export interface ThemePreset {
 export const LIGHT_THEME_PRESETS: ThemePreset[] = [
   {
     id: 'pure-light',
-    name: 'Pure Light',
-    description: 'Clean white, default',
+    name: 'Default light',
+    description: 'Warm grey with solid white cards',
     mode: 'light',
+    // Swatches only: the default preset applies nothing, globals.css :root is the source of truth
     colors: {
-      background: '0 0% 100%',           // #ffffff
-      foreground: '0 0% 9%',             // #171717
+      background: '30 8% 93%',           // #EFEDEA warm grey
+      foreground: '24 10% 10%',
       card: '0 0% 100%',
-      cardForeground: '0 0% 9%',
+      cardForeground: '24 10% 10%',
       popover: '0 0% 100%',
-      popoverForeground: '0 0% 9%',
-      primary: '33 92% 50%',             // Bitcoin orange
-      primaryForeground: '0 0% 100%',
-      secondary: '0 0% 96%',             // #f5f5f5
-      secondaryForeground: '0 0% 9%',
-      muted: '0 0% 96%',
-      mutedForeground: '0 0% 45%',
-      accent: '0 0% 96%',
-      accentForeground: '0 0% 9%',
-      border: '0 0% 90%',                // #e5e5e5
-      input: '0 0% 90%',
-      ring: '33 92% 50%',
-      sidebar: '0 0% 98%',
-      sidebarForeground: '0 0% 9%',
-      sidebarBorder: '0 0% 90%',
+      popoverForeground: '24 10% 10%',
+      primary: '33 93% 54%',             // Bitcoin orange
+      primaryForeground: '24 10% 10%',
+      secondary: '30 8% 95%',
+      secondaryForeground: '24 10% 12%',
+      muted: '30 8% 95%',
+      mutedForeground: '28 6% 37%',
+      accent: '30 8% 92%',
+      accentForeground: '24 10% 12%',
+      border: '30 8% 88%',
+      input: '30 8% 85%',
+      ring: '33 93% 54%',
+      sidebar: '0 0% 100%',
+      sidebarForeground: '24 10% 10%',
+      sidebarBorder: '30 8% 88%',
     },
   },
   {
     id: 'warm-light',
-    name: 'Warm Light',
+    name: 'Warm light',
     description: 'Cream, easy on eyes',
     mode: 'light',
     colors: {
@@ -93,7 +94,7 @@ export const LIGHT_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'cool-light',
-    name: 'Cool Light',
+    name: 'Cool light',
     description: 'Slight blue tint',
     mode: 'light',
     colors: {
@@ -149,7 +150,7 @@ export const LIGHT_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'high-contrast-light',
-    name: 'High Contrast',
+    name: 'High contrast',
     description: 'Maximum readability',
     mode: 'light',
     colors: {
@@ -261,7 +262,7 @@ export const LIGHT_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'sage-mint',
-    name: 'Sage Mint',
+    name: 'Sage mint',
     description: 'Pale mint with emerald-green accent',
     mode: 'light',
     colors: {
@@ -352,30 +353,31 @@ export const LIGHT_THEME_PRESETS: ThemePreset[] = [
 export const DARK_THEME_PRESETS: ThemePreset[] = [
   {
     id: 'pure-dark',
-    name: 'Vault Dark',
-    description: 'Deep cool charcoal with gold',
+    name: 'Default dark',
+    description: 'Warm charcoal with Bitcoin orange',
     mode: 'dark',
+    // Swatches only: the default preset applies nothing, globals.css .dark is the source of truth
     colors: {
-      background: '240 8% 5%',         // cool-tinted charcoal (depth)
-      foreground: '240 10% 96%',
-      card: '240 7% 8%',
-      cardForeground: '240 10% 96%',
-      popover: '240 7% 9%',
-      popoverForeground: '240 10% 96%',
-      primary: '33 96% 56%',           // Bitcoin gold
-      primaryForeground: '0 0% 100%',
-      secondary: '240 6% 13%',
-      secondaryForeground: '240 10% 96%',
-      muted: '240 6% 13%',
-      mutedForeground: '240 5% 60%',
-      accent: '240 6% 14%',
-      accentForeground: '240 10% 96%',
-      border: '240 6% 16%',
-      input: '240 6% 16%',
-      ring: '33 96% 56%',
-      sidebar: '240 9% 6%',
-      sidebarForeground: '240 10% 96%',
-      sidebarBorder: '240 6% 16%',
+      background: '24 10% 6%',         // #110F0E warm charcoal
+      foreground: '30 20% 95%',
+      card: '24 8% 10%',
+      cardForeground: '30 20% 95%',
+      popover: '24 8% 11%',
+      popoverForeground: '30 20% 95%',
+      primary: '33 93% 56%',           // Bitcoin orange
+      primaryForeground: '24 10% 8%',
+      secondary: '24 7% 14%',
+      secondaryForeground: '30 20% 95%',
+      muted: '24 7% 14%',
+      mutedForeground: '30 8% 63%',
+      accent: '24 7% 15%',
+      accentForeground: '30 20% 95%',
+      border: '24 7% 16%',
+      input: '24 7% 18%',
+      ring: '33 93% 56%',
+      sidebar: '24 8% 10%',
+      sidebarForeground: '30 20% 95%',
+      sidebarBorder: '24 7% 16%',
     },
   },
   {
@@ -716,7 +718,7 @@ export const DARK_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'oled-black',
-    name: 'OLED Black',
+    name: 'OLED black',
     description: 'Pure black for OLED screens',
     mode: 'dark',
     colors: {
@@ -744,7 +746,7 @@ export const DARK_THEME_PRESETS: ThemePreset[] = [
   },
   {
     id: 'warm-dark',
-    name: 'Warm Dark',
+    name: 'Warm dark',
     description: 'Cozy, warm undertones',
     mode: 'dark',
     colors: {
@@ -783,11 +785,19 @@ export function getThemePreset(id: string, mode: 'light' | 'dark'): ThemePreset 
   return presets.find(theme => theme.id === id);
 }
 
+export function isDefaultThemePreset(id: string): boolean {
+  return id === DEFAULT_DARK_THEME_ID || id === DEFAULT_LIGHT_THEME_ID;
+}
+
 export function applyThemePreset(preset: ThemePreset): void {
   const root = document.documentElement;
   
+  // The default presets ARE the CSS tokens in globals.css: never override them
+  // inline (their colors exist only to draw the swatches in Settings).
+  const colors: Partial<ThemePreset['colors']> = isDefaultThemePreset(preset.id) ? {} : preset.colors;
+
   // Apply each color variable (trust the caller to call at the right time)
-  Object.entries(preset.colors).forEach(([key, value]) => {
+  Object.entries(colors).forEach(([key, value]) => {
     const cssVar = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
     root.style.setProperty(cssVar, value);
   });

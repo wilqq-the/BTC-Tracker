@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Navigation from './Navigation';
 import PortfolioSidebar from './PortfolioSidebar';
 import DonationModal from './DonationModal';
@@ -16,23 +17,20 @@ interface AppLayoutProps {
 export default function AppLayout({ children }: AppLayoutProps) {
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Settings has its own menu column: hide the portfolio sidebar there on desktop.
+  // It stays mounted (no refetch on return) and the mobile drawer keeps working.
+  const pathname = usePathname();
+  const hideSidebarOnDesktop = pathname?.startsWith('/settings') ?? false;
 
   return (
-    <div className="relative h-screen overflow-hidden">
-      {/* The ONE shared canvas — ambient orb wash showing through every gutter */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-        <div className="absolute -top-40 -left-40 h-[40rem] w-[40rem] rounded-full bg-primary/20 blur-[150px]" />
-        <div className="absolute top-1/4 -right-44 h-[34rem] w-[34rem] rounded-full bg-primary/12 blur-[160px]" />
-        <div className="absolute -bottom-44 left-1/4 h-[34rem] w-[34rem] rounded-full bg-sky-500/12 blur-[160px]" />
-      </div>
-
-      {/* Foreground — floating panels on the canvas; p-3/gap-3 are the gutters */}
-      <div className="relative z-10 flex h-full flex-col gap-3 p-3">
+    <div className="relative h-screen overflow-hidden bg-background">
+      {/* Solid cards on a warm canvas; p-4/gap-4 are the gutters */}
+      <div className="relative flex h-full flex-col gap-4 p-2 sm:p-4">
       {/* Floating header bar */}
       <Navigation onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       {/* Main row: floating sidebar + open-canvas content */}
-      <div className="flex flex-1 gap-3 min-h-0">
+      <div className="flex flex-1 gap-4 min-h-0">
         {/* Mobile Sidebar Overlay */}
         {isSidebarOpen && (
           <div
@@ -50,25 +48,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           transition-transform duration-300 ease-in-out
           z-50 lg:z-0
           ${isSidebarOpen ? 'top-0 h-full p-3 lg:p-0' : ''}
+          ${hideSidebarOnDesktop ? 'lg:hidden' : ''}
         `}>
           <PortfolioSidebar onClose={() => setIsSidebarOpen(false)} />
         </div>
 
         {/* Main Content Area — open canvas; page cards/widgets float on it */}
-        <main className="flex-1 min-w-0 overflow-y-auto rounded-2xl">
+        <main className="flex-1 min-w-0 overflow-y-auto rounded-3xl">
           {children}
         </main>
       </div>
 
       {/* Floating footer bar */}
-      <footer className="glass-float rounded-2xl shrink-0 h-auto md:h-10 flex flex-col md:flex-row items-center justify-between px-4 md:px-6 py-2 md:py-0 gap-2 md:gap-0">
+      <footer className="shrink-0 -mt-2 flex items-center justify-between gap-2 px-2 text-xs">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="font-medium">BTC Tracker</span>
           <Separator orientation="vertical" className="h-4 hidden sm:block" />
-          <span
-            className="hidden sm:block"
-            title={packageJson.version.includes('69') ? 'nice 😏' : undefined}
-          >v{packageJson.version}</span>
+          <span className="hidden sm:block">v{packageJson.version}</span>
         </div>
         
         <div className="flex items-center gap-2 md:gap-4">
@@ -82,7 +78,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             onClick={() => setIsDonationModalOpen(true)}
             className="h-auto p-0 text-xs text-primary hover:text-primary/80"
           >
-            Support Project
+            Support the project
           </Button>
         </div>
       </footer>

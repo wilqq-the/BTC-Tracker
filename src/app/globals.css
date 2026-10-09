@@ -4,119 +4,136 @@
 
 @layer base {
   :root {
-    /* Light Mode — warm "bone" base (not dead white) */
-    --background: 40 30% 99%;
-    --foreground: 240 6% 10%;
+    /* Light Mode — warm paper canvas with solid white cards */
+    --background: 30 8% 93%;           /* #EFEDEA warm grey, not cream */
+    --foreground: 24 10% 10%;          /* #1C1917 */
 
     --card: 0 0% 100%;
-    --card-foreground: 240 6% 10%;
+    --card-foreground: 24 10% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 6% 10%;
+    --popover-foreground: 24 10% 10%;
 
-    /* Authentic Bitcoin gold-orange (hue ~33) */
-    --primary: 33 92% 50%;
-    --primary-foreground: 0 0% 100%;
+    /* Bitcoin orange. Text on it is dark — white on orange fails contrast */
+    --primary: 33 93% 54%;             /* #F7931A */
+    --primary-foreground: 24 10% 10%;
+    /* Readable orange for text/icons on white and on orange tints */
+    --primary-strong: 28 100% 30%;     /* #9A4A00 */
 
-    --secondary: 40 14% 95%;
-    --secondary-foreground: 240 6% 12%;
+    --secondary: 30 8% 95%;            /* inner tiles */
+    --secondary-foreground: 24 10% 12%;
 
-    --muted: 40 14% 95%;
-    --muted-foreground: 240 4% 42%;
+    --muted: 30 8% 95%;
+    --muted-foreground: 28 6% 37%;     /* #645E58 — 5.9:1 on white */
 
-    --accent: 40 14% 94%;
-    --accent-foreground: 240 6% 12%;
-
-    --destructive: 0 80% 58%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 40 12% 90%;
-    --input: 40 12% 88%;
-    --ring: 33 92% 50%;
-
-    /* Chart colors */
-    --chart-1: 33 92% 50%;
-    --chart-2: 142 70% 40%;
-    --chart-3: 0 80% 58%;
-    --chart-4: 43 96% 52%;
-    --chart-5: 262 78% 58%;
-
-    --radius: 0.75rem;
-
-    /* Signature shadow + glow system (referenced by tailwind) */
-    --shadow-sm: 0 1px 2px hsl(240 6% 10% / 0.04), 0 1px 3px hsl(240 6% 10% / 0.06);
-    --shadow-md: 0 2px 4px hsl(240 6% 10% / 0.04), 0 6px 16px hsl(240 6% 10% / 0.08);
-    --shadow-lg: 0 12px 32px hsl(240 6% 10% / 0.12);
-    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 6px 24px hsl(var(--primary) / 0.22);
-    /* Ambient page glow (subtle base; the app shell adds the main wash) */
-    --aura: radial-gradient(1000px 520px at 50% -12%, hsl(33 92% 50% / 0.05), transparent 70%);
-
-    /* Sidebar */
-    --sidebar: 40 24% 98%;
-    --sidebar-foreground: 240 6% 10%;
-    --sidebar-primary: 33 92% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 14% 94%;
-    --sidebar-accent-foreground: 240 6% 12%;
-    --sidebar-border: 40 12% 90%;
-    --sidebar-ring: 33 92% 50%;
-  }
-
-  .dark {
-    /* Dark Mode — deep cool-tinted charcoal (faint blue hue = "expensive" depth) */
-    --background: 240 8% 5%;            /* ~#0c0c0e */
-    --foreground: 240 10% 96%;
-
-    --card: 240 7% 8%;                  /* ~#131316 elevated surface */
-    --card-foreground: 240 10% 96%;
-
-    --popover: 240 7% 9%;
-    --popover-foreground: 240 10% 96%;
-
-    /* Bitcoin gold — brighter on dark for that glow */
-    --primary: 33 96% 56%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 240 6% 13%;
-    --secondary-foreground: 240 10% 96%;
-
-    --muted: 240 6% 13%;
-    --muted-foreground: 240 5% 60%;
-
-    --accent: 240 6% 14%;
-    --accent-foreground: 240 10% 96%;
+    --accent: 30 8% 92%;
+    --accent-foreground: 24 10% 12%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 16%;
-    --input: 240 6% 16%;
-    --ring: 33 96% 56%;
+    --border: 30 8% 88%;
+    --input: 30 8% 85%;
+    --ring: 33 93% 54%;
 
-    /* Chart colors - optimized for dark */
-    --chart-1: 33 96% 56%;
-    --chart-2: 142 71% 48%;
-    --chart-3: 0 72% 56%;
-    --chart-4: 43 96% 62%;
-    --chart-5: 262 80% 68%;
+    /* Soft tints for tiles, chips and badges (bg + readable fg pairs) */
+    --tint-orange: 34 100% 94%;        /* #FFF1E0 */
+    --tint-green: 140 45% 93%;         /* #E3F5E8 */
+    --tint-green-fg: 142 64% 24%;      /* #166534 */
+    --tint-red: 0 86% 96%;
+    --tint-red-fg: 0 70% 38%;
+    --tint-blue: 218 90% 95%;          /* #E8F0FE */
+    --tint-blue-fg: 224 76% 40%;
+    --tint-purple: 258 90% 96%;        /* #F1EBFE */
+    --tint-purple-fg: 263 70% 45%;
 
-    /* Signature shadow + glow system — rim light + deep drop for dark */
-    --shadow-sm: 0 0 0 1px hsl(0 0% 100% / 0.02), 0 1px 2px hsl(0 0% 0% / 0.4);
-    --shadow-md: 0 0 0 1px hsl(0 0% 100% / 0.03), 0 4px 14px hsl(0 0% 0% / 0.5);
-    --shadow-lg: 0 1px 0 hsl(0 0% 100% / 0.04) inset, 0 16px 40px hsl(0 0% 0% / 0.6);
-    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 8px 28px hsl(var(--primary) / 0.25);
-    /* Ambient page glow (subtle base; the app shell adds the main wash) */
-    --aura: radial-gradient(1100px 560px at 50% -12%, hsl(33 96% 56% / 0.06), transparent 72%);
+    /* Chart colors */
+    --chart-1: 33 93% 54%;
+    --chart-2: 142 70% 40%;
+    --chart-3: 0 80% 58%;
+    --chart-4: 224 76% 48%;
+    --chart-5: 263 70% 50%;
+
+    --radius: 1rem;
+
+    /* Soft, warm elevation — depth from shadow, never from borders */
+    --shadow-sm: 0 1px 2px hsl(24 10% 10% / 0.04);
+    --shadow-md: 0 1px 2px hsl(24 10% 10% / 0.04), 0 8px 24px hsl(24 10% 10% / 0.05);
+    --shadow-lg: 0 2px 4px hsl(24 10% 10% / 0.05), 0 16px 32px hsl(24 10% 10% / 0.10);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.25), 0 6px 24px hsl(var(--primary) / 0.22);
 
     /* Sidebar */
-    --sidebar: 240 9% 6%;
-    --sidebar-foreground: 240 10% 96%;
-    --sidebar-primary: 33 96% 56%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 6% 14%;
-    --sidebar-accent-foreground: 240 10% 96%;
-    --sidebar-border: 240 6% 16%;
-    --sidebar-ring: 33 96% 56%;
+    --sidebar: 0 0% 100%;
+    --sidebar-foreground: 24 10% 10%;
+    --sidebar-primary: 33 93% 54%;
+    --sidebar-primary-foreground: 24 10% 10%;
+    --sidebar-accent: 30 8% 95%;
+    --sidebar-accent-foreground: 24 10% 12%;
+    --sidebar-border: 30 8% 88%;
+    --sidebar-ring: 33 93% 54%;
+  }
+
+  .dark {
+    /* Dark Mode — warm charcoal, same solid-card language */
+    --background: 24 10% 6%;           /* #110F0E */
+    --foreground: 30 20% 95%;
+
+    --card: 24 8% 10%;                 /* #1B1917 */
+    --card-foreground: 30 20% 95%;
+
+    --popover: 24 8% 11%;
+    --popover-foreground: 30 20% 95%;
+
+    --primary: 33 93% 56%;
+    --primary-foreground: 24 10% 8%;
+    --primary-strong: 33 95% 64%;
+
+    --secondary: 24 7% 14%;
+    --secondary-foreground: 30 20% 95%;
+
+    --muted: 24 7% 14%;
+    --muted-foreground: 30 8% 63%;
+
+    --accent: 24 7% 15%;
+    --accent-foreground: 30 20% 95%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 24 7% 16%;
+    --input: 24 7% 18%;
+    --ring: 33 93% 56%;
+
+    --tint-orange: 30 55% 14%;
+    --tint-green: 145 40% 12%;
+    --tint-green-fg: 142 60% 65%;
+    --tint-red: 0 45% 14%;
+    --tint-red-fg: 0 85% 72%;
+    --tint-blue: 222 45% 15%;
+    --tint-blue-fg: 217 90% 74%;
+    --tint-purple: 262 35% 16%;
+    --tint-purple-fg: 262 85% 80%;
+
+    --chart-1: 33 93% 56%;
+    --chart-2: 142 71% 48%;
+    --chart-3: 0 72% 60%;
+    --chart-4: 217 90% 64%;
+    --chart-5: 262 80% 70%;
+
+    --shadow-sm: 0 1px 2px hsl(0 0% 0% / 0.4);
+    --shadow-md: 0 0 0 1px hsl(0 0% 100% / 0.03), 0 8px 24px hsl(0 0% 0% / 0.35);
+    --shadow-lg: 0 0 0 1px hsl(0 0% 100% / 0.04), 0 16px 36px hsl(0 0% 0% / 0.5);
+    --shadow-glow: 0 0 0 1px hsl(var(--primary) / 0.35), 0 8px 28px hsl(var(--primary) / 0.25);
+
+    /* Sidebar */
+    --sidebar: 24 8% 10%;
+    --sidebar-foreground: 30 20% 95%;
+    --sidebar-primary: 33 93% 56%;
+    --sidebar-primary-foreground: 24 10% 8%;
+    --sidebar-accent: 24 7% 15%;
+    --sidebar-accent-foreground: 30 20% 95%;
+    --sidebar-border: 24 7% 16%;
+    --sidebar-ring: 33 93% 56%;
   }
 }
 
@@ -127,16 +144,12 @@
   body {
     @apply bg-background text-foreground;
     /* Tabular numerals so columns of figures align — finance-grade */
-    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1, "ss01" 1;
+    font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Signature ambient aura behind everything */
-    background-image: var(--aura);
-    background-repeat: no-repeat;
-    background-attachment: fixed;
   }
 
-  /* Tighter tracking on headings reads more premium */
+  /* Tighter tracking on headings */
   h1, h2, h3 {
     letter-spacing: -0.02em;
   }
@@ -146,30 +159,33 @@
     overflow-y: scroll;
   }
 
-  /* ── Subtle motion ─────────────────────────────────────────────
-     Restrained, not a circus: smooth interactive transitions, a soft
-     shadow/border response on cards, and a gentle lift on dashboard tiles. */
+  /* ── Motion ──────────────────────────────────────────────────────
+     Springy but brief. Entrance animations live in tailwind.config.js
+     (animate-rise / animate-pop); these are the interactive transitions. */
   a, button, [data-slot="button"], [role="button"], [data-slot="card"], summary {
     transition: color 0.15s ease, background-color 0.15s ease,
-      border-color 0.15s ease, box-shadow 0.2s ease, transform 0.2s ease;
+      border-color 0.15s ease, box-shadow 0.25s ease,
+      transform 0.25s cubic-bezier(0.2, 0.75, 0.2, 1);
   }
-  [data-slot="card"]:hover {
-    border-color: hsl(var(--foreground) / 0.12);
+
+  /* Cards stay still; only things you can press respond to the pointer.
+     The widget shell carries the drag "pick-up" transform in edit mode. */
+  .widget-shell {
+    height: 100%;
+    transition: transform 0.25s cubic-bezier(0.2, 0.75, 0.2, 1);
   }
-  /* Dashboard widgets get the signature lift + glow on hover */
-  .react-grid-item:hover {
-    transform: translateY(-2px);
-    z-index: 3;
-  }
-  .react-grid-item.react-draggable-dragging,
-  .react-grid-item.resizing {
-    transform: none;
+
+  /* One visible keyboard focus style for every control */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       transition-duration: 0.01ms !important;
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
     }
   }
 }
@@ -190,21 +206,34 @@
   user-select: none;
 }
 
+/* The widget being dragged: picked-up feel */
+.react-grid-item.react-draggable-dragging {
+  z-index: 10;
+}
+.react-grid-item.react-draggable-dragging > .widget-shell {
+  transform: scale(1.02) rotate(-0.4deg);
+}
+.react-grid-item.react-draggable-dragging [data-slot="card"] {
+  box-shadow: var(--shadow-lg), 0 0 0 2px hsl(var(--primary) / 0.5);
+}
+
 .react-grid-item > .react-resizable-handle {
   position: absolute;
   width: 20px;
   height: 20px;
+  z-index: 25;
 }
 
 .react-grid-item > .react-resizable-handle::after {
   content: "";
   position: absolute;
-  right: 3px;
-  bottom: 3px;
-  width: 5px;
-  height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  right: 6px;
+  bottom: 6px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid hsl(var(--muted-foreground) / 0.6);
+  border-bottom: 2px solid hsl(var(--muted-foreground) / 0.6);
+  border-bottom-right-radius: 2px;
 }
 
 .react-resizable-hide > .react-resizable-handle {
@@ -272,19 +301,16 @@
   transform: rotate(45deg);
 }
 
-/* Dark mode resize handles */
-.dark .react-grid-item > .react-resizable-handle::after {
-  border-right-color: rgba(255, 255, 255, 0.3);
-  border-bottom-color: rgba(255, 255, 255, 0.3);
-}
-
+/* Drop target while dragging: a soft dashed orange slot */
 .react-grid-item.react-grid-placeholder {
-  background: hsl(33 92% 50%);
-  opacity: 0.18;
+  background: hsl(var(--primary) / 0.12);
+  outline: 2px dashed hsl(var(--primary) / 0.55);
+  outline-offset: -2px;
+  opacity: 1;
   transition-duration: 100ms;
   z-index: 2;
   user-select: none;
-  border-radius: var(--radius);
+  border-radius: 1.5rem;
 }
 
 /* Custom scrollbar — themed via tokens and identical width in BOTH light and
@@ -319,106 +345,36 @@
 
 /* Selection color */
 ::selection {
-  background: hsl(33 92% 50% / 0.28);
+  background: hsl(var(--primary) / 0.28);
 }
 
-/* ── Floating panel glass ────────────────────────────────────────
-   macOS-style floating chrome: header / sidebar / footer are rounded
-   panels that float on the ONE shared canvas (the ambient orb wash
-   shows through the gutters between them). More opaque than a card so
-   they read as solid floating surfaces, with a rim highlight + drop
-   shadow for lift. No borders — the gap + shadow define the edge. */
-.glass-float {
-  background-color: hsl(var(--card) / 0.72);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
-}
-.dark .glass-float {
-  background-color: hsl(var(--card) / 0.6);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06), var(--shadow-lg);
-}
+/* ── Surface materials ───────────────────────────────────────────
+   Solid surfaces with soft shadows. The class names are kept from the
+   previous glass system so every existing page picks up the new look;
+   prefer `.surface` / `.surface-muted` in new code.
+   Unlayered on purpose: these beat Tailwind bg/border/shadow utilities. */
 
-/* ── Dashboard widget glass ──────────────────────────────────────
-   Same elevated material as .glass, but the LIFT is owned by
-   .react-grid-item:hover (so dragging/hover never double-transforms).
-   The surface itself only responds with a border + shadow. */
+/* App chrome (header, sidebar) and content cards */
+.surface,
+.glass-float,
 .glass-widget {
-  background-color: hsl(var(--card) / 0.72);
-  backdrop-filter: blur(22px) saturate(150%);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  background-color: hsl(var(--card));
   border: 0;
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-md);
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
-}
-.dark .glass-widget {
-  background-color: hsl(var(--card) / 0.6);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.06), var(--shadow-md);
-}
-/* Lift the shadow when the widget's grid cell is hovered (transform lift
-   is owned by .react-grid-item:hover). Static cards stay calm. */
-.react-grid-item:hover .glass-widget {
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
-}
-.dark .react-grid-item:hover .glass-widget {
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-lg);
+  /* A hairline edge, not a floating drop shadow — cards sit on the canvas */
+  box-shadow: 0 0 0 1px hsl(var(--border) / 0.6), var(--shadow-sm);
 }
 
-/* Standalone glass cards (content pages) get the same subtle lift + shadow
-   as dashboard widgets. Scoped to real <Card>s (data-slot) so toolbar divs
-   stay calm. Unlayered so it beats .glass-widget's resting shadow. */
-[data-slot="card"]:hover {
-  transform: translateY(-2px);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-lg);
-}
-.dark [data-slot="card"]:hover {
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-lg);
-}
-/* Inside the dashboard grid the grid item owns the lift — avoid double transform */
-.react-grid-item [data-slot="card"]:hover {
-  transform: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  [data-slot="card"]:hover { transform: none; }
-}
-
-/* Opaque card escape hatch — for <Card>s where frosted glass is wrong
-   (e.g. nested inside a modal, or on pages without the ambient canvas).
-   Defined AFTER .glass-widget so it wins when both classes are present. */
+/* Opaque card with a hairline — for cards nested inside a modal */
 .card-solid {
   background-color: hsl(var(--card));
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   border: 1px solid hsl(var(--border));
   box-shadow: var(--shadow-sm);
 }
 
-/* Subtle glass surface — translucent + blur + a hairline top highlight */
+/* Nested, tinted surface inside a card (stat tiles, list groups) */
+.surface-muted,
 .glass {
-  background-color: hsl(var(--card) / 0.62);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
-  border: 1px solid hsl(var(--border) / 0.55);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.45);
-}
-.dark .glass {
-  background-color: hsl(var(--card) / 0.5);
-  border-color: hsl(0 0% 100% / 0.06);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.05);
-}
-
-/* Subtle hover "pop" for glass cards */
-.glass {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.glass:hover {
-  transform: translateY(-2px);
-  border-color: hsl(var(--primary) / 0.3);
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.5), var(--shadow-md);
-}
-.dark .glass:hover {
-  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.07), var(--shadow-md);
-}
-@media (prefers-reduced-motion: reduce) {
-  .glass:hover { transform: none; }
+  background-color: hsl(var(--secondary));
+  border: 0;
+  box-shadow: none;
 }

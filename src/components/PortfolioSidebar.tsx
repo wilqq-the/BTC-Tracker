@@ -11,8 +11,9 @@ import { PortfolioSummaryData } from '@/lib/bitcoin-price-service';
 import { AppSettings } from '@/lib/types';
 import AddTransactionModal from './AddTransactionModal';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { onTransactionsChanged } from '@/lib/app-events';
+import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 
 interface ConvertedPortfolioData {
   totalBTC: number;
@@ -46,10 +47,16 @@ interface PortfolioSidebarProps {
   onClose?: () => void;
 }
 
-const WALLET_COLORS = [
-  'bg-blue-500', 'bg-primary', 'bg-emerald-500', 'bg-violet-500',
-  'bg-pink-500', 'bg-amber-500', 'bg-cyan-500', 'bg-rose-500',
-];
+// Same palette as the dashboard Wallets donut: cold reads blue, hot reads orange
+const COLD_WALLET_COLORS = ['bg-tint-blue-fg', 'bg-chart-5', 'bg-cyan-600'];
+const HOT_WALLET_COLORS = ['bg-primary', 'bg-chart-2', 'bg-pink-500'];
+function walletColors(wallets: { type: string }[]): string[] {
+  let cold = 0;
+  let hot = 0;
+  return wallets.map((w) => w.type === 'cold'
+    ? COLD_WALLET_COLORS[cold++ % COLD_WALLET_COLORS.length]
+    : HOT_WALLET_COLORS[hot++ % HOT_WALLET_COLORS.length]);
+}
 
 type WalletEntry = { id: number; name: string; emoji: string | null; type: string; btcBalance: number; includeInPortfolio: boolean };
 
@@ -92,31 +99,33 @@ function WalletSection({ portfolioData }: { portfolioData: any }) {
   const wallets: WalletEntry[] = portfolioData.walletBreakdown ?? [];
   const hasNamed = wallets.length > 0;
 
-  // Build segments for the mini bar
-  type Segment = { id: number; name: string; btcBalance: number };
-  const segments: Segment[] = hasNamed
-    ? wallets.filter(w => w.includeInPortfolio && w.btcBalance > 0).map(w => ({ id: w.id, name: w.name, btcBalance: w.btcBalance }))
+  // One row per wallet (named) or the legacy cold/hot totals
+  type Row = { id: number; name: string; btcBalance: number; type: string; excluded?: boolean };
+  const rows: Row[] = hasNamed
+    ? wallets.map(w => ({ id: w.id, name: w.name, btcBalance: w.btcBalance, type: w.type, excluded: !w.includeInPortfolio }))
     : [
-        { id: -1, name: 'Cold', btcBalance: portfolioData.coldWalletBtc as number },
-        { id: -2, name: 'Hot',  btcBalance: Math.abs(portfolioData.hotWalletBtc as number) },
+        { id: -2, name: 'Hot Wallet', btcBalance: Math.abs(portfolioData.hotWalletBtc as number), type: 'hot' },
+        { id: -1, name: 'Cold Wallet', btcBalance: portfolioData.coldWalletBtc as number, type: 'cold' },
       ];
-  const barTotal = segments.reduce((s, w) => s + w.btcBalance, 0) || 1;
+  const colors = walletColors(rows);
+  const segments = rows.map((r, i) => ({ ...r, color: colors[i] })).filter(r => !r.excluded && r.btcBalance > 0);
+  const barTotal = portfolioData.totalBtc || segments.reduce((sum, w) => sum + w.btcBalance, 0) || 1;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger className="w-full group">
-        <div className="flex items-center justify-between mb-1.5">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-            Wallets{hasNamed ? ` · ${wallets.length}` : ''}
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[13px] font-semibold text-muted-foreground">
+            {hasNamed ? `${wallets.length} wallets` : 'Wallets'}
           </p>
-          <ChevronDownIcon className={`size-3 text-muted-foreground transition-transform duration-300 group-hover:text-foreground ${open ? 'rotate-180' : ''}`} />
+          <ChevronDownIcon className={`size-4 text-muted-foreground transition-transform duration-300 group-hover:text-foreground ${open ? 'rotate-180' : ''}`} />
         </div>
-        {/* Mini distribution bar — always visible */}
-        <div className="h-2 bg-muted rounded-full overflow-hidden flex gap-0.5">
-          {segments.map((w, i) => (
+        {/* Mini distribution bar — always visible; the remainder is unassigned BTC */}
+        <div className="h-2.5 bg-card rounded-full overflow-hidden flex gap-0.5">
+          {segments.map((w) => (
             <div
               key={w.id}
-              className={`${WALLET_COLORS[i % WALLET_COLORS.length]} rounded-full transition-all duration-500 ease-out hover:opacity-80`}
+              className={`${w.color} rounded-full transition-all duration-700 ease-out`}
               style={{ width: `${(w.btcBalance / barTotal) * 100}%` }}
               title={`${w.name}: ${w.btcBalance.toFixed(8)} ₿`}
             />
@@ -125,39 +134,20 @@ function WalletSection({ portfolioData }: { portfolioData: any }) {
       </CollapsibleTrigger>
 
       <CollapsibleContent className="overflow-hidden data-[state=open]:animate-fadeIn">
-        <div className="mt-2 space-y-1.5">
-          {hasNamed ? (
-            wallets.map((w, i) => (
-              <div key={w.id} className="flex items-center justify-between rounded-md px-1.5 py-1 hover:bg-muted/60 transition-colors">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className={`size-2 rounded-full shrink-0 ${WALLET_COLORS[i % WALLET_COLORS.length]}`} />
-                  <span className="text-sm shrink-0">{w.emoji || (w.type === 'cold' ? '❄️' : '🔥')}</span>
-                  <span className="text-xs text-muted-foreground truncate">{w.name}</span>
-                  {!w.includeInPortfolio && <span className="text-xs text-muted-foreground/40 shrink-0">(excl.)</span>}
-                </div>
-                <div className="text-xs font-medium shrink-0 ml-2 tabular-nums">
-                  {w.btcBalance.toFixed(8)} ₿
-                </div>
+        <div className="mt-3 space-y-2">
+          {rows.map((w, i) => (
+            <div key={w.id} className="flex items-center justify-between gap-2 text-[13px]">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`size-2.5 rounded-[4px] shrink-0 ${colors[i]}`} />
+                <WalletTypeIcon type={w.type} className="size-3.5" />
+                <span className={`truncate font-semibold ${w.btcBalance <= 0 ? 'text-muted-foreground' : ''}`}>{w.name}</span>
+                {w.excluded && <span className="shrink-0 text-muted-foreground">(excl.)</span>}
               </div>
-            ))
-          ) : (
-            <>
-              <div className="flex items-center justify-between rounded-md px-1.5 py-1 hover:bg-muted/60 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="size-2 rounded-full bg-blue-500" />
-                  <span className="text-xs text-muted-foreground">Cold Wallet</span>
-                </div>
-                <span className="text-xs font-medium tabular-nums">{portfolioData.coldWalletBtc.toFixed(8)} ₿</span>
-              </div>
-              <div className="flex items-center justify-between rounded-md px-1.5 py-1 hover:bg-muted/60 transition-colors">
-                <div className="flex items-center gap-2">
-                  <div className="size-2 rounded-full bg-primary" />
-                  <span className="text-xs text-muted-foreground">Hot Wallet</span>
-                </div>
-                <span className="text-xs font-medium tabular-nums">{Math.abs(portfolioData.hotWalletBtc).toFixed(8)} ₿</span>
-              </div>
-            </>
-          )}
+              <span className={`shrink-0 font-bold tabular-nums ${w.btcBalance <= 0 ? 'text-muted-foreground' : ''}`}>
+                {w.btcBalance.toFixed(8)}
+              </span>
+            </div>
+          ))}
         </div>
       </CollapsibleContent>
     </Collapsible>
@@ -184,8 +174,13 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
       setLastUpdated(new Date());
       loadPortfolioData();
     });
+    // Transactions added elsewhere (header, quick actions) change holdings
+    const unsubscribeTx = onTransactionsChanged(() => loadPortfolioData());
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      unsubscribeTx();
+    };
   }, []);
 
   const loadData = async () => {
@@ -356,17 +351,16 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
 
   if (loading) {
     return (
-      <div className="w-full lg:w-80 h-full glass-float lg:rounded-2xl overflow-hidden p-3">
+      <div className="w-full lg:w-80 h-full surface rounded-3xl overflow-hidden p-3">
         <div className="animate-pulse space-y-3">
-          <div className="h-7 w-1/2 bg-muted rounded-lg"></div>
-          <div className="h-28 bg-muted rounded-2xl"></div>
-          <div className="h-12 bg-muted rounded-xl"></div>
-          <div className="h-32 bg-muted rounded-xl"></div>
+          <div className="h-36 bg-secondary rounded-2xl"></div>
+          <div className="h-20 bg-secondary rounded-2xl"></div>
+          <div className="h-32 bg-secondary rounded-2xl"></div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="h-16 bg-muted rounded-xl"></div>
-            <div className="h-16 bg-muted rounded-xl"></div>
-            <div className="h-16 bg-muted rounded-xl"></div>
-            <div className="h-16 bg-muted rounded-xl"></div>
+            <div className="h-20 bg-secondary rounded-2xl"></div>
+            <div className="h-20 bg-secondary rounded-2xl"></div>
+            <div className="h-20 bg-secondary rounded-2xl"></div>
+            <div className="h-20 bg-secondary rounded-2xl"></div>
           </div>
         </div>
       </div>
@@ -375,12 +369,12 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
 
   if (!portfolioData || !convertedData) {
     return (
-      <div className="w-full lg:w-80 h-full glass-float lg:rounded-2xl overflow-hidden p-4">
+      <div className="w-full lg:w-80 h-full surface rounded-3xl overflow-hidden p-4">
         <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-          <div className="flex size-16 items-center justify-center rounded-2xl bg-primary/10 text-4xl text-primary animate-fadeIn">₿</div>
-          <p className="text-muted-foreground">No portfolio data yet</p>
-          <Button onClick={() => setShowAddModal(true)} className="gap-2">
-            <PlusIcon className="size-4" /> Add Transaction
+          <div className="flex size-16 items-center justify-center rounded-2xl bg-tint-orange text-4xl font-extrabold text-primary-strong">₿</div>
+          <p className="font-semibold text-muted-foreground">No portfolio data yet</p>
+          <Button onClick={() => setShowAddModal(true)} className="gap-2 rounded-full font-bold">
+            <PlusIcon className="size-4" /> Add transaction
           </Button>
         </div>
         <AddTransactionModal isOpen={showAddModal} onClose={() => setShowAddModal(false)} onSuccess={() => loadPortfolioData()} />
@@ -391,173 +385,141 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
   const pnlUp = convertedData.unrealizedPnLSecondary >= 0;
   const change24hUp = convertedData.portfolioChange24hPercentage >= 0;
   const updateInfo = formatLastUpdated();
+  const btcChange = priceData?.priceChangePercent24h;
+  const upTone = 'text-tint-green-fg';
+  const downTone = 'text-tint-red-fg';
 
   return (
-    <div className="w-full lg:w-80 h-full glass-float lg:rounded-2xl overflow-hidden flex flex-col">
+    <div className="w-full lg:w-80 h-full surface rounded-3xl overflow-hidden flex flex-col">
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-      {/* HERO — portfolio value */}
-      <div
-        className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/[0.06] to-transparent p-4 backdrop-blur-md animate-fadeInUp"
-        style={{ boxShadow: 'var(--shadow-md)' }}
-      >
-        <div className="pointer-events-none absolute -right-10 -top-12 size-36 rounded-full bg-primary/25 blur-3xl" />
-        <div className="relative">
-          <div className="flex items-start justify-between gap-2 -mt-1 -mr-1">
-            <p className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Portfolio Value</p>
-            <div className="flex items-center gap-0.5">
-              <Button variant="ghost" size="icon-sm" onClick={handleRefresh} title="Refresh portfolio data" className="size-7 text-muted-foreground hover:text-foreground">
-                <RefreshCwIcon className="size-3.5" />
+      {/* Portfolio value — warm orange tile */}
+      <div className="rounded-2xl bg-tint-orange p-5">
+        <div className="flex items-start justify-between gap-2 -mt-1 -mr-2">
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">Your portfolio</p>
+          <div className="flex items-center">
+            <Button variant="ghost" size="icon-sm" onClick={handleRefresh} title="Refresh portfolio data" className="size-8 rounded-full text-muted-foreground hover:bg-card hover:text-foreground">
+              <RefreshCwIcon className="size-4" />
+            </Button>
+            {onClose && (
+              <Button variant="ghost" size="icon-sm" onClick={onClose} className="size-8 rounded-full text-muted-foreground hover:bg-card hover:text-foreground lg:hidden" title="Close sidebar">
+                <XIcon className="size-4" />
               </Button>
-              {onClose && (
-                <Button variant="ghost" size="icon-sm" onClick={onClose} className="size-7 text-muted-foreground hover:text-foreground lg:hidden" title="Close sidebar">
-                  <XIcon className="size-3.5" />
-                </Button>
-              )}
-            </div>
+            )}
           </div>
-          <div className="mt-1.5 text-[28px] font-bold leading-none tracking-tight tabular-nums">
-            {formatCurrency(animatedValue, convertedData.secondaryCurrency)}
-          </div>
-          <div className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-            {formatCurrency(convertedData.currentPortfolioValueMain, convertedData.mainCurrency)}
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold tabular-nums ${
-              pnlUp ? 'border-profit/30 bg-profit/10 text-profit' : 'border-loss/30 bg-loss/10 text-loss'
-            }`}>
-              {pnlUp ? <ArrowUpRightIcon className="size-3" /> : <ArrowDownRightIcon className="size-3" />}
-              {formatPercentage(convertedData.unrealizedPnLPercentage)}
-            </span>
-            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums ${
-              change24hUp ? 'border-profit/30 bg-profit/5 text-profit' : 'border-loss/30 bg-loss/5 text-loss'
-            }`}>
-              24h {change24hUp ? '+' : ''}{convertedData.portfolioChange24hPercentage.toFixed(2)}%
-            </span>
-            <span className="ml-auto self-center text-[10px] font-medium tabular-nums text-muted-foreground">{convertedData.totalTransactions} tx</span>
-          </div>
+        </div>
+        <div className="mt-2 text-[28px] font-extrabold leading-none tracking-[-0.03em] tabular-nums">
+          {formatCurrency(animatedValue, convertedData.secondaryCurrency)}
+        </div>
+        <div className="mt-1.5 text-[13px] text-muted-foreground tabular-nums">
+          {formatCurrency(convertedData.currentPortfolioValueMain, convertedData.mainCurrency)}
+        </div>
+        <div className="mt-3.5 flex flex-wrap items-center gap-1.5">
+          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${
+            pnlUp ? 'bg-tint-green text-tint-green-fg' : 'bg-tint-red text-tint-red-fg'
+          }`}>
+            {pnlUp ? <ArrowUpRightIcon className="size-3.5" /> : <ArrowDownRightIcon className="size-3.5" />}
+            {formatPercentage(convertedData.unrealizedPnLPercentage)}
+          </span>
+          <span className={`rounded-full bg-card px-2.5 py-1 text-xs font-bold tabular-nums ${change24hUp ? upTone : downTone}`}>
+            24h {change24hUp ? '+' : ''}{convertedData.portfolioChange24hPercentage.toFixed(2)}%
+          </span>
+          <span className="ml-auto text-xs font-semibold tabular-nums text-muted-foreground">{convertedData.totalTransactions} tx</span>
         </div>
       </div>
 
-      {/* Live BTC price ticker */}
-      <div className="flex items-center justify-between glass rounded-xl px-3 py-2.5 shadow-sm animate-fadeInUp" style={{ animationDelay: '60ms' }}>
-        <div className="flex items-center gap-2">
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-primary" />
-          </span>
-          <div className="leading-tight">
-            <p className="text-xs font-medium">BTC Price</p>
-            {updateInfo && <p className={`text-[10px] ${updateInfo.statusColor}`}>{priceData?.source === 'fallback' ? 'Fallback' : 'Live'} · {updateInfo.timeString}</p>}
+      {/* Live BTC price — the dark card from the dashboard */}
+      <div className="flex items-center gap-3 rounded-2xl bg-[hsl(24_10%_10%)] dark:bg-[hsl(24_8%_14%)] px-4 py-3.5 text-white">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-extrabold text-primary-foreground">₿</div>
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-white/70">
+            Bitcoin price
+            <span className="size-1.5 rounded-full bg-green-500 animate-live-pulse" />
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-semibold tabular-nums text-primary leading-none">
+          <div className="truncate text-lg font-extrabold tracking-tight tabular-nums">
             {formatCurrency(convertedData.currentBTCPriceSecondary, convertedData.secondaryCurrency)}
           </div>
-          {priceData?.priceChangePercent24h !== undefined && (
-            <div className={`text-[11px] font-medium tabular-nums mt-0.5 ${priceData.priceChangePercent24h >= 0 ? 'text-profit' : 'text-loss'}`}>
-              {priceData.priceChangePercent24h >= 0 ? '+' : ''}{priceData.priceChangePercent24h.toFixed(2)}%
+          {updateInfo && (
+            <div className="text-[11px] text-white/50">
+              {priceData?.source === 'fallback' ? 'Fallback price' : 'Live'} at {updateInfo.timeString}
             </div>
           )}
         </div>
+        {btcChange !== undefined && (
+          <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold tabular-nums ${btcChange >= 0 ? 'bg-green-900/80 text-green-200' : 'bg-red-900/80 text-red-200'}`}>
+            {btcChange >= 0 ? '+' : ''}{btcChange.toFixed(2)}%
+          </span>
+        )}
       </div>
 
-      {/* Holdings */}
-      <div className="glass rounded-xl p-3 shadow-sm space-y-3 animate-fadeInUp" style={{ animationDelay: '120ms' }}>
-        <div className="flex items-end justify-between">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Total Holdings</p>
-            <div className="text-xl font-semibold tabular-nums truncate">
-              {convertedData.totalBTC.toFixed(8)} <span className="text-primary">₿</span>
-            </div>
-            <div className="text-[11px] text-muted-foreground tabular-nums">
-              {convertedData.totalSatoshis.toLocaleString()} sats
-            </div>
+      {/* Holdings + wallets */}
+      <div className="rounded-2xl bg-secondary p-4 space-y-4">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-muted-foreground">Total holdings</p>
+          <div className="mt-0.5 truncate text-xl font-extrabold tabular-nums">
+            {convertedData.totalBTC.toFixed(8)} <span className="text-primary-strong">₿</span>
+          </div>
+          <div className="text-xs text-muted-foreground tabular-nums">
+            {convertedData.totalSatoshis.toLocaleString()} sats
           </div>
         </div>
 
-        {/* Wallet Distribution — collapsible (multi-level) */}
         {(portfolioData.walletBreakdown?.length > 0 || portfolioData.coldWalletBtc > 0 || portfolioData.hotWalletBtc > 0) && (
-          <>
-            <Separator />
-            <WalletSection portfolioData={portfolioData} />
-          </>
+          <WalletSection portfolioData={portfolioData} />
         )}
 
-        <Separator />
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] text-muted-foreground uppercase tracking-wide">Avg. Buy Price</span>
-          <span className="text-sm font-medium tabular-nums">
+        <div className="flex items-center justify-between border-t border-border pt-3">
+          <span className="text-[13px] font-semibold text-muted-foreground">Avg. buy price</span>
+          <span className="text-sm font-bold tabular-nums">
             {formatCurrency(convertedData.averageBuyPriceSecondary, convertedData.secondaryCurrency)}
           </span>
         </div>
       </div>
 
       {/* Stat tiles */}
-      <div className="grid grid-cols-2 gap-2 animate-fadeInUp" style={{ animationDelay: '180ms' }}>
-        <div className="glass rounded-xl p-3 shadow-sm">
-          <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            <TrendingUpIcon className="size-3" /> Unrealized
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl bg-secondary p-3.5">
+          <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+            <TrendingUpIcon className="size-3.5" /> Unrealized
           </p>
-          <div className={`text-sm font-semibold tabular-nums truncate ${pnlUp ? 'text-profit' : 'text-loss'}`}>
-            {pnlUp ? '+' : ''}{formatCurrency(convertedData.unrealizedPnLSecondary, convertedData.secondaryCurrency)}
+          <div className={`truncate text-sm font-extrabold tabular-nums ${pnlUp ? upTone : downTone}`}>
+            {pnlUp ? '+' : '-'}{formatCurrency(Math.abs(convertedData.unrealizedPnLSecondary), convertedData.secondaryCurrency)}
           </div>
-          <div className={`text-[11px] tabular-nums ${pnlUp ? 'text-profit' : 'text-loss'}`}>
+          <div className={`text-xs font-semibold tabular-nums ${pnlUp ? upTone : downTone}`}>
             {formatPercentage(convertedData.unrealizedPnLPercentage)}
           </div>
         </div>
 
-        <div className="glass rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">24h Change</p>
-          <div className={`text-sm font-semibold tabular-nums truncate ${change24hUp ? 'text-profit' : 'text-loss'}`}>
+        <div className="rounded-2xl bg-secondary p-3.5">
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">24h change</p>
+          <div className={`truncate text-sm font-extrabold tabular-nums ${change24hUp ? upTone : downTone}`}>
             {change24hUp ? '+' : '-'}{formatCurrency(Math.abs(convertedData.portfolioChange24hSecondary), convertedData.secondaryCurrency)}
           </div>
-          <div className={`text-[11px] tabular-nums ${change24hUp ? 'text-profit' : 'text-loss'}`}>
+          <div className={`text-xs font-semibold tabular-nums ${change24hUp ? upTone : downTone}`}>
             {change24hUp ? '+' : ''}{convertedData.portfolioChange24hPercentage.toFixed(2)}%
           </div>
         </div>
 
-        <div className="glass rounded-xl p-3 shadow-sm">
-          <p className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
-            <CoinsIcon className="size-3" /> Invested
+        <div className="rounded-2xl bg-secondary p-3.5">
+          <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+            <CoinsIcon className="size-3.5" /> Invested
           </p>
-          <div className="text-sm font-semibold tabular-nums truncate">
+          <div className="truncate text-sm font-extrabold tabular-nums">
             {formatCurrency(convertedData.totalInvestedSecondary, convertedData.secondaryCurrency)}
           </div>
-          <div className="text-[11px] text-muted-foreground tabular-nums">
+          <div className="text-xs text-muted-foreground tabular-nums">
             {formatCurrency(convertedData.totalFeesSecondary, convertedData.secondaryCurrency)} fees
           </div>
         </div>
 
-        <div className="glass rounded-xl p-3 shadow-sm">
-          <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Total Cost</p>
-          <div className="text-sm font-semibold tabular-nums truncate">
+        <div className="rounded-2xl bg-secondary p-3.5">
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">Total cost</p>
+          <div className="truncate text-sm font-extrabold tabular-nums">
             {formatCurrency(convertedData.totalInvestedSecondary + convertedData.totalFeesSecondary, convertedData.secondaryCurrency)}
           </div>
-          <div className="text-[11px] text-muted-foreground tabular-nums">incl. fees</div>
+          <div className="text-xs text-muted-foreground">incl. fees</div>
         </div>
       </div>
-
       </div>
-
-      {/* Quick Actions — pinned footer, always visible */}
-      <div className="shrink-0 border-t border-border/40 p-3">
-        <Button
-          onClick={() => setShowAddModal(true)}
-          className="group w-full h-11 gap-2 rounded-xl border border-primary/30 bg-primary/10 text-primary font-semibold transition-all duration-200 hover:bg-primary hover:text-primary-foreground hover:border-primary hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0"
-        >
-          <PlusIcon className="size-4 transition-transform duration-200 group-hover:rotate-90" />
-          Add Transaction
-        </Button>
-      </div>
-
-      <AddTransactionModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSuccess={() => {
-          loadPortfolioData();
-        }}
-      />
     </div>
   );
 }

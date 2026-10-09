@@ -1,130 +1,113 @@
 # BTC Tracker — Design System & UI Conventions
 
-This document captures the visual language and the non-obvious rules behind it.
-**Read this before building any new page, component, or widget** so new work stays
-consistent. The system is implemented in `src/app/globals.css` (utilities + tokens)
-and `tailwind.config.js` (shadow/animation/color tokens).
+How the interface looks and the rules behind it. **Read this before building or
+changing any page, component or widget.** Tokens live in `src/app/globals.css`
+(CSS variables) and `tailwind.config.js` (radii, tints, animations).
 
 ## 1. Direction
 
-Premium **dark-fintech** with an authentic **Bitcoin gold** accent, in a macOS-style
-**floating-panel** layout. Restraint over decoration: subtle motion, one consistent
-material, real depth from light/shadow — not borders.
+Friendly, solid and calm. Solid cards on a warm grey canvas, generous radii,
+Bitcoin orange used with intent, one typeface (Plus Jakarta Sans). Numbers are
+the content — give them size and weight; keep everything around them quiet.
 
-## 2. Layout: the floating shell
+What we deliberately avoid (they make an app look templated):
+- identical cards with icon tiles in a row ("stat card kit"), gradients as decoration;
+- emoji in the UI — **use lucide-react icons instead**;
+- ALL-CAPS labels, Title Case Labels, `A · B · C` meta strings, `→` appended to links;
+- entrance animations on every card, hover lifts on things you can't click;
+- showing the same number in several places on one screen.
 
-- The app is a fixed shell: `AppShell` (`src/components/AppShell.tsx`) renders the
-  persistent `AppLayout` for every route **except `/auth/*`**. It lives in the root
-  layout (`src/app/layout.tsx`) so it **never remounts on navigation** — the header,
-  `PortfolioSidebar`, and footer stay mounted (no refetch/flicker between pages).
-  **Pages must NOT render `<AppLayout>` themselves** — just return their content.
-- `AppLayout` is a one-screen shell (`h-screen overflow-hidden`) with `p-3`/`gap-3`
-  gutters. Header, sidebar, and footer are **floating rounded panels** (`.glass-float`
-  + `rounded-2xl`) on one shared ambient **canvas** (the blurred gold/sky orb wash).
-  The content area is **open canvas** (transparent, scrollable) — page cards float on it.
-- **Page content starts flush** (`pt-0`) and uses the 12px rhythm (`px-3`, `gap-3`,
-  `space-y-3`). Do **not** add page-level `p-6`/`max-w-[…] mx-auto`/`min-h-screen` or
-  your own background — the shell owns gutters and the canvas.
+## 2. Layout: the shell
 
-## 3. The material system (the core rule)
+- `AppShell` (root layout) renders the persistent `AppLayout` on every route except
+  `/auth/*`, so the header and portfolio sidebar never remount. **Pages must not
+  render `<AppLayout>`** — they return content only.
+- `AppLayout`: header card on top, `PortfolioSidebar` on the left (hidden on
+  Settings, where the settings menu takes that role), content area scrolls.
+  Gutters are 16px (`p-4`, `gap-4`), 8px on phones.
+- Page content: `space-y-4 pb-6`, no own padding / max-width / background.
+- Page title row (not a card): `<h1 className="text-lg font-bold tracking-tight">`
+  on the left, page actions (outline `rounded-full` buttons) on the right.
 
-Four unlayered utilities in `globals.css`. **Unlayered = they beat Tailwind utilities**
-(`bg-card`, `border`, `shadow-*`, `rounded-*` colors) in the cascade. This matters (§5).
+## 3. Surfaces
 
-| Utility | Use for | Look |
+| Class / component | Use | Look |
 |---|---|---|
-| `.glass-float` | App chrome: header, sidebar, footer | Opaque frost `bg-card/0.72`, blur, rim highlight, `shadow-lg`. The floating panels. |
-| `.glass-widget` | **Content cards** (it's baked into the base `<Card>`) + standalone card-like divs | Same frost, `shadow-md`, `border:0`. The elevated layer that floats on canvas. |
-| `.glass` | Lighter nested cards **inside** the sidebar/panels | More translucent; has its own hover lift. |
-| `.card-solid` | Escape hatch: a `<Card>` that must stay opaque (inside a modal, etc.) | Solid `bg-card` + real border + `shadow-sm`. Defined *after* `.glass-widget` so it wins. |
+| `<Card>` (`.surface`) | every content panel | solid `bg-card`, `rounded-2xl` (24px), hairline edge + tiny shadow |
+| `bg-secondary rounded-2xl` | nested tiles inside a card (stats, list groups) | soft grey, no border, no shadow |
+| `bg-tint-*` + `text-tint-*-fg` | chips, badges, the one highlighted tile | soft tint with readable text |
+| `.card-solid` | cards inside a modal | solid with a 1px border |
 
-- **The base `<Card>` (`src/components/ui/card.tsx`) is `.glass-widget rounded-2xl`.**
-  So every shadcn Card is automatically frosted glass. Use `<Card>` for content panels.
-- Toolbars / header bars are plain `<div className="glass-widget rounded-2xl">` (no
-  `data-slot="card"`) so they get the material but **not** the card hover (§6).
+Radii: 24px cards, 16–20px inner tiles, `rounded-full` for buttons/chips/pills.
+Legacy `.glass-float/.glass-widget/.glass` now map to the solid surfaces — don't use
+them in new code.
 
-## 4. Encapsulated page header (pattern)
+## 4. Colour
 
-Every page opens with its title in its own toolbar bar, matching the dashboard.
-**Title is text-only — no leading icon** (`text-xl font-semibold tracking-tight`).
-In-page tab bars use `TabNavigation`, which is a glass segmented control with the
-same gooey/ferrofluid sliding indicator as the header menu — reuse it, don't roll your own.
+- **Orange = `primary`** (`#F7931A`). Text on orange is dark (`primary-foreground`).
+  Orange *text/icons* on light surfaces use **`text-primary-strong`** (readable).
+  Use orange for the primary action, the active state and BTC amounts — not decoration.
+- **Tints** (`tailwind.config.js` → `tint`): `orange`, `green/green-fg`, `red/red-fg`,
+  `blue/blue-fg`, `purple/purple-fg`. Pair bg with its `-fg`.
+- **Gains/losses:** positive `text-tint-green-fg`, negative `text-tint-red-fg`,
+  **exactly zero `text-muted-foreground`** (never show €0 or "0 sells" in red).
+  Always include the sign: `+€1,234` / `-€1,234` (`formatCurrency` drops the minus —
+  add it yourself).
+- Cold storage reads **blue**, hot wallets read **orange**. Render wallets with
+  `<WalletTypeIcon type={wallet.type} />` (snowflake / flame), never the emoji.
+- Theme presets in `src/lib/theme-presets.ts` override tokens at runtime; the
+  default light/dark presets apply nothing (the CSS tokens *are* the default).
 
-```tsx
-<div className="px-3 pt-0 pb-6 space-y-3">
-  <div className="glass-widget rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-    <h1 className="text-xl font-semibold tracking-tight">Title</h1>
-    {/* optional actions on the right */}
-  </div>
-  {/* page content cards float below */}
-</div>
-```
+## 5. Type
 
-## 5. Gotchas (these WILL bite you)
+- One family: **Plus Jakarta Sans** (`font-sans`, loaded in `app/layout.tsx`).
+- Scale: 12 caption · 13 secondary · 14–15 body · 17 card title (`font-bold`) ·
+  18 page title · 22–30 figures · 40–60 hero figures (`font-extrabold`, `tracking-tight`).
+- Figures use `tabular-nums` (on by default via `body`). No monospace for numbers.
+- Sentence case everywhere: "Add transaction", "No goals yet", "Export tax report".
+- Labels are plain words in muted colour above the value — not uppercase, not tracked.
 
-1. **`.glass-widget` sets `border:0`.** Colored-border utilities on a `<Card>`
-   (`border-profit/20`, `border-btc-500/20`, `border-yellow-200`) only set border
-   *color* with no width → **they become invisible.** To convey state, use a **bg tint**
-   (`bg-profit/5`) or a gradient, not a border. (Plain `<div>`s still show borders.)
-2. **Never put a `<Card>` inside a modal/`DialogContent`** as frosted glass — it's
-   glass-on-glass with pointless backdrop-blur. Add `className="card-solid"` to those.
-3. **Theme presets override `globals.css` at runtime.** `applyThemePreset()` in
-   `src/lib/theme-presets.ts` injects CSS variables via `root.style.setProperty()`,
-   overriding the `.dark` tokens. Editing `globals.css` colors alone won't change a
-   selected preset — update the presets too.
-4. **There are two legacy color systems — do not use them in new code:**
-   - `ThemedCard` / `ThemedText` / `ThemedButton` and `.btc-*` CSS vars
-     (`bg-btc-bg-secondary`, `text-btc-text-primary`, `border-btc-border-primary`) — dead.
-     Use shadcn `Card`/`Button`/`Input` + standard tokens.
-   - `btc-500` / `bitcoin` Tailwind colors — legacy gold. Use **`primary`** instead
-     (the one Bitcoin gold). The only intentional exception: semantic chart bars.
+## 6. Copy
 
-## 6. Motion & hover
+Plain, specific, from the user's side. A button says what happens ("Create a goal",
+"Move to cold storage"). Empty states say what will appear and offer the action.
+Errors say what happened and how to fix it. Join facts with words/commas, not `·`.
 
-- Subtle and consistent. Cards (`[data-slot="card"]`) get a `translateY(-2px)` lift +
-  `shadow-lg` on hover (defined unlayered in `globals.css`). Dashboard grid widgets get
-  the lift from `.react-grid-item:hover` instead — card-lift is suppressed inside the
-  grid to avoid double-transform. Toolbar `<div>`s don't react (not cards).
-- The header page-nav uses a gooey "ferrofluid" sliding indicator (`Navigation.tsx`):
-  a single gold highlight that stretches to span old+new positions then contracts.
-- Keyframes: `animate-fadeIn`, `animate-fadeInUp` (in `tailwind.config.js`).
-- **Always respect `prefers-reduced-motion`** — `globals.css` zeroes transitions/animations
-  for it; don't reintroduce motion that ignores it.
-- **Avoid layout shift from async data.** Reserve space for content that loads late
-  (e.g. the header reserves a fixed-width slot + skeleton for the username, and always
-  renders the theme toggle so it can't pop in). A shifting row also knocks the nav
-  indicator out of alignment.
+## 7. Motion
 
-## 7. Color & type
+- **One orchestrated moment per page**, e.g. the dashboard hero: value counts up
+  (`useCountUp`), chart draws in, P&L chip pops. Everything else appears at once
+  (the grid fades in once).
+- Motion that answers an action is welcome: sliding `SegmentedControl` pill,
+  pressed buttons/tiles, the dragged widget being "picked up", modals opening.
+- Cards don't lift on hover. Clickable tiles may (`hover:-translate-y-0.5`).
+- Always respect `prefers-reduced-motion` (handled globally in `globals.css`).
 
-- **Gold accent = `primary`** (HSL hue ~33). Use `text-primary`, `bg-primary/10`,
-  `ring-primary`, etc. Semantic colors are kept: `profit` (green), `loss` (red),
-  amber for "paused"/warning status, `destructive` (red) for danger.
-- Tokens are HSL CSS vars in `globals.css` (`--background`, `--card`, `--primary`,
-  `--border`, `--muted-foreground`, shadow vars `--shadow-sm/md/lg/glow`, `--aura`).
-- Financial figures use **`tabular-nums`** (also on in `body` via font-feature-settings).
-  Headings use `tracking-tight`. Radii: `rounded-2xl` for panels/cards, `rounded-xl`
-  or `rounded-full` for small chips/pills/icon tiles.
+## 8. Shared components (reuse them)
 
-## 8. Dialogs & feedback — no native `alert()`/`confirm()`
+- `SegmentedControl` (`ui/segmented-control`) — any small exclusive choice (ranges, modes).
+- `RingChart` (`ui/ring-chart`) — score rings and allocation donuts.
+- `WidgetCard` (`ui/widget-card`) — dashboard widgets: text-only title, optional
+  header link via `badge`, `WidgetEmptyState` for empty data.
+- `WalletTypeIcon` (`ui/wallet-type-icon`) — wallet markers.
+- `useCountUp`, `usePortfolioMetrics` (`src/hooks`), `emitTransactionsChanged` /
+  `onTransactionsChanged` (`lib/app-events`) to refresh after adding a transaction.
+- Feedback: `toast` (`@/hooks/use-toast`) and `confirm` (`@/components/ui/confirm-dialog`)
+  — never native `alert()` / `confirm()`.
 
-- **Toasts:** `import { toast } from '@/hooks/use-toast'` (the `<Toaster/>` is mounted in
-  the root layout). Variants: `default`, `destructive`, `success`. Pattern:
-  `toast({ title: 'Saved', variant: 'success' })` /
-  `toast({ title: 'Failed to X', description: err, variant: 'destructive' })`.
-- **Confirmations:** `import { confirm } from '@/components/ui/confirm-dialog'` — a
-  styled, promise-based drop-in for `window.confirm`. Make the handler `async`:
-  `if (!(await confirm({ title: 'Delete X?', description: '…', confirmText: 'Delete', destructive: true }))) return;`
-  (`ConfirmDialogHost` is mounted once in the root layout.)
+## 9. Accessibility & quality floor
 
-## 9. New-feature checklist
+- Visible keyboard focus (global orange `:focus-visible` ring) — don't remove outlines.
+- Text contrast ≥ 4.5:1; real `<button>`/`<a>`; `aria-label` on icon-only buttons.
+- Works at phone width: grids stack, tables scroll inside their card, touch targets ≥ 40px.
+- Check light **and** dark before calling a UI change done.
 
-- [ ] Render content only — don't wrap in `<AppLayout>`.
-- [ ] Outer wrapper `px-3 pt-0 pb-6 space-y-3`; no own padding/max-width/background.
-- [ ] Title in an encapsulated `glass-widget rounded-2xl` toolbar.
-- [ ] Use `<Card>` for content (auto-glass); convey state with bg tints, not borders.
-- [ ] `card-solid` for any card inside a modal.
-- [ ] Gold = `primary` (never `btc-500`/`bitcoin`/blue/purple); semantic green/red/amber kept.
-- [ ] `tabular-nums` for figures, `tracking-tight` headings, `rounded-2xl` cards.
-- [ ] `toast` + `confirm` instead of native dialogs.
-- [ ] Reserve space for async-loaded content; respect reduced-motion.
+## 10. Checklist for a new page or component
+
+- [ ] Content only (no `<AppLayout>`), title row + `space-y-4`.
+- [ ] `<Card>` panels; tiles in `bg-secondary`; no gradients, no icon-tile stat rows.
+- [ ] Orange only for primary action / active / BTC; zero values muted; signed money.
+- [ ] Icons from lucide-react, no emoji; sentence case; no `·`/`→` tells.
+- [ ] Reuse the shared components above; `tabular-nums` figures.
+- [ ] One deliberate motion moment at most; reduced motion respected.
+- [ ] Light + dark + phone checked.
