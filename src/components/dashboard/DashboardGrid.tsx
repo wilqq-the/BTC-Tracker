@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  SaveIcon,
   PlusIcon,
   Settings2Icon,
   RotateCcwIcon,
@@ -121,6 +120,8 @@ export default function DashboardGrid() {
   const [gridWidth, setGridWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const layoutRef = useRef(layout);
+  // Last saved layout, so Cancel can put it back
+  const savedLayoutRef = useRef<typeof layout | null>(null);
 
   // Keep layoutRef in sync
   useEffect(() => {
@@ -187,18 +188,22 @@ export default function DashboardGrid() {
         };
         
         setLayout(mergedLayout);
+        savedLayoutRef.current = mergedLayout;
       } else {
         setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
       }
     } catch (error) {
       console.error('Error loading layout:', error);
       setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveLayout = async () => {
+  /** Persists the current layout; resolves to whether it worked */
+  const saveLayout = async (): Promise<boolean> => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/dashboard/layout', {
@@ -208,14 +213,17 @@ export default function DashboardGrid() {
       });
       const result = await response.json();
       if (result.success) {
+        savedLayoutRef.current = layout;
         setHasChanges(false);
         toast({ title: 'Dashboard saved', variant: 'success' });
-      } else {
-        toast({ title: 'Failed to save layout', variant: 'destructive' });
+        return true;
       }
+      toast({ title: 'Failed to save layout', variant: 'destructive' });
+      return false;
     } catch (error) {
       console.error('Error saving layout:', error);
       toast({ title: 'Failed to save layout', variant: 'destructive' });
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -231,6 +239,7 @@ export default function DashboardGrid() {
     try {
       await fetch('/api/dashboard/layout', { method: 'DELETE' });
       setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
       setHasChanges(false);
       setIsEditMode(false);
     } catch (error) {
@@ -275,26 +284,29 @@ export default function DashboardGrid() {
   }, []);
 
   const handleAddWidget = useCallback((widgetId: string) => {
+    const def = getWidgetDefinitionById(widgetId);
     setLayout(prev => ({
-      // Set y to large value so react-grid-layout places it at the bottom via compaction
-      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, visible: true, y: 9999 } : w),
+      // Back at its default size (a size kept from before it was hidden may
+      // be too small for its content); a large y lets compaction place it at
+      // the bottom
+      widgets: prev.widgets.map(w => w.id === widgetId
+        ? { ...w, visible: true, x: 0, y: 9999, w: def?.defaultW ?? w.w, h: def?.defaultH ?? w.h }
+        : w),
     }));
     setHasChanges(true);
     setShowAddWidget(false);
   }, []);
 
-  const toggleEditMode = async () => {
-    if (isEditMode && hasChanges) {
-      if (await confirm({
-        title: 'Save changes?',
-        description: 'You have unsaved layout changes. Save them before exiting edit mode?',
-        confirmText: 'Save',
-        cancelText: 'Discard',
-      })) {
-        saveLayout();
-      }
-    }
-    setIsEditMode(!isEditMode);
+  // Done saves and leaves edit mode; Cancel puts the last saved layout back
+  const finishEditing = async () => {
+    if (hasChanges && !(await saveLayout())) return;
+    setIsEditMode(false);
+  };
+
+  const cancelEditing = () => {
+    if (savedLayoutRef.current) setLayout(savedLayoutRef.current);
+    setHasChanges(false);
+    setIsEditMode(false);
   };
 
   // Filter widgets
@@ -342,11 +354,11 @@ export default function DashboardGrid() {
     <div className="relative pb-6">
       {/* Dashboard bar: greeting + customize; turns into the edit toolbar */}
       {isEditMode ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-tint-orange px-4 py-3 animate-fadeInUp">
+        <div className="sticky top-0 z-30 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-tint-orange px-4 py-3 shadow-sm animate-fadeInUp">
           <div className="flex items-center gap-2 text-sm">
             <Settings2Icon className="size-4 text-primary-strong" />
             <span className="font-bold text-primary-strong">Editing dashboard</span>
-            <span className="hidden text-muted-foreground sm:inline">· drag by the header, resize from the corner, × to hide</span>
+            <span className="hidden text-muted-foreground sm:inline">Drag a widget by its header, resize it from an edge or corner, × to hide it</span>
             {hasChanges && <Badge variant="secondary" className="rounded-full">Unsaved</Badge>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -379,13 +391,12 @@ export default function DashboardGrid() {
               <RotateCcwIcon className="size-4 mr-1.5" />
               Reset
             </Button>
-            <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={saveLayout} disabled={!hasChanges || isSaving}>
-              <SaveIcon className="size-4 mr-1.5" />
-              {isSaving ? 'Saving...' : 'Save'}
+            <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={cancelEditing} disabled={isSaving}>
+              Cancel
             </Button>
-            <Button size="sm" className="rounded-full" onClick={toggleEditMode}>
+            <Button size="sm" className="rounded-full" onClick={finishEditing} disabled={isSaving}>
               <CheckIcon className="size-4 mr-1.5" />
-              Done
+              {isSaving ? 'Saving…' : 'Done'}
             </Button>
           </div>
         </div>
@@ -435,7 +446,7 @@ export default function DashboardGrid() {
                     <div className="widget-shell">
                       <div className="relative h-full">
                         {isEditMode && (
-                          <div className="drag-handle absolute inset-x-0 top-0 z-20 flex cursor-grab items-center justify-between gap-2 rounded-t-2xl bg-tint-orange px-4 py-2 active:cursor-grabbing">
+                          <div className="drag-handle absolute inset-x-0 top-0 z-20 flex cursor-grab items-center justify-between gap-2 rounded-t-2xl bg-tint-orange px-4 py-2 shadow-[0_0_0_1px_hsl(var(--border)/0.6)] active:cursor-grabbing">
                             <span className="flex items-center gap-1.5 text-xs font-bold text-primary-strong">
                               <GripVerticalIcon className="size-4 opacity-70" />
                               {def?.title}
@@ -455,7 +466,9 @@ export default function DashboardGrid() {
                             </button>
                           </div>
                         )}
-                        <div className={`h-full ${isEditMode ? 'pt-9 pointer-events-none select-none' : ''}`}>
+                        {/* In edit mode the strip takes the widget's top corners, so the
+                            card's own top corners go square underneath it */}
+                        <div className={`h-full ${isEditMode ? 'pt-9 pointer-events-none select-none [&>[data-slot=card]]:rounded-t-none' : ''}`}>
                           {renderWidget(widget)}
                         </div>
                       </div>
@@ -472,7 +485,7 @@ export default function DashboardGrid() {
       {/* Customize lives under the widgets so the grid starts level with the sidebar */}
       {!isEditMode && !isStacked && (
         <div className="mt-4 flex justify-end">
-          <Button variant="ghost" size="sm" className="rounded-full font-semibold text-muted-foreground hover:bg-card hover:text-foreground" onClick={toggleEditMode}>
+          <Button variant="ghost" size="sm" className="rounded-full font-semibold text-muted-foreground hover:bg-card hover:text-foreground" onClick={() => setIsEditMode(true)}>
             <Settings2Icon className="size-4 mr-1.5" />
             Customize dashboard
           </Button>

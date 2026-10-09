@@ -76,7 +76,7 @@ export default function PortfolioSummaryWidget({ id, onRefresh }: WidgetProps) {
 
   return (
     <WidgetCard
-      title="Portfolio Summary"
+      title="Portfolio summary"
       icon={WalletIcon}
       loading={loading}
       error={!metrics ? "No portfolio data available" : null}
