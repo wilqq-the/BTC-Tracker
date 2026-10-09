@@ -138,6 +138,8 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
       {walletData && (
         <div className="flex flex-1 flex-col gap-5">
           <div className="flex items-center gap-5">
+            {/* Padding leaves room for a hovered slice to pop outward without clipping */}
+            <div className="shrink-0 p-1.5">
             <RingChart
               segments={ringRows.map((r) => ({ value: r.btc, color: r.color, label: r.name }))}
               total={walletData.totalBtc}
@@ -146,6 +148,7 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
               activeIndex={activeKey ? ringRows.findIndex((r) => r.key === activeKey) : null}
               onActiveChange={(i) => setActiveKey(i === null ? null : ringRows[i]?.key ?? null)}
             />
+            </div>
             <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-sm">
               {rows.map((r) => (
                 <div
