@@ -572,7 +572,7 @@ export default function BitcoinChart({
                       strokeWidth={3}
                       strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={snapped ? false : showTransactions ? { r: 5, fill: 'var(--color-price)' } : { r: 5 }}
+                      activeDot={false}
                       isAnimationActive={!drawn}
                       animationDuration={1400}
                       animationEasing="ease-out"
@@ -585,7 +585,7 @@ export default function BitcoinChart({
                       strokeWidth={3}
                       strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={snapped ? false : showTransactions ? { r: 5, fill: 'var(--color-price)' } : { r: 5 }}
+                      activeDot={false}
                       isAnimationActive={!drawn}
                       animationDuration={1400}
                       animationEasing="ease-out"
