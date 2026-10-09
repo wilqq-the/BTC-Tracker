@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import { FerroMarkers } from '@/components/ui/ferro-marker';
 import { 
   ChartContainer,
   ChartTooltip,
@@ -243,6 +244,34 @@ export default function BitcoinChart({
     return { high, low, range };
   }, [chartData]);
 
+  // Magnetic transaction markers: when the pointer is within SNAP_PX of a
+  // transaction, the tooltip snaps to it instead of the day under the cursor.
+  const SNAP_PX = 20;
+  const plotRef = useRef<HTMLDivElement>(null);
+  const [snapIndex, setSnapIndex] = useState<number | null>(null);
+  const txIndexes = useMemo(
+    () => chartData.reduce<number[]>((acc, d, i) => (d.transaction ? [...acc, i] : acc), []),
+    [chartData]
+  );
+  const snapped = snapIndex !== null ? chartData[snapIndex] : undefined;
+
+  const handleChartMouseMove = (state: any) => {
+    const hovered = state?.activeTooltipIndex;
+    if (!showTransactions || typeof hovered !== 'number' || txIndexes.length === 0) {
+      setSnapIndex(null);
+      return;
+    }
+    // ~64px of the width is the y-axis; the rest is the plot
+    const plotWidth = Math.max(1, (plotRef.current?.clientWidth ?? 600) - 64);
+    const pxPerPoint = plotWidth / Math.max(1, chartData.length - 1);
+    let nearest = txIndexes[0];
+    for (const i of txIndexes) {
+      if (Math.abs(i - hovered) < Math.abs(nearest - hovered)) nearest = i;
+    }
+    const next = Math.abs(nearest - hovered) * pxPerPoint <= SNAP_PX ? nearest : null;
+    setSnapIndex((prev) => (prev === next ? prev : next));
+  };
+
   // Check if there are any transactions in the visible data
   const hasTransactions = useMemo(() => {
     return showTransactions && chartData.some(d => d.transaction);
@@ -338,6 +367,18 @@ export default function BitcoinChart({
       fill = '#8b5cf6'; // Purple for MIXED
     }
 
+    // Lets the ferrofluid overlay find this marker
+    const ferroAttrs = { 'data-ferro-marker': '', 'data-ferro-id': String(payload.timestamp), 'data-ferro-color': fill };
+
+    if (snapped && snapped.timestamp === payload.timestamp) {
+      return (
+        <g key={`tx-${payload.timestamp}`}>
+          <circle cx={cx} cy={cy} r={11} fill={fill} fillOpacity={0.2} />
+          <circle cx={cx} cy={cy} r={6} fill={fill} stroke="white" strokeWidth={2} {...ferroAttrs} />
+        </g>
+      );
+    }
+
     return (
       <circle
         key={`tx-${payload.timestamp}`}
@@ -347,6 +388,7 @@ export default function BitcoinChart({
         fill={fill}
         stroke="white"
         strokeWidth={1}
+        {...ferroAttrs}
       />
     );
   };
@@ -354,7 +396,7 @@ export default function BitcoinChart({
   // Custom tooltip content
   const CustomTooltip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
-    const data = payload[0].payload as ChartDataWithTx;
+    const data = (snapped ?? payload[0].payload) as ChartDataWithTx;
     const tx = data.transaction;
     // Use currentPriceMain (BTC price in user's main currency) for consistent P&L calculation
     // This ensures we compare EUR with EUR, USD with USD, etc.
@@ -477,9 +519,13 @@ export default function BitcoinChart({
           </div>
         ) : (
           <>
-            <div className="flex-1 min-h-[120px] w-full">
+            <div ref={plotRef} className="relative flex-1 min-h-[120px] w-full">
               <ChartContainer config={chartConfig} className="h-full w-full">
-                <ComposedChart data={chartData}>
+                <ComposedChart
+                  data={chartData}
+                  onMouseMove={handleChartMouseMove}
+                  onMouseLeave={() => setSnapIndex(null)}
+                >
                   <defs>
                     <linearGradient id="fillPrice" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="var(--color-price)" stopOpacity={0.28} />
@@ -512,7 +558,10 @@ export default function BitcoinChart({
                       label={{ value: 'Your avg', position: 'insideTopLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
                     />
                   )}
-                  <ChartTooltip content={<CustomTooltip />} />
+                  <ChartTooltip content={<CustomTooltip />} cursor={!snapped} />
+                  {snapped && (
+                    <ReferenceLine x={snapped.date} stroke="hsl(var(--muted-foreground))" strokeOpacity={0.5} />
+                  )}
                   {chartType === 'area' ? (
                     <Area
                       dataKey="price"
@@ -523,7 +572,7 @@ export default function BitcoinChart({
                       strokeWidth={3}
                       strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={showTransactions ? { r: 5, fill: 'var(--color-price)' } : { r: 5 }}
+                      activeDot={false}
                       isAnimationActive={!drawn}
                       animationDuration={1400}
                       animationEasing="ease-out"
@@ -536,7 +585,7 @@ export default function BitcoinChart({
                       strokeWidth={3}
                       strokeLinecap="round"
                       dot={showTransactions ? renderTransactionDot : false}
-                      activeDot={showTransactions ? { r: 5, fill: 'var(--color-price)' } : { r: 5 }}
+                      activeDot={false}
                       isAnimationActive={!drawn}
                       animationDuration={1400}
                       animationEasing="ease-out"
@@ -544,6 +593,9 @@ export default function BitcoinChart({
                   )}
                 </ComposedChart>
               </ChartContainer>
+              {showTransactions && (
+                <FerroMarkers containerRef={plotRef} snappedId={snapped ? String(snapped.timestamp) : null} />
+              )}
       </div>
 
             {/* Transaction Legend — only the marker types actually on the chart */}
