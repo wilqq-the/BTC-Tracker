@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { WidgetEmptyState } from '@/components/ui/widget-card';
 import { btc } from '@/components/planning/planning-icons';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 const PER_PERIOD: Record<string, string> = {
   daily: 'a day',
@@ -75,6 +76,7 @@ interface ExecutionHistoryItem {
 }
 
 export default function AutoDCATab() {
+  const { formatBtc } = useBtcUnit();
   const [transactions, setTransactions] = useState<RecurringTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
@@ -448,7 +450,7 @@ export default function AutoDCATab() {
                         <CheckCircle2Icon className="size-5 shrink-0 text-tint-green-fg" />
                         <div>
                           <p className="text-sm font-semibold">
-                            Bought <span className="font-bold text-primary-strong tabular-nums">{btc(exec.btcAmount)} BTC</span>
+                            Bought <span className="font-bold text-primary-strong tabular-nums">{formatBtc(exec.btcAmount, { trim: true })}</span>
                           </p>
                           <p className="text-xs text-muted-foreground">{formattedDate}</p>
                         </div>

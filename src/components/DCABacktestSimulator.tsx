@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { WidgetEmptyState } from '@/components/ui/widget-card';
 import { btc, pct, sign, tone } from '@/components/planning/planning-icons';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 type DCAFrequency = 'daily' | 'weekly' | 'biweekly' | 'monthly';
 
@@ -34,6 +35,7 @@ interface DCABacktestSimulatorProps {
 }
 
 export default function DCABacktestSimulator({ defaultCurrency = 'USD' }: DCABacktestSimulatorProps) {
+  const { formatBtc } = useBtcUnit();
   const [startDate, setStartDate] = useState<string>('2020-01-01');
   const [endDate, setEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [amount, setAmount] = useState<number>(100);
@@ -163,7 +165,7 @@ export default function DCABacktestSimulator({ defaultCurrency = 'USD' }: DCABac
     const benefit: number = r.comparison.dcaBenefit;
     const tiles = [
       { label: 'Invested', value: money(r.totalInvested) },
-      { label: 'Bitcoin bought', value: `${btc(r.totalBtc)} BTC`, className: 'text-primary-strong' },
+      { label: 'Bitcoin bought', value: formatBtc(r.totalBtc, { trim: true }), className: 'text-primary-strong' },
       { label: 'Profit or loss', value: `${sign(r.roi)}${money(r.roi)}`, className: tone(r.roi) },
       { label: 'Purchases', value: String(r.purchaseCount) },
     ];
@@ -215,14 +217,14 @@ export default function DCABacktestSimulator({ defaultCurrency = 'USD' }: DCABac
               <div className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">Buying {FREQUENCY_NOUN[ranFrequency]}</span>
                 <span className="text-right">
-                  <span className="font-bold tabular-nums">{btc(r.totalBtc)} BTC</span>
+                  <span className="font-bold tabular-nums">{formatBtc(r.totalBtc, { trim: true })}</span>
                   <span className="block text-xs text-muted-foreground tabular-nums">{money(r.currentValue)}</span>
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-3 text-sm">
                 <span className="text-muted-foreground">Everything on the start date</span>
                 <span className="text-right">
-                  <span className="font-bold tabular-nums">{btc(r.comparison.lumpSumBtc)} BTC</span>
+                  <span className="font-bold tabular-nums">{formatBtc(r.comparison.lumpSumBtc, { trim: true })}</span>
                   <span className="block text-xs text-muted-foreground tabular-nums">{money(r.comparison.lumpSumValue)}</span>
                 </span>
               </div>
