@@ -4,15 +4,16 @@ import React, { useState, useEffect } from 'react';
 import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
+import BackupRestorePanel from '@/components/BackupRestorePanel';
 import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
 import AppLayout from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon } from 'lucide-react';
+import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon, DatabaseIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
-type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin';
+type SettingsTab = 'currency' | 'priceData' | 'display' | 'notifications' | 'account' | 'exchanges' | 'admin' | 'backup';
 
 interface SettingsResponse {
   success: boolean;
@@ -136,7 +137,10 @@ export default function SettingsPage() {
     { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
-    ...(userData?.isAdmin ? [{ id: 'admin', label: 'Admin', icon: ShieldIcon }] : [])
+    ...(userData?.isAdmin ? [
+      { id: 'backup', label: 'Backup', icon: DatabaseIcon },
+      { id: 'admin', label: 'Admin', icon: ShieldIcon }
+    ] : [])
   ];
 
   return (
@@ -260,6 +264,10 @@ export default function SettingsPage() {
               onUpdate={(updates: any) => updateSettings('notifications', updates)}
               saving={saving}
             />
+          )}
+
+          {activeTab === 'backup' && userData?.isAdmin && (
+            <BackupRestorePanel />
           )}
 
           {activeTab === 'admin' && userData?.isAdmin && (

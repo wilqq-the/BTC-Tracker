@@ -191,17 +191,29 @@ This gives you complete control over your Bitcoin tracking data.
 
 ## Backup & Restore
 
-Your data lives in a single SQLite file. To backup:
+Your data lives in a single SQLite file. The easiest way to manage backups is from the app:
+
+**Settings → Backup** (admin only):
+- **Download backup** — grab a full-database snapshot to your computer
+- **Server snapshots** — create/keep snapshots on the server and download, restore, or delete them
+- **Restore from a file** — upload a backup to replace all data (a safety backup of the current database is taken automatically first)
+- **Automatic backups** — schedule periodic snapshots with retention (keep last N / keep N days)
+
+A backup is the whole database (every user's data), so restoring is admin-only and replaces everything.
+
+> **Note:** Exchange API credentials are encrypted with a key derived from `NEXTAUTH_SECRET`. A backup restored on the **same** install decrypts them fine; restoring onto an install with a **different** `NEXTAUTH_SECRET` leaves those credentials unreadable (all other data is unaffected). After a restore you may need to sign in again.
+
+You can still back up manually by copying the SQLite file:
 
 ```bash
 # Docker
-docker cp btc-tracker:/app/prisma/dev.db ./backup.db
+docker cp btc-tracker:/app/data/bitcoin-tracker.db ./backup.db
 
 # Local
 cp prisma/dev.db ./backup.db
 ```
 
-To restore, copy the file back and restart the app.
+To restore manually, copy the file back and restart the app.
 
 ## Community
 

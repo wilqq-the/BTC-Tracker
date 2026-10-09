@@ -53,5 +53,8 @@ CLAUDE.md
 # Uploaded files
 data/uploads/*
 
+# Backups (snapshots, gzip sidecars, metadata, backup-config.json — db-adjacent)
+**/backups/
+
 # Electron
 /dist-electron
