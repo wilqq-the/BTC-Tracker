@@ -50,7 +50,7 @@ Track your Bitcoin investments privately on your own PC. Import transactions fro
 ### Privacy & Control
 - **100% self-hosted** - Your data never leaves your server
 - **Multi-user support** - First user becomes admin, create accounts for family
-- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike
+- **Easy import** - Auto-detect CSV format from Kraken, Binance, Coinbase, Strike, River, 21bitcoin, Cash App, Revolut X
 - **Simple backup** - Single SQLite file, easy to backup and restore
 
 ## Screenshots
@@ -149,7 +149,7 @@ Open app and register the first user (becomes admin automatically).
 
 ## Importing transactions
 
-1. Export CSV from your exchange (Kraken, Binance, Coinbase, Strike)
+1. Export CSV from your exchange (Kraken, Binance, Coinbase, Strike, River, 21bitcoin, Cash App, Revolut X)
 2. Go to Transactions tab > Import
 3. Drop the CSV file - format detected automatically
 4. Review and import

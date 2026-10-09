@@ -507,7 +507,11 @@ export default function TransactionsPage() {
           'standard': 'Standard CSV format',
           'kraken': 'Kraken export',
           'coinbase': 'Coinbase export',
-          'strike': 'Strike export'
+          'strike': 'Strike export',
+          'river': 'River export',
+          '21bitcoin': '21bitcoin export',
+          'cashapp': 'Cash App export',
+          'revolutx': 'Revolut X export'
         };
         setDetectedFormat(formatMap[result.detected_format] || result.detected_format);
       }
@@ -1331,7 +1335,7 @@ export default function TransactionsPage() {
             {/* Supported formats */}
             <div className="rounded-2xl bg-secondary p-3">
               <p className="text-[13px] font-semibold">Supported formats</p>
-              <p className="text-[13px] text-muted-foreground">CSV from Binance, Kraken, Coinbase or Strike, or the standard CSV template. JSON from a BTC Tracker export.</p>
+              <p className="text-[13px] text-muted-foreground">CSV from Binance, Kraken, Coinbase, Strike, River, 21bitcoin, Cash App or Revolut X, or the standard CSV template. JSON from a BTC Tracker export.</p>
             </div>
           </div>
 

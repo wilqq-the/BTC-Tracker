@@ -9,6 +9,8 @@ import { CoinbaseParser } from './coinbase';
 import { StrikeParser } from './strike';
 import { Bitcoin21Parser } from './bitcoin21';
 import { RiverParser } from './river';
+import { CashAppParser } from './cashapp';
+import { RevolutXParser } from './revolutx';
 import { LegacyParser } from './legacy';
 import { StandardParser } from './standard';
 
@@ -24,6 +26,8 @@ const PARSERS: Parser[] = [
   new StrikeParser(),
   new Bitcoin21Parser(),
   new RiverParser(),
+  new CashAppParser(),
+  new RevolutXParser(),
   new LegacyParser(),
   new StandardParser(), // Fallback parser - should be last
 ];
@@ -74,7 +78,10 @@ export function parseCsvLine(line: string): string[] {
     // Check if this looks like a wrapped row (has commas that would be field separators)
     // by seeing if removing the outer quotes gives us a valid CSV row
     const testParse = parseLineInner(inner);
-    if (testParse.length > 1) {
+    // A row whose fields are each quoted ("a","b","c") also starts and ends
+    // with a quote — that's normal CSV, not a wrapped row, so leave it alone.
+    const isFullyQuotedRow = inner.includes('","');
+    if (testParse.length > 1 && !isFullyQuotedRow) {
       // This was a wrapped row - use the inner content
       console.log(`[CSV] Unwrapped Excel-quoted row: "${line.substring(0, 50)}..."`);
       line = inner;
