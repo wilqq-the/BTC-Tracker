@@ -7,11 +7,16 @@ import { cn } from '@/lib/utils';
  * Used everywhere a wallet is named instead of the wallet's emoji.
  */
 export function WalletTypeIcon({ type, className }: { type?: string | null; className?: string }) {
-  const Icon = type === 'cold' ? SnowflakeIcon : FlameIcon;
+  const cold = type === 'cold';
+  const Icon = cold ? SnowflakeIcon : FlameIcon;
   return (
     <Icon
       aria-hidden
-      className={cn('inline-block size-4 shrink-0', type === 'cold' ? 'text-tint-blue-fg' : 'text-primary-strong', className)}
+      // Solid marks: the flame is filled; the snowflake is all lines, so it
+      // gets a heavier stroke to carry the same visual weight
+      fill={cold ? 'none' : 'currentColor'}
+      strokeWidth={cold ? 2.6 : 2}
+      className={cn('inline-block size-4 shrink-0', cold ? 'text-tint-blue-fg' : 'text-primary-strong', className)}
     />
   );
 }
