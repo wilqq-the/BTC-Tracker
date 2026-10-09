@@ -16,6 +16,8 @@ interface Action {
   icon: LucideIcon;
   tile: string;
   iconColor: string;
+  /** One small gesture on hover that matches the icon */
+  nudge: string;
   run: () => void;
 }
 
@@ -28,10 +30,10 @@ export default function QuickActionsWidget(_props: WidgetProps) {
   const [modalType, setModalType] = useState<TxType | null>(null);
 
   const actions: Action[] = [
-    { label: 'Buy', icon: PlusIcon, tile: 'bg-tint-orange', iconColor: 'text-primary-strong', run: () => setModalType('BUY') },
-    { label: 'Sell', icon: MinusIcon, tile: 'bg-secondary', iconColor: 'text-foreground', run: () => setModalType('SELL') },
-    { label: 'Transfer', icon: ArrowLeftRightIcon, tile: 'bg-secondary', iconColor: 'text-tint-blue-fg', run: () => setModalType('TRANSFER') },
-    { label: 'Import CSV', icon: UploadIcon, tile: 'bg-secondary', iconColor: 'text-foreground', run: () => router.push('/transactions?import=1') },
+    { label: 'Buy', icon: PlusIcon, tile: 'bg-tint-orange', iconColor: 'text-primary-strong', nudge: 'group-hover:animate-nudge-up', run: () => setModalType('BUY') },
+    { label: 'Sell', icon: MinusIcon, tile: 'bg-secondary', iconColor: 'text-foreground', nudge: 'group-hover:animate-nudge-down', run: () => setModalType('SELL') },
+    { label: 'Transfer', icon: ArrowLeftRightIcon, tile: 'bg-secondary', iconColor: 'text-tint-blue-fg', nudge: 'group-hover:animate-nudge-x', run: () => setModalType('TRANSFER') },
+    { label: 'Import CSV', icon: UploadIcon, tile: 'bg-secondary', iconColor: 'text-foreground', nudge: 'group-hover:animate-hop', run: () => router.push('/transactions?import=1') },
   ];
 
   return (
@@ -53,8 +55,8 @@ export default function QuickActionsWidget(_props: WidgetProps) {
                   action.tile
                 )}
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-card transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] group-hover:-rotate-[8deg] group-hover:scale-110">
-                  <Icon className={cn('size-5', action.iconColor)} strokeWidth={2.2} />
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-card transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] group-hover:scale-110">
+                  <Icon className={cn('size-5', action.iconColor, action.nudge)} strokeWidth={2.2} />
                 </span>
                 <span className="text-[15px] font-bold">{action.label}</span>
               </button>

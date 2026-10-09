@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 import { WidgetCard } from '@/components/ui/widget-card';
 import { RingChart } from '@/components/ui/ring-chart';
 import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
@@ -39,6 +40,8 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Wallet under the pointer (ring slice or legend row): highlighted in both
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   useEffect(() => {
     loadWalletData();
@@ -121,6 +124,8 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
     }
   }
 
+  const ringRows = rows.filter((r) => !r.excluded);
+
   return (
     <WidgetCard
       title="Wallets"
@@ -134,15 +139,28 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
         <div className="flex flex-1 flex-col gap-5">
           <div className="flex items-center gap-5">
             <RingChart
-              segments={rows.filter((r) => !r.excluded).map((r) => ({ value: r.btc, color: r.color, label: r.name }))}
+              segments={ringRows.map((r) => ({ value: r.btc, color: r.color, label: r.name }))}
               total={walletData.totalBtc}
               size={112}
               thickness={16}
+              activeIndex={activeKey ? ringRows.findIndex((r) => r.key === activeKey) : null}
+              onActiveChange={(i) => setActiveKey(i === null ? null : ringRows[i]?.key ?? null)}
             />
             <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-sm">
               {rows.map((r) => (
-                <div key={r.key} className="flex items-center gap-2.5">
-                  <span className="size-2.5 shrink-0 rounded-[4px]" style={{ background: r.color }} />
+                <div
+                  key={r.key}
+                  className={cn(
+                    '-mx-1.5 flex items-center gap-2.5 rounded-xl px-1.5 py-0.5 transition-[background-color,transform] duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)]',
+                    activeKey === r.key && 'translate-x-0.5 scale-[1.03] bg-secondary'
+                  )}
+                  onMouseEnter={() => setActiveKey(r.key)}
+                  onMouseLeave={() => setActiveKey(null)}
+                >
+                  <span
+                    className={cn('size-2.5 shrink-0 rounded-[4px] transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)]', activeKey === r.key && 'scale-125')}
+                    style={{ background: r.color }}
+                  />
                   {r.type && <WalletTypeIcon type={r.type} className="size-3.5" />}
                   <span className={`min-w-0 flex-1 truncate font-semibold ${r.btc <= 0 ? 'text-muted-foreground' : ''}`}>
                     {r.name}{r.excluded && <span className="font-normal text-muted-foreground"> (excl.)</span>}

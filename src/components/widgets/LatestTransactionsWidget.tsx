@@ -9,6 +9,7 @@ import { useDisplayCurrency } from '@/hooks/use-display-currency';
 import { onTransactionsChanged } from '@/lib/app-events';
 import Link from 'next/link';
 import { useBtcUnit } from '@/hooks/use-btc-unit';
+import { emitHighlightTransaction, transactionDay } from '@/lib/app-events';
 
 interface Transaction {
   id: number;
@@ -122,8 +123,13 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
             const pnlTone = pnl > 0 ? 'text-tint-green-fg' : pnl < 0 ? 'text-tint-red-fg' : 'text-muted-foreground';
 
             return (
-              <div key={transaction.id} className="flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-secondary/70">
-                <span className={`w-[72px] shrink-0 rounded-full py-1.5 text-center text-[13px] font-bold ${badge.tone}`}>
+              <div
+                key={transaction.id}
+                className="group flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-secondary/70"
+                onMouseEnter={() => emitHighlightTransaction(transactionDay(transaction.transaction_date))}
+                onMouseLeave={() => emitHighlightTransaction(null)}
+              >
+                <span className={`w-[72px] shrink-0 rounded-full py-1.5 text-center text-[13px] font-bold transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] group-hover:scale-110 ${badge.tone}`}>
                   {badge.label}
                 </span>
                 <div className="min-w-0 flex-1">
