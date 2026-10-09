@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
       sells: number, 
       totalBought: number, 
       totalSold: number,
+      transferredIn: number,
+      transferredOut: number,
       avgBuyPrice: number,
       avgSellPrice: number,
       pnl: number,
@@ -125,6 +127,8 @@ export async function GET(request: NextRequest) {
         sells: 0,
         totalBought: 0,
         totalSold: 0,
+        transferredIn: 0,
+        transferredOut: 0,
         avgBuyPrice: 0,
         avgSellPrice: 0,
         pnl: 0,
@@ -136,7 +140,7 @@ export async function GET(request: NextRequest) {
         data.totalBought += tx.btcAmount;
         // Weighted average for buy price
         data.avgBuyPrice = ((data.avgBuyPrice * (data.totalBought - tx.btcAmount)) + (convertedPrice * tx.btcAmount)) / data.totalBought;
-      } else {
+      } else if (tx.type === 'SELL') {
         data.sells++;
         data.totalSold += tx.btcAmount;
         // Weighted average for sell price
@@ -146,6 +150,17 @@ export async function GET(request: NextRequest) {
         const costBasis = tx.btcAmount * avgBuyPrice; // Using overall avg buy price
         data.pnl += (sellValue - costBasis);
       }
+
+      // External transfers change holdings; moves between your own wallets don't
+
+      if (tx.type === 'TRANSFER') {
+
+        if (tx.transferType === 'TRANSFER_IN') data.transferredIn += tx.btcAmount;
+
+        else if (tx.transferType === 'TRANSFER_OUT') data.transferredOut += tx.btcAmount;
+
+      }
+
 
       monthlyData.set(monthKey, data);
     });
@@ -242,7 +257,7 @@ export async function GET(request: NextRequest) {
       year: month.substring(0, 4),
       buys: data.buys,
       sells: data.sells,
-      netBtc: data.totalBought - data.totalSold,
+      netBtc: data.totalBought - data.totalSold + data.transferredIn - data.transferredOut,
       pnl: data.pnl,
       performance: data.avgBuyPrice > 0 ? ((data.avgSellPrice - data.avgBuyPrice) / data.avgBuyPrice) * 100 : 0
     }));
