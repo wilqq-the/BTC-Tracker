@@ -65,7 +65,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
 
         {/* Main Content Area — open canvas; page cards/widgets float on it */}
-        <main className="flex-1 min-w-0 overflow-y-auto rounded-3xl">
+        <main className="flex-1 min-w-0 overflow-y-auto overflow-x-hidden rounded-3xl">
           {children}
         </main>
       </div>

@@ -95,7 +95,7 @@ export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
 
   return (
     <WidgetCard
-      title="This Month"
+      title="This month"
       icon={CalendarIcon}
       loading={loading}
       onRefresh={handleRefresh}
