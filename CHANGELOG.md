@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔒 Security
 - **Hardened API authentication** — every API route now requires a valid session or API key, admin-only settings and maintenance actions are restricted to admins, and data is strictly scoped to its owner. Upgrading is strongly recommended for every instance ([#231](https://github.com/wilqq-the/BTC-Tracker/pull/231))
 
+### 🛡️ Safer upgrades
+- **Automatic backup before every upgrade** — when a new version needs to change your database, it first saves a copy next to it (`bitcoin-tracker.db.pre-upgrade-<time>.bak`, newest 3 kept). If the copy can't be made, nothing is changed ([#246](https://github.com/wilqq-the/BTC-Tracker/pull/246))
+- **No more silent schema clean-ups** — earlier versions could automatically drop database columns or tables they didn't recognise when starting. That never happens now; the data is left alone and a warning is logged ([#246](https://github.com/wilqq-the/BTC-Tracker/pull/246))
+- Upgrades were verified from v0.7.0 and v0.6.6: every row of user data identical afterwards
+- Docker images for ARM (Raspberry Pi, Apple Silicon, Umbrel) are now built on native ARM machines instead of under emulation ([#245](https://github.com/wilqq-the/BTC-Tracker/pull/245))
+
 ### ✨ New Features
 - **New look** — a complete redesign: solid warm surfaces in a floating app shell, a new typeface, icons instead of emoji and clearer copy on every page ([#226](https://github.com/wilqq-the/BTC-Tracker/pull/226))
 - **BTC / sats toggle** — show every bitcoin amount in BTC or sats, from the header or Settings → Display; secondary lines show the other unit ([#230](https://github.com/wilqq-the/BTC-Tracker/pull/230))
