@@ -128,7 +128,9 @@ export async function GET(request: NextRequest) {
 
     // For P&L sorting, we need to fetch all transactions, calculate P&L, sort, then paginate
     // For other sorts, we can use database sorting which is more efficient
-    const shouldSortByPnL = sortBy === 'pnl';
+    // P&L and price depend on currency conversion, so they're sorted after
+    // enhancement; other columns sort in the database.
+    const shouldSortByPnL = sortBy === 'pnl' || sortBy === 'price';
     const MAX_PNL_SORT_LIMIT = 5000; // Limit for P&L sorting to prevent performance issues
 
     let transactions;
@@ -234,10 +236,13 @@ export async function GET(request: NextRequest) {
 
     // Sort by P&L if needed (after enhancing since P&L is calculated)
     if (shouldSortByPnL) {
+      // Price compares the converted (main currency) price; original prices
+      // can be in different currencies and aren't comparable
+      const sortKey = (t: any) => (sortBy === 'price' ? t.main_currency_price_per_btc : t.pnl_main) || 0;
       enhancedTransactions.sort((a, b) => {
-        const aPnL = a.pnl_main || 0;
-        const bPnL = b.pnl_main || 0;
-        return sortOrder === 'asc' ? aPnL - bPnL : bPnL - aPnL;
+        const aValue = sortKey(a);
+        const bValue = sortKey(b);
+        return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
       });
       
       // Apply pagination after sorting
