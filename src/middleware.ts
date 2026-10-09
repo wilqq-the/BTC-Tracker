@@ -1,62 +1,54 @@
-import { withAuth } from 'next-auth/middleware'
-import { jwtVerify } from 'jose'
+import { NextResponse } from 'next/server'
+import type { NextFetchEvent, NextRequest } from 'next/server'
+import { withAuth, type NextRequestWithAuth } from 'next-auth/middleware'
+import { getToken } from 'next-auth/jwt'
+import { isBearerTokenAcceptable, isPublicApiPath } from '@/lib/middleware-auth'
 
-const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET)
+// Pages: redirect to the sign-in page when there is no NextAuth session.
+const pageMiddleware = withAuth({
+  pages: {
+    signIn: '/auth/signin'
+  }
+})
 
-const middleware = withAuth(
-      function middleware(req) {
-    // Middleware logic handled in authorized callback
-      },
-      {
-        callbacks: {
-      authorized: async ({ token, req }) => {
-        // For API routes with Bearer tokens, verify manually
-        const isApiRoute = req.nextUrl.pathname.startsWith('/api/')
-        const authHeader = req.headers.get('authorization')
-        
-        if (isApiRoute && authHeader?.startsWith('Bearer ')) {
-          const bearerToken = authHeader.substring(7)
+function unauthorized() {
+  return NextResponse.json(
+    { success: false, error: 'Unauthorized - Valid authentication required' },
+    { status: 401 }
+  )
+}
 
-          // API key format — pass through; route handler validates
-          if (bearerToken.startsWith('btct_')) {
-            return true
-          }
+/**
+ * Outer authentication layer. API routes still authenticate themselves via
+ * `@/lib/auth-helpers` (API keys can only be checked against the database
+ * there); this rejects requests that are obviously unauthenticated early.
+ */
+export default async function middleware(req: NextRequest, event: NextFetchEvent) {
+  const { pathname } = req.nextUrl
 
-          try {
-            // Verify JWT token using NextAuth's secret
-            const { payload } = await jwtVerify(bearerToken, secret)
+  if (pathname.startsWith('/api/')) {
+    if (isPublicApiPath(pathname)) {
+      return NextResponse.next()
+    }
 
-            // Check if token has required claims
-            if (payload.sub && payload.email) {
-              return true
-            }
-          } catch (error) {
-            console.error('Bearer token verification failed:', error)
-            return false
-          }
-        }
-        
-        // For web routes, require NextAuth session token
-        return !!token
-      }
-        },
-        pages: {
-          signIn: '/auth/signin'
-        }
-      }
-    )
+    const authHeader = req.headers.get('authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const ok = await isBearerTokenAcceptable(authHeader.substring(7), process.env.NEXTAUTH_SECRET)
+      return ok ? NextResponse.next() : unauthorized()
+    }
 
-export default middleware
+    const sessionToken = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
+    return sessionToken ? NextResponse.next() : unauthorized()
+  }
+
+  return pageMiddleware(req as NextRequestWithAuth, event)
+}
 
 export const config = {
   matcher: [
     '/',
     '/transactions',
     '/settings',
-    '/api/transactions/:path*',
-    '/api/settings/:path*',
-    '/api/historical-data/:path*',
-    '/api/analytics/:path*',
-    '/api/portfolio-metrics'
+    '/api/:path*'
   ]
-} 
+}

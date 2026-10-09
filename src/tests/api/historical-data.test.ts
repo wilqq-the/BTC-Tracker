@@ -1,3 +1,6 @@
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+
 import { NextRequest } from 'next/server';
 import { GET as getHistoricalData } from '@/app/api/historical-data/route';
 import { GET as getHistoricalDataStatus } from '@/app/api/historical-data/status/route';

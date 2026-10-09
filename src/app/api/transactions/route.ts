@@ -5,6 +5,7 @@ import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
 import { withAuth } from '@/lib/auth-helpers';
+import { walletsBelongToUser } from '@/lib/wallet-helpers';
 
 // Enhanced transaction interface with secondary currency values
 interface EnhancedTransaction extends BitcoinTransaction {
@@ -333,6 +334,15 @@ export async function POST(request: NextRequest) {
     
     // Determine fees currency - for TRANSFER, always use BTC (network fees are paid in BTC)
     const feesCurrency = isTransfer ? 'BTC' : formData.currency;
+
+    // Wallets referenced by the transaction must belong to the current user
+    if (!(await walletsBelongToUser(userId, [(formData as any).from_wallet_id, (formData as any).to_wallet_id]))) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid wallet',
+        message: 'Wallet not found'
+      } as TransactionResponse, { status: 400 });
+    }
 
     // Insert transaction using Prisma - only store original data with user association
     const newTransaction = await prisma.bitcoinTransaction.create({

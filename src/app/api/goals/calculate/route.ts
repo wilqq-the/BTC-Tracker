@@ -3,9 +3,14 @@ import { BTCProjectionService } from '@/lib/btc-projection-service';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
+import { withAuth } from '@/lib/auth-helpers';
 
 // POST - Calculate DCA strategy for all scenarios
 export async function POST(request: NextRequest) {
+  return withAuth(request, () => calculateGoal(request));
+}
+
+async function calculateGoal(request: NextRequest) {
   try {
     const body = await request.json();
     

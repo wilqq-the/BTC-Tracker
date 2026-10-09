@@ -3,6 +3,9 @@
  * Tests for settings CRUD operations and validation
  */
 
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+
 import { testDb, setupTestDatabase, cleanTestDatabase, seedTestDatabase } from '../test-db'
 import { NextRequest } from 'next/server'
 import { AppSettings, MainCurrency, SupportedCurrency } from '../../lib/types'

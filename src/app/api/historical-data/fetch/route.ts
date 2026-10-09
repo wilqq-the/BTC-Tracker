@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { YahooFinanceService } from '@/lib/yahoo-finance-service';
 import { SettingsService } from '@/lib/settings-service';
+import { withAdminAuth } from '@/lib/auth-helpers';
 
 interface HistoricalDataResponse {
   success: boolean;
@@ -139,7 +140,11 @@ function generateMockHistoricalData(days: number): any[] {
 }
 
 // POST - Fetch historical data
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, () => fetchHistoricalData(request));
+}
+
+async function fetchHistoricalData(request: NextRequest): Promise<NextResponse> {
   try {
     // Try to get period from request body, otherwise use settings
     let period: string;

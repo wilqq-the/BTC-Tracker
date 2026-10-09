@@ -1,9 +1,12 @@
 /**
  * Bitcoin Price API Tests
- * Tests for Bitcoin price fetching, portfolio summary, and OHLC data endpoints
+ * Tests for Bitcoin price fetching, manual refresh, and OHLC data endpoints
  */
 
 // Mock the services that use dynamic imports BEFORE any imports
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+
 jest.mock('../../lib/settings-service', () => ({
   SettingsService: {
     getSettings: jest.fn().mockResolvedValue({
@@ -24,12 +27,11 @@ jest.mock('../../lib/exchange-rate-service', () => ({
 import { testDb, setupTestDatabase, cleanTestDatabase, seedTestDatabase } from '../test-db'
 import { createTestUser, createTestTransaction } from '../test-helpers'
 import { NextRequest } from 'next/server'
-import { BitcoinPriceData, PortfolioSummaryData } from '../../lib/bitcoin-price-service'
+import { BitcoinPriceData } from '../../lib/bitcoin-price-service'
 
 // Mock Bitcoin Price Service
 const mockBitcoinPriceService = {
   getCurrentPrice: jest.fn(),
-  getPortfolioSummary: jest.fn(),
   getTodaysOHLC: jest.fn(),
   clearCache: jest.fn(),
   calculateAndStorePortfolioSummary: jest.fn()
@@ -101,62 +103,6 @@ describe('Bitcoin Price API', () => {
       expect(mockBitcoinPriceService.getCurrentPrice).toHaveBeenCalledTimes(1)
     })
 
-    it('should return portfolio summary when endpoint=portfolio', async () => {
-      const mockPortfolioData: PortfolioSummaryData = {
-        totalBTC: 0.5,
-        totalTransactions: 3,
-        totalSatoshis: 50000000,
-        // Wallet distribution
-        coldWalletBTC: 0.3,
-        hotWalletBTC: 0.2,
-        totalFeesBTC: 0.001,
-        mainCurrency: 'USD',
-        totalInvestedMain: 25000,
-        totalFeesMain: 150,
-        averageBuyPriceMain: 50000,
-        currentBTCPriceMain: 52000,
-        currentPortfolioValueMain: 26000,
-        unrealizedPnLMain: 1000,
-        unrealizedPnLPercentage: 4.0,
-        portfolioChange24hMain: 500,
-        portfolioChange24hPercentage: 1.96,
-        secondaryCurrency: 'EUR',
-        totalInvestedSecondary: 23810,
-        totalFeesSecondary: 143,
-        averageBuyPriceSecondary: 47619,
-        currentBTCPriceSecondary: 49524,
-        currentPortfolioValueSecondary: 24762,
-        unrealizedPnLSecondary: 952,
-        portfolioChange24hSecondary: 476,
-        // Legacy USD fields
-        totalInvestedUSD: 25000,
-        totalFeesUSD: 150,
-        averageBuyPriceUSD: 50000,
-        currentBTCPriceUSD: 52000,
-        currentPortfolioValueUSD: 26000,
-        unrealizedPnLUSD: 1000,
-        unrealizedPnLPercent: 4.0,
-        portfolioChange24hUSD: 500,
-        portfolioChange24hPercent: 1.96,
-        currentValueEUR: 24762,
-        currentValuePLN: 104000,
-        lastUpdated: '2024-01-15T10:00:00.000Z',
-        lastPriceUpdate: '2024-01-15T10:00:00.000Z'
-      }
-
-      mockBitcoinPriceService.getPortfolioSummary.mockResolvedValue(mockPortfolioData)
-
-      const mockRequest = createMockRequest('GET', '/api/bitcoin-price?endpoint=portfolio')
-      const response = await bitcoinPriceGET(mockRequest)
-      const data = await response.json()
-
-      expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(data.data).toEqual(mockPortfolioData)
-      expect(data.timestamp).toBeDefined()
-      expect(mockBitcoinPriceService.getPortfolioSummary).toHaveBeenCalledTimes(1)
-    })
-
     it('should return fallback price on service error', async () => {
       mockBitcoinPriceService.getCurrentPrice.mockRejectedValue(new Error('Service unavailable'))
 
@@ -173,16 +119,21 @@ describe('Bitcoin Price API', () => {
       expect(data.data.priceChangePercent24h).toBe(0)
     })
 
-    it('should handle portfolio summary service error', async () => {
-      mockBitcoinPriceService.getPortfolioSummary.mockRejectedValue(new Error('Database error'))
+    it('should not expose a portfolio summary (endpoint=portfolio returns the price only)', async () => {
+      const mockPriceData: BitcoinPriceData = {
+        price: 50000,
+        timestamp: '2024-01-15T10:00:00.000Z',
+        source: 'database'
+      }
+      mockBitcoinPriceService.getCurrentPrice.mockResolvedValue(mockPriceData)
 
       const mockRequest = createMockRequest('GET', '/api/bitcoin-price?endpoint=portfolio')
       const response = await bitcoinPriceGET(mockRequest)
       const data = await response.json()
 
-      expect(response.status).toBe(500)
-      expect(data.success).toBe(false)
-      expect(data.error).toBe('Failed to fetch Bitcoin price')
+      expect(response.status).toBe(200)
+      expect(data.data).toEqual(mockPriceData)
+      expect(data.data.totalBTC).toBeUndefined()
     })
   })
 
@@ -366,65 +317,6 @@ describe('Bitcoin Price API', () => {
       expect(['database', 'fallback'].includes(data.data.source)).toBe(true)
       expect(typeof data.data.priceChange24h).toBe('number')
       expect(typeof data.data.priceChangePercent24h).toBe('number')
-    })
-
-    it('should validate portfolio summary structure', async () => {
-      const mockPortfolioData: PortfolioSummaryData = {
-        totalBTC: 0.5,
-        totalTransactions: 3,
-        totalSatoshis: 50000000,
-        // Wallet distribution
-        coldWalletBTC: 0.3,
-        hotWalletBTC: 0.2,
-        totalFeesBTC: 0.001,
-        mainCurrency: 'USD',
-        totalInvestedMain: 25000,
-        totalFeesMain: 150,
-        averageBuyPriceMain: 50000,
-        currentBTCPriceMain: 52000,
-        currentPortfolioValueMain: 26000,
-        unrealizedPnLMain: 1000,
-        unrealizedPnLPercentage: 4.0,
-        portfolioChange24hMain: 500,
-        portfolioChange24hPercentage: 1.96,
-        secondaryCurrency: 'EUR',
-        totalInvestedSecondary: 23810,
-        totalFeesSecondary: 143,
-        averageBuyPriceSecondary: 47619,
-        currentBTCPriceSecondary: 49524,
-        currentPortfolioValueSecondary: 24762,
-        unrealizedPnLSecondary: 952,
-        portfolioChange24hSecondary: 476,
-        totalInvestedUSD: 25000,
-        totalFeesUSD: 150,
-        averageBuyPriceUSD: 50000,
-        currentBTCPriceUSD: 52000,
-        currentPortfolioValueUSD: 26000,
-        unrealizedPnLUSD: 1000,
-        unrealizedPnLPercent: 4.0,
-        portfolioChange24hUSD: 500,
-        portfolioChange24hPercent: 1.96,
-        currentValueEUR: 24762,
-        currentValuePLN: 104000,
-        lastUpdated: '2024-01-15T10:00:00.000Z',
-        lastPriceUpdate: '2024-01-15T10:00:00.000Z'
-      }
-
-      mockBitcoinPriceService.getPortfolioSummary.mockResolvedValue(mockPortfolioData)
-
-      const mockRequest = createMockRequest('GET', '/api/bitcoin-price?endpoint=portfolio')
-      const response = await bitcoinPriceGET(mockRequest)
-      const data = await response.json()
-
-      const portfolio = data.data
-      expect(portfolio.totalBTC).toBeGreaterThanOrEqual(0)
-      expect(portfolio.totalTransactions).toBeGreaterThanOrEqual(0)
-      expect(portfolio.mainCurrency).toBeDefined()
-      expect(portfolio.secondaryCurrency).toBeDefined()
-      expect(typeof portfolio.totalInvestedMain).toBe('number')
-      expect(typeof portfolio.currentPortfolioValueMain).toBe('number')
-      expect(typeof portfolio.unrealizedPnLMain).toBe('number')
-      expect(typeof portfolio.unrealizedPnLPercentage).toBe('number')
     })
 
     it('should validate OHLC data structure', async () => {
