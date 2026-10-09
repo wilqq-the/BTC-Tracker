@@ -15,20 +15,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
 
 // Icons
 import {
-  PlusIcon,
-  EditIcon,
   AlertCircleIcon,
   CalendarIcon,
   CoinsIcon,
   TargetIcon,
   TagIcon,
   StickyNoteIcon,
-  XIcon,
-  RepeatIcon,
   CalendarClockIcon,
   HashIcon,
   InfinityIcon,
@@ -265,19 +260,18 @@ export default function RecurringTransactionModal({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {editingTransaction ? <EditIcon className="size-5" /> : <PlusIcon className="size-5" />}
-            {editingTransaction ? 'Edit' : 'Add'} Recurring Purchase
+          <DialogTitle className="text-[17px] font-bold tracking-tight">
+            {editingTransaction ? 'Edit recurring purchase' : 'Add recurring purchase'}
           </DialogTitle>
           <DialogDescription>
-            Set up automatic Bitcoin purchases on a schedule
+            Buy a fixed amount of bitcoin automatically on a schedule.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Error Display */}
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
+            <div className="flex items-center gap-2 rounded-2xl bg-tint-red p-3 text-sm font-semibold text-tint-red-fg">
               <AlertCircleIcon className="size-4 shrink-0" />
               {error}
             </div>
@@ -291,15 +285,15 @@ export default function RecurringTransactionModal({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               onBlur={() => !formData.name && generateDefaultName()}
-              placeholder="e.g., Daily DCA $10"
+              placeholder="Daily DCA $10"
             />
-            <p className="text-xs text-muted-foreground">Leave empty for auto-generated name</p>
+            <p className="text-xs text-muted-foreground">Leave it empty and a name is made for you.</p>
           </div>
 
           {/* Amount & Currency */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="amount">Amount per Purchase</Label>
+              <Label htmlFor="amount">Amount per purchase</Label>
               <Input
                 id="amount"
                 type="number"
@@ -330,15 +324,15 @@ export default function RecurringTransactionModal({
 
           {/* BTC Estimate */}
           {estimatedBtc && (
-            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  <CoinsIcon className="size-4 inline mr-1" />
-                  <span className="font-mono font-bold text-primary tabular-nums">{estimatedBtc} BTC</span> per purchase
+            <div className="card-solid rounded-2xl p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <CoinsIcon className="size-4" />
+                  About <span className="font-bold text-primary-strong tabular-nums">{estimatedBtc} BTC</span> per purchase
                 </span>
                 {monthlyTotal && (
                   <span className="text-muted-foreground">
-                    <span className="font-bold text-primary tabular-nums">{formData.currency} {monthlyTotal}</span>/month
+                    About <span className="font-bold text-foreground tabular-nums">{formData.currency} {monthlyTotal}</span> a month
                   </span>
                 )}
               </div>
@@ -348,17 +342,19 @@ export default function RecurringTransactionModal({
           {/* Frequency */}
           <div className="space-y-3">
             <Label>Frequency</Label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="radiogroup" aria-label="Frequency">
               {frequencies.map((freq) => (
                 <button
                   key={freq.value}
                   type="button"
+                  role="radio"
+                  aria-checked={formData.frequency === freq.value}
                   onClick={() => setFormData({ ...formData, frequency: freq.value as any })}
                   className={cn(
-                    "py-3 px-4 rounded-lg font-medium transition-all text-sm",
+                    "h-10 rounded-full px-4 text-sm font-bold transition-colors",
                     formData.frequency === freq.value
-                      ? 'bg-primary text-primary-foreground shadow-lg'
-                      : 'bg-muted hover:bg-muted/80'
+                      ? 'bg-tint-orange text-primary-strong ring-2 ring-primary'
+                      : 'bg-secondary text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {freq.label}
@@ -371,7 +367,7 @@ export default function RecurringTransactionModal({
           <div className="space-y-2">
             <Label htmlFor="startDate" className="flex items-center gap-1">
               <CalendarIcon className="size-4" />
-              Start Date
+              Start date
             </Label>
             <Input
               id="startDate"
@@ -387,13 +383,13 @@ export default function RecurringTransactionModal({
           <div className="space-y-3">
             <Label className="flex items-center gap-1">
               <CalendarClockIcon className="size-4" />
-              End Condition
+              Ends
             </Label>
             <div className="space-y-2">
               {/* Never */}
               <label className={cn(
-                "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
-                formData.endType === 'never' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                "card-solid flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl p-3",
+                formData.endType === 'never' && 'outline outline-2 -outline-offset-1 outline-primary'
               )}>
                 <input
                   type="radio"
@@ -404,13 +400,13 @@ export default function RecurringTransactionModal({
                   className="sr-only"
                 />
                 <InfinityIcon className="size-4 text-muted-foreground" />
-                <span className="text-sm"><strong>Never</strong> - Continue indefinitely</span>
+                <span className="text-sm"><strong>Never</strong> <span className="text-muted-foreground">until you pause or delete it</span></span>
               </label>
 
               {/* Until Date */}
               <label className={cn(
-                "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
-                formData.endType === 'date' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                "card-solid flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl p-3",
+                formData.endType === 'date' && 'outline outline-2 -outline-offset-1 outline-primary'
               )}>
                 <input
                   type="radio"
@@ -422,7 +418,7 @@ export default function RecurringTransactionModal({
                 />
                 <CalendarIcon className="size-4 text-muted-foreground" />
                 <div className="flex-1 flex items-center gap-3">
-                  <span className="text-sm"><strong>Until Date</strong></span>
+                  <span className="text-sm"><strong>On a date</strong></span>
                   {formData.endType === 'date' && (
                     <Input
                       type="date"
@@ -438,8 +434,8 @@ export default function RecurringTransactionModal({
 
               {/* After X occurrences */}
               <label className={cn(
-                "flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors",
-                formData.endType === 'occurrences' ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                "card-solid flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl p-3",
+                formData.endType === 'occurrences' && 'outline outline-2 -outline-offset-1 outline-primary'
               )}>
                 <input
                   type="radio"
@@ -475,7 +471,7 @@ export default function RecurringTransactionModal({
             <div className="space-y-2">
               <Label htmlFor="goalId" className="flex items-center gap-1">
                 <TargetIcon className="size-4" />
-                Link to Goal (Optional)
+                Link to a goal <span className="font-normal text-muted-foreground">(optional)</span>
               </Label>
               <select
                 id="goalId"
@@ -495,7 +491,7 @@ export default function RecurringTransactionModal({
 
           {/* Fees */}
           <div className="space-y-2">
-            <Label htmlFor="fees">Fees (Optional)</Label>
+            <Label htmlFor="fees">Fees <span className="font-normal text-muted-foreground">(optional)</span></Label>
             <Input
               id="fees"
               type="number"
@@ -510,7 +506,7 @@ export default function RecurringTransactionModal({
           <div className="space-y-2">
             <Label htmlFor="notes" className="flex items-center gap-1">
               <StickyNoteIcon className="size-4" />
-              Notes (Optional)
+              Notes <span className="font-normal text-muted-foreground">(optional)</span>
             </Label>
             <textarea
               id="notes"
@@ -526,23 +522,23 @@ export default function RecurringTransactionModal({
           <div className="space-y-2">
             <Label htmlFor="tags" className="flex items-center gap-1">
               <TagIcon className="size-4" />
-              Tags (Optional)
+              Tags <span className="font-normal text-muted-foreground">(optional)</span>
             </Label>
             <Input
               id="tags"
               value={formData.tags}
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-              placeholder="e.g., DCA,Automatic,Long-term"
+              placeholder="DCA,Automatic,Long-term"
             />
-            <p className="text-xs text-muted-foreground">Separate tags with commas</p>
+            <p className="text-xs text-muted-foreground">Separate tags with commas.</p>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button type="button" variant="outline" className="rounded-full" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Saving...' : editingTransaction ? 'Update' : 'Create'}
+            <Button type="submit" className="rounded-full font-bold" disabled={loading}>
+              {loading ? 'Saving...' : editingTransaction ? 'Save changes' : 'Create recurring purchase'}
             </Button>
           </DialogFooter>
         </form>

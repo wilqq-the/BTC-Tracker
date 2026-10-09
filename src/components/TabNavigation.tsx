@@ -1,12 +1,12 @@
 /**
  * TabNavigation Component
- * Modern, accessible tab navigation with state management
- * Industry-standard design pattern
+ * Pill tabs with a sliding indicator, styled like SegmentedControl.
+ * Works uncontrolled (initialTabId) or controlled (activeTabId + onTabChange).
  */
 
 'use client';
 
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
+import React, { useLayoutEffect, useRef, useState, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 export interface Tab {
@@ -20,136 +20,100 @@ export interface Tab {
 interface TabNavigationProps {
   tabs: Tab[];
   initialTabId?: string;
+  /** Controlled active tab; pair with onTabChange */
+  activeTabId?: string;
   onTabChange?: (tabId: string) => void;
+  'aria-label'?: string;
 }
 
-export default function TabNavigation({ tabs, initialTabId, onTabChange }: TabNavigationProps) {
-  const [activeTab, setActiveTab] = useState(initialTabId || tabs[0]?.id || '');
+export default function TabNavigation({
+  tabs,
+  initialTabId,
+  activeTabId,
+  onTabChange,
+  'aria-label': ariaLabel = 'Tabs',
+}: TabNavigationProps) {
+  const [internalTab, setInternalTab] = useState(initialTabId || tabs[0]?.id || '');
+  const activeTab = activeTabId ?? internalTab;
 
-  // Gooey "ferrofluid" sliding indicator — same flow selector as the header menu
   const listRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [indicator, setIndicator] = useState({ left: 0, width: 0, opacity: 0 });
-  const settleTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
 
-  const moveIndicatorTo = (el: HTMLElement | null) => {
-    const parent = listRef.current;
-    if (!parent || !el) return;
-    const p = parent.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    const target = { left: r.left - p.left + parent.scrollLeft, width: r.width };
-    // Phase 1 — stretch to span both spots (the liquid "reach")
-    setIndicator((prev) => {
-      if (!prev.opacity) return { ...target, opacity: 1 };
-      const left = Math.min(prev.left, target.left);
-      const right = Math.max(prev.left + prev.width, target.left + target.width);
-      return { left, width: right - left, opacity: 1 };
-    });
-    // Phase 2 — contract onto the target
-    clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => setIndicator({ ...target, opacity: 1 }), 150);
-  };
-
-  const moveIndicatorToActive = () => {
-    const el = itemRefs.current[activeTab];
-    if (el) moveIndicatorTo(el);
-    else {
-      clearTimeout(settleTimer.current);
-      setIndicator((s) => ({ ...s, opacity: 0 }));
-    }
-  };
-
-  useEffect(() => {
-    moveIndicatorToActive();
-    const onResize = () => moveIndicatorToActive();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = itemRefs.current[activeTab];
+      if (!el || !listRef.current) return;
+      setPill({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (listRef.current) observer.observe(listRef.current);
+    return () => observer.disconnect();
   }, [activeTab, tabs.length]);
 
   const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    if (onTabChange) {
-      onTabChange(tabId);
-    }
+    if (activeTabId === undefined) setInternalTab(tabId);
+    onTabChange?.(tabId);
   };
 
-  const activeTabData = tabs.find(tab => tab.id === activeTab);
+  const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
   return (
-    <>
-      {/* Gooey filter for the tab indicator */}
-      <svg aria-hidden width="0" height="0" className="absolute">
-        <defs>
-          <filter id="tab-goo">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur" />
-            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10" />
-          </filter>
-        </defs>
-      </svg>
-      <div className="space-y-6">
-      {/* Tab Navigation — glass segmented control with the gooey sliding indicator */}
+    <div className="space-y-4">
       <div
         ref={listRef}
-        onMouseLeave={moveIndicatorToActive}
-        className="relative flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-border/40 bg-card/30 p-1 backdrop-blur-md scrollbar-hide shadow-[inset_0_1px_0_hsl(0_0%_100%/0.06)]"
+        className="relative flex w-fit max-w-full overflow-x-auto rounded-full bg-secondary p-1 scrollbar-hide"
         role="tablist"
-        aria-label="Tabs"
+        aria-label={ariaLabel}
       >
-        {/* Liquid highlight that stretches between tabs */}
-        <div className="pointer-events-none absolute inset-0 opacity-25 dark:opacity-30 [filter:url(#tab-goo)]">
-          <span
-            className="absolute top-1 bottom-1 rounded-full bg-primary transition-[left,width,opacity] duration-[400ms] ease-[cubic-bezier(0.34,1.2,0.64,1)]"
-            style={{ left: indicator.left, width: indicator.width, opacity: indicator.opacity }}
-          />
-        </div>
+        <span
+          aria-hidden
+          className={cn(
+            'pointer-events-none absolute inset-y-1 rounded-full bg-card shadow-sm',
+            pill.ready && 'transition-[left,width] duration-[350ms] ease-[cubic-bezier(0.3,1.3,0.5,1)]'
+          )}
+          style={{ left: pill.left, width: pill.width, opacity: pill.ready ? 1 : 0 }}
+        />
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
 
           return (
             <button
               key={tab.id}
+              id={`tab-${tab.id}`}
               ref={(el) => { itemRefs.current[tab.id] = el; }}
               onClick={() => handleTabChange(tab.id)}
-              onMouseEnter={(e) => moveIndicatorTo(e.currentTarget)}
               className={cn(
-                "relative z-10 flex-shrink-0 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-200",
-                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                'relative z-10 flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold transition-colors duration-200',
+                isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               )}
               role="tab"
               aria-selected={isActive}
               aria-controls={`tabpanel-${tab.id}`}
             >
-              <span className="flex items-center gap-2">
-                {tab.icon && <span className="text-base">{tab.icon}</span>}
-                <span>{tab.label}</span>
-                {tab.badge !== undefined && tab.badge > 0 && (
-                  <span className={cn(
-                    "inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums",
-                    isActive ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                  )}>
-                    {tab.badge}
-                  </span>
-                )}
-              </span>
+              {tab.icon && <span className="flex [&_svg]:size-4">{tab.icon}</span>}
+              <span>{tab.label}</span>
+              {tab.badge !== undefined && tab.badge > 0 && (
+                <span
+                  className={cn(
+                    'inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums',
+                    isActive ? 'bg-tint-orange text-primary-strong' : 'bg-card text-muted-foreground'
+                  )}
+                >
+                  {tab.badge}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content */}
       {activeTabData && (
-        <div
-          id={`tabpanel-${activeTab}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${activeTab}`}
-          className="animate-fadeIn"
-        >
+        <div id={`tabpanel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
           {activeTabData.content}
         </div>
       )}
-      </div>
-    </>
+    </div>
   );
 }
-
