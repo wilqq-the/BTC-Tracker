@@ -108,6 +108,24 @@ async function importTransactions(
     }
   };
 
+  // TO_COLD_WALLET/FROM_COLD_WALLET transfers move BTC between the imported
+  // wallet and cold storage, so linking them needs a wallet on both ends -
+  // walletId alone only supplies one. Auto-resolve the other end to the
+  // user's cold wallet, but only when it's unambiguous: with more than one
+  // cold wallet there's no way to tell which one a plain CSV row means, so
+  // those rows fall back to the pre-existing unlinked behavior below rather
+  // than guessing wrong.
+  let soleColdWalletId: number | null = null;
+  if (walletId) {
+    const coldWallets = await prisma.wallet.findMany({
+      where: { userId, type: 'cold', isActive: true },
+      select: { id: true },
+    });
+    if (coldWallets.length === 1) {
+      soleColdWalletId = coldWallets[0].id;
+    }
+  }
+
   for (const transaction of transactions) {
     try {
       // Check for duplicates based on mode
@@ -258,6 +276,25 @@ async function importTransactions(
 
       // Import the transaction with user association
       const isTransfer = transaction.type === 'TRANSFER';
+      const transferType = isTransfer ? (transaction.transfer_type || null) : null;
+      // walletId is the wallet side of a TO_COLD_WALLET/FROM_COLD_WALLET
+      // transfer, not both sides of it - guard against soleColdWalletId
+      // resolving to that same wallet (importing a cold wallet's own CSV).
+      const coldWalletId = soleColdWalletId !== walletId ? soleColdWalletId : null;
+
+      let toWalletId: number | null = null;
+      let fromWalletId: number | null = null;
+      if (!isTransfer) {
+        toWalletId = transaction.type === 'BUY' ? walletId : null;
+        fromWalletId = transaction.type === 'SELL' ? walletId : null;
+      } else if (transferType === 'TO_COLD_WALLET') {
+        fromWalletId = walletId;
+        toWalletId = coldWalletId;
+      } else if (transferType === 'FROM_COLD_WALLET') {
+        fromWalletId = coldWalletId;
+        toWalletId = walletId;
+      }
+
       await prisma.bitcoinTransaction.create({
         data: {
           userId: userId,
@@ -270,10 +307,10 @@ async function importTransactions(
           feesCurrency: transaction.fees_currency,
           transactionDate: new Date(transaction.transaction_date),
           notes: transaction.notes,
-          transferType: isTransfer ? (transaction.transfer_type || null) : null,
+          transferType,
           destinationAddress: isTransfer ? (transaction.destination_address || null) : null,
-          toWalletId: !isTransfer && transaction.type === 'BUY' ? walletId : null,
-          fromWalletId: !isTransfer && transaction.type === 'SELL' ? walletId : null,
+          toWalletId,
+          fromWalletId,
         } as any
       });
 
