@@ -26,7 +26,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { TagsInput } from '@/components/ui/tags-input';
 import { CurrencySelector } from '@/components/ui/currency-selector';
 import { SegmentedControl } from '@/components/ui/segmented-control';
-import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
+import { WalletLabel } from '@/components/ui/wallet-type-icon';
 import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/theme';
@@ -459,8 +459,7 @@ export default function AddTransactionModal({
   const walletItems = (disabledId?: number | null) =>
     wallets.map(w => (
       <SelectItem key={w.id} value={w.id.toString()} disabled={disabledId != null && w.id === disabledId}>
-        <WalletTypeIcon type={w.type} />
-        {w.name}
+        <WalletLabel type={w.type} name={w.name} />
       </SelectItem>
     ));
 

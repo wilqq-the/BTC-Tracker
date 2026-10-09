@@ -1,6 +1,7 @@
 /**
  * TabNavigation Component
- * Pill tabs with a sliding indicator, styled like SegmentedControl.
+ * Pill tabs with a ferrofluid indicator (the header nav's FerroPill): it
+ * reaches toward the hovered tab and stretches and snaps when switching.
  * Works uncontrolled (initialTabId) or controlled (activeTabId + onTabChange).
  */
 
@@ -8,6 +9,7 @@
 
 import React, { useLayoutEffect, useRef, useState, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import { FerroPillLayer, useFerroPill } from '@/components/ui/ferro-pill';
 
 export interface Tab {
   id: string;
@@ -36,21 +38,17 @@ export default function TabNavigation({
   const [internalTab, setInternalTab] = useState(initialTabId || tabs[0]?.id || '');
   const activeTab = activeTabId ?? internalTab;
 
-  const listRef = useRef<HTMLDivElement>(null);
+  const { containerRef: listRef, blobRef, dropRef, moveTo } = useFerroPill<HTMLDivElement>();
   const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
-  const [pill, setPill] = useState({ left: 0, width: 0, ready: false });
+  const settle = () => moveTo(itemRefs.current[activeTab]);
 
   useLayoutEffect(() => {
-    const measure = () => {
-      const el = itemRefs.current[activeTab];
-      if (!el || !listRef.current) return;
-      setPill({ left: el.offsetLeft, width: el.offsetWidth, ready: true });
-    };
+    const measure = () => moveTo(itemRefs.current[activeTab]);
     measure();
     const observer = new ResizeObserver(measure);
     if (listRef.current) observer.observe(listRef.current);
     return () => observer.disconnect();
-  }, [activeTab, tabs.length]);
+  }, [activeTab, tabs.length, moveTo, listRef]);
 
   const handleTabChange = (tabId: string) => {
     if (activeTabId === undefined) setInternalTab(tabId);
@@ -66,15 +64,9 @@ export default function TabNavigation({
         className="relative flex w-fit max-w-full overflow-x-auto rounded-full bg-secondary p-1 scrollbar-hide"
         role="tablist"
         aria-label={ariaLabel}
+        onMouseLeave={settle}
       >
-        <span
-          aria-hidden
-          className={cn(
-            'pointer-events-none absolute inset-y-1 rounded-full bg-card shadow-sm',
-            pill.ready && 'transition-[left,width] duration-[350ms] ease-[cubic-bezier(0.3,1.3,0.5,1)]'
-          )}
-          style={{ left: pill.left, width: pill.width, opacity: pill.ready ? 1 : 0 }}
-        />
+        <FerroPillLayer blobRef={blobRef} dropRef={dropRef} className="bg-card" blobClassName="inset-y-1" />
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
 
@@ -84,6 +76,9 @@ export default function TabNavigation({
               id={`tab-${tab.id}`}
               ref={(el) => { itemRefs.current[tab.id] = el; }}
               onClick={() => handleTabChange(tab.id)}
+              onMouseEnter={(e) => moveTo(e.currentTarget)}
+              onFocus={(e) => moveTo(e.currentTarget)}
+              onBlur={settle}
               className={cn(
                 'relative z-10 flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold transition-colors duration-200',
                 isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'

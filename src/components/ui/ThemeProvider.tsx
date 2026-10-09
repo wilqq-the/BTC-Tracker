@@ -14,31 +14,34 @@ import {
 // Re-export useTheme for convenience
 export { useTheme };
 
+/**
+ * Apply the saved colour preset for a mode. Exported so the light/dark
+ * reveal (theme-transition.ts) can apply it synchronously — rendering is
+ * paused while a view transition prepares, so it can't wait for a frame.
+ */
+export function applyPresetForMode(mode: 'light' | 'dark') {
+  // Clear any previous overrides first
+  clearThemePresetOverrides();
+
+  const savedPresetId = loadSavedThemePreset(mode);
+  const preset = getThemePreset(savedPresetId, mode);
+
+  // The default presets ARE the design tokens in globals.css — only
+  // alternative presets override them at runtime.
+  const isDefault = savedPresetId === DEFAULT_DARK_THEME_ID || savedPresetId === DEFAULT_LIGHT_THEME_ID;
+  if (preset && !isDefault) {
+    applyThemePreset(preset);
+  }
+}
+
 // Component that handles theme preset application
 function ThemePresetInitializer({ children }: { children: ReactNode }) {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    // Wait for next frame to ensure DOM class is applied
-    const applyPreset = () => {
-      // Clear any previous overrides first
-      clearThemePresetOverrides();
-      
-      const mode = resolvedTheme === 'dark' ? 'dark' : 'light';
-      const savedPresetId = loadSavedThemePreset(mode);
-      const preset = getThemePreset(savedPresetId, mode);
-      
-      // The default presets ARE the design tokens in globals.css — only
-      // alternative presets override them at runtime.
-      const isDefault = savedPresetId === DEFAULT_DARK_THEME_ID || savedPresetId === DEFAULT_LIGHT_THEME_ID;
-      if (preset && !isDefault) {
-        applyThemePreset(preset);
-      }
-    };
-
     // Use requestAnimationFrame to ensure DOM is updated
     const frameId = requestAnimationFrame(() => {
-      applyPreset();
+      applyPresetForMode(resolvedTheme === 'dark' ? 'dark' : 'light');
     });
 
     return () => cancelAnimationFrame(frameId);
