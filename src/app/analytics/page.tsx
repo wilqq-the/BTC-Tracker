@@ -1,66 +1,61 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import currencies from '@/data/currencies.json';
-import { cn } from '@/lib/utils';
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  Cell,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Area,
+  AreaChart,
+  CartesianGrid,
+} from 'recharts';
+import { DownloadIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-
-// shadcn/ui components
+import { useCountUp } from '@/hooks/use-count-up';
+import { formatCurrency as formatMoney } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import MilestonesWidget from '@/components/widgets/MilestonesWidget';
 
-// Icons
-import {
-  TrendingUpIcon,
-  TrendingDownIcon,
-  WalletIcon,
-  TargetIcon,
-  CalendarIcon,
-  CoinsIcon,
-  DownloadIcon,
-  ArrowUpIcon,
-  ArrowDownIcon,
-  TrophyIcon,
-  SparklesIcon,
-  CheckCircleIcon,
-  CircleIcon,
-} from 'lucide-react';
+interface MonthBreakdown {
+  month: string;        // YYYY-MM
+  monthName: string;    // "Jan 2025"
+  buys: number;
+  sells: number;
+  totalBought: number;
+  totalSold: number;
+  avgBuyPrice: number;  // main currency
+  netBtc: number;
+}
 
 interface AnalyticsData {
+  totalBtc: number;
+  totalInvested: number;
   avgBuyPrice: number;
-  avgSellPrice: number;
+  currentBtcPrice: number;
   totalPnL: number;
   unrealizedPnL: number;
   realizedPnL: number;
   roi: number;
   annualizedReturn: number;
-  sharpeRatio: number;
   winRate: number;
-  bestTrade: any;
-  worstTrade: any;
-  currentBtcPrice: number;
-  monthlyBreakdown: any[];
-  statistics: {
-    totalTransactions: number;
-    totalBuys: number;
-    totalSells: number;
-    avgHoldTime: number;
-    totalDaysHolding: number;
-    mostActiveMonth: string;
-    largestPurchase: number;
-    avgBuyAmount: number;
-    currentHoldings: number;
-    totalBtcBought: number;
-    totalBtcSold: number;
-  };
-  taxReport: {
-    shortTermGains: number;
-    longTermGains: number;
-    totalTaxable: number;
-    totalFeesPaid: number;
-  };
+  holdingDays: number;
+  totalBuys: number;
+  totalSells: number;
+  totalBtcBought: number;
+  totalBtcSold: number;
+  largestPurchase: number;
+  avgBuyAmount: number;
+  monthlyBreakdown: MonthBreakdown[];
+  mainCurrency: string;
+  secondaryCurrency?: string;
+  mainToSecondaryRate?: number;
 }
 
 interface Transaction {
@@ -76,84 +71,76 @@ interface Transaction {
   notes?: string;
 }
 
+// Green for gains, red for losses, quiet grey for exactly zero
+const tone = (n: number) => (n > 0 ? 'text-tint-green-fg' : n < 0 ? 'text-tint-red-fg' : 'text-muted-foreground');
+const signed = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '');
+const btc = (n: number) => (n >= 1 ? n.toFixed(2) : n.toFixed(8)).replace(/\.?0+$/, '') || '0';
+
 export default function AnalyticsPage() {
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [mainCurrency, setMainCurrency] = useState('USD');
-  const [secondaryCurrency, setSecondaryCurrency] = useState('USD');
-  const [exchangeRate, setExchangeRate] = useState(1);
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    loadAnalytics();
+    (async () => {
+      try {
+        const response = await fetch('/api/portfolio-metrics?detailed=true');
+        const result = await response.json();
+        if (result.success && result.data) setData(result.data);
+      } catch (error) {
+        console.error('Error loading analytics:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  const loadAnalytics = async () => {
-    try {
-      const response = await fetch('/api/portfolio-metrics?detailed=true');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data) {
-          const transformedData = {
-            avgBuyPrice: result.data.avgBuyPrice,
-            avgSellPrice: result.data.avgSellPrice,
-            totalPnL: result.data.totalPnL,
-            unrealizedPnL: result.data.unrealizedPnL,
-            realizedPnL: result.data.realizedPnL,
-            roi: result.data.roi,
-            annualizedReturn: result.data.annualizedReturn,
-            sharpeRatio: 0,
-            winRate: result.data.winRate,
-            bestTrade: null,
-            worstTrade: null,
-            currentBtcPrice: result.data.currentBtcPrice,
-            monthlyBreakdown: result.data.monthlyBreakdown || [],
-            statistics: {
-              totalTransactions: result.data.totalTransactions,
-              totalBuys: result.data.totalBuys,
-              totalSells: result.data.totalSells,
-              avgHoldTime: result.data.holdingDays,
-              totalDaysHolding: result.data.holdingDays,
-              mostActiveMonth: 'N/A',
-              largestPurchase: result.data.largestPurchase,
-              avgBuyAmount: result.data.avgBuyAmount,
-              currentHoldings: result.data.totalBtc,
-              totalBtcBought: result.data.totalBtcBought,
-              totalBtcSold: result.data.totalBtcSold
-            },
-            taxReport: {
-              shortTermGains: 0,
-              longTermGains: 0,
-              totalTaxable: 0,
-              totalFeesPaid: 0
-            }
-          };
-          setAnalyticsData(transformedData);
-          const main = result.data.mainCurrency || 'USD';
-          const secondary = result.data.secondaryCurrency || main;
-          setMainCurrency(main);
-          setSecondaryCurrency(secondary);
-          setExchangeRate(result.data.mainToSecondaryRate || 1);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading analytics:', error);
-    } finally {
-      setLoading(false);
+  const mainCurrency = data?.mainCurrency || 'USD';
+  const currency = data?.secondaryCurrency || mainCurrency;
+  const rate = data?.secondaryCurrency ? data?.mainToSecondaryRate || 1 : 1;
+  // Whole units for big figures; values arrive in the main currency
+  const money = (main: number, decimals = 0) => {
+    const text = formatMoney(Math.abs(main) * rate, currency);
+    return decimals === 0 ? text.replace(/\.\d{2}(?=\D*$)/, '') : text;
+  };
+
+  const totalReturn = useCountUp(data ? data.totalPnL * rate : 0);
+
+  // Each month's buys valued at today's price
+  const monthly = useMemo(() => {
+    if (!data) return [];
+    return data.monthlyBreakdown
+      .filter((m) => m.buys > 0 && m.avgBuyPrice > 0)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-18)
+      .map((m) => ({
+        label: new Date(`${m.month}-01T00:00:00`).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        gain: ((data.currentBtcPrice - m.avgBuyPrice) / m.avgBuyPrice) * 100,
+        bought: m.totalBought,
+        avgPrice: m.avgBuyPrice,
+      }));
+  }, [data]);
+
+  // Running total of BTC held for every month from the first buy to now
+  const accumulation = useMemo(() => {
+    if (!data || data.monthlyBreakdown.length === 0) return [];
+    const netByMonth = new Map(data.monthlyBreakdown.map((m) => [m.month, m.netBtc]));
+    const first = Array.from(netByMonth.keys()).sort()[0];
+    const cursor = new Date(`${first}-01T00:00:00`);
+    const end = new Date();
+    const points: { label: string; btc: number }[] = [];
+    let running = 0;
+    while (cursor <= end) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+      running += netByMonth.get(key) ?? 0;
+      points.push({
+        label: cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
+        btc: running,
+      });
+      cursor.setMonth(cursor.getMonth() + 1);
     }
-  };
-
-  const formatCurrency = (value: number | undefined, currency: string = secondaryCurrency) => {
-    if (value === undefined || value === null) return `${getCurrencySymbol(currency)}0`;
-    return `${getCurrencySymbol(currency)}${Math.abs(value).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-  };
-
-  const fc = (value: number | undefined) => formatCurrency(value !== undefined ? value * exchangeRate : undefined);
-
-  const getCurrencySymbol = (currency: string) => {
-    const currencyData = currencies.find(c => c.alpha === currency);
-    return currencyData ? currencyData.symbol : currency + ' ';
-  };
+    return points;
+  }, [data]);
 
   const exportToCSV = async () => {
     setExporting(true);
@@ -219,458 +206,236 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-full">
-          <div className="text-center space-y-3">
-            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading analytics...</p>
-          </div>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading analytics" />
+      </div>
     );
   }
 
-  const currentHoldings = analyticsData?.statistics.currentHoldings || 0;
-  const milestones = [
-    { amount: 0.001, label: 'Satoshi Starter', icon: '🌱' },
-    { amount: 0.01, label: 'Bitcoin Believer', icon: '⚡' },
-    { amount: 0.1, label: 'HODLer', icon: '💎' },
-    { amount: 0.5, label: 'Half-Coiner', icon: '🚀' },
-    { amount: 1, label: 'Whole Coiner', icon: '👑' },
-    { amount: 10, label: 'Bitcoin Whale', icon: '🐋' },
+  if (!data) {
+    return (
+      <div className="flex h-96 flex-col items-center justify-center gap-2 text-center">
+        <p className="font-semibold">Analytics couldn&apos;t load.</p>
+        <p className="text-sm text-muted-foreground">Check that the server is running, then reload the page.</p>
+      </div>
+    );
+  }
+
+  const firstBuy = new Date(Date.now() - data.holdingDays * 86_400_000)
+    .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const priceVsAvg = data.avgBuyPrice > 0 ? ((data.currentBtcPrice - data.avgBuyPrice) / data.avgBuyPrice) * 100 : 0;
+  const hasSells = data.totalSells > 0;
+
+  // Price ladder: place average buy and today's price on one scale
+  const ladderMin = Math.min(data.avgBuyPrice, data.currentBtcPrice) * 0.9;
+  const ladderMax = Math.max(data.avgBuyPrice, data.currentBtcPrice) * 1.05;
+  const pos = (p: number) => `${((p - ladderMin) / (ladderMax - ladderMin || 1)) * 100}%`;
+
+  const activity = [
+    { label: 'Buys', value: String(data.totalBuys) },
+    { label: 'Sells', value: String(data.totalSells) },
+    { label: 'Holding for', value: `${data.holdingDays} days` },
+    { label: 'First buy', value: firstBuy },
+    { label: 'Largest buy', value: `${btc(data.largestPurchase)} BTC` },
+    { label: 'Average buy size', value: `${btc(data.avgBuyAmount)} BTC` },
+    { label: 'Bought in total', value: `${btc(data.totalBtcBought)} BTC` },
+    { label: 'Sold in total', value: `${btc(data.totalBtcSold)} BTC` },
   ];
 
-  const currentMilestoneIndex = milestones.findIndex((m, i) => {
-    const next = milestones[i + 1];
-    return currentHoldings >= m.amount && (!next || currentHoldings < next.amount);
-  });
-  
-  const nextMilestone = milestones[currentMilestoneIndex + 1];
-  const currentMilestone = milestones[currentMilestoneIndex] || null;
-  
-  const progressToNext = currentMilestone && nextMilestone
-    ? Math.min(100, ((currentHoldings - currentMilestone.amount) / (nextMilestone.amount - currentMilestone.amount)) * 100)
-    : currentHoldings < milestones[0].amount
-    ? (currentHoldings / milestones[0].amount) * 100
-    : 100;
-
   return (
-      <div className="px-3 pt-0 pb-6 space-y-3">
-        {/* Header — encapsulated toolbar, matching the dashboard */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 glass-widget rounded-2xl px-4 py-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Analytics</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Portfolio performance and insights
+    <div className="space-y-4 pb-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <h1 className="text-lg font-bold tracking-tight">Analytics</h1>
+        <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={exportToCSV} disabled={exporting}>
+          <DownloadIcon className="mr-1.5 size-4" />
+          {exporting ? 'Exporting...' : 'Export tax report'}
+        </Button>
+      </div>
+
+      {/* Performance */}
+      <Card className="rounded-2xl">
+        <CardContent className="grid gap-8 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-3">
+            <span className="text-[15px] font-semibold text-muted-foreground">Total return</span>
+            <span className={cn('text-4xl font-extrabold leading-none tracking-[-0.04em] tabular-nums sm:text-5xl', tone(data.totalPnL))}>
+              {signed(data.totalPnL)}{formatMoney(Math.abs(totalReturn), currency).replace(/\.\d{2}(?=\D*$)/, '')}
+            </span>
+            <p className="max-w-[60ch] text-[15px] leading-relaxed text-muted-foreground">
+              <span className={cn('font-bold', tone(data.roi))}>{signed(data.roi)}{Math.abs(data.roi).toFixed(2)}%</span> on {money(data.totalInvested)} invested.
+              {data.holdingDays >= 30 && (
+                <> That&apos;s <span className={cn('font-bold', tone(data.annualizedReturn))}>{signed(data.annualizedReturn)}{Math.abs(data.annualizedReturn).toFixed(1)}% a year</span> since your first buy on {firstBuy}.</>
+              )}
             </p>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={exportToCSV}
-            disabled={exporting}
-          >
-            <DownloadIcon className="size-4 mr-2" />
-            {exporting ? 'Exporting...' : 'Export Tax Report'}
-          </Button>
-        </div>
-
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Total P&L */}
-          <Card className={cn(
-            "relative overflow-hidden",
-            analyticsData?.totalPnL && analyticsData.totalPnL >= 0
-              ? "bg-gradient-to-br from-profit/10 to-profit/5"
-              : "bg-gradient-to-br from-loss/10 to-loss/5"
-          )}>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total P&L</p>
-                  <p className={cn(
-                    "text-2xl font-bold mt-1",
-                    analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'text-profit' : 'text-loss'
-                  )}>
-                    {analyticsData?.totalPnL
-                      ? `${analyticsData.totalPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.totalPnL))}`
-                      : fc(0)}
-                  </p>
-                  <p className={cn(
-                    "text-sm font-medium mt-1",
-                    analyticsData?.roi && analyticsData.roi >= 0 ? 'text-profit' : 'text-loss'
-                  )}>
-                    {analyticsData?.roi ? `${analyticsData.roi >= 0 ? '+' : ''}${analyticsData.roi.toFixed(2)}% ROI` : '0% ROI'}
-                  </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-secondary p-4">
+                <div className="text-[13px] font-semibold text-muted-foreground">Unrealized</div>
+                <div className={cn('mt-1 text-lg font-extrabold tabular-nums', tone(data.unrealizedPnL))}>
+                  {signed(data.unrealizedPnL)}{money(data.unrealizedPnL)}
                 </div>
-                <div className={cn(
-                  "p-2.5 rounded-2xl",
-                  analyticsData?.totalPnL && analyticsData.totalPnL >= 0 ? 'bg-profit/10' : 'bg-loss/10'
-                )}>
-                  {analyticsData?.totalPnL && analyticsData.totalPnL >= 0 
-                    ? <TrendingUpIcon className="size-5 text-profit" />
-                    : <TrendingDownIcon className="size-5 text-loss" />
-                  }
-                </div>
+                <div className="text-xs text-muted-foreground">On the bitcoin you still hold</div>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Unrealized P&L */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Unrealized P&L</p>
-                  <p className={cn(
-                    "text-2xl font-bold mt-1",
-                    analyticsData?.unrealizedPnL && analyticsData.unrealizedPnL >= 0 ? 'text-profit' : 'text-loss'
-                  )}>
-                    {analyticsData?.unrealizedPnL
-                      ? `${analyticsData.unrealizedPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.unrealizedPnL))}`
-                      : fc(0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Current holdings</p>
-                </div>
-                <div className="p-2.5 bg-muted rounded-2xl">
-                  <WalletIcon className="size-5 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Realized P&L */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Realized P&L</p>
-                  <p className={cn(
-                    "text-2xl font-bold mt-1",
-                    analyticsData?.realizedPnL && analyticsData.realizedPnL >= 0 ? 'text-profit' : 'text-loss'
-                  )}>
-                    {analyticsData?.realizedPnL
-                      ? `${analyticsData.realizedPnL >= 0 ? '+' : '-'}${fc(Math.abs(analyticsData.realizedPnL))}`
-                      : fc(0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Closed positions</p>
-                </div>
-                <div className="p-2.5 bg-muted rounded-2xl">
-                  <TargetIcon className="size-5 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Annualized Return */}
-          <Card>
-            <CardContent className="p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Annualized Return</p>
-                  <p className={cn(
-                    "text-2xl font-bold mt-1",
-                    analyticsData?.annualizedReturn && analyticsData.annualizedReturn >= 0 ? 'text-profit' : 'text-loss'
-                  )}>
-                    {analyticsData?.annualizedReturn 
-                      ? `${analyticsData.annualizedReturn >= 0 ? '+' : ''}${analyticsData.annualizedReturn.toFixed(1)}%`
-                      : '0%'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">Yearly average</p>
-                </div>
-                <div className="p-2.5 bg-muted rounded-2xl">
-                  <CalendarIcon className="size-5 text-muted-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Portfolio Metrics Row */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm font-medium text-muted-foreground">Average Buy Price</p>
-              <p className="text-xl font-bold mt-1">{fc(analyticsData?.avgBuyPrice)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Cost basis</p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-primary/10 to-primary/[0.04]">
-            <CardContent className="p-5">
-              <p className="text-sm font-medium text-muted-foreground">Current BTC Price</p>
-              <p className="text-xl font-bold text-primary mt-1">{fc(analyticsData?.currentBtcPrice)}</p>
-              <p className="text-xs text-muted-foreground mt-1">Live market price</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm font-medium text-muted-foreground">Current Holdings</p>
-              <p className="text-xl font-bold mt-1">{currentHoldings.toFixed(8)} BTC</p>
-              <p className="text-xs text-muted-foreground mt-1">Total owned</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-5">
-              <p className="text-sm font-medium text-muted-foreground">Win Rate</p>
-              <p className="text-xl font-bold mt-1">{analyticsData?.winRate ? `${analyticsData.winRate.toFixed(0)}%` : '0%'}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {analyticsData?.statistics.totalSells || 0} sell trades
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts & Stats Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* Monthly Performance Chart */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Monthly Purchase Performance</CardTitle>
-              <CardDescription>How each month&apos;s purchases perform at current price</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-56 flex flex-col">
-                {(() => {
-                  const currentBtcPrice = analyticsData?.currentBtcPrice || 0;
-                  const monthlyImpact = analyticsData?.monthlyBreakdown?.map(month => {
-                    const monthAvgPrice = month?.avgBuyPrice || 0;
-                    const monthBtcBought = month?.netBtc || 0;
-                    const currentValue = monthBtcBought * currentBtcPrice;
-                    const costBasis = monthBtcBought * monthAvgPrice;
-                    const impact = currentValue - costBasis;
-                    
-                    return {
-                      ...month,
-                      impact: (month?.buys || 0) > 0 ? impact : 0,
-                      percentGain: monthAvgPrice > 0 ? ((currentBtcPrice - monthAvgPrice) / monthAvgPrice) * 100 : 0,
-                      btcAmount: monthBtcBought,
-                      avgBuyPrice: monthAvgPrice,
-                      monthName: month?.monthName || 'Unknown'
-                    };
-                  }).filter(m => m && m.buys > 0);
-                  
-                  if (!monthlyImpact || monthlyImpact.length === 0) {
-                    return (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <p className="text-muted-foreground">No purchase data available</p>
-                      </div>
-                    );
-                  }
-                  
-                  const last12Months = monthlyImpact.slice(-12);
-                  const percentGains = last12Months.map(m => m.percentGain || 0);
-                  const maxGain = Math.max(...percentGains, 0);
-                  const minGain = Math.min(...percentGains, 0);
-                  const maxAbsolute = Math.max(Math.abs(maxGain), Math.abs(minGain), 10); // At least 10% scale
-                  
-                  return (
-                    <>
-                      {/* Profit bars (top half) */}
-                      <div className="flex-1 flex items-end justify-between gap-1 border-b border-border/50">
-                        {last12Months.map((month, i) => {
-                          const isProfit = month.percentGain >= 0;
-                          const heightPercent = isProfit ? Math.max(5, (month.percentGain / maxAbsolute) * 100) : 0;
-                          
-                          return (
-                            <div key={`top-${i}`} className="flex-1 flex flex-col items-center justify-end group h-full">
-                              <div className="text-center mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <p className={cn(
-                                  "text-[10px] font-semibold",
-                                  isProfit ? 'text-profit' : 'text-loss'
-                                )}>
-                                  {month.percentGain >= 0 ? '+' : ''}{month.percentGain.toFixed(0)}%
-                                </p>
-                              </div>
-                              {isProfit && (
-                                <div 
-                                  className="w-full bg-profit hover:bg-profit/80 rounded-t transition-all cursor-pointer"
-                                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${fc(month.avgBuyPrice)} (${month.percentGain >= 0 ? '+' : ''}${month.percentGain.toFixed(1)}%)`}
-                                />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Loss bars (bottom half) */}
-                      <div className="flex-1 flex items-start justify-between gap-1">
-                        {last12Months.map((month, i) => {
-                          const isLoss = month.percentGain < 0;
-                          const heightPercent = isLoss ? Math.max(5, (Math.abs(month.percentGain) / maxAbsolute) * 100) : 0;
-                          
-                          return (
-                            <div key={`bottom-${i}`} className="flex-1 flex flex-col items-center justify-start group h-full">
-                              {isLoss && (
-                                <div 
-                                  className="w-full bg-loss hover:bg-loss/80 rounded-b transition-all cursor-pointer"
-                                  style={{ height: `${heightPercent}%`, minHeight: '4px' }}
-                                  title={`${month.monthName}: ${month.btcAmount?.toFixed(6)} BTC @ ${fc(month.avgBuyPrice)} (${month.percentGain.toFixed(1)}%)`}
-                                />
-                              )}
-                              <div className="text-center mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {isLoss && (
-                                  <p className="text-[10px] font-semibold text-loss">
-                                    {month.percentGain.toFixed(0)}%
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      
-                      {/* Month labels */}
-                      <div className="flex justify-between gap-1 pt-1">
-                        {last12Months.map((month, i) => (
-                          <p key={`label-${i}`} className="flex-1 text-center text-[10px] text-muted-foreground font-medium">
-                            {month.monthName?.substring(0, 3)}
-                          </p>
-                        ))}
-                      </div>
-                    </>
-                  );
-                })()}
-              </div>
-              
-              <div className="mt-4 pt-4 border-t flex justify-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="size-3 bg-profit rounded" />
-                  <span className="text-xs text-muted-foreground">Profitable</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="size-3 bg-loss rounded" />
-                  <span className="text-xs text-muted-foreground">Underwater</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Trading Statistics */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Trading Statistics</CardTitle>
-              <CardDescription>Detailed breakdown of your activity</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-0">
-                {[
-                  { label: 'Total Transactions', value: analyticsData?.statistics.totalTransactions || 0 },
-                  { label: 'Buy Orders', value: analyticsData?.statistics.totalBuys || 0, color: 'text-profit' },
-                  { label: 'Sell Orders', value: analyticsData?.statistics.totalSells || 0, color: 'text-loss' },
-                  { label: 'Holding Period', value: analyticsData?.statistics.avgHoldTime ? `${analyticsData.statistics.avgHoldTime} days` : 'N/A' },
-                  { label: 'Largest Purchase', value: analyticsData?.statistics.largestPurchase ? `${analyticsData.statistics.largestPurchase.toFixed(8)} BTC` : '0 BTC' },
-                  { label: 'Average Buy Amount', value: analyticsData?.statistics.avgBuyAmount ? `${analyticsData.statistics.avgBuyAmount.toFixed(8)} BTC` : '0 BTC' },
-                  { label: 'Total BTC Bought', value: analyticsData?.statistics.totalBtcBought ? `${analyticsData.statistics.totalBtcBought.toFixed(8)} BTC` : '0 BTC' },
-                  { label: 'Total BTC Sold', value: analyticsData?.statistics.totalBtcSold ? `${analyticsData.statistics.totalBtcSold.toFixed(8)} BTC` : '0 BTC' },
-                ].map((item, i) => (
-                  <div key={i} className="flex justify-between items-center py-2.5 border-b last:border-0">
-                    <span className="text-sm text-muted-foreground">{item.label}</span>
-                    <span className={cn("text-sm font-semibold", item.color)}>{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* HODLing Milestones */}
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <TrophyIcon className="size-5 text-primary" />
-              <CardTitle className="text-base">HODLing Journey</CardTitle>
-            </div>
-            <CardDescription>Track your progress towards Bitcoin milestones</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {/* Current Status */}
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-2xl border border-primary/20">
-                <div className="flex items-center gap-4">
-                  <div className="text-4xl">
-                    {currentMilestone?.icon || '🎯'}
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold">
-                      {currentMilestone?.label || 'Starting Your Journey'}
-                    </p>
-                    <p className="text-2xl font-bold text-primary">
-                      {currentHoldings.toFixed(8)} BTC
-                    </p>
-                  </div>
-                </div>
-                {nextMilestone && (
-                  <div className="text-right hidden sm:block">
-                    <p className="text-sm text-muted-foreground">Next milestone</p>
-                    <p className="font-semibold">{nextMilestone.label}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(nextMilestone.amount - currentHoldings).toFixed(8)} BTC to go
-                    </p>
-                  </div>
+              <div className="rounded-2xl bg-secondary p-4">
+                <div className="text-[13px] font-semibold text-muted-foreground">Realized</div>
+                {hasSells ? (
+                  <>
+                    <div className={cn('mt-1 text-lg font-extrabold tabular-nums', tone(data.realizedPnL))}>
+                      {signed(data.realizedPnL)}{money(data.realizedPnL)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{data.winRate.toFixed(0)}% of your sales made a profit</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-1 text-lg font-extrabold text-muted-foreground">Nothing yet</div>
+                    <div className="text-xs text-muted-foreground">Appears after your first sale</div>
+                  </>
                 )}
               </div>
-              
-              {/* Progress Bar */}
-              {nextMilestone && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progress to {nextMilestone.label}</span>
-                    <span className="font-medium">{progressToNext.toFixed(1)}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-500"
-                      style={{ width: `${progressToNext}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-              
-              {/* Milestone Grid */}
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                {milestones.map((milestone, index) => {
-                  const isAchieved = currentHoldings >= milestone.amount;
-                  const isCurrent = index === currentMilestoneIndex;
-                  
-                  return (
-                    <div 
-                      key={milestone.amount}
-                      className={cn(
-                        "relative p-3 rounded-xl text-center transition-all",
-                        isAchieved
-                          ? "bg-primary/10 border-2 border-primary/50"
-                          : "bg-muted/50 border border-border opacity-50",
-                        isCurrent && "ring-2 ring-primary ring-offset-2 ring-offset-background"
-                      )}
-                    >
-                      {isAchieved && (
-                        <div className="absolute -top-1.5 -right-1.5">
-                          <CheckCircleIcon className="size-5 text-profit fill-profit/20" />
-                        </div>
-                      )}
-                      <div className="text-2xl mb-1">{milestone.icon}</div>
-                      <p className={cn(
-                        "text-xs font-bold",
-                        isAchieved ? "text-foreground" : "text-muted-foreground"
-                      )}>
-                        {milestone.amount} BTC
-                      </p>
-                      <p className={cn(
-                        "text-[10px] mt-0.5",
-                        isAchieved ? "text-muted-foreground" : "text-muted-foreground/70"
-                      )}>
-                        {milestone.label}
-                      </p>
-                    </div>
-                  );
-                })}
+            </div>
+          </div>
+
+          {/* Price ladder: average buy vs today */}
+          <div className="flex flex-col justify-center gap-5 rounded-2xl bg-secondary p-5">
+            <p className="text-[15px] font-semibold">
+              Bitcoin is{' '}
+              <span className={cn('font-extrabold', tone(priceVsAvg))}>
+                {Math.abs(priceVsAvg).toFixed(1)}% {priceVsAvg >= 0 ? 'above' : 'below'}
+              </span>{' '}
+              your average buy price.
+            </p>
+            <div className="relative mx-2 h-16">
+              <div className="absolute inset-x-0 top-7 h-1.5 rounded-full bg-card" />
+              <div
+                className={cn('absolute top-7 h-1.5 rounded-full', priceVsAvg >= 0 ? 'bg-tint-green-fg/60' : 'bg-tint-red-fg/60')}
+                style={{
+                  left: pos(Math.min(data.avgBuyPrice, data.currentBtcPrice)),
+                  width: `calc(${pos(Math.max(data.avgBuyPrice, data.currentBtcPrice))} - ${pos(Math.min(data.avgBuyPrice, data.currentBtcPrice))})`,
+                }}
+              />
+              <div className="absolute top-0 -translate-x-1/2 text-center" style={{ left: pos(data.avgBuyPrice) }}>
+                <div className="mx-auto mt-[22px] size-4 rounded-full border-[3px] border-card bg-foreground" />
               </div>
+              <div className="absolute top-0 -translate-x-1/2 text-center" style={{ left: pos(data.currentBtcPrice) }}>
+                <div className="mx-auto mt-[22px] size-4 rounded-full border-[3px] border-card bg-primary" />
+              </div>
+            </div>
+            <div className="flex justify-between gap-4 text-sm">
+              <div>
+                <div className="font-semibold text-muted-foreground">Your average</div>
+                <div className="text-base font-extrabold tabular-nums">{money(data.avgBuyPrice)}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-semibold text-muted-foreground">Bitcoin today</div>
+                <div className="text-base font-extrabold tabular-nums">{money(data.currentBtcPrice)}</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Monthly buys at today's price */}
+        <Card className="rounded-2xl lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-[17px] font-bold tracking-tight">Each month&apos;s buys at today&apos;s price</CardTitle>
+            <CardDescription className="text-[13px]">How far above or below today&apos;s price you bought, month by month.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {monthly.length === 0 ? (
+              <p className="py-16 text-center text-sm text-muted-foreground">Your monthly buys will show here once you add a purchase.</p>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={monthly} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => `${v > 0 ? '+' : ''}${Math.round(v)}%`} />
+                    <ReferenceLine y={0} stroke="hsl(var(--foreground))" strokeOpacity={0.35} />
+                    <Tooltip
+                      cursor={{ fill: 'hsl(var(--secondary))' }}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const m = payload[0].payload as (typeof monthly)[number];
+                        return (
+                          <div className="rounded-2xl bg-popover p-3 text-sm shadow-lg">
+                            <div className="font-bold">{m.label}</div>
+                            <div className="text-muted-foreground">Bought {btc(m.bought)} BTC at {money(m.avgPrice)}</div>
+                            <div className={cn('font-bold', tone(m.gain))}>{signed(m.gain)}{Math.abs(m.gain).toFixed(1)}% today</div>
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="gain" radius={[8, 8, 8, 8]} maxBarSize={56} animationDuration={700}>
+                      {monthly.map((m, i) => (
+                        <Cell key={i} fill={m.gain >= 0 ? 'hsl(var(--chart-2))' : 'hsl(var(--destructive))'} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Activity */}
+        <Card className="rounded-2xl">
+          <CardHeader>
+            <CardTitle className="text-[17px] font-bold tracking-tight">Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-5">
+              {activity.map((item) => (
+                <div key={item.label}>
+                  <dt className="text-[13px] font-semibold text-muted-foreground">{item.label}</dt>
+                  <dd className="mt-0.5 text-[15px] font-bold tabular-nums">{item.value}</dd>
+                </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
+
+        {/* Stack over time */}
+        <Card className="rounded-2xl lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-[17px] font-bold tracking-tight">Your stack over time</CardTitle>
+            <CardDescription className="text-[13px]">Total bitcoin held at the end of each month since your first buy.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={accumulation} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="stackFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="hsl(var(--border))" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tickLine={false} axisLine={false} width={44} fontSize={12} stroke="hsl(var(--muted-foreground))" tickFormatter={(v) => btc(v)} />
+                  <Tooltip
+                    cursor={{ stroke: 'hsl(var(--border))' }}
+                    content={({ active, payload }) => {
+                      if (!active || !payload?.length) return null;
+                      const p = payload[0].payload as (typeof accumulation)[number];
+                      return (
+                        <div className="rounded-2xl bg-popover p-3 text-sm shadow-lg">
+                          <div className="font-bold">{p.label}</div>
+                          <div className="text-muted-foreground">{btc(p.btc)} BTC held</div>
+                        </div>
+                      );
+                    }}
+                  />
+                  <Area type="stepAfter" dataKey="btc" stroke="hsl(var(--primary))" strokeWidth={3} fill="url(#stackFill)" animationDuration={700} />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
+
+        <div className="min-h-[300px]">
+          <MilestonesWidget id="analytics-milestones" />
+        </div>
       </div>
+    </div>
   );
 }
