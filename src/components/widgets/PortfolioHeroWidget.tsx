@@ -7,6 +7,7 @@ import { formatCurrency } from '@/lib/theme';
 import { usePortfolioMetrics } from '@/hooks/use-portfolio-metrics';
 import { useCountUp } from '@/hooks/use-count-up';
 import { cn } from '@/lib/utils';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 /**
  * Portfolio Hero Widget
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
  * and the BTC price chart (with your buys) drawing itself in underneath.
  */
 export default function PortfolioHeroWidget(_props: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const { metrics, currency, rate } = usePortfolioMetrics();
   const value = useCountUp(metrics ? metrics.portfolioValue * rate : 0);
 
@@ -37,7 +39,7 @@ export default function PortfolioHeroWidget(_props: WidgetProps) {
             {isUp ? '+' : '-'}{formatCurrency(Math.abs(pnl), currency)} ({isUp ? '+' : '-'}{Math.abs(roi).toFixed(2)}%) all time
           </span>
           <span className="text-sm text-muted-foreground">
-            {metrics.totalBtc.toFixed(8)} BTC
+            {formatBtc(metrics.totalBtc)}
             {hasSecondary && <>, {formatCurrency(metrics.portfolioValue, metrics.mainCurrency)}</>}
           </span>
         </div>

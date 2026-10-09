@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { onTransactionsChanged } from '@/lib/app-events';
 import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface ConvertedPortfolioData {
   totalBTC: number;
@@ -95,6 +96,7 @@ function useCountUp(target: number, duration = 700): number {
 }
 
 function WalletSection({ portfolioData }: { portfolioData: any }) {
+  const { formatBtc } = useBtcUnit();
   const [open, setOpen] = useState(false);
   const wallets: WalletEntry[] = portfolioData.walletBreakdown ?? [];
   const hasNamed = wallets.length > 0;
@@ -127,7 +129,7 @@ function WalletSection({ portfolioData }: { portfolioData: any }) {
               key={w.id}
               className={`${w.color} rounded-full transition-all duration-700 ease-out`}
               style={{ width: `${(w.btcBalance / barTotal) * 100}%` }}
-              title={`${w.name}: ${w.btcBalance.toFixed(8)} ₿`}
+              title={`${w.name}: ${formatBtc(w.btcBalance)}`}
             />
           ))}
         </div>
@@ -144,7 +146,7 @@ function WalletSection({ portfolioData }: { portfolioData: any }) {
                 {w.excluded && <span className="shrink-0 text-muted-foreground">(excl.)</span>}
               </div>
               <span className={`shrink-0 font-bold tabular-nums ${w.btcBalance <= 0 ? 'text-muted-foreground' : ''}`}>
-                {w.btcBalance.toFixed(8)}
+                {formatBtc(w.btcBalance, { withUnit: false })}
               </span>
             </div>
           ))}
@@ -155,6 +157,7 @@ function WalletSection({ portfolioData }: { portfolioData: any }) {
 }
 
 export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
+  const { unit, formatBtc, formatBtcAlt } = useBtcUnit();
   const [portfolioData, setPortfolioData] = useState<any>(null);
   const [convertedData, setConvertedData] = useState<ConvertedPortfolioData | null>(null);
   const [priceData, setPriceData] = useState<BitcoinPriceData | null>(null);
@@ -456,10 +459,11 @@ export default function PortfolioSidebar({ onClose }: PortfolioSidebarProps) {
         <div className="min-w-0">
           <p className="text-[13px] font-semibold text-muted-foreground">Total holdings</p>
           <div className="mt-0.5 truncate text-xl font-extrabold tabular-nums">
-            {convertedData.totalBTC.toFixed(8)} <span className="text-primary-strong">₿</span>
+            {formatBtc(convertedData.totalBTC, { withUnit: false })}{' '}
+            <span className="text-primary-strong">{unit === 'btc' ? '₿' : 'sats'}</span>
           </div>
           <div className="text-xs text-muted-foreground tabular-nums">
-            {convertedData.totalSatoshis.toLocaleString()} sats
+            {formatBtcAlt(convertedData.totalBTC)}
           </div>
         </div>
 

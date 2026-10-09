@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SCENARIO_NAMES, ScenarioIcon, btc, pct, tone } from './planning-icons';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 export interface Goal {
   id: number;
@@ -51,6 +52,7 @@ const formatDate = (value: string) =>
   new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export default function GoalCard({ goal, recalc, currency, recalculating, onRecalculate, onDelete }: GoalCardProps) {
+  const { formatBtc } = useBtcUnit();
   const current = recalc?.current;
   const projection = recalc?.projection;
   const progress = current ? Math.max(0, current.progress_percent || 0) : null;
@@ -59,7 +61,7 @@ export default function GoalCard({ goal, recalc, currency, recalculating, onReca
   const monthlyChange: number = projection?.monthly_change_percent ?? 0;
 
   const tiles = [
-    { label: 'Target', value: `${btc(goal.target_btc_amount)} BTC`, strong: true },
+    { label: 'Target', value: formatBtc(goal.target_btc_amount, { trim: true }), strong: true },
     { label: 'Target date', value: formatDate(goal.target_date) },
     { label: 'Each month', value: formatCurrency(goal.monthly_fiat_needed, goal.currency) },
     { label: 'Duration', value: `${goal.total_months} months` },
@@ -123,7 +125,7 @@ export default function GoalCard({ goal, recalc, currency, recalculating, onReca
           <div>
             <div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm">
               <span className="font-semibold text-muted-foreground">
-                <span className="font-bold text-primary-strong">{btc(current.current_holdings || 0)}</span> of {btc(goal.target_btc_amount)} BTC
+                <span className="font-bold text-primary-strong">{formatBtc(current.current_holdings || 0, { trim: true, withUnit: false })}</span> of {formatBtc(goal.target_btc_amount, { trim: true })}
               </span>
               <span className="font-bold tabular-nums">{progress.toFixed(1)}%</span>
             </div>

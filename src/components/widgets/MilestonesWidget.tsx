@@ -5,6 +5,7 @@ import { WidgetCard } from '@/components/ui/widget-card';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { usePortfolioMetrics } from '@/hooks/use-portfolio-metrics';
 import { cn } from '@/lib/utils';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 const MILESTONES = [
   { amount: 0.001, label: 'Satoshi Starter' },
@@ -21,6 +22,7 @@ const MILESTONES = [
  * highlighted and the next one shows how far there is to go.
  */
 export default function MilestonesWidget(_props: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const { metrics, loading } = usePortfolioMetrics();
   const btc = metrics?.totalBtc ?? 0;
 
@@ -30,9 +32,9 @@ export default function MilestonesWidget(_props: WidgetProps) {
   const progress = next ? Math.min(100, (btc / next.amount) * 100) : 100;
 
   const subtitle = !current
-    ? `${(MILESTONES[0].amount - btc).toFixed(8)} BTC to go until your first milestone.`
+    ? `${formatBtc(MILESTONES[0].amount - btc)} to go until your first milestone.`
     : next
-      ? `${current.label}. ${(next.amount - btc).toFixed(8)} BTC to go until ${next.label}.`
+      ? `${current.label}. ${formatBtc(next.amount - btc)} to go until ${next.label}.`
       : `All ${MILESTONES.length} reached. You're a ${current.label}.`;
 
   return (

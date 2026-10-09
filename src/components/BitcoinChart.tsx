@@ -22,6 +22,7 @@ import { TrendingUpIcon, TrendingDownIcon } from 'lucide-react';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
 import { formatCurrency } from '@/lib/theme';
 import { cn } from '@/lib/utils';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface BitcoinChartProps {
   height?: number;
@@ -72,6 +73,7 @@ export default function BitcoinChart({
   showStats = true,
   compact = false,
 }: BitcoinChartProps) {
+  const { formatBtc } = useBtcUnit();
   const [rawChartData, setRawChartData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<TimeRange>('6M');
@@ -391,7 +393,7 @@ export default function BitcoinChart({
             <div className="space-y-1 text-muted-foreground text-xs">
               <div className="flex justify-between gap-4">
                 <span>Total BTC:</span>
-                <span className="font-medium text-foreground">{tx.totalBtc.toFixed(8)}</span>
+                <span className="font-medium text-foreground">{formatBtc(tx.totalBtc)}</span>
            </div>
               <div className="flex justify-between gap-4">
                 <span>Avg Price ({mainCurrency}):</span>

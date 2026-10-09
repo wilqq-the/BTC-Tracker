@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 // Icons
 import {
@@ -156,7 +157,6 @@ const tone = (n: number) =>
 const sign = (n: number) => (isZero(n) ? '' : n > 0 ? '+' : '-');
 const signedMoney = (n: number, currency: string) => `${sign(n)}${formatCurrency(Math.abs(n), currency)}`;
 const signedPercent = (n: number) => `${sign(n)}${Math.abs(n).toFixed(2)}%`;
-const btc = (n: number) => parseFloat(n.toFixed(8)).toLocaleString('en-US', { maximumFractionDigits: 8 });
 const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -195,6 +195,7 @@ const Muted = ({ children = '—' }: { children?: React.ReactNode }) => (
 );
 
 export default function TransactionsPage() {
+  const { formatBtc, formatBtcAlt } = useBtcUnit();
   const [transactions, setTransactions] = useState<BitcoinTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -747,8 +748,8 @@ export default function TransactionsPage() {
       case 'amount':
         return (
           <>
-            <div className="whitespace-nowrap font-bold">{t.btc_amount.toFixed(8)} BTC</div>
-            <div className="whitespace-nowrap text-[13px] text-muted-foreground">{Math.round(t.btc_amount * 1e8).toLocaleString()} sats</div>
+            <div className="whitespace-nowrap font-bold">{formatBtc(t.btc_amount)}</div>
+            <div className="whitespace-nowrap text-[13px] text-muted-foreground">{formatBtcAlt(t.btc_amount)}</div>
           </>
         );
       case 'price':
@@ -1009,10 +1010,10 @@ export default function TransactionsPage() {
                 ? <>{plural(filteredTransactions.length, 'transaction')} on this page, {totalItems.toLocaleString()} in total.</>
                 : <>{plural(filteredTransactions.length, 'transaction')}.</>}
               {' '}Bought{' '}
-              <span className={cn('font-semibold', summary.bought > 0 && 'text-foreground')}>{btc(summary.bought)} BTC</span>
+              <span className={cn('font-semibold', summary.bought > 0 && 'text-foreground')}>{formatBtc(summary.bought, { trim: true })}</span>
               {summary.bought > 0 && <> for <span className="font-semibold text-foreground">{formatCurrency(summary.boughtFor, displayCurrency)}</span></>}
               , sold{' '}
-              <span className={cn('font-semibold', summary.sold > 0 && 'text-foreground')}>{btc(summary.sold)} BTC</span>
+              <span className={cn('font-semibold', summary.sold > 0 && 'text-foreground')}>{formatBtc(summary.sold, { trim: true })}</span>
               {summary.sold > 0 && <> for <span className="font-semibold text-foreground">{formatCurrency(summary.soldFor, displayCurrency)}</span></>}
               .
               {summary.transfers > 0 && <> {plural(summary.transfers, 'transfer')} between wallets or exchanges.</>}
@@ -1138,7 +1139,7 @@ export default function TransactionsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <TypeChip transaction={transaction} />
-                        <span className="truncate text-[15px] font-bold tabular-nums">{btc(transaction.btc_amount)} BTC</span>
+                        <span className="truncate text-[15px] font-bold tabular-nums">{formatBtc(transaction.btc_amount, { trim: true })}</span>
                       </div>
                       <div className="mt-1 truncate text-[13px] text-muted-foreground tabular-nums">
                         {formatDate(transaction.transaction_date)}

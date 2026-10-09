@@ -21,6 +21,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { SegmentedControl } from '@/components/ui/segmented-control';
+import type { BtcUnit } from '@/lib/btc-unit';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 // Icons
 import {
@@ -757,6 +759,7 @@ export function DisplaySettingsPanel({
   saving: boolean;
 }) {
   const { theme, setTheme } = useTheme();
+  const { unit: btcUnit, setUnit: setBtcUnit } = useBtcUnit();
   const {
     darkPresetId,
     lightPresetId,
@@ -774,6 +777,28 @@ export function DisplaySettingsPanel({
 
   return (
     <div className="space-y-4">
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="space-y-1.5">
+              <CardTitle className={titleClass}>Bitcoin amounts</CardTitle>
+              <CardDescription className={descriptionClass}>
+                Show amounts in bitcoin or in sats (1 BTC = 100,000,000 sats). Saved on this device; the ₿ button in the header switches it too.
+              </CardDescription>
+            </div>
+            <SegmentedControl<BtcUnit>
+              aria-label="Bitcoin unit"
+              options={[
+                { label: 'BTC', value: 'btc' },
+                { label: 'sats', value: 'sats' },
+              ]}
+              value={btcUnit}
+              onChange={setBtcUnit}
+            />
+          </div>
+        </CardHeader>
+      </Card>
 
       <Card>
         <CardHeader>

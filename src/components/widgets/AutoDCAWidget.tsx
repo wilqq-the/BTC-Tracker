@@ -9,6 +9,7 @@ import { WidgetProps } from '@/lib/dashboard-types';
 import { BotIcon, CalendarIcon, CheckCircleIcon, ClockIcon, ExternalLinkIcon, PauseIcon } from 'lucide-react';
 import { formatCurrency } from '@/lib/theme';
 import Link from 'next/link';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface RecurringTransaction {
   id: number;
@@ -36,6 +37,7 @@ interface ExecutionHistoryItem {
  * Shows status of automated recurring Bitcoin purchases
  */
 export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [transactions, setTransactions] = useState<RecurringTransaction[]>([]);
   const [recentExecutions, setRecentExecutions] = useState<ExecutionHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -223,7 +225,7 @@ export default function AutoDCAWidget({ id, onRefresh }: WidgetProps) {
                         <CheckCircleIcon className="size-3.5 text-green-600 dark:text-green-400 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-xs font-medium">
-                            {exec.btcAmount.toFixed(6)} BTC
+                            {formatBtc(exec.btcAmount)}
                           </div>
                           <span className="text-xs text-muted-foreground">
                             {new Date(exec.transactionDate).toLocaleDateString('en-US', { 

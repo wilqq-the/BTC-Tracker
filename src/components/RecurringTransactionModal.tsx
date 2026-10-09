@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 import {
   Dialog,
   DialogContent,
@@ -78,6 +79,7 @@ export default function RecurringTransactionModal({
   onSuccess,
   editingTransaction 
 }: RecurringTransactionModalProps) {
+  const { formatBtc } = useBtcUnit();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(false);
@@ -328,7 +330,7 @@ export default function RecurringTransactionModal({
               <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <CoinsIcon className="size-4" />
-                  About <span className="font-bold text-primary-strong tabular-nums">{estimatedBtc} BTC</span> per purchase
+                  About <span className="font-bold text-primary-strong tabular-nums">{formatBtc(parseFloat(estimatedBtc), { trim: true })}</span> per purchase
                 </span>
                 {monthlyTotal && (
                   <span className="text-muted-foreground">

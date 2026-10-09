@@ -6,6 +6,7 @@ import { RingChart } from '@/components/ui/ring-chart';
 import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { onTransactionsChanged } from '@/lib/app-events';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface WalletEntry {
   id: number;
@@ -34,6 +35,7 @@ const UNASSIGNED_COLOR = 'hsl(var(--muted-foreground) / 0.45)';
  * Shows per-wallet BTC breakdown and overall cold/hot security status.
  */
 export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [walletData, setWalletData] = useState<WalletData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -145,7 +147,7 @@ export default function WalletDistributionWidget({ id, onRefresh }: WidgetProps)
                   <span className={`min-w-0 flex-1 truncate font-semibold ${r.btc <= 0 ? 'text-muted-foreground' : ''}`}>
                     {r.name}{r.excluded && <span className="font-normal text-muted-foreground"> (excl.)</span>}
                   </span>
-                  <span className={`font-bold tabular-nums ${r.btc <= 0 ? 'text-muted-foreground' : ''}`}>{r.btc === 0 ? '0' : r.btc >= 1 ? r.btc.toFixed(2) : r.btc.toFixed(8)}</span>
+                  <span className={`font-bold tabular-nums ${r.btc <= 0 ? 'text-muted-foreground' : ''}`}>{formatBtc(r.btc, { withUnit: false, trim: true })}</span>
                 </div>
               ))}
             </div>
