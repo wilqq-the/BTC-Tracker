@@ -174,7 +174,7 @@ function typeChip(t: BitcoinTransaction) {
 function TypeChip({ transaction }: { transaction: BitcoinTransaction }) {
   const chip = typeChip(transaction);
   return (
-    <span className={cn('inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] font-bold', chip.tone)}>
+    <span className={cn('inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[13px] font-bold transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] group-hover:scale-110', chip.tone)}>
       {chip.label}
     </span>
   );
@@ -386,6 +386,11 @@ export default function TransactionsPage() {
     }
   };
 
+  // Rows to highlight after a change (see loadTransactions)
+  const [freshIds, setFreshIds] = useState<Set<number>>(new Set());
+  const markFreshRef = useRef(false);
+  const editedIdRef = useRef<number | null>(null);
+
   const loadTransactions = async (page: number = currentPage, limit: number = itemsPerPage) => {
     setLoading(true);
     try {
@@ -407,7 +412,21 @@ export default function TransactionsPage() {
       const result = await response.json();
 
       if (result.success) {
-        setTransactions(Array.isArray(result.data) ? result.data : []);
+        const rows: BitcoinTransaction[] = Array.isArray(result.data) ? result.data : [];
+        // After an add/edit/import, rows that weren't here before (plus the
+        // edited one) glow once so you can see what changed
+        if (markFreshRef.current) {
+          const before = new Set(transactions.map((t) => t.id));
+          const fresh = rows.filter((t) => before.size > 0 && !before.has(t.id)).map((t) => t.id);
+          if (editedIdRef.current !== null) fresh.push(editedIdRef.current);
+          if (fresh.length > 0 && fresh.length < rows.length) {
+            setFreshIds(new Set(fresh));
+            window.setTimeout(() => setFreshIds(new Set()), 2400);
+          }
+        }
+        markFreshRef.current = false;
+        editedIdRef.current = null;
+        setTransactions(rows);
         if (result.pagination) {
           setTotalItems(result.pagination.total);
           setTotalPages(result.pagination.totalPages);
@@ -430,7 +449,10 @@ export default function TransactionsPage() {
   // Refetch whenever transactions change anywhere (header "Add transaction", edits, imports)
   const loadRef = useRef(loadTransactions);
   loadRef.current = loadTransactions;
-  useEffect(() => onTransactionsChanged(() => loadRef.current()), []);
+  useEffect(() => onTransactionsChanged(() => {
+    markFreshRef.current = true;
+    loadRef.current();
+  }), []);
 
   const handleEditTransaction = (transaction: BitcoinTransaction) => {
     setEditingTransaction(transaction);
@@ -830,6 +852,7 @@ export default function TransactionsPage() {
 
             <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
               <SegmentedControl<TypeFilter>
+                liquid
                 aria-label="Transaction type"
                 options={TYPE_OPTIONS}
                 value={filterType}
@@ -856,9 +879,9 @@ export default function TransactionsPage() {
                 size="sm"
                 aria-expanded={showFilters}
                 onClick={() => setShowFilters(!showFilters)}
-                className={cn('rounded-full bg-card font-semibold', showFilters && 'bg-secondary')}
+                className={cn('group rounded-full bg-card font-semibold', showFilters && 'bg-secondary')}
               >
-                <FilterIcon className="mr-1.5 size-4" />
+                <FilterIcon className="mr-1.5 size-4 group-hover:animate-nudge-down" />
                 Filters
                 {selectedTags.length > 0 && (
                   <span className="ml-1.5 inline-flex size-5 items-center justify-center rounded-full bg-tint-orange text-xs font-bold text-primary-strong">
@@ -869,8 +892,8 @@ export default function TransactionsPage() {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold">
-                    <ColumnsIcon className="mr-1.5 size-4" />
+                  <Button variant="outline" size="sm" className="group rounded-full bg-card font-semibold">
+                    <ColumnsIcon className="mr-1.5 size-4 group-hover:animate-nudge-x" />
                     Columns
                   </Button>
                 </PopoverTrigger>
@@ -1020,12 +1043,12 @@ export default function TransactionsPage() {
             </p>
           ) : <span />}
             <div className="flex shrink-0 items-center gap-2">
-              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleOpenImportModal}>
-                <UploadIcon className="mr-1.5 size-4" />
+              <Button variant="outline" size="sm" className="group rounded-full bg-card font-semibold" onClick={handleOpenImportModal}>
+                <UploadIcon className="mr-1.5 size-4 group-hover:animate-hop" />
                 Import
               </Button>
-              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={handleExport} disabled={transactions.length === 0}>
-                <DownloadIcon className="mr-1.5 size-4" />
+              <Button variant="outline" size="sm" className="group rounded-full bg-card font-semibold" onClick={handleExport} disabled={transactions.length === 0}>
+                <DownloadIcon className="mr-1.5 size-4 group-hover:animate-nudge-down" />
                 Export
               </Button>
             </div>
@@ -1086,7 +1109,7 @@ export default function TransactionsPage() {
                     return (
                       <tr
                         key={transaction.id}
-                        className={cn('transition-colors hover:bg-secondary/50', isSelected && 'bg-tint-orange/50 hover:bg-tint-orange/60')}
+                        className={cn('group transition-colors hover:bg-secondary/50', isSelected && 'bg-tint-orange/50 hover:bg-tint-orange/60', freshIds.has(transaction.id) && 'animate-row-arrive')}
                       >
                         {bulkActionMode && (
                           <td className="py-3 pl-5 pr-1">
@@ -1127,7 +1150,7 @@ export default function TransactionsPage() {
                 return (
                   <li
                     key={transaction.id}
-                    className={cn('flex items-center gap-3 px-4 py-3', isSelected && 'bg-tint-orange/50')}
+                    className={cn('group flex items-center gap-3 px-4 py-3', isSelected && 'bg-tint-orange/50', freshIds.has(transaction.id) && 'animate-row-arrive')}
                   >
                     {bulkActionMode && (
                       <Checkbox
@@ -1207,7 +1230,12 @@ export default function TransactionsPage() {
       <AddTransactionModal
         isOpen={showAddModal}
         onClose={() => { setShowAddModal(false); setEditingTransaction(null); }}
-        onSuccess={() => { setShowAddModal(false); setEditingTransaction(null); emitTransactionsChanged(); }}
+        onSuccess={() => {
+          editedIdRef.current = editingTransaction?.id ?? null;
+          setShowAddModal(false);
+          setEditingTransaction(null);
+          emitTransactionsChanged();
+        }}
         editingTransaction={editingTransaction}
       />
 

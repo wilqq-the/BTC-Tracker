@@ -133,10 +133,14 @@ export function FerroPillLayer({
   blobRef,
   dropRef,
   className,
+  blobClassName,
 }: {
   blobRef: React.RefObject<HTMLSpanElement | null>;
   dropRef: React.RefObject<HTMLSpanElement | null>;
+  /** Applied to both the blob and the droplet (e.g. the colour) */
   className?: string;
+  /** Applied to the blob only (e.g. its vertical inset) */
+  blobClassName?: string;
 }) {
   const filterId = `ferro-${useId().replace(/:/g, '')}`;
   return (
@@ -152,7 +156,7 @@ export function FerroPillLayer({
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ filter: `url(#${filterId})` }}>
         <span
           ref={blobRef}
-          className={cn('absolute inset-y-0 left-0 rounded-full bg-tint-orange will-change-transform', className)}
+          className={cn('absolute inset-y-0 left-0 rounded-full bg-tint-orange will-change-transform', className, blobClassName)}
           style={{ width: 0, opacity: 0, transformOrigin: 'center' }}
         />
         <span

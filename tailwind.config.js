@@ -207,6 +207,11 @@ module.exports = {
           '0%': { transform: 'scale(1)', opacity: '0.6' },
           '100%': { transform: 'scale(3.2)', opacity: '0' },
         },
+        // A row that was just added, edited or imported: a brief warm glow
+        'row-arrive': {
+          '0%': { backgroundColor: 'hsl(var(--primary) / 0.22)' },
+          '100%': { backgroundColor: 'hsl(var(--primary) / 0)' },
+        },
         // Live dot ripple
         'live-pulse': {
           '0%': { boxShadow: '0 0 0 0 rgb(34 197 94 / 0.55)' },
@@ -225,6 +230,7 @@ module.exports = {
         'nudge-x': 'nudge-x 0.55s cubic-bezier(0.3, 1.4, 0.5, 1)',
         hop: 'hop 0.6s ease-out',
         celebrate: 'celebrate 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) backwards',
+        'row-arrive': 'row-arrive 2.2s ease-out',
         'marker-pulse': 'marker-pulse 1.2s ease-out infinite',
       },
     },
