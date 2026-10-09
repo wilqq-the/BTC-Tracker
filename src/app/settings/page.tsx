@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppSettings } from '@/lib/types';
 import { CurrencySettingsPanel, PriceDataSettingsPanel, DisplaySettingsPanel, NotificationSettingsPanel, UserAccountSettingsPanel } from '@/components/SettingsPanels';
 import AdminPanel from '@/components/AdminPanel';
@@ -9,8 +9,10 @@ import ExchangeConnectionsPanel from '@/components/ExchangeConnectionsPanel';
 import WalletsPanel from '@/components/WalletsPanel';
 import ApiKeysPanel from '@/components/ApiKeysPanel';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { SettingsIcon, UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, BellIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon, DatabaseIcon } from 'lucide-react';
+import { UserIcon, DollarSignIcon, BarChart3Icon, MonitorIcon, ShieldIcon, ArrowLeftRightIcon, WalletIcon, KeyIcon, PlusIcon, DatabaseIcon, RotateCcwIcon } from 'lucide-react';
+import { confirm } from '@/components/ui/confirm-dialog';
 import { toast } from '@/hooks/use-toast';
 import packageJson from '../../../package.json';
 
@@ -23,6 +25,20 @@ interface SettingsResponse {
   error?: string;
 }
 
+// Settings that POST /api/settings resets (the whole AppSettings record)
+const RESETTABLE_TABS: SettingsTab[] = ['currency', 'priceData', 'display'];
+
+/** Nearest ancestor that actually scrolls vertically. */
+function findScrollParent(el: HTMLElement | null): HTMLElement | null {
+  let node = el?.parentElement ?? null;
+  while (node) {
+    const { overflowY } = window.getComputedStyle(node);
+    if (overflowY === 'auto' || overflowY === 'scroll') return node;
+    node = node.parentElement;
+  }
+  return null;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account');
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -31,6 +47,15 @@ export default function SettingsPage() {
   const [userData, setUserData] = useState<any>(null);
   // Primary action for the encapsulated header, registered by the active panel
   const [headerAction, setHeaderAction] = useState<{ label: string; onClick: () => void } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Each tab opens at the top. The page itself doesn't scroll: the app shell is
+  // h-screen overflow-hidden and AppLayout's <main> is the scroller, so
+  // window.scrollTo would do nothing.
+  useEffect(() => {
+    const scroller = findScrollParent(rootRef.current);
+    if (scroller && scroller.scrollTop > 0) scroller.scrollTop = 0;
+  }, [activeTab]);
 
   useEffect(() => {
     loadSettings();
@@ -92,6 +117,13 @@ export default function SettingsPage() {
   };
 
   const resetToDefaults = async () => {
+    const ok = await confirm({
+      title: 'Reset settings to defaults?',
+      description: 'Currency, price data and display settings go back to their defaults. Your account, wallets, transactions and API keys are not touched.',
+      confirmText: 'Reset',
+      destructive: true,
+    });
+    if (!ok) return;
     setSaving(true);
     try {
       const response = await fetch('/api/settings', { method: 'POST' });
@@ -113,141 +145,116 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-          <div className="text-center space-y-3">
-            <div className="size-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-muted-foreground">Loading settings...</p>
-          </div>
-        </div>
+      <div className="flex h-96 items-center justify-center">
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading settings" />
+      </div>
     );
   }
 
   if (!settings) {
     return (
-      <div className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">Failed to load settings</p>
-        </div>
+      <div className="flex h-96 flex-col items-center justify-center gap-2 text-center">
+        <p className="font-semibold">Settings couldn&apos;t load.</p>
+        <p className="text-sm text-muted-foreground">Check that the server is running, then reload the page.</p>
+      </div>
     );
   }
 
-  const tabs = [
+  const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'account', label: 'Account', icon: UserIcon },
     { id: 'wallets', label: 'Wallets', icon: WalletIcon },
-    { id: 'apiKeys', label: 'API Access', icon: KeyIcon },
+    { id: 'apiKeys', label: 'API access', icon: KeyIcon },
     { id: 'currency', label: 'Currency', icon: DollarSignIcon },
-    { id: 'priceData', label: 'Price Data', icon: BarChart3Icon },
+    { id: 'priceData', label: 'Price data', icon: BarChart3Icon },
     { id: 'exchanges', label: 'Exchanges', icon: ArrowLeftRightIcon },
     { id: 'display', label: 'Display', icon: MonitorIcon },
     ...(userData?.isAdmin ? [
-      { id: 'backup', label: 'Backup', icon: DatabaseIcon },
-      { id: 'admin', label: 'Admin', icon: ShieldIcon }
-    ] : [])
+      { id: 'backup' as const, label: 'Backup', icon: DatabaseIcon },
+      { id: 'admin' as const, label: 'Admin', icon: ShieldIcon },
+    ] : []),
   ];
 
-  // Title + description for the single encapsulated header (reflects the active tab)
-  const tabMeta: Record<string, { title: string; description: string }> = {
-    account: { title: 'Account', description: 'Manage your account information and security' },
-    wallets: { title: 'Wallets', description: 'Manage your cold and hot storage wallets' },
-    apiKeys: { title: 'API Access', description: 'Manage API keys for automation integrations' },
-    currency: { title: 'Currency', description: 'Configure currencies for your portfolio' },
-    priceData: { title: 'Price Data', description: 'Configure how Bitcoin price data is collected and stored' },
-    exchanges: { title: 'Exchanges', description: 'Connect exchanges to auto-sync your trades' },
-    display: { title: 'Display', description: 'Customize the appearance of your tracker' },
-    admin: { title: 'Admin', description: 'Manage users and system settings' },
-    backup: { title: 'Backup', description: 'Download, restore, and schedule database backups' },
+  // Title + description for the page title row (reflects the active tab)
+  const tabMeta: Record<SettingsTab, { title: string; description: string }> = {
+    account: { title: 'Account', description: 'Your profile, password, PIN and two-factor sign-in.' },
+    wallets: { title: 'Wallets', description: 'The cold storage and hot wallets your bitcoin lives in.' },
+    apiKeys: { title: 'API access', description: 'Keys that let scripts and automations use your tracker.' },
+    currency: { title: 'Currency', description: 'Which currencies your portfolio is calculated and shown in.' },
+    priceData: { title: 'Price data', description: 'How bitcoin price history is collected and stored.' },
+    exchanges: { title: 'Exchanges', description: 'Connect exchanges to import your trades automatically.' },
+    display: { title: 'Display', description: 'Light or dark mode and the colour scheme for each.' },
+    notifications: { title: 'Notifications', description: 'Price and portfolio alerts.' },
+    admin: { title: 'Admin', description: 'Users on this server and what they can do.' },
+    backup: { title: 'Backup', description: 'Download, restore and schedule full database backups.' },
   };
-  const activeMeta = tabMeta[activeTab] ?? { title: 'Settings', description: 'Configure your Bitcoin tracker' };
+  const activeMeta = tabMeta[activeTab];
+  const canReset = RESETTABLE_TABS.includes(activeTab);
 
   return (
-      <div className="px-3 pt-0 pb-6">
-        {/* Encapsulated header */}
-        <div className="glass-widget rounded-2xl px-4 py-3 mb-3 flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">{activeMeta.title}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{activeMeta.description}</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
+    <div ref={rootRef} className="space-y-4 pb-6">
+      {/* Title row */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
+        <div className="min-w-0">
+          <h1 className="text-lg font-bold tracking-tight">{activeMeta.title}</h1>
+          <p className="text-[13px] text-muted-foreground">{activeMeta.description}</p>
+        </div>
+        {(headerAction || canReset) && (
+          <div className="flex shrink-0 items-center gap-2">
+            {canReset && (
+              <Button variant="outline" size="sm" className="rounded-full bg-card font-semibold" onClick={resetToDefaults} disabled={saving}>
+                <RotateCcwIcon className="mr-1.5 size-4" />
+                Reset to defaults
+              </Button>
+            )}
             {headerAction && (
-              <Button size="sm" onClick={headerAction.onClick}>
-                <PlusIcon className="size-4 mr-1" />
+              <Button size="sm" className="rounded-full font-semibold" onClick={headerAction.onClick}>
+                <PlusIcon className="mr-1.5 size-4" />
                 {headerAction.label}
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={resetToDefaults} disabled={saving}>
-              Reset to Defaults
-            </Button>
           </div>
-        </div>
+        )}
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-3 items-start">
-          {/* Mobile Tab Navigation — glass segmented control */}
-          <div className="lg:hidden w-full glass-widget rounded-2xl p-1.5 overflow-x-auto scrollbar-hide">
-            <div className="flex gap-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as SettingsTab)}
-                    className={cn(
-                      "flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-1.5 text-sm font-medium transition-colors",
-                      isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+      <div className="flex flex-col items-start gap-4 lg:flex-row">
+        {/* Settings menu: horizontal scroller on phones, a column on desktop */}
+        <Card className="w-full gap-0 rounded-2xl p-1.5 lg:sticky lg:top-0 lg:w-56 lg:shrink-0 lg:p-2">
+          <nav aria-label="Settings sections" className="flex gap-1 overflow-x-auto [scrollbar-width:none] lg:flex-col lg:overflow-visible">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold transition-colors lg:w-full lg:py-2.5',
+                    isActive
+                      ? 'bg-tint-orange text-primary-strong'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="mt-3 hidden space-y-1 border-t border-border/60 px-3 pb-1 pt-3 text-xs text-muted-foreground lg:block">
+            <p>Changes save automatically.</p>
+            <p className="tabular-nums">Version {packageJson.version}</p>
           </div>
+        </Card>
 
-          {/* Desktop Settings Navigation — floating glass sidebar */}
-          <div className="hidden lg:flex w-60 shrink-0 flex-col glass-widget rounded-2xl p-3 lg:sticky lg:top-0">
-            <nav className="space-y-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as SettingsTab)}
-                    className={cn(
-                      "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                      isActive
-                        ? 'bg-primary/10 text-primary ring-1 ring-inset ring-primary/20'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-foreground/5'
-                    )}
-                  >
-                    <Icon className="size-4" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
+        {/* Active tab content */}
+        <div className="w-full min-w-0 flex-1">
+          {activeTab === 'account' && <UserAccountSettingsPanel />}
 
-            <div className="mt-6 pt-4 border-t border-border/50 space-y-2">
-              <p className="text-xs text-muted-foreground text-center">Settings auto-save on change</p>
-              <p className="text-xs text-muted-foreground text-center">
-                Version: {packageJson.version}{packageJson.version.includes('69') && ' 😏'}
-              </p>
-            </div>
-          </div>
+          {activeTab === 'wallets' && <WalletsPanel onHeaderAction={setHeaderAction} />}
 
-          {/* Main Settings Content — open canvas */}
-          <div className="flex-1 min-w-0">
-          {activeTab === 'account' && (
-            <UserAccountSettingsPanel />
-          )}
-
-          {activeTab === 'wallets' && (
-            <WalletsPanel onHeaderAction={setHeaderAction} />
-          )}
-
-          {activeTab === 'apiKeys' && (
-            <ApiKeysPanel onHeaderAction={setHeaderAction} />
-          )}
+          {activeTab === 'apiKeys' && <ApiKeysPanel onHeaderAction={setHeaderAction} />}
 
           {activeTab === 'currency' && (
             <CurrencySettingsPanel
@@ -256,7 +263,7 @@ export default function SettingsPage() {
               saving={saving}
             />
           )}
-          
+
           {activeTab === 'priceData' && (
             <PriceDataSettingsPanel
               settings={settings.priceData}
@@ -264,10 +271,8 @@ export default function SettingsPage() {
               saving={saving}
             />
           )}
-          
-          {activeTab === 'exchanges' && (
-            <ExchangeConnectionsPanel onHeaderAction={setHeaderAction} />
-          )}
+
+          {activeTab === 'exchanges' && <ExchangeConnectionsPanel onHeaderAction={setHeaderAction} />}
 
           {activeTab === 'display' && (
             <DisplaySettingsPanel
@@ -276,7 +281,7 @@ export default function SettingsPage() {
               saving={saving}
             />
           )}
-          
+
           {activeTab === 'notifications' && (
             <NotificationSettingsPanel
               settings={settings.notifications}
@@ -285,15 +290,11 @@ export default function SettingsPage() {
             />
           )}
 
-          {activeTab === 'backup' && userData?.isAdmin && (
-            <BackupRestorePanel />
-          )}
+          {activeTab === 'backup' && userData?.isAdmin && <BackupRestorePanel />}
 
-          {activeTab === 'admin' && userData?.isAdmin && (
-            <AdminPanel />
-          )}
-          </div>
+          {activeTab === 'admin' && userData?.isAdmin && <AdminPanel onHeaderAction={setHeaderAction} />}
         </div>
       </div>
+    </div>
   );
 }

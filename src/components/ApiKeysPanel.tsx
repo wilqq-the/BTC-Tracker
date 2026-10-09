@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -57,7 +56,7 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
 
   // Surface the primary action in the settings page header
   useEffect(() => {
-    onHeaderAction?.({ label: 'Generate New Key', onClick: () => setShowGenerateModal(true) });
+    onHeaderAction?.({ label: 'Generate key', onClick: () => setShowGenerateModal(true) });
     return () => onHeaderAction?.(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -81,7 +80,7 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
 
   const handleGenerateKey = async () => {
     if (!newKeyLabel.trim()) {
-      setApiKeyError('Label is required');
+      setApiKeyError('Give the key a label so you can recognise it later.');
       return;
     }
     setApiKeyError('');
@@ -100,7 +99,7 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
         setApiKeyError(result.error || 'Failed to generate key');
       }
     } catch (error) {
-      setApiKeyError('An error occurred while generating key');
+      setApiKeyError('Couldn’t generate the key. Check your connection and try again.');
     } finally {
       setGeneratingKey(false);
     }
@@ -116,6 +115,7 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
     try {
       const response = await fetch(`/api/user/api-keys/${id}`, { method: 'DELETE' });
       if (response.ok) {
+        toast({ title: 'API key revoked' });
         await loadApiKeys();
       } else {
         toast({ title: 'Failed to revoke API key', variant: 'destructive' });
@@ -133,7 +133,7 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
       setKeyCopied(true);
       setTimeout(() => setKeyCopied(false), 2000);
     } catch {
-      // fallback: select text
+      toast({ title: 'Couldn’t copy the key', description: 'Select it and copy it by hand.', variant: 'destructive' });
     }
   };
 
@@ -146,64 +146,63 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
     setApiKeyError('');
   };
 
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent>
+    <div className="space-y-4">
+      <Card className="gap-0 py-2">
+        <CardContent className="px-2">
           {apiKeysLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="size-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center py-10">
+              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading API keys" />
             </div>
           ) : apiKeys.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <KeyIcon className="size-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No API keys yet. Generate one to automate transactions.</p>
+            <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+              <KeyIcon className="size-8 text-muted-foreground" />
+              <div>
+                <p className="font-semibold">No API keys yet</p>
+                <p className="text-sm text-muted-foreground">Keys you generate will appear here. Use one to add transactions from a script or automation.</p>
+              </div>
+              <Button size="sm" className="rounded-full font-semibold" onClick={() => setShowGenerateModal(true)}>Generate a key</Button>
             </div>
           ) : (
-            <div className="space-y-2">
-              {apiKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className={cn(
-                    'flex items-center justify-between p-3 rounded-2xl',
-                    key.isActive ? 'bg-muted/30' : 'bg-muted/10 opacity-60'
-                  )}
-                >
-                  <div className="flex-1 min-w-0 space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm truncate">{key.label}</span>
-                      {!key.isActive && (
-                        <Badge variant="secondary" className="text-xs">Revoked</Badge>
-                      )}
+            <ul className="divide-y divide-border/60">
+              {apiKeys.map((key) => {
+                const expired = !!key.expiresAt && new Date(key.expiresAt) < new Date();
+                const details = [
+                  `Created ${fmtDate(key.createdAt)}`,
+                  key.lastUsedAt ? `last used ${fmtDate(key.lastUsedAt)}` : 'never used',
+                  key.expiresAt ? (expired ? 'expired' : `expires ${fmtDate(key.expiresAt)}`) : null,
+                ].filter(Boolean).join(', ');
+                return (
+                  <li key={key.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                    <div className={cn('min-w-0 space-y-0.5', !key.isActive && 'opacity-60')}>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-[15px] font-semibold">{key.label}</span>
+                        <code className="rounded-full bg-secondary px-2 py-0.5 font-mono text-xs text-muted-foreground">btct_{key.keyPrefix}…</code>
+                        {!key.isActive && (
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-muted-foreground">Revoked</span>
+                        )}
+                        {key.isActive && expired && (
+                          <span className="rounded-full bg-tint-red px-2 py-0.5 text-xs font-semibold text-tint-red-fg">Expired</span>
+                        )}
+                      </div>
+                      <p className="text-[13px] text-muted-foreground">{details}</p>
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
-                      <span className="font-mono">btct_{key.keyPrefix}…</span>
-                      <span>Created {new Date(key.createdAt).toLocaleDateString()}</span>
-                      {key.lastUsedAt && (
-                        <span>Last used {new Date(key.lastUsedAt).toLocaleDateString()}</span>
-                      )}
-                      {key.expiresAt && (
-                        <span>
-                          {new Date(key.expiresAt) < new Date()
-                            ? 'Expired'
-                            : `Expires ${new Date(key.expiresAt).toLocaleDateString()}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {key.isActive && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-2 shrink-0"
-                      onClick={() => handleRevokeKey(key.id)}
-                    >
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
+                    {key.isActive && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="shrink-0 rounded-full font-semibold text-tint-red-fg hover:bg-tint-red hover:text-tint-red-fg"
+                        onClick={() => handleRevokeKey(key.id)}
+                      >
+                        Revoke
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </CardContent>
       </Card>
@@ -212,83 +211,86 @@ export default function ApiKeysPanel({ onHeaderAction }: ApiKeysPanelProps) {
       <Dialog open={showGenerateModal} onOpenChange={(open) => { if (!open) handleCloseGenerateModal(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Generate API Key</DialogTitle>
+            <DialogTitle>{generatedKey ? 'Copy your new key' : 'Generate an API key'}</DialogTitle>
             <DialogDescription>
-              Create a new API key for automation integrations.
+              {generatedKey
+                ? 'Send it as a Bearer token in the Authorization header.'
+                : 'Scripts and automations use it to read and add transactions as you.'}
             </DialogDescription>
           </DialogHeader>
 
           {generatedKey ? (
             <div className="space-y-4">
-              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-700 dark:text-amber-400 text-sm flex gap-2">
+              <div className="flex gap-2.5 rounded-2xl bg-tint-orange p-3 text-sm text-primary-strong">
                 <AlertCircleIcon className="size-4 shrink-0 mt-0.5" />
-                <span>Save this key now — it will not be shown again.</span>
+                <span>Save this key now. It won&apos;t be shown again.</span>
               </div>
-              <div className="space-y-1">
-                <Label>Your new API key</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="generatedKey">Your new API key</Label>
                 <div className="flex gap-2">
                   <Input
+                    id="generatedKey"
                     readOnly
                     value={generatedKey}
                     className="font-mono text-xs"
                     onClick={(e) => (e.target as HTMLInputElement).select()}
                   />
-                  <Button variant="outline" size="icon" onClick={handleCopyKey}>
-                    {keyCopied ? <CheckIcon className="size-4 text-profit" /> : <CopyIcon className="size-4" />}
+                  <Button variant="outline" size="icon" className="rounded-full" aria-label="Copy key" onClick={handleCopyKey}>
+                    {keyCopied ? <CheckIcon className="size-4 text-tint-green-fg" /> : <CopyIcon className="size-4" />}
                   </Button>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Use this key as a Bearer token: <code className="bg-muted px-1 rounded">Authorization: Bearer {generatedKey.slice(0, 16)}…</code>
+                Example header: <code className="rounded bg-secondary px-1">Authorization: Bearer {generatedKey.slice(0, 16)}…</code>
               </p>
               <DialogFooter>
-                <Button onClick={handleCloseGenerateModal} className="w-full">Done</Button>
+                <Button onClick={handleCloseGenerateModal} className="w-full rounded-full font-semibold">Done</Button>
               </DialogFooter>
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor="keyLabel">Label</Label>
                 <Input
                   id="keyLabel"
-                  placeholder="e.g. n8n automation, home server"
+                  placeholder="n8n automation, home server"
                   value={newKeyLabel}
                   onChange={(e) => setNewKeyLabel(e.target.value)}
                   maxLength={100}
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="keyExpiry">Expiry</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="keyExpiry">Expires</Label>
                 <Select value={newKeyExpiry} onValueChange={setNewKeyExpiry}>
-                  <SelectTrigger id="keyExpiry">
+                  <SelectTrigger id="keyExpiry" className="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="never">Never</SelectItem>
-                    <SelectItem value="30d">30 days</SelectItem>
-                    <SelectItem value="90d">90 days</SelectItem>
-                    <SelectItem value="1y">1 year</SelectItem>
+                    <SelectItem value="30d">In 30 days</SelectItem>
+                    <SelectItem value="90d">In 90 days</SelectItem>
+                    <SelectItem value="1y">In 1 year</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               {apiKeyError && (
-                <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
-                  <AlertCircleIcon className="size-4" />
+                <div className="flex items-center gap-2 rounded-2xl bg-tint-red p-3 text-sm text-tint-red-fg">
+                  <AlertCircleIcon className="size-4 shrink-0" />
                   {apiKeyError}
                 </div>
               )}
 
               <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={handleCloseGenerateModal}>Cancel</Button>
-                <Button onClick={handleGenerateKey} disabled={generatingKey}>
+                <Button variant="outline" className="rounded-full font-semibold" onClick={handleCloseGenerateModal}>Cancel</Button>
+                <Button className="rounded-full font-semibold" onClick={handleGenerateKey} disabled={generatingKey}>
                   {generatingKey ? (
                     <span className="flex items-center gap-2">
                       <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
-                      Generating…
+                      Generating...
                     </span>
                   ) : (
-                    'Generate Key'
+                    'Generate key'
                   )}
                 </Button>
               </DialogFooter>

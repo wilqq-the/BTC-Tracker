@@ -19,9 +19,7 @@ import {
   RepeatIcon,
   DollarSignIcon,
   ServerIcon,
-  CheckCircleIcon,
   XCircleIcon,
-  AlertCircleIcon,
   Loader2Icon,
 } from 'lucide-react';
 import packageJson from '../../package.json';
@@ -85,16 +83,15 @@ interface SystemStatusDialogProps {
 
 function StatusIndicator({ status }: { status: 'running' | 'stopped' | 'error' | 'unknown' | 'connected' | 'disconnected' }) {
   const statusConfig = {
-    running: { color: 'bg-emerald-500', pulse: true, icon: CheckCircleIcon, label: 'Running' },
-    connected: { color: 'bg-emerald-500', pulse: false, icon: CheckCircleIcon, label: 'Connected' },
-    stopped: { color: 'bg-amber-500', pulse: false, icon: AlertCircleIcon, label: 'Stopped' },
-    error: { color: 'bg-red-500', pulse: true, icon: XCircleIcon, label: 'Error' },
-    disconnected: { color: 'bg-red-500', pulse: false, icon: XCircleIcon, label: 'Disconnected' },
-    unknown: { color: 'bg-gray-400', pulse: false, icon: AlertCircleIcon, label: 'Unknown' },
+    running: { color: 'bg-tint-green-fg', pulse: false, label: 'Running' },
+    connected: { color: 'bg-tint-green-fg', pulse: false, label: 'Connected' },
+    stopped: { color: 'bg-primary', pulse: false, label: 'Stopped' },
+    error: { color: 'bg-tint-red-fg', pulse: true, label: 'Error' },
+    disconnected: { color: 'bg-tint-red-fg', pulse: false, label: 'Disconnected' },
+    unknown: { color: 'bg-muted-foreground', pulse: false, label: 'Unknown' },
   };
 
   const config = statusConfig[status] || statusConfig.unknown;
-  const Icon = config.icon;
 
   return (
     <div className="flex items-center gap-2">
@@ -117,18 +114,11 @@ function StatusIndicator({ status }: { status: 'running' | 'stopped' | 'error' |
 
 function SubsystemCard({ subsystem, icon: Icon }: { subsystem: SubsystemStatus; icon: React.ElementType }) {
   return (
-    <div className="flex items-start justify-between p-3 rounded-xl bg-muted/50">
+    <div className="flex items-start justify-between gap-3 px-1 py-3">
       <div className="flex items-start gap-3">
-        <div className={cn(
-          'p-2 rounded-md',
-          subsystem.status === 'running' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' :
-          subsystem.status === 'error' ? 'bg-red-500/10 text-red-600 dark:text-red-400' :
-          'bg-amber-500/10 text-amber-600 dark:text-amber-400'
-        )}>
-          <Icon className="size-4" />
-        </div>
+        <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
         <div>
-          <h4 className="text-sm font-medium">{subsystem.name}</h4>
+          <h4 className="text-sm font-semibold">{subsystem.name}</h4>
           {subsystem.details?.description && (
             <p className="text-xs text-muted-foreground mt-0.5">
               {subsystem.details.description}
@@ -223,12 +213,9 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ServerIcon className="size-5" />
-            System Status
-          </DialogTitle>
+          <DialogTitle>System status</DialogTitle>
           <DialogDescription>
-            Monitor all background services and subsystems
+            The background services that keep prices and data up to date.
           </DialogDescription>
         </DialogHeader>
 
@@ -238,72 +225,65 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
           </div>
         ) : error && !status ? (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <XCircleIcon className="size-12 text-destructive mb-3" />
-            <p className="text-sm text-destructive">{error}</p>
+            <XCircleIcon className="size-8 text-tint-red-fg mb-3" />
+            <p className="text-sm font-semibold">Couldn&apos;t load the status</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
             <Button 
               variant="outline" 
               size="sm" 
-              className="mt-4"
+              className="mt-4 rounded-full font-semibold"
               onClick={fetchStatus}
             >
-              <RefreshCwIcon className="size-4 mr-2" />
-              Retry
+              <RefreshCwIcon className="size-4" />
+              Try again
             </Button>
           </div>
         ) : status ? (
           <div className="space-y-6">
             {/* App Status Overview */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="p-3 rounded-xl bg-muted/50 text-center">
-                <div className={cn(
-                  'text-xs font-medium uppercase tracking-wide mb-1',
-                  status.app.isInitialized ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-                )}>
-                  {status.app.isInitialized ? 'Initialized' : 'Starting...'}
+            <div className="card-solid grid grid-cols-3 gap-4 rounded-2xl p-4">
+              <div>
+                <div className="text-[13px] font-semibold text-muted-foreground">App</div>
+                <div className={cn('mt-0.5 font-bold', status.app.isInitialized ? 'text-tint-green-fg' : 'text-primary-strong')}>
+                  {status.app.isInitialized ? 'Ready' : 'Starting...'}
                 </div>
-                <div className="text-lg font-semibold">App</div>
               </div>
-              <div className="p-3 rounded-xl bg-muted/50 text-center">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Uptime
-                </div>
-                <div className="text-lg font-semibold tabular-nums">{formatUptime(status.uptime)}</div>
+              <div>
+                <div className="text-[13px] font-semibold text-muted-foreground">Uptime</div>
+                <div className="mt-0.5 font-bold tabular-nums">{formatUptime(status.uptime)}</div>
               </div>
-              <div className="p-3 rounded-xl bg-muted/50 text-center">
-                <div className={cn(
-                  'text-xs font-medium uppercase tracking-wide mb-1',
-                  status.database.status === 'connected' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
-                )}>
+              <div>
+                <div className="text-[13px] font-semibold text-muted-foreground">Database</div>
+                <div className={cn('mt-0.5 font-bold capitalize', status.database.status === 'connected' ? 'text-tint-green-fg' : 'text-tint-red-fg')}>
                   {status.database.status}
                 </div>
-                <div className="text-lg font-semibold">Database</div>
               </div>
             </div>
 
             {/* Current Price */}
             {status.priceData.currentPrice && (
-              <div className="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20">
-                <div className="flex items-center justify-between">
+              <div className="card-solid rounded-2xl p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Current BTC Price
+                    <div className="text-[13px] font-semibold text-muted-foreground">
+                      Bitcoin price
                     </div>
-                    <div className="text-2xl font-bold text-primary tabular-nums">
+                    <div className="text-2xl font-extrabold tracking-tight tabular-nums">
                       {formatPrice(status.priceData.currentPrice.price)}
                     </div>
                     {status.priceData.currentPrice.change24h !== undefined && (
                       <div className={cn(
                         'text-sm font-medium tabular-nums',
-                        status.priceData.currentPrice.change24h >= 0 ? 'text-profit' : 'text-loss'
+                        status.priceData.currentPrice.change24h > 0 ? 'text-tint-green-fg' : status.priceData.currentPrice.change24h < 0 ? 'text-tint-red-fg' : 'text-muted-foreground'
                       )}>
-                        {status.priceData.currentPrice.change24h >= 0 ? '+' : ''}
-                        {status.priceData.currentPrice.change24h.toFixed(2)}% (24h)
+                        {status.priceData.currentPrice.change24h > 0 ? '+' : ''}
+                        {status.priceData.currentPrice.change24h.toFixed(2)}% in 24h
                       </div>
                     )}
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
-                    <div>Source: {status.priceData.currentPrice.source}</div>
-                    <div>Updated: {formatDateTime(status.priceData.currentPrice.lastUpdate)}</div>
+                    <div>From {status.priceData.currentPrice.source}</div>
+                    <div>Updated {formatDateTime(status.priceData.currentPrice.lastUpdate)}</div>
                   </div>
                 </div>
               </div>
@@ -311,11 +291,8 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
 
             {/* Subsystems */}
             <div>
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                <ActivityIcon className="size-4" />
-                Background Services
-              </h3>
-              <div className="space-y-2">
+              <h3 className="mb-2 text-[15px] font-bold">Background services</h3>
+              <div className="card-solid divide-y divide-border/60 rounded-2xl px-3">
                 {status.subsystems.map((subsystem, index) => (
                   <SubsystemCard
                     key={index}
@@ -329,26 +306,23 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
             {/* Database Stats */}
             {status.database.stats && (
               <div>
-                <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <DatabaseIcon className="size-4" />
-                  Data Statistics
-                </h3>
+                <h3 className="mb-2 text-[15px] font-bold">Stored data</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="p-3 rounded-xl bg-muted/50 text-center">
-                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.totalTransactions}</div>
+                  <div className="card-solid rounded-2xl p-3">
+                    <div className="text-xl font-extrabold tabular-nums">{status.database.stats.totalTransactions}</div>
                     <div className="text-xs text-muted-foreground">Transactions</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/50 text-center">
-                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.intradayRecords}</div>
-                    <div className="text-xs text-muted-foreground">Intraday Records</div>
+                  <div className="card-solid rounded-2xl p-3">
+                    <div className="text-xl font-extrabold tabular-nums">{status.database.stats.intradayRecords}</div>
+                    <div className="text-xs text-muted-foreground">Intraday prices</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/50 text-center">
-                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.historicalRecords}</div>
-                    <div className="text-xs text-muted-foreground">Historical Records</div>
+                  <div className="card-solid rounded-2xl p-3">
+                    <div className="text-xl font-extrabold tabular-nums">{status.database.stats.historicalRecords}</div>
+                    <div className="text-xs text-muted-foreground">Daily prices</div>
                   </div>
-                  <div className="p-3 rounded-xl bg-muted/50 text-center">
-                    <div className="text-2xl font-bold tabular-nums">{status.database.stats.activeRecurring}</div>
-                    <div className="text-xs text-muted-foreground">Active DCA</div>
+                  <div className="card-solid rounded-2xl p-3">
+                    <div className="text-xl font-extrabold tabular-nums">{status.database.stats.activeRecurring}</div>
+                    <div className="text-xs text-muted-foreground">Active DCA plans</div>
                   </div>
                 </div>
               </div>
@@ -356,16 +330,13 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
 
             {/* Exchange Rates */}
             {status.exchangeRates.ratesCount > 0 && (
-              <div className="p-3 rounded-xl bg-muted/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <DollarSignIcon className="size-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Exchange Rates</span>
-                  </div>
+              <div className="card-solid rounded-2xl p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">Exchange rates</span>
                   <div className="text-xs text-muted-foreground tabular-nums">
                     {status.exchangeRates.ratesCount} rates stored
                     {status.exchangeRates.lastUpdate && (
-                      <> · Updated {formatDateTime(status.exchangeRates.lastUpdate)}</>
+                      <>, updated {formatDateTime(status.exchangeRates.lastUpdate)}</>
                     )}
                   </div>
                 </div>
@@ -373,13 +344,14 @@ export function SystemStatusDialog({ open, onOpenChange }: SystemStatusDialogPro
             )}
 
             {/* Footer Info */}
-            <div className="pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-4 text-xs text-muted-foreground">
               <div>
-                BTC Tracker v{packageJson.version} · Node {status.nodeVersion} · {status.environment}
+                BTC Tracker {packageJson.version} on Node {status.nodeVersion}, {status.environment}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
+                className="rounded-full"
                 onClick={fetchStatus}
                 disabled={loading}
               >

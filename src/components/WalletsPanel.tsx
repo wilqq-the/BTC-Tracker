@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +21,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { WalletIcon, EditIcon, TrashIcon, AlertCircleIcon } from 'lucide-react';
+import { WalletIcon, PencilIcon, TrashIcon, AlertCircleIcon } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import { confirm } from '@/components/ui/confirm-dialog';
 import { toast } from '@/hooks/use-toast';
 
@@ -47,7 +48,10 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
   const [walletsLoading, setWalletsLoading] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [editingWallet, setEditingWallet] = useState<Wallet | null>(null);
-  const [walletForm, setWalletForm] = useState({ name: '', type: 'hot' as 'cold' | 'hot', emoji: '', note: '', includeInPortfolio: true });
+  // The wallet emoji field still exists in the DB/API; the form no longer asks for it
+  // (wallets are marked with WalletTypeIcon), and leaving it out of the payload keeps
+  // any existing value untouched on edit.
+  const [walletForm, setWalletForm] = useState({ name: '', type: 'hot' as 'cold' | 'hot', note: '', includeInPortfolio: true });
   const [walletError, setWalletError] = useState('');
   const [savingWallet, setSavingWallet] = useState(false);
 
@@ -57,7 +61,7 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
 
   // Surface the primary action in the settings page header
   useEffect(() => {
-    onHeaderAction?.({ label: 'Add Wallet', onClick: openAddWallet });
+    onHeaderAction?.({ label: 'Add wallet', onClick: openAddWallet });
     return () => onHeaderAction?.(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -79,7 +83,7 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
 
   const openAddWallet = () => {
     setEditingWallet(null);
-    setWalletForm({ name: '', type: 'hot', emoji: '', note: '', includeInPortfolio: true });
+    setWalletForm({ name: '', type: 'hot', note: '', includeInPortfolio: true });
     setWalletError('');
     setShowWalletModal(true);
   };
@@ -89,7 +93,6 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
     setWalletForm({
       name: wallet.name,
       type: wallet.type,
-      emoji: wallet.emoji || '',
       note: wallet.note || '',
       includeInPortfolio: wallet.includeInPortfolio,
     });
@@ -99,7 +102,7 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
 
   const handleSaveWallet = async () => {
     if (!walletForm.name.trim()) {
-      setWalletError('Wallet name is required');
+      setWalletError('Give the wallet a name.');
       return;
     }
     setWalletError('');
@@ -115,12 +118,13 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
       const result = await response.json();
       if (result.success) {
         setShowWalletModal(false);
+        toast({ title: editingWallet ? 'Wallet updated' : 'Wallet added' });
         await loadWallets();
       } else {
         setWalletError(result.message || 'Failed to save wallet');
       }
     } catch (error) {
-      setWalletError('An error occurred');
+      setWalletError('Couldn’t save the wallet. Check your connection and try again.');
     } finally {
       setSavingWallet(false);
     }
@@ -137,6 +141,7 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
       const response = await fetch(`/api/wallets/${wallet.id}`, { method: 'DELETE' });
       const result = await response.json();
       if (result.success) {
+        toast({ title: 'Wallet deleted' });
         await loadWallets();
       } else {
         toast({ title: 'Failed to delete wallet', description: result.message, variant: 'destructive' });
@@ -147,69 +152,87 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
     }
   };
 
+  const formatBtc = (n: number) => (n === 0 ? '0' : n.toFixed(8));
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent>
+    <div className="space-y-4">
+      <Card className="gap-0 py-2">
+        <CardContent className="px-2">
           {walletsLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="flex items-center justify-center py-10">
+              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" aria-label="Loading wallets" />
             </div>
           ) : wallets.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <WalletIcon className="size-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">No wallets yet. Add your first wallet to start tracking.</p>
+            <div className="flex flex-col items-center gap-3 px-4 py-10 text-center">
+              <WalletIcon className="size-8 text-muted-foreground" />
+              <div>
+                <p className="font-semibold">No wallets yet</p>
+                <p className="text-sm text-muted-foreground">Add the wallets and exchanges you keep bitcoin in to see how it&apos;s split.</p>
+              </div>
+              <Button size="sm" className="rounded-full font-semibold" onClick={openAddWallet}>Add a wallet</Button>
             </div>
           ) : (
-            <div className="space-y-2">
+            <ul className="divide-y divide-border/60">
               {wallets.map(wallet => (
-                <div
-                  key={wallet.id}
-                  className="flex items-center justify-between p-3 bg-muted/40 rounded-2xl hover:bg-muted/60 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={cn(
-                      'size-9 rounded-full flex items-center justify-center text-lg',
-                      wallet.type === 'cold' ? 'bg-blue-500/10' : 'bg-orange-500/10'
+                <li key={wallet.id} className="flex items-center justify-between gap-3 px-3 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span className={cn(
+                      'flex size-10 shrink-0 items-center justify-center rounded-full',
+                      wallet.type === 'cold' ? 'bg-tint-blue' : 'bg-tint-orange'
                     )}>
-                      {wallet.emoji || (wallet.type === 'cold' ? '❄️' : '🔥')}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{wallet.name}</span>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            'text-xs py-0',
-                            wallet.type === 'cold'
-                              ? 'text-blue-600 border-blue-500/30'
-                              : 'text-orange-600 border-orange-500/30'
-                          )}
-                        >
-                          {wallet.type === 'cold' ? 'Cold' : 'Hot'}
-                        </Badge>
+                      <WalletTypeIcon type={wallet.type} className="size-[18px]" />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="truncate text-[15px] font-semibold">{wallet.name}</span>
+                        <span className={cn(
+                          'rounded-full px-2 py-0.5 text-xs font-semibold',
+                          wallet.type === 'cold' ? 'bg-tint-blue text-tint-blue-fg' : 'bg-tint-orange text-primary-strong'
+                        )}>
+                          {wallet.type === 'cold' ? 'Cold storage' : 'Hot wallet'}
+                        </span>
                         {!wallet.includeInPortfolio && (
-                          <Badge variant="outline" className="text-xs py-0 text-muted-foreground">
-                            Excluded
-                          </Badge>
+                          <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+                            Not in total
+                          </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                        {wallet.btcBalance.toFixed(8)} ₿
-                      </p>
+                      {wallet.note && (
+                        <p className="mt-0.5 truncate text-[13px] text-muted-foreground">{wallet.note}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="icon" className="size-7" onClick={() => openEditWallet(wallet)}>
-                      <EditIcon className="size-3.5" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="size-7 text-destructive hover:text-destructive" onClick={() => handleDeleteWallet(wallet)}>
-                      <TrashIcon className="size-3.5" />
-                    </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={cn(
+                      'text-[15px] font-bold tabular-nums',
+                      wallet.btcBalance === 0 && 'text-muted-foreground'
+                    )}>
+                      {formatBtc(wallet.btcBalance)} <span className="text-[13px] font-semibold text-muted-foreground">BTC</span>
+                    </span>
+                    <div className="flex items-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-muted-foreground hover:text-foreground"
+                        aria-label={`Edit ${wallet.name}`}
+                        onClick={() => openEditWallet(wallet)}
+                      >
+                        <PencilIcon className="size-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-muted-foreground hover:bg-tint-red hover:text-tint-red-fg"
+                        aria-label={`Delete ${wallet.name}`}
+                        onClick={() => handleDeleteWallet(wallet)}
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
+                    </div>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </CardContent>
       </Card>
@@ -218,87 +241,73 @@ export default function WalletsPanel({ onHeaderAction }: WalletsPanelProps) {
       <Dialog open={showWalletModal} onOpenChange={setShowWalletModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{editingWallet ? 'Edit Wallet' : 'Add Wallet'}</DialogTitle>
+            <DialogTitle>{editingWallet ? 'Edit wallet' : 'Add a wallet'}</DialogTitle>
             <DialogDescription>
-              {editingWallet ? 'Update your wallet details.' : 'Add a new wallet to track your Bitcoin holdings.'}
+              {editingWallet ? 'Change the name, type or note.' : 'A place you keep bitcoin: a hardware wallet, an exchange, a phone app.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="walletName">Name *</Label>
+              <Label htmlFor="walletName">Name</Label>
               <Input
                 id="walletName"
-                placeholder="e.g. Ledger Nano, Kraken, Lightning"
+                placeholder="Ledger Nano, Kraken, Lightning"
                 value={walletForm.name}
                 onChange={e => setWalletForm({ ...walletForm, name: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Type *</Label>
-                <Select value={walletForm.type} onValueChange={v => setWalletForm({ ...walletForm, type: v as 'cold' | 'hot' })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cold">❄️ Cold Storage</SelectItem>
-                    <SelectItem value="hot">🔥 Hot Wallet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="walletEmoji">Emoji / Icon</Label>
-                <Input
-                  id="walletEmoji"
-                  placeholder="🏦"
-                  value={walletForm.emoji}
-                  onChange={e => setWalletForm({ ...walletForm, emoji: e.target.value })}
-                  maxLength={4}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="walletType">Type</Label>
+              <Select value={walletForm.type} onValueChange={v => setWalletForm({ ...walletForm, type: v as 'cold' | 'hot' })}>
+                <SelectTrigger id="walletType" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cold">
+                    <WalletTypeIcon type="cold" />
+                    Cold storage
+                  </SelectItem>
+                  <SelectItem value="hot">
+                    <WalletTypeIcon type="hot" />
+                    Hot wallet
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="walletNote">Note</Label>
               <Input
                 id="walletNote"
-                placeholder="Optional description"
+                placeholder="Optional"
                 value={walletForm.note}
                 onChange={e => setWalletForm({ ...walletForm, note: e.target.value })}
               />
             </div>
-            <div className="flex items-center justify-between p-3 bg-muted/40 rounded-2xl">
+            <div className="card-solid flex items-center justify-between gap-4 rounded-2xl p-3">
               <div>
-                <p className="text-sm font-medium">Include in Portfolio Total</p>
-                <p className="text-xs text-muted-foreground">When disabled, this wallet&apos;s BTC is excluded from your portfolio value</p>
+                <Label htmlFor="walletInclude" className="text-sm font-semibold">Count in portfolio total</Label>
+                <p className="text-xs text-muted-foreground">Turn off to track this wallet without adding its bitcoin to your total.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setWalletForm({ ...walletForm, includeInPortfolio: !walletForm.includeInPortfolio })}
-                className={cn(
-                  'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors',
-                  walletForm.includeInPortfolio ? 'bg-primary' : 'bg-muted-foreground/30'
-                )}
-              >
-                <span className={cn(
-                  'pointer-events-none inline-block size-5 rounded-full bg-white shadow transform transition-transform',
-                  walletForm.includeInPortfolio ? 'translate-x-5' : 'translate-x-0'
-                )} />
-              </button>
+              <Switch
+                id="walletInclude"
+                checked={walletForm.includeInPortfolio}
+                onCheckedChange={(checked) => setWalletForm({ ...walletForm, includeInPortfolio: checked })}
+              />
             </div>
             {walletError && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
-                <AlertCircleIcon className="size-4" />
+              <div className="flex items-center gap-2 rounded-2xl bg-tint-red p-3 text-sm text-tint-red-fg">
+                <AlertCircleIcon className="size-4 shrink-0" />
                 {walletError}
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowWalletModal(false)}>Cancel</Button>
-            <Button onClick={handleSaveWallet} disabled={savingWallet}>
+            <Button variant="outline" className="rounded-full font-semibold" onClick={() => setShowWalletModal(false)}>Cancel</Button>
+            <Button className="rounded-full font-semibold" onClick={handleSaveWallet} disabled={savingWallet}>
               {savingWallet ? (
-                <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                <div className="size-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
               ) : null}
-              {editingWallet ? 'Save Changes' : 'Add Wallet'}
+              {editingWallet ? 'Save changes' : 'Add wallet'}
             </Button>
           </DialogFooter>
         </DialogContent>

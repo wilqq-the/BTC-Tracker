@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { ImageUpIcon } from 'lucide-react'
 import UserAvatar from './UserAvatar'
 
 interface AvatarUploadModalProps {
@@ -99,12 +100,12 @@ export default function AvatarUploadModal({
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Update Profile Picture</DialogTitle>
+          <DialogTitle>Change profile picture</DialogTitle>
         </DialogHeader>
 
         {/* Current Avatar */}
         <div className="flex flex-col items-center">
-          <p className="mb-3 text-sm text-muted-foreground">Current Avatar</p>
+          <p className="mb-3 text-[13px] font-semibold text-muted-foreground">Current picture</p>
           <UserAvatar
             src={currentAvatar}
             name={userName}
@@ -116,11 +117,9 @@ export default function AvatarUploadModal({
         {/* Upload Area */}
         <div
           className={cn(
-            'relative border-2 border-dashed rounded-2xl p-8 text-center transition-colors',
-            dragOver
-              ? 'border-primary/50 bg-primary/5'
-              : 'border-border',
-            selectedFile && 'border-profit/50 bg-profit/5'
+            'card-solid relative rounded-2xl border-2 border-dashed p-8 text-center transition-colors',
+            dragOver && 'border-primary bg-tint-orange',
+            selectedFile && !dragOver && 'border-tint-green-fg/50'
           )}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -148,10 +147,10 @@ export default function AvatarUploadModal({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="text-4xl">📸</div>
+              <ImageUpIcon className="mx-auto size-8 text-muted-foreground" aria-hidden />
               <div>
-                <p className="font-medium text-foreground">Drag and drop your image here</p>
-                <p className="text-sm text-muted-foreground">or click to browse files</p>
+                <p className="font-semibold text-foreground">Drop an image here</p>
+                <p className="text-sm text-muted-foreground">or click to choose a file</p>
               </div>
             </div>
           )}
@@ -160,22 +159,23 @@ export default function AvatarUploadModal({
             type="file"
             accept="image/jpeg,image/jpg,image/png,image/webp"
             onChange={handleFileSelect}
+            aria-label="Choose a profile picture"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
         </div>
 
         {/* File Requirements */}
         <p className="text-xs text-muted-foreground text-center">
-          Supported: JPG, PNG, WebP • Maximum size: 5MB
+          JPG, PNG or WebP, up to 5 MB
         </p>
 
         {/* Actions */}
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="outline" onClick={handleClose} className="flex-1" disabled={uploading}>
+          <Button variant="outline" onClick={handleClose} className="flex-1 rounded-full font-semibold" disabled={uploading}>
             Cancel
           </Button>
-          <Button onClick={handleUpload} className="flex-1" disabled={!selectedFile || uploading}>
-            {uploading ? 'Uploading...' : 'Upload Picture'}
+          <Button onClick={handleUpload} className="flex-1 rounded-full font-semibold" disabled={!selectedFile || uploading}>
+            {uploading ? 'Uploading...' : 'Use this picture'}
           </Button>
         </DialogFooter>
       </DialogContent>
