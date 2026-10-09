@@ -138,8 +138,12 @@ export function parseCsvFile(content: string, detectOnly?: boolean): ParseResult
     .split('\n')
     .map(line => line.trim()); // Trim whitespace from start/end of each line
   
+  if (lines.length === 1 && lines[0] === '') {
+    throw new Error('The file is empty.');
+  }
   if (lines.length < 2) {
-    throw new Error('CSV file must have at least a header row and one data row');
+    // Exchanges export a header-only file for months without activity
+    throw new Error('The file has no transactions in it, only the header row.');
   }
   
   // Parse and clean headers
