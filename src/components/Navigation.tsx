@@ -35,6 +35,7 @@ import { emitTransactionsChanged } from '@/lib/app-events';
 import { useFerroPill, FerroPillLayer } from '@/components/ui/ferro-pill';
 import { useBtcUnit } from '@/hooks/use-btc-unit';
 import { cn } from '@/lib/utils';
+import { switchThemeWithReveal } from '@/lib/theme-transition';
 
 interface NavigationProps {
   /** Opens the portfolio drawer on small screens */
@@ -183,7 +184,10 @@ export default function Navigation({ onMenuClick }: NavigationProps) {
             variant="ghost"
             size="icon"
             className="relative size-11 rounded-full bg-secondary hover:bg-accent"
-            onClick={() => setTheme(isDark ? 'light' : 'dark')}
+            onClick={(e) => {
+              const r = e.currentTarget.getBoundingClientRect();
+              switchThemeWithReveal(() => setTheme(isDark ? 'light' : 'dark'), { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+            }}
             title={mounted ? `Switch to ${isDark ? 'light' : 'dark'} mode` : undefined}
             aria-label="Toggle theme"
           >

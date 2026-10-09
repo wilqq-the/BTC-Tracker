@@ -385,3 +385,11 @@
 [data-ferro-pointer] * {
   cursor: none !important;
 }
+
+/* Light/dark switch: the new theme is revealed as a growing circle
+   (src/lib/theme-transition.ts) instead of the default crossfade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}

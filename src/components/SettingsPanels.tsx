@@ -39,6 +39,7 @@ import {
   DatabaseIcon,
   ServerIcon,
 } from 'lucide-react';
+import { switchThemeWithReveal } from '@/lib/theme-transition';
 
 interface SettingsPanelProps<T> {
   settings: T;
@@ -817,7 +818,7 @@ export function DisplaySettingsPanel({
                 value={mode}
                 onChange={(next) => {
                   if (saving || next === mode) return;
-                  setTheme(next);
+                  switchThemeWithReveal(() => setTheme(next));
                   onUpdate({ theme: next });
                 }}
               />
