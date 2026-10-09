@@ -13,6 +13,7 @@ import {
   parseCsvFile,
   parseJsonFile 
 } from './parsers';
+import { isTransferFeeMode } from '@/lib/transfer-fees';
 
 export async function POST(request: NextRequest) {
   return withAuth(request, async (userId, user) => {
@@ -314,6 +315,9 @@ async function importTransactions(
           transactionDate: new Date(transaction.transaction_date),
           notes: transaction.notes,
           transferType,
+          transferFeeMode: isTransfer && transferType !== 'TRANSFER_IN' && isTransferFeeMode(transaction.transfer_fee_mode)
+            ? transaction.transfer_fee_mode
+            : null,
           destinationAddress: isTransfer ? (transaction.destination_address || null) : null,
           toWalletId,
           fromWalletId,

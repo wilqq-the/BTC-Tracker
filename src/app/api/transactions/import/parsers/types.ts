@@ -14,6 +14,7 @@ export interface ImportTransaction {
   notes: string;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT' | null;
   destination_address?: string | null;
+  transfer_fee_mode?: 'ON_TOP' | 'DEDUCTED' | null; // how a BTC network fee was paid (#168)
 }
 
 export interface ParseResult {

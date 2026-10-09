@@ -19,7 +19,7 @@ export interface BitcoinTransaction {
   
   // Transfer-specific fields
   // IMPORTANT: For transfers, btc_amount = total leaving source, fees = network fee
-  // Amount arriving at destination = btc_amount - fees
+  // Amount arriving depends on transfer_fee_mode (lib/transfer-fees)
   // 
   // Internal transfers (between your wallets - no portfolio balance change):
   //   - TO_COLD_WALLET, FROM_COLD_WALLET, BETWEEN_WALLETS
@@ -28,6 +28,7 @@ export interface BitcoinTransaction {
   //   - TRANSFER_IN: BTC received (gift, payment, mining) - adds to holdings
   //   - TRANSFER_OUT: BTC sent (payment, donation, gift) - removes from holdings
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT' | null;
+  transfer_fee_mode?: 'ON_TOP' | 'DEDUCTED' | null; // how a BTC network fee was paid (#168)
   destination_address?: string | null; // Optional: wallet address for tracking
   
   // Tracking
@@ -65,6 +66,7 @@ export interface TransactionFormData {
   notes: string;
   tags?: string;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
+  transfer_fee_mode?: 'ON_TOP' | 'DEDUCTED' | null; // how a BTC network fee was paid (#168)
   destination_address?: string;
 }
 
@@ -99,6 +101,7 @@ export interface TransactionFilters {
   min_amount?: number;
   max_amount?: number;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
+  transfer_fee_mode?: 'ON_TOP' | 'DEDUCTED' | null; // how a BTC network fee was paid (#168)
 }
 
 export interface TransactionSort {

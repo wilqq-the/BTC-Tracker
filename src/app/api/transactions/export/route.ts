@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { BitcoinTransaction } from '@/lib/types';
 import { withAuth } from '@/lib/auth-helpers';
+import { isTransferFeeMode } from '@/lib/transfer-fees';
 
 // Wallet summary attached to an exported transaction
 interface ExportWallet {
@@ -79,6 +80,7 @@ export async function GET(request: NextRequest) {
         notes: tx.notes || '',
         tags: (tx as any).tags || '',
         transfer_type: (tx as any).transferType || null,
+        transfer_fee_mode: isTransferFeeMode(tx.transferFeeMode) ? tx.transferFeeMode : null,
         destination_address: (tx as any).destinationAddress || null,
         from_wallet: tx.fromWallet
           ? { id: tx.fromWallet.id, name: tx.fromWallet.name, emoji: tx.fromWallet.emoji, type: tx.fromWallet.type }
@@ -115,6 +117,7 @@ export async function GET(request: NextRequest) {
           notes: tx.notes || '',
           tags: tx.tags || '',
           transfer_type: tx.transfer_type || null,
+          transfer_fee_mode: tx.transfer_fee_mode || null,
           destination_address: tx.destination_address || null,
           from_wallet: tx.from_wallet,
           to_wallet: tx.to_wallet,
@@ -150,7 +153,8 @@ export async function GET(request: NextRequest) {
         'From Wallet Type',
         'To Wallet',
         'To Wallet Type',
-        'Tags'
+        'Tags',
+        'Transfer Fee Mode'
       ];
 
       // Helper to escape CSV values (quote if contains comma, quote, or newline)
@@ -182,7 +186,8 @@ export async function GET(request: NextRequest) {
         escapeCsvValue(tx.from_wallet?.type || ''),
         escapeCsvValue(tx.to_wallet?.name || ''),
         escapeCsvValue(tx.to_wallet?.type || ''),
-        escapeCsvValue(tx.tags || '')
+        escapeCsvValue(tx.tags || ''),
+        escapeCsvValue(tx.transfer_fee_mode || '')
       ]);
 
       const csvContent = [
