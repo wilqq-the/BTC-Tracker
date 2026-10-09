@@ -5,6 +5,35 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-10-09
+
+### 🔒 Security
+- **Hardened API authentication** — every API route now requires a valid session or API key, admin-only settings and maintenance actions are restricted to admins, and data is strictly scoped to its owner. Upgrading is strongly recommended for every instance ([#231](https://github.com/wilqq-the/BTC-Tracker/pull/231))
+
+### ✨ New Features
+- **New look** — a complete redesign: solid warm surfaces in a floating app shell, a new typeface, icons instead of emoji and clearer copy on every page ([#226](https://github.com/wilqq-the/BTC-Tracker/pull/226))
+- **BTC / sats toggle** — show every bitcoin amount in BTC or sats, from the header or Settings → Display; secondary lines show the other unit ([#230](https://github.com/wilqq-the/BTC-Tracker/pull/230))
+- **Backup & restore** — admins can download a full database backup and restore it from Settings ([#218](https://github.com/wilqq-the/BTC-Tracker/pull/218))
+- **Cash App and Revolut X CSV import** ([#227](https://github.com/wilqq-the/BTC-Tracker/pull/227), closes [#214](https://github.com/wilqq-the/BTC-Tracker/issues/214), [#215](https://github.com/wilqq-the/BTC-Tracker/issues/215))
+- **Liquid interactions** — ferrofluid navigation and tab selectors, a liquid pointer on the price chart that snaps to your transactions, a circular light/dark switch and small hover details ([#233](https://github.com/wilqq-the/BTC-Tracker/pull/233), [#234](https://github.com/wilqq-the/BTC-Tracker/pull/234), [#236](https://github.com/wilqq-the/BTC-Tracker/pull/236), [#238](https://github.com/wilqq-the/BTC-Tracker/pull/238))
+- **Discord** link in the footer ([#240](https://github.com/wilqq-the/BTC-Tracker/pull/240))
+
+### 🔧 Improvements
+- **Export** now includes wallet and tag fields in CSV and JSON ([#224](https://github.com/wilqq-the/BTC-Tracker/pull/224), closes [#221](https://github.com/wilqq-the/BTC-Tracker/issues/221), [#223](https://github.com/wilqq-the/BTC-Tracker/issues/223))
+- **CSV import** links transfers to the selected wallet ([#222](https://github.com/wilqq-the/BTC-Tracker/pull/222))
+- **Strike import** now imports receives and explains months without activity instead of failing ([#232](https://github.com/wilqq-the/BTC-Tracker/pull/232))
+- **Dashboard editor** — Done saves and Cancel restores the last saved layout, one consistent name per widget, widgets return at a size that fits, and the edit bar stays in view ([#242](https://github.com/wilqq-the/BTC-Tracker/pull/242))
+- Pages start level with the sidebar ([#229](https://github.com/wilqq-the/BTC-Tracker/pull/229))
+- New README screenshots and a demo account seed (`npm run demo:seed`) ([#228](https://github.com/wilqq-the/BTC-Tracker/pull/228))
+
+### 🐛 Bug Fixes
+- **Display currency** is now used everywhere, including the price chart tooltip and the goal card ([#241](https://github.com/wilqq-the/BTC-Tracker/pull/241))
+- **Analytics** no longer counts transfers as sales, and sorts by converted price ([#225](https://github.com/wilqq-the/BTC-Tracker/pull/225))
+- The page no longer shifts sideways when a dropdown or dialog opens with always-visible scrollbars ([#239](https://github.com/wilqq-the/BTC-Tracker/pull/239))
+- Wallet icons line up with their names in selects ([#237](https://github.com/wilqq-the/BTC-Tracker/pull/237)); the hovered wallet ring slice is no longer clipped ([#235](https://github.com/wilqq-the/BTC-Tracker/pull/235))
+- `/api/health` reports the real app version in Docker
+- Dependency security updates ([#217](https://github.com/wilqq-the/BTC-Tracker/pull/217))
+
 ## [0.7.0] - 2026-02-25
 
 ### 🐛 Bug Fixes
