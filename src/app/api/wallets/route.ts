@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withAuth } from '@/lib/auth-helpers';
 import { ensureDefaultWallets } from '@/lib/wallet-helpers';
+import { btcArriving, btcLeaving } from '@/lib/transfer-fees';
 
 // GET /api/wallets - list all wallets for the authenticated user, with per-wallet BTC balance
 export async function GET(request: NextRequest) {
@@ -62,32 +63,28 @@ export async function POST(request: NextRequest) {
 // Helper: calculate the BTC balance for a wallet based on linked transactions
 async function calculateWalletBalance(walletId: number): Promise<number> {
   // BTC received: toWallet transactions
-  //   - Internal transfer arriving: btcAmount - fees
-  //   - External TRANSFER_IN arriving: btcAmount - fees
+  //   - Transfer arriving: btcArriving (depends on the fee mode, lib/transfer-fees)
   //   - BUY going to this wallet: btcAmount
   const incoming = await prisma.bitcoinTransaction.findMany({
     where: { toWalletId: walletId },
-    select: { type: true, btcAmount: true, fees: true, feesCurrency: true, transferType: true },
+    select: { type: true, btcAmount: true, fees: true, feesCurrency: true, transferType: true, transferFeeMode: true },
   });
 
   // BTC sent: fromWallet transactions
-  //   - Internal transfer leaving: btcAmount (fees already deducted on arrival side)
-  //   - External TRANSFER_OUT leaving: btcAmount
+  //   - Transfer leaving: btcLeaving (depends on the fee mode)
   //   - SELL from this wallet: btcAmount
   const outgoing = await prisma.bitcoinTransaction.findMany({
     where: { fromWalletId: walletId },
-    select: { type: true, btcAmount: true, fees: true, feesCurrency: true, transferType: true },
+    select: { type: true, btcAmount: true, fees: true, feesCurrency: true, transferType: true, transferFeeMode: true },
   });
 
   let balance = 0;
 
   for (const tx of incoming) {
-    const btcFee = tx.feesCurrency === 'BTC' ? tx.fees : 0;
     if (tx.type === 'BUY') {
       balance += tx.btcAmount;
     } else if (tx.type === 'TRANSFER') {
-      // Wallet receives btcAmount minus network fees
-      balance += tx.btcAmount - btcFee;
+      balance += btcArriving(tx);
     }
   }
 
@@ -95,8 +92,7 @@ async function calculateWalletBalance(walletId: number): Promise<number> {
     if (tx.type === 'SELL') {
       balance -= tx.btcAmount;
     } else if (tx.type === 'TRANSFER') {
-      // Wallet sends btcAmount (fee is deducted from what arrives)
-      balance -= tx.btcAmount;
+      balance -= btcLeaving(tx);
     }
   }
 

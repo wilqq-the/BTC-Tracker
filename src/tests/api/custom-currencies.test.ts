@@ -1,3 +1,7 @@
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+import { authedRequest } from '../mock-auth-helpers'
+
 import { NextRequest } from 'next/server';
 import { GET as getCustomCurrencies, POST as postCustomCurrency } from '@/app/api/custom-currencies/route';
 import { PUT as putCustomCurrency, DELETE as deleteCustomCurrency } from '@/app/api/custom-currencies/[id]/route';
@@ -60,7 +64,7 @@ describe('Custom Currencies API', () => {
     it('should return all active custom currencies', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(mockCustomCurrencies);
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -73,7 +77,7 @@ describe('Custom Currencies API', () => {
     it('should return empty array when no custom currencies exist', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue([]);
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -85,7 +89,7 @@ describe('Custom Currencies API', () => {
     it('should handle service errors gracefully', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockRejectedValue(new Error('Database error'));
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -97,7 +101,7 @@ describe('Custom Currencies API', () => {
     it('should handle non-Error exceptions gracefully', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockRejectedValue('String error');
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -531,7 +535,7 @@ describe('Custom Currencies API', () => {
     it('should validate custom currency data structure', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(mockCustomCurrencies);
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -557,7 +561,7 @@ describe('Custom Currencies API', () => {
     it('should validate timestamp formats in responses', async () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(mockCustomCurrencies);
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       data.data.forEach((currency: any) => {
@@ -580,7 +584,7 @@ describe('Custom Currencies API', () => {
       ];
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(malformedData as any);
 
-      const response = await getCustomCurrencies();
+      const response = await getCustomCurrencies(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -593,7 +597,7 @@ describe('Custom Currencies API', () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(mockCustomCurrencies);
       mockCustomCurrencyService.addCustomCurrency.mockResolvedValue(mockCustomCurrencies[0]);
 
-      const getRequest = getCustomCurrencies();
+      const getRequest = getCustomCurrencies(authedRequest());
       const postRequest = postCustomCurrency(new NextRequest('http://localhost:3000/api/custom-currencies', {
         method: 'POST',
         body: JSON.stringify({ code: 'TEST', name: 'Test Currency', symbol: 'T' })
@@ -612,7 +616,7 @@ describe('Custom Currencies API', () => {
       mockCustomCurrencyService.getAllCustomCurrencies.mockResolvedValue(mockCustomCurrencies);
       mockCustomCurrencyService.addCustomCurrency.mockRejectedValue(new Error('Currency already exists'));
 
-      const getRequest = getCustomCurrencies();
+      const getRequest = getCustomCurrencies(authedRequest());
       const postRequest = postCustomCurrency(new NextRequest('http://localhost:3000/api/custom-currencies', {
         method: 'POST',
         body: JSON.stringify({ code: 'EXISTING', name: 'Existing Currency', symbol: 'E' })

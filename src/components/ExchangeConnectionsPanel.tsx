@@ -8,8 +8,9 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { confirm } from '@/components/ui/confirm-dialog';
+import { WalletLabel, WalletTypeIcon } from '@/components/ui/wallet-type-icon';
 import {
   Dialog,
   DialogContent,
@@ -31,8 +32,6 @@ import {
   PlusIcon,
   TrashIcon,
   RefreshCwIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   AlertTriangleIcon,
   LinkIcon,
   UnlinkIcon,
@@ -80,13 +79,16 @@ interface Wallet {
   emoji: string | null;
 }
 
-export default function ExchangeConnectionsPanel() {
+interface ExchangeConnectionsPanelProps {
+  onHeaderAction?: (action: { label: string; onClick: () => void } | null) => void;
+}
+
+export default function ExchangeConnectionsPanel({ onHeaderAction }: ExchangeConnectionsPanelProps) {
   const [connections, setConnections] = useState<ExchangeConnection[]>([]);
   const [supportedExchanges, setSupportedExchanges] = useState<SupportedExchange[]>([]);
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState<number | null>(null);
   const [syncingId, setSyncingId] = useState<number | null>(null);
   const [testingId, setTestingId] = useState<number | null>(null);
 
@@ -132,9 +134,16 @@ export default function ExchangeConnectionsPanel() {
     loadWallets();
   }, [loadConnections, loadWallets]);
 
+  // Surface the primary action in the settings page header
+  useEffect(() => {
+    onHeaderAction?.({ label: 'Add connection', onClick: () => setShowAddDialog(true) });
+    return () => onHeaderAction?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleAddConnection = async () => {
     if (!addForm.exchangeName || !addForm.apiKey || !addForm.apiSecret) {
-      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      toast({ title: 'Choose an exchange and enter the API key and secret', variant: 'destructive' });
       return;
     }
 
@@ -171,13 +180,19 @@ export default function ExchangeConnectionsPanel() {
   };
 
   const handleDeleteConnection = async (id: number) => {
+    const ok = await confirm({
+      title: 'Remove this connection?',
+      description: 'Its stored API credentials are deleted. Transactions it already imported stay.',
+      confirmText: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const response = await fetch(`/api/exchanges/${id}`, { method: 'DELETE' });
       const result = await response.json();
 
       if (result.success) {
         toast({ title: 'Exchange connection removed' });
-        setShowDeleteDialog(null);
         loadConnections();
       } else {
         toast({ title: result.error || 'Failed to delete connection', variant: 'destructive' });
@@ -251,7 +266,7 @@ export default function ExchangeConnectionsPanel() {
       const result = await response.json();
 
       if (result.success) {
-        toast({ title: isActive ? 'Connection disabled' : 'Connection enabled' });
+        toast({ title: isActive ? 'Connection paused' : 'Connection resumed' });
         loadConnections();
       }
     } catch (error) {
@@ -261,91 +276,82 @@ export default function ExchangeConnectionsPanel() {
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'Never';
-    return new Date(dateStr).toLocaleString();
+    return new Date(dateStr).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
+
+  const chip = 'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold';
 
   const getSyncStatusBadge = (connection: ExchangeConnection) => {
     if (!connection.lastSyncStatus) {
-      return <Badge variant="outline">Not synced</Badge>;
+      return <span className={cn(chip, 'bg-secondary text-muted-foreground')}>Not synced yet</span>;
     }
 
     switch (connection.lastSyncStatus) {
       case 'success':
-        return (
-          <Badge variant="default" className="bg-green-600 hover:bg-green-600">
-            <CheckCircleIcon className="size-3 mr-1" />
-            Success
-          </Badge>
-        );
+        return <span className={cn(chip, 'bg-tint-green text-tint-green-fg')}>Synced</span>;
       case 'partial':
         return (
-          <Badge variant="default" className="bg-yellow-600 hover:bg-yellow-600">
-            <AlertTriangleIcon className="size-3 mr-1" />
-            Partial
-          </Badge>
+          <span className={cn(chip, 'bg-tint-orange text-primary-strong')}>
+            <AlertTriangleIcon className="size-3" />
+            Partly synced
+          </span>
         );
       case 'error':
         return (
-          <Badge variant="destructive">
-            <XCircleIcon className="size-3 mr-1" />
-            Error
-          </Badge>
+          <span className={cn(chip, 'bg-tint-red text-tint-red-fg')}>
+            <AlertTriangleIcon className="size-3" />
+            Sync failed
+          </span>
         );
       default:
-        return <Badge variant="outline">{connection.lastSyncStatus}</Badge>;
+        return <span className={cn(chip, 'bg-secondary text-muted-foreground')}>{connection.lastSyncStatus}</span>;
     }
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+        <Loader2Icon className="size-6 animate-spin text-muted-foreground" aria-label="Loading connections" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Exchange Connections</h3>
-          <p className="text-sm text-muted-foreground">
-            Connect your exchange accounts to automatically sync Bitcoin trades
-          </p>
-        </div>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <PlusIcon className="size-4 mr-2" />
-          Add Connection
-        </Button>
-      </div>
-
+    <div className="space-y-4">
       {/* Connections List */}
       {connections.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <LinkIcon className="size-10 mx-auto mb-3 text-muted-foreground" />
-            <p className="text-muted-foreground mb-4">No exchange connections yet</p>
-            <Button onClick={() => setShowAddDialog(true)} variant="outline">
-              <PlusIcon className="size-4 mr-2" />
-              Connect your first exchange
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <LinkIcon className="size-8 text-muted-foreground" />
+            <div>
+              <p className="font-semibold">No exchanges connected</p>
+              <p className="text-sm text-muted-foreground">Connect one with a read-only API key and your trades are imported automatically.</p>
+            </div>
+            <Button onClick={() => setShowAddDialog(true)} size="sm" className="rounded-full font-semibold">
+              <PlusIcon className="size-4" />
+              Connect an exchange
             </Button>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {connections.map((connection) => (
-            <Card key={connection.id} className={cn(!connection.isActive && 'opacity-60')}>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-lg bg-muted flex items-center justify-center overflow-hidden">
+          {connections.map((connection) => {
+            const lastImport = connection.lastSyncCount > 0
+              ? `${connection.lastSyncCount} transaction${connection.lastSyncCount === 1 ? '' : 's'}`
+              : connection.lastSyncAt ? 'Nothing new' : 'Nothing yet';
+            return (
+            <Card key={connection.id} className="gap-5">
+              <CardContent className="space-y-5">
+                {/* Header */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className={cn('flex min-w-0 items-center gap-3', !connection.isActive && 'opacity-60')}>
+                    <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary">
                       {EXCHANGE_LOGOS[connection.exchangeName]?.logo ? (
                         <Image
                           src={EXCHANGE_LOGOS[connection.exchangeName].logo}
                           alt={connection.exchangeName}
-                          width={28}
-                          height={28}
+                          width={24}
+                          height={24}
                           className="object-contain"
                           onError={(e) => {
                             // Fallback to letter if logo fails to load
@@ -355,144 +361,140 @@ export default function ExchangeConnectionsPanel() {
                           }}
                         />
                       ) : (
-                        <span className="font-bold text-sm">
+                        <span className="text-sm font-bold">
                           {EXCHANGE_LOGOS[connection.exchangeName]?.fallback || '?'}
                         </span>
                       )}
                     </div>
-                    <div>
-                      <CardTitle className="text-base">
+                    <div className="min-w-0">
+                      <div className="truncate text-[17px] font-bold tracking-tight">
                         {connection.label || connection.exchangeName}
-                      </CardTitle>
-                      <CardDescription>
-                        {connection.label ? connection.exchangeName : null}
-                        {connection.wallet && (
-                          <span className={connection.label ? 'ml-2' : ''}>
-                            {connection.wallet.emoji || ''} {connection.wallet.name}
-                          </span>
-                        )}
-                      </CardDescription>
+                      </div>
+                      {connection.label && (
+                        <div className="text-[13px] text-muted-foreground">{connection.exchangeName}</div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {getSyncStatusBadge(connection)}
                     {!connection.isActive && (
-                      <Badge variant="outline">Disabled</Badge>
+                      <span className={cn(chip, 'bg-secondary text-muted-foreground')}>Paused</span>
                     )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* Sync info */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
-                  <div>
-                    <p className="text-muted-foreground">Last Sync</p>
-                    <p className="font-medium">{formatDate(connection.lastSyncAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Last Import</p>
-                    <p className="font-medium">
-                      {connection.lastSyncCount > 0
-                        ? `${connection.lastSyncCount} transactions`
-                        : connection.lastSyncAt ? '0 new' : '--'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Connected</p>
-                    <p className="font-medium">{formatDate(connection.createdAt)}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Wallet</p>
-                    <p className="font-medium">
-                      {connection.wallet
-                        ? `${connection.wallet.emoji || ''} ${connection.wallet.name}`
-                        : 'None'}
-                    </p>
+                    {getSyncStatusBadge(connection)}
                   </div>
                 </div>
 
+                {/* Sync info */}
+                <dl className="grid grid-cols-2 gap-x-4 gap-y-4 rounded-2xl bg-secondary p-4 md:grid-cols-4">
+                  <div>
+                    <dt className="text-[13px] font-semibold text-muted-foreground">Last sync</dt>
+                    <dd className={cn('mt-0.5 text-sm font-semibold', !connection.lastSyncAt && 'text-muted-foreground')}>{formatDate(connection.lastSyncAt)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[13px] font-semibold text-muted-foreground">Last import</dt>
+                    <dd className={cn('mt-0.5 text-sm font-semibold tabular-nums', connection.lastSyncCount === 0 && 'text-muted-foreground')}>{lastImport}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[13px] font-semibold text-muted-foreground">Connected</dt>
+                    <dd className="mt-0.5 text-sm font-semibold">{formatDate(connection.createdAt)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[13px] font-semibold text-muted-foreground">Imports into</dt>
+                    <dd className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
+                      {connection.wallet ? (
+                        <>
+                          <WalletTypeIcon type={connection.wallet.type} className="size-3.5" />
+                          <span className="truncate">{connection.wallet.name}</span>
+                        </>
+                      ) : (
+                        <span className="text-muted-foreground">No wallet</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+
                 {/* Error message */}
                 {connection.lastSyncError && connection.lastSyncStatus === 'error' && (
-                  <div className="mb-4 p-3 rounded-md bg-destructive/10 text-destructive text-sm">
-                    <AlertTriangleIcon className="size-4 inline mr-2" />
-                    {connection.lastSyncError}
+                  <div className="flex items-start gap-2 rounded-2xl bg-tint-red p-3 text-sm text-tint-red-fg">
+                    <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                    <span>{connection.lastSyncError}</span>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
                     size="sm"
+                    className="rounded-full font-semibold"
                     onClick={() => handleSync(connection.id)}
                     disabled={syncingId === connection.id || !connection.isActive}
                   >
                     {syncingId === connection.id ? (
-                      <Loader2Icon className="size-4 mr-2 animate-spin" />
+                      <Loader2Icon className="size-4 animate-spin" />
                     ) : (
-                      <RefreshCwIcon className="size-4 mr-2" />
+                      <RefreshCwIcon className="size-4" />
                     )}
-                    {syncingId === connection.id ? 'Syncing...' : 'Sync Now'}
+                    {syncingId === connection.id ? 'Syncing...' : 'Sync now'}
                   </Button>
 
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-full font-semibold"
                     onClick={() => handleSync(connection.id, true)}
                     disabled={syncingId === connection.id || !connection.isActive}
-                    title="Re-fetch all trades from the exchange, ignoring last sync date"
+                    title="Fetch every trade again, ignoring the last sync date"
                   >
-                    {syncingId === connection.id ? (
-                      <Loader2Icon className="size-4 mr-2 animate-spin" />
-                    ) : (
-                      <RefreshCwIcon className="size-4 mr-2" />
-                    )}
-                    Full Re-sync
+                    Full re-sync
                   </Button>
 
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-full font-semibold"
                     onClick={() => handleTestConnection(connection.id)}
                     disabled={testingId === connection.id}
                   >
                     {testingId === connection.id ? (
-                      <Loader2Icon className="size-4 mr-2 animate-spin" />
+                      <Loader2Icon className="size-4 animate-spin" />
                     ) : (
-                      <WifiIcon className="size-4 mr-2" />
+                      <WifiIcon className="size-4" />
                     )}
-                    Test
+                    Test connection
                   </Button>
 
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-full font-semibold"
                     onClick={() => handleToggleActive(connection.id, connection.isActive)}
                   >
                     {connection.isActive ? (
                       <>
-                        <UnlinkIcon className="size-4 mr-2" />
-                        Disable
+                        <UnlinkIcon className="size-4" />
+                        Pause
                       </>
                     ) : (
                       <>
-                        <LinkIcon className="size-4 mr-2" />
-                        Enable
+                        <LinkIcon className="size-4" />
+                        Resume
                       </>
                     )}
                   </Button>
 
                   <Button
                     size="sm"
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(connection.id)}
+                    variant="ghost"
+                    className="rounded-full font-semibold text-tint-red-fg hover:bg-tint-red hover:text-tint-red-fg sm:ml-auto"
+                    onClick={() => handleDeleteConnection(connection.id)}
                   >
-                    <TrashIcon className="size-4 mr-2" />
+                    <TrashIcon className="size-4" />
                     Remove
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -500,23 +502,22 @@ export default function ExchangeConnectionsPanel() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Add Exchange Connection</DialogTitle>
+            <DialogTitle>Connect an exchange</DialogTitle>
             <DialogDescription>
-              Connect an exchange to automatically sync your Bitcoin trades.
-              Your API credentials are encrypted before storage.
+              Your trades are imported automatically. The key and secret are encrypted before they&apos;re stored.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             {/* Exchange Selection */}
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor="exchange-select">Exchange</Label>
               <Select
                 value={addForm.exchangeName}
                 onValueChange={(value) => setAddForm({ ...addForm, exchangeName: value })}
               >
-                <SelectTrigger id="exchange-select">
-                  <SelectValue placeholder="Select exchange" />
+                <SelectTrigger id="exchange-select" className="w-full">
+                  <SelectValue placeholder="Choose an exchange" />
                 </SelectTrigger>
                 <SelectContent>
                   {supportedExchanges.map((exchange) => (
@@ -529,12 +530,11 @@ export default function ExchangeConnectionsPanel() {
             </div>
 
             {/* API Key */}
-            <div className="space-y-2">
-              <Label htmlFor="api-key">API Key</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="api-key">API key</Label>
               <Input
                 id="api-key"
                 type="password"
-                placeholder="Enter your API key"
                 value={addForm.apiKey}
                 onChange={(e) => setAddForm({ ...addForm, apiKey: e.target.value })}
                 autoComplete="off"
@@ -542,12 +542,11 @@ export default function ExchangeConnectionsPanel() {
             </div>
 
             {/* API Secret */}
-            <div className="space-y-2">
-              <Label htmlFor="api-secret">API Secret</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="api-secret">API secret</Label>
               <Input
                 id="api-secret"
                 type="password"
-                placeholder="Enter your API secret"
                 value={addForm.apiSecret}
                 onChange={(e) => setAddForm({ ...addForm, apiSecret: e.target.value })}
                 autoComplete="off"
@@ -555,92 +554,63 @@ export default function ExchangeConnectionsPanel() {
             </div>
 
             {/* Label (optional) */}
-            <div className="space-y-2">
-              <Label htmlFor="connection-label">Label (optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="connection-label">Label <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <Input
                 id="connection-label"
                 type="text"
-                placeholder="e.g. My Kraken Account"
+                placeholder="My Kraken account"
                 value={addForm.label}
                 onChange={(e) => setAddForm({ ...addForm, label: e.target.value })}
               />
             </div>
 
             {/* Wallet Assignment (optional) */}
-            <div className="space-y-2">
-              <Label htmlFor="wallet-select">Assign to Wallet (optional)</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="wallet-select">Import into wallet <span className="font-normal text-muted-foreground">(optional)</span></Label>
               <Select
                 value={addForm.walletId}
                 onValueChange={(value) => setAddForm({ ...addForm, walletId: value })}
               >
-                <SelectTrigger id="wallet-select">
-                  <SelectValue placeholder="No wallet assigned" />
+                <SelectTrigger id="wallet-select" className="w-full">
+                  <SelectValue placeholder="No wallet" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No wallet</SelectItem>
                   {wallets.map((wallet) => (
                     <SelectItem key={wallet.id} value={wallet.id.toString()}>
-                      {wallet.emoji || ''} {wallet.name} ({wallet.type})
+                      <WalletLabel type={wallet.type} name={wallet.name} />
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Synced transactions will be assigned to this wallet
+                Imported transactions are assigned to this wallet.
               </p>
             </div>
 
             {/* Security note */}
-            <div className="flex items-start gap-2 p-3 rounded-md bg-muted text-sm">
-              <ShieldCheckIcon className="size-4 mt-0.5 text-green-600 shrink-0" />
+            <div className="card-solid flex items-start gap-2.5 rounded-2xl p-3 text-[13px]">
+              <ShieldCheckIcon className="mt-0.5 size-4 shrink-0 text-tint-green-fg" />
               <p className="text-muted-foreground">
-                Your API credentials are encrypted with AES-256-GCM before storage.
-                Use <strong>read-only</strong> API keys for maximum security.
+                Credentials are encrypted with AES-256-GCM. Use a <strong className="text-foreground">read-only</strong> API key: the tracker never needs to trade or withdraw.
               </p>
             </div>
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" className="rounded-full font-semibold" onClick={() => setShowAddDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleAddConnection} disabled={addLoading}>
+            <Button className="rounded-full font-semibold" onClick={handleAddConnection} disabled={addLoading}>
               {addLoading ? (
                 <>
-                  <Loader2Icon className="size-4 mr-2 animate-spin" />
-                  Verifying...
+                  <Loader2Icon className="size-4 animate-spin" />
+                  Checking the key...
                 </>
               ) : (
-                <>
-                  <PlusIcon className="size-4 mr-2" />
-                  Add Connection
-                </>
+                'Connect'
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove Exchange Connection</DialogTitle>
-            <DialogDescription>
-              This will remove the exchange connection and its stored credentials.
-              Previously synced transactions will not be deleted.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteDialog(null)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => showDeleteDialog && handleDeleteConnection(showDeleteDialog)}
-            >
-              <TrashIcon className="size-4 mr-2" />
-              Remove Connection
             </Button>
           </DialogFooter>
         </DialogContent>

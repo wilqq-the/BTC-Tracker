@@ -1,11 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { AppInitializationService } from '@/lib/app-initialization';
+import { withAdminAuth, withAuth } from '@/lib/auth-helpers';
 
 /**
  * Startup API endpoint
  * Triggers app initialization when called
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, () => runStartup());
+}
+
+async function runStartup() {
   try {
     await AppInitializationService.initialize();
     
@@ -29,7 +34,11 @@ export async function POST() {
 /**
  * Get initialization status
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getStartupStatus());
+}
+
+async function getStartupStatus() {
   try {
     const status = AppInitializationService.getStatus();
     return NextResponse.json({

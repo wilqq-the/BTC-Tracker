@@ -1,8 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { withAuth } from '@/lib/auth-helpers';
 
-// GET - Get today's real-time OHLC data
-export async function GET(): Promise<NextResponse> {
+// GET - Get today's real-time OHLC data (any authenticated user)
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getTodaysOHLC());
+}
+
+async function getTodaysOHLC(): Promise<NextResponse> {
   try {
     const todaysOHLC = await BitcoinPriceService.getTodaysOHLC();
     const currentPrice = await BitcoinPriceService.getCurrentPrice();

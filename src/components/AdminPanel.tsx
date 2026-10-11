@@ -1,9 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ThemedCard, ThemedText, ThemedButton } from '@/components/ui/ThemeProvider';
-import { UserIcon, ShieldCheckIcon, TrashIcon, PencilIcon, PlusIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ShieldCheckIcon, ShieldOffIcon, TrashIcon, UserCheckIcon, UserXIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 interface User {
   id: number;
@@ -41,7 +47,13 @@ interface CreateUserForm {
   isAdmin: boolean;
 }
 
-export default function AdminPanel() {
+interface AdminPanelProps {
+  onHeaderAction?: (action: { label: string; onClick: () => void } | null) => void;
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+export default function AdminPanel({ onHeaderAction }: AdminPanelProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,6 +68,13 @@ export default function AdminPanel() {
   });
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Surface the primary action in the settings page title row
+  useEffect(() => {
+    onHeaderAction?.({ label: 'Add user', onClick: () => setShowCreateForm(true) });
+    return () => onHeaderAction?.(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadData = async () => {
@@ -92,9 +111,9 @@ export default function AdminPanel() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast({ title: 'User created successfully' });
+        toast({ title: 'User created' });
         setShowCreateForm(false);
         setCreateForm({ email: '', password: '', name: '', displayName: '', isAdmin: false });
         loadData();
@@ -115,9 +134,9 @@ export default function AdminPanel() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast({ title: `User ${!isActive ? 'activated' : 'deactivated'} successfully` });
+        toast({ title: !isActive ? 'User activated' : 'User deactivated' });
         loadData();
       } else {
         toast({ title: result.error || 'Failed to update user', variant: 'destructive' });
@@ -136,9 +155,9 @@ export default function AdminPanel() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast({ title: `Admin status ${!isAdmin ? 'granted' : 'revoked'} successfully` });
+        toast({ title: !isAdmin ? 'Admin rights granted' : 'Admin rights removed' });
         loadData();
       } else {
         toast({ title: result.error || 'Failed to update admin status', variant: 'destructive' });
@@ -149,7 +168,9 @@ export default function AdminPanel() {
   };
 
   const handleDeleteUser = async (userId: number) => {
-    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    const user = users.find((u) => u.id === userId);
+    const who = user ? (user.displayName || user.name || user.email) : 'this user';
+    if (!(await confirm({ title: `Delete ${who}?`, description: 'Their account and all of their transactions are deleted. This can’t be undone.', confirmText: 'Delete', destructive: true }))) {
       return;
     }
 
@@ -159,9 +180,9 @@ export default function AdminPanel() {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast({ title: 'User deleted successfully' });
+        toast({ title: 'User deleted' });
         loadData();
       } else {
         toast({ title: result.error || 'Failed to delete user', variant: 'destructive' });
@@ -174,283 +195,199 @@ export default function AdminPanel() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-btc-500"></div>
+        <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" aria-label="Loading users" />
       </div>
     );
   }
 
+  const figures = stats
+    ? [
+        {
+          label: 'Users',
+          value: stats.users.total,
+          note: `${plural(stats.users.active, 'active', 'active')}, ${plural(stats.users.admins, 'admin', 'admins')}`,
+        },
+        { label: 'Users with data', value: stats.system.activeUsers, note: 'Have at least one transaction' },
+        { label: 'Transactions', value: stats.system.totalTransactions, note: 'Recorded across all users' },
+      ]
+    : [];
+
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
+    <div className="space-y-4">
+      {/* Figures */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <ThemedCard>
-            <div className="p-6">
-              <div className="flex items-center">
-                <UserIcon className="h-10 w-10 text-btc-500" />
-                <div className="ml-4 space-y-2">
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block">
-                      Total Users
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="primary" size="xl" className="font-bold block">
-                      {stats.users.total}
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="block">
-                      {stats.users.active} active, {stats.users.admins} admins
-                    </ThemedText>
-                  </div>
+        <Card>
+          <CardContent>
+            <dl className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+              {figures.map((f) => (
+                <div key={f.label}>
+                  <dt className="text-[13px] font-semibold text-muted-foreground">{f.label}</dt>
+                  <dd className={cn('mt-1 text-2xl font-extrabold tracking-tight tabular-nums', f.value === 0 && 'text-muted-foreground')}>
+                    {f.value.toLocaleString()}
+                  </dd>
+                  <dd className="text-xs text-muted-foreground">{f.note}</dd>
                 </div>
-              </div>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="h-10 w-10 bg-btc-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">📊</span>
-                </div>
-                <div className="ml-4 space-y-2">
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block">
-                      System Activity
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="primary" size="xl" className="font-bold block">
-                      {stats.system.totalTransactions}
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="block">
-                      Total transactions recorded
-                    </ThemedText>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ThemedCard>
-
-          <ThemedCard>
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="h-10 w-10 bg-green-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">✓</span>
-                </div>
-                <div className="ml-4 space-y-2">
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="font-medium uppercase tracking-wide block">
-                      Active Users
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="primary" size="xl" className="font-bold block">
-                      {stats.system.activeUsers}
-                    </ThemedText>
-                  </div>
-                  <div>
-                    <ThemedText variant="muted" size="sm" className="block">
-                      Users with data
-                    </ThemedText>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </ThemedCard>
-        </div>
+              ))}
+            </dl>
+          </CardContent>
+        </Card>
       )}
 
-      {/* User Management */}
-      <ThemedCard>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-btc-text-primary">User Management</h3>
-            <ThemedButton
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center space-x-2"
-            >
-              <PlusIcon className="h-4 w-4" />
-              <span>Add User</span>
-            </ThemedButton>
-          </div>
-
-          {/* Create User Form */}
-          {showCreateForm && (
-            <div className="mb-8 p-6 border border-btc-border-secondary rounded-lg bg-btc-bg-secondary/30">
-              <h4 className="text-lg font-semibold text-btc-text-primary mb-6">Create New User</h4>
-              <form onSubmit={handleCreateUser} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={createForm.email}
-                      onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-btc-border-secondary rounded-md bg-btc-background-primary text-btc-text-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-                      Password *
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      value={createForm.password}
-                      onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-btc-border-secondary rounded-md bg-btc-background-primary text-btc-text-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.name}
-                      onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-btc-border-secondary rounded-md bg-btc-background-primary text-btc-text-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-btc-text-secondary mb-1">
-                      Display Name
-                    </label>
-                    <input
-                      type="text"
-                      value={createForm.displayName}
-                      onChange={(e) => setCreateForm({ ...createForm, displayName: e.target.value })}
-                      className="w-full px-3 py-2 border border-btc-border-secondary rounded-md bg-btc-background-primary text-btc-text-primary"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center p-3 bg-btc-bg-secondary rounded-lg">
-                  <input
-                    type="checkbox"
-                    id="isAdmin"
-                    checked={createForm.isAdmin}
-                    onChange={(e) => setCreateForm({ ...createForm, isAdmin: e.target.checked })}
-                    className="mr-3 h-4 w-4"
+      {/* Create User Form */}
+      {showCreateForm && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-[17px] font-bold tracking-tight">New user</CardTitle>
+            <CardDescription className="text-[13px]">They can sign in with this email and password straight away.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleCreateUser} className="space-y-5">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="newUserEmail">Email</Label>
+                  <Input
+                    id="newUserEmail"
+                    type="email"
+                    required
+                    value={createForm.email}
+                    onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
                   />
-                  <label htmlFor="isAdmin" className="text-sm font-medium text-btc-text-secondary">
-                    Grant admin privileges
-                  </label>
                 </div>
-                <div className="flex space-x-3 pt-2">
-                  <ThemedButton type="submit" className="px-6 py-2">Create User</ThemedButton>
-                  <ThemedButton 
-                    type="button" 
-                    variant="secondary"
-                    onClick={() => setShowCreateForm(false)}
-                    className="px-6 py-2"
-                  >
-                    Cancel
-                  </ThemedButton>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newUserPassword">Password</Label>
+                  <Input
+                    id="newUserPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    value={createForm.password}
+                    onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                  />
                 </div>
-              </form>
-            </div>
-          )}
+                <div className="space-y-1.5">
+                  <Label htmlFor="newUserName">Name <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="newUserName"
+                    type="text"
+                    value={createForm.name}
+                    onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="newUserDisplayName">Display name <span className="font-normal text-muted-foreground">(optional)</span></Label>
+                  <Input
+                    id="newUserDisplayName"
+                    type="text"
+                    value={createForm.displayName}
+                    onChange={(e) => setCreateForm({ ...createForm, displayName: e.target.value })}
+                  />
+                </div>
+              </div>
+              <label htmlFor="isAdmin" className="flex cursor-pointer items-center gap-3 rounded-2xl bg-secondary p-3">
+                <Checkbox
+                  id="isAdmin"
+                  checked={createForm.isAdmin}
+                  onCheckedChange={(checked) => setCreateForm({ ...createForm, isAdmin: checked === true })}
+                />
+                <span className="text-sm font-semibold">Make this user an admin</span>
+              </label>
+              <div className="flex gap-2">
+                <Button type="submit" className="rounded-full font-semibold">Create user</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full font-semibold"
+                  onClick={() => setShowCreateForm(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Users Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b-2 border-btc-border-secondary">
-                  <th className="text-left py-4 px-2 text-btc-text-secondary font-semibold">User</th>
-                  <th className="text-left py-4 px-2 text-btc-text-secondary font-semibold">Status</th>
-                  <th className="text-left py-4 px-2 text-btc-text-secondary font-semibold">Transactions</th>
-                  <th className="text-left py-4 px-2 text-btc-text-secondary font-semibold">Created</th>
-                  <th className="text-right py-4 px-2 text-btc-text-secondary font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b border-btc-border-secondary/50 hover:bg-btc-bg-secondary/50">
-                    <td className="py-4 px-2">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 bg-btc-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-bold">
-                            {user.displayName?.[0] || user.name?.[0] || user.email[0].toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <ThemedText variant="primary" className="font-semibold">
-                              {user.displayName || user.name || user.email}
-                            </ThemedText>
-                            {user.isAdmin && (
-                              <ShieldCheckIcon className="h-4 w-4 text-yellow-500" title="Admin" />
-                            )}
-                          </div>
-                          <ThemedText variant="muted" size="sm">{user.email}</ThemedText>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-2">
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-                        user.isActive 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
-                      }`}>
-                        {user.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="py-4 px-2">
-                      <ThemedText variant="primary" className="font-semibold">{user._count.transactions}</ThemedText>
-                    </td>
-                    <td className="py-4 px-2">
-                      <ThemedText variant="muted" size="sm" className="font-medium">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </ThemedText>
-                    </td>
-                    <td className="py-4 px-2">
-                      <div className="flex items-center justify-end space-x-3">
-                        <button
-                          onClick={() => handleToggleUserStatus(user.id, user.isActive)}
-                          className="p-2 rounded-lg text-btc-text-secondary hover:text-btc-text-primary hover:bg-btc-bg-secondary transition-colors"
-                          title={user.isActive ? 'Deactivate user' : 'Activate user'}
-                        >
-                          {user.isActive ? (
-                            <EyeSlashIcon className="h-5 w-5" />
-                          ) : (
-                            <EyeIcon className="h-5 w-5" />
-                          )}
-                        </button>
-                        {user.id !== 1 && (
-                          <button
-                            onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
-                            className="p-2 rounded-lg text-btc-text-secondary hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors"
-                            title={user.isAdmin ? 'Remove admin' : 'Make admin'}
-                          >
-                            <ShieldCheckIcon className="h-5 w-5" />
-                          </button>
+      {/* Users */}
+      <Card className="gap-2">
+        <CardHeader>
+          <CardTitle className="text-[17px] font-bold tracking-tight">Users</CardTitle>
+        </CardHeader>
+        <CardContent className="px-2">
+          <ul className="divide-y divide-border/60">
+            {users.map((user) => {
+              const name = user.displayName || user.name || user.email;
+              const initial = (user.displayName?.[0] || user.name?.[0] || user.email[0]).toUpperCase();
+              const isOwner = user.id === 1;
+              return (
+                <li key={user.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                  <div className={cn('flex min-w-0 items-center gap-3', !user.isActive && 'opacity-60')}>
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-tint-orange text-sm font-bold text-primary-strong">
+                      {initial}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="truncate text-[15px] font-semibold">{name}</span>
+                        {user.isAdmin && (
+                          <span className="rounded-full bg-tint-purple px-2 py-0.5 text-xs font-semibold text-tint-purple-fg">Admin</span>
                         )}
-                        {user.id !== 1 && (
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="p-2 rounded-lg text-btc-text-secondary hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                            title="Delete user"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
-                        )}
+                        <span className={cn(
+                          'rounded-full px-2 py-0.5 text-xs font-semibold',
+                          user.isActive ? 'bg-tint-green text-tint-green-fg' : 'bg-tint-red text-tint-red-fg'
+                        )}>
+                          {user.isActive ? 'Active' : 'Deactivated'}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </ThemedCard>
+                      <p className="truncate text-[13px] text-muted-foreground">
+                        {name !== user.email && <>{user.email}, </>}
+                        <span className={cn(user._count.transactions === 0 && 'text-muted-foreground')}>
+                          {plural(user._count.transactions, 'transaction', 'transactions')}
+                        </span>
+                        , joined {new Date(user.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-9 rounded-full text-muted-foreground hover:text-foreground"
+                      onClick={() => handleToggleUserStatus(user.id, user.isActive)}
+                      title={user.isActive ? 'Deactivate user' : 'Activate user'}
+                      aria-label={user.isActive ? `Deactivate ${name}` : `Activate ${name}`}
+                    >
+                      {user.isActive ? <UserXIcon className="size-4" /> : <UserCheckIcon className="size-4" />}
+                    </Button>
+                    {!isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-muted-foreground hover:text-foreground"
+                        onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                        title={user.isAdmin ? 'Remove admin rights' : 'Make admin'}
+                        aria-label={user.isAdmin ? `Remove admin rights from ${name}` : `Make ${name} an admin`}
+                      >
+                        {user.isAdmin ? <ShieldOffIcon className="size-4" /> : <ShieldCheckIcon className="size-4" />}
+                      </Button>
+                    )}
+                    {!isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-9 rounded-full text-muted-foreground hover:bg-tint-red hover:text-tint-red-fg"
+                        onClick={() => handleDeleteUser(user.id)}
+                        title="Delete user"
+                        aria-label={`Delete ${name}`}
+                      >
+                        <TrashIcon className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

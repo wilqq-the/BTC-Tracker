@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { HistoricalDataService } from '@/lib/historical-data-service';
+import { withAuth } from '@/lib/auth-helpers';
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getHistoricalData(request));
+}
+
+async function getHistoricalData(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30');

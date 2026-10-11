@@ -111,6 +111,9 @@ export class StandardParser extends BaseParser {
                                transaction['destination address'] || 
                                transaction.destinationAddress || 
                                null;
+    // Written by our own export; anything else is ignored
+    const rawFeeMode = String(transaction.transfer_fee_mode || transaction['transfer fee mode'] || '').trim().toUpperCase();
+    const transferFeeMode = rawFeeMode === 'ON_TOP' || rawFeeMode === 'DEDUCTED' ? rawFeeMode : null;
     
     // If we couldn't extract essential data, skip this transaction
     // Allow zero price/total for mining/gifts/transfers (as long as BTC amount exists)
@@ -130,7 +133,8 @@ export class StandardParser extends BaseParser {
       transaction_date: transactionDate,
       notes: notes,
       transfer_type: type === 'TRANSFER' ? (transferType as 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | null) : null,
-      destination_address: type === 'TRANSFER' ? destinationAddress : null
+      destination_address: type === 'TRANSFER' ? destinationAddress : null,
+      transfer_fee_mode: type === 'TRANSFER' ? transferFeeMode : null
     };
     
     try {

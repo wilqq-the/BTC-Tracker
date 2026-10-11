@@ -8,6 +8,7 @@ import { formatCurrency } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { CalendarIcon, PlusIcon } from 'lucide-react';
 import Link from 'next/link';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 interface MonthlyStats {
   month: string;
@@ -23,6 +24,7 @@ interface MonthlyStats {
  * Shows current month's Bitcoin accumulation stats
  */
 export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [stats, setStats] = useState<MonthlyStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -93,7 +95,7 @@ export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
 
   return (
     <WidgetCard
-      title="This Month"
+      title="This month"
       icon={CalendarIcon}
       loading={loading}
       onRefresh={handleRefresh}
@@ -119,7 +121,7 @@ export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
           {/* Month Header */}
           <div>
             <p className="text-xs text-muted-foreground mb-1">{stats.month}</p>
-            <div className="text-lg font-bold">{stats.totalBought.toFixed(8)} ₿</div>
+            <div className="text-lg font-bold">{formatBtc(stats.totalBought)}</div>
             <p className="text-xs text-muted-foreground">
               {stats.buys} {stats.buys === 1 ? 'purchase' : 'purchases'}
             </p>
@@ -136,7 +138,7 @@ export default function MonthlySummaryWidget({ id, onRefresh }: WidgetProps) {
           {/* Average Buy Price */}
           <div>
             <p className="text-xs text-muted-foreground mb-1">Average Buy Price</p>
-            <div className="text-base font-semibold text-btc-500">{formatCurrency(stats.avgBuyPrice, stats.currency)}</div>
+            <div className="text-base font-semibold text-primary">{formatCurrency(stats.avgBuyPrice, stats.currency)}</div>
           </div>
 
           <Separator />

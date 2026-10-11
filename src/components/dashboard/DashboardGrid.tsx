@@ -11,8 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  LayoutDashboardIcon,
-  SaveIcon,
   PlusIcon,
   Settings2Icon,
   RotateCcwIcon,
@@ -25,15 +23,24 @@ import {
   CalendarIcon,
   RefreshCwIcon,
   ShieldIcon,
+  GripVerticalIcon,
+  XIcon,
+  ZapIcon,
+  BitcoinIcon,
+  TrophyIcon,
+  CheckIcon,
 } from 'lucide-react';
 import {
   GRID_COLS,
   GRID_ROW_HEIGHT,
   GRID_MARGIN,
   DEFAULT_LAYOUT,
+  AVAILABLE_WIDGETS,
   getWidgetDefinitionById,
 } from '@/lib/dashboard-constants';
 import { DashboardLayout, LayoutItem, WidgetType } from '@/lib/dashboard-types';
+import { toast } from '@/hooks/use-toast';
+import { confirm } from '@/components/ui/confirm-dialog';
 
 // Icon mapping for widget definitions
 const WIDGET_ICONS: Record<string, React.ReactNode> = {
@@ -46,13 +53,20 @@ const WIDGET_ICONS: Record<string, React.ReactNode> = {
   'Calendar': <CalendarIcon className="size-4" />,
   'RefreshCw': <RefreshCwIcon className="size-4" />,
   'Shield': <ShieldIcon className="size-4" />,
+  'Zap': <ZapIcon className="size-4" />,
+  'Bitcoin': <BitcoinIcon className="size-4" />,
+  'Trophy': <TrophyIcon className="size-4" />,
 };
+
+// Below this width widgets stack in one column (no drag/resize on phones)
+const STACK_BREAKPOINT = 768;
+
+// Pixel height of a widget spanning `h` grid rows
+const rowsToPx = (h: number) => h * GRID_ROW_HEIGHT + (h - 1) * GRID_MARGIN[1];
 
 // Widget loading placeholder
 const WidgetLoading = () => (
-  <div className="h-full p-4 flex items-center justify-center animate-pulse bg-card border rounded-lg">
-    <div className="text-sm text-muted-foreground">Loading...</div>
-  </div>
+  <div className="h-full rounded-2xl surface animate-pulse" />
 );
 
 // Dynamic imports with SSR disabled - each defined separately
@@ -66,6 +80,10 @@ const TimeframeWidget = dynamic(() => import('@/components/widgets/MultiTimefram
 const MonthlyWidget = dynamic(() => import('@/components/widgets/MonthlySummaryWidget'), { ssr: false, loading: WidgetLoading });
 const AutoDCAWidget = dynamic(() => import('@/components/widgets/AutoDCAWidget'), { ssr: false, loading: WidgetLoading });
 const WalletWidget = dynamic(() => import('@/components/widgets/WalletDistributionWidget'), { ssr: false, loading: WidgetLoading });
+const HeroWidget = dynamic(() => import('@/components/widgets/PortfolioHeroWidget'), { ssr: false, loading: WidgetLoading });
+const QuickActionsWidget = dynamic(() => import('@/components/widgets/QuickActionsWidget'), { ssr: false, loading: WidgetLoading });
+const BtcPriceWidget = dynamic(() => import('@/components/widgets/BtcPriceWidget'), { ssr: false, loading: WidgetLoading });
+const MilestonesWidget = dynamic(() => import('@/components/widgets/MilestonesWidget'), { ssr: false, loading: WidgetLoading });
 
 // Map widget types to components
 const getWidgetComponent = (type: WidgetType): React.ComponentType<any> | null => {
@@ -79,6 +97,10 @@ const getWidgetComponent = (type: WidgetType): React.ComponentType<any> | null =
     case 'monthly': return MonthlyWidget;
     case 'auto-dca': return AutoDCAWidget;
     case 'wallet-distribution': return WalletWidget;
+    case 'hero': return HeroWidget;
+    case 'quick-actions': return QuickActionsWidget;
+    case 'btc-price': return BtcPriceWidget;
+    case 'milestones': return MilestonesWidget;
     default: return null;
   }
 };
@@ -98,6 +120,8 @@ export default function DashboardGrid() {
   const [gridWidth, setGridWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const layoutRef = useRef(layout);
+  // Last saved layout, so Cancel can put it back
+  const savedLayoutRef = useRef<typeof layout | null>(null);
 
   // Keep layoutRef in sync
   useEffect(() => {
@@ -142,7 +166,7 @@ export default function DashboardGrid() {
         const savedLayout = result.data;
         
         // Validate and filter widgets - only keep valid ones
-        const validWidgetTypes = ['chart', 'portfolio', 'transactions', 'goals', 'dca', 'timeframe', 'monthly', 'auto-dca', 'wallet-distribution'];
+        const validWidgetTypes: string[] = AVAILABLE_WIDGETS.map(w => w.type);
         const validWidgets = savedLayout.widgets.filter((w: any) => 
           w && w.id && w.type && validWidgetTypes.includes(w.type) &&
           typeof w.x === 'number' && typeof w.y === 'number' &&
@@ -164,18 +188,22 @@ export default function DashboardGrid() {
         };
         
         setLayout(mergedLayout);
+        savedLayoutRef.current = mergedLayout;
       } else {
         setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
       }
     } catch (error) {
       console.error('Error loading layout:', error);
       setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const saveLayout = async () => {
+  /** Persists the current layout; resolves to whether it worked */
+  const saveLayout = async (): Promise<boolean> => {
     setIsSaving(true);
     try {
       const response = await fetch('/api/dashboard/layout', {
@@ -185,23 +213,33 @@ export default function DashboardGrid() {
       });
       const result = await response.json();
       if (result.success) {
+        savedLayoutRef.current = layout;
         setHasChanges(false);
-      } else {
-        alert('Failed to save layout');
+        toast({ title: 'Dashboard saved', variant: 'success' });
+        return true;
       }
+      toast({ title: 'Failed to save layout', variant: 'destructive' });
+      return false;
     } catch (error) {
       console.error('Error saving layout:', error);
-      alert('Failed to save layout');
+      toast({ title: 'Failed to save layout', variant: 'destructive' });
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
   const resetLayout = async () => {
-    if (!confirm('Reset dashboard to default layout?')) return;
+    if (!(await confirm({
+      title: 'Reset dashboard?',
+      description: 'This restores the default widget layout. Your customizations will be lost.',
+      confirmText: 'Reset',
+      destructive: true,
+    }))) return;
     try {
       await fetch('/api/dashboard/layout', { method: 'DELETE' });
       setLayout(DEFAULT_LAYOUT);
+      savedLayoutRef.current = DEFAULT_LAYOUT;
       setHasChanges(false);
       setIsEditMode(false);
     } catch (error) {
@@ -246,21 +284,29 @@ export default function DashboardGrid() {
   }, []);
 
   const handleAddWidget = useCallback((widgetId: string) => {
+    const def = getWidgetDefinitionById(widgetId);
     setLayout(prev => ({
-      // Set y to large value so react-grid-layout places it at the bottom via compaction
-      widgets: prev.widgets.map(w => w.id === widgetId ? { ...w, visible: true, y: 9999 } : w),
+      // Back at its default size (a size kept from before it was hidden may
+      // be too small for its content); a large y lets compaction place it at
+      // the bottom
+      widgets: prev.widgets.map(w => w.id === widgetId
+        ? { ...w, visible: true, x: 0, y: 9999, w: def?.defaultW ?? w.w, h: def?.defaultH ?? w.h }
+        : w),
     }));
     setHasChanges(true);
     setShowAddWidget(false);
   }, []);
 
-  const toggleEditMode = () => {
-    if (isEditMode && hasChanges) {
-      if (confirm('Save changes before exiting edit mode?')) {
-        saveLayout();
-      }
-    }
-    setIsEditMode(!isEditMode);
+  // Done saves and leaves edit mode; Cancel puts the last saved layout back
+  const finishEditing = async () => {
+    if (hasChanges && !(await saveLayout())) return;
+    setIsEditMode(false);
+  };
+
+  const cancelEditing = () => {
+    if (savedLayoutRef.current) setLayout(savedLayoutRef.current);
+    setHasChanges(false);
+    setIsEditMode(false);
   };
 
   // Filter widgets
@@ -293,71 +339,90 @@ export default function DashboardGrid() {
     );
   }
 
+  const isStacked = gridWidth > 0 && gridWidth < STACK_BREAKPOINT;
+
+  const renderWidget = (widget: typeof visibleWidgets[number]) => {
+    const WidgetComponent = getWidgetComponent(widget.type);
+    if (!WidgetComponent) {
+      console.warn('[Dashboard] No component for widget type:', widget.type);
+      return null;
+    }
+    return <WidgetComponent id={widget.id} />;
+  };
+
   return (
-    <div className="relative p-4 pb-8">
-      {/* Dashboard Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-card border rounded-lg p-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <LayoutDashboardIcon className="size-5 text-btc-500" />
-            Dashboard
-          </h2>
-          {isEditMode && <Badge variant="default" className="text-xs">EDIT MODE</Badge>}
-          {hasChanges && <Badge variant="secondary" className="text-xs">Unsaved</Badge>}
+    <div className="relative pb-6">
+      {/* Dashboard bar: greeting + customize; turns into the edit toolbar */}
+      {isEditMode ? (
+        <div className="sticky top-0 z-30 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-tint-orange px-4 py-3 shadow-sm animate-fadeInUp">
+          <div className="flex items-center gap-2 text-sm">
+            <Settings2Icon className="size-4 text-primary-strong" />
+            <span className="font-bold text-primary-strong">Editing dashboard</span>
+            <span className="hidden text-muted-foreground sm:inline">Drag a widget by its header, resize it from an edge or corner, × to hide it</span>
+            {hasChanges && <Badge variant="secondary" className="rounded-full">Unsaved</Badge>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {hiddenWidgets.length > 0 && (
+              <DropdownMenu open={showAddWidget} onOpenChange={setShowAddWidget}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-full bg-card">
+                    <PlusIcon className="size-4 mr-1.5" />
+                    Add widget
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-72 rounded-2xl">
+                  {hiddenWidgets.map(widget => {
+                    const def = getWidgetDefinitionById(widget.id);
+                    const icon = def?.icon ? WIDGET_ICONS[def.icon] : null;
+                    return (
+                      <DropdownMenuItem key={widget.id} onSelect={() => handleAddWidget(widget.id)} className="items-start gap-2.5 rounded-xl py-2">
+                        {icon && <span className="mt-0.5 text-primary-strong">{icon}</span>}
+                        <span className="flex flex-col">
+                          <span className="font-semibold">{def?.title}</span>
+                          {def?.description && <span className="text-xs text-muted-foreground">{def.description}</span>}
+                        </span>
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={resetLayout}>
+              <RotateCcwIcon className="size-4 mr-1.5" />
+              Reset
+            </Button>
+            <Button variant="outline" size="sm" className="rounded-full bg-card" onClick={cancelEditing} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button size="sm" className="rounded-full" onClick={finishEditing} disabled={isSaving}>
+              <CheckIcon className="size-4 mr-1.5" />
+              {isSaving ? 'Saving…' : 'Done'}
+            </Button>
+          </div>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant={isEditMode ? 'default' : 'outline'}
-            size="sm"
-            onClick={toggleEditMode}
-          >
-            <Settings2Icon className="size-4 mr-2" />
-            {isEditMode ? 'Done' : 'Customize'}
-          </Button>
-
-          {isEditMode && (
-            <>
-              {hiddenWidgets.length > 0 && (
-                <DropdownMenu open={showAddWidget} onOpenChange={setShowAddWidget}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <PlusIcon className="size-4 mr-2" />
-                      Add Widget
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64">
-                    {hiddenWidgets.map(widget => {
-                      const def = getWidgetDefinitionById(widget.id);
-                      const icon = def?.icon ? WIDGET_ICONS[def.icon] : null;
-                      return (
-                        <DropdownMenuItem key={widget.id} onSelect={() => handleAddWidget(widget.id)}>
-                          {icon && <span className="mr-2">{icon}</span>}
-                          {def?.title}
-                        </DropdownMenuItem>
-                      );
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              <Button variant="outline" size="sm" onClick={resetLayout}>
-                <RotateCcwIcon className="size-4 mr-2" />
-                Reset
-              </Button>
-
-              <Button size="sm" onClick={saveLayout} disabled={!hasChanges || isSaving}>
-                <SaveIcon className="size-4 mr-2" />
-                {isSaving ? 'Saving...' : 'Save'}
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+      ) : null}
 
       {/* Grid */}
-      <div ref={containerRef}>
-          {gridWidth > 0 && GridLayout ? (
+      {/* The grid fades in once; the hero's count-up and chart draw are the only orchestrated motion */}
+      <div ref={containerRef} className={`animate-fadeIn ${isEditMode ? 'dashboard-editing' : 'dashboard-view'}`}>
+          {isStacked ? (
+            // Phones: one column in reading order, natural heights
+            <div className="flex flex-col gap-4">
+              {[...visibleWidgets]
+                .sort((a, b) => a.y - b.y || a.x - b.x)
+                .map(widget => (
+                  <div
+                    key={widget.id}
+                    style={{
+                      // compact widgets (h ≤ 2) size to their content
+                      height: widget.type === 'hero' ? 560 : widget.h <= 2 ? undefined : Math.max(rowsToPx(widget.h), 300),
+                    }}
+                  >
+                    {renderWidget(widget)}
+                  </div>
+                ))}
+            </div>
+          ) : gridWidth > 0 && GridLayout ? (
             <GridLayout
               className="layout"
               layout={gridLayoutItems}
@@ -374,59 +439,58 @@ export default function DashboardGrid() {
               draggableHandle=".drag-handle"
             >
               {visibleWidgets.map(widget => {
-                const WidgetComponent = getWidgetComponent(widget.type);
                 const def = getWidgetDefinitionById(widget.id);
-                
-                if (!WidgetComponent) {
-                  console.warn('[Dashboard] No component for widget type:', widget.type);
-                  return <div key={widget.id} />;
-                }
-                
                 return (
-                  <div key={widget.id} className="h-full w-full relative">
-                    {/* Edit mode header overlay */}
-                    {isEditMode && (
-                      <div className="absolute top-0 left-0 right-0 z-20 bg-btc-500 text-white px-3 py-1.5 flex items-center justify-between drag-handle cursor-move rounded-t-lg">
-                        <span className="text-xs font-medium">{def?.title}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-5 text-white hover:bg-white/20"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            handleRemoveWidget(widget.id);
-                          }}
-                          onMouseDown={(e) => e.stopPropagation()}
-                          onTouchStart={(e) => e.stopPropagation()}
-                        >
-                          ×
-                        </Button>
+                  <div key={widget.id} className="h-full w-full">
+                    {/* widget-shell carries the drag pick-up transform */}
+                    <div className="widget-shell">
+                      <div className="relative h-full">
+                        {isEditMode && (
+                          <div className="drag-handle absolute inset-x-0 top-0 z-20 flex cursor-grab items-center justify-between gap-2 rounded-t-2xl bg-tint-orange px-4 py-2 shadow-[0_0_0_1px_hsl(var(--border)/0.6)] active:cursor-grabbing">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-primary-strong">
+                              <GripVerticalIcon className="size-4 opacity-70" />
+                              {def?.title}
+                            </span>
+                            <button
+                              aria-label={`Hide ${def?.title ?? 'widget'}`}
+                              className="flex size-6 items-center justify-center rounded-full text-primary-strong hover:bg-card"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                handleRemoveWidget(widget.id);
+                              }}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onTouchStart={(e) => e.stopPropagation()}
+                            >
+                              <XIcon className="size-3.5" />
+                            </button>
+                          </div>
+                        )}
+                        {/* In edit mode the strip takes the widget's top corners, so the
+                            card's own top corners go square underneath it */}
+                        <div className={`h-full ${isEditMode ? 'pt-9 pointer-events-none select-none [&>[data-slot=card]]:rounded-t-none' : ''}`}>
+                          {renderWidget(widget)}
+                        </div>
                       </div>
-                    )}
-                    <div className={`h-full ${isEditMode ? 'pt-8' : ''}`}>
-                      <WidgetComponent id={widget.id} />
                     </div>
                   </div>
                 );
               })}
             </GridLayout>
           ) : (
-            <div className="text-muted-foreground text-center py-8">Initializing grid...</div>
+            <div className="h-96" />
           )}
       </div>
 
-      {/* Edit mode help */}
-      {isEditMode && (
-        <div className="mt-4 px-4">
-          <div className="bg-btc-500/10 border border-btc-500/30 rounded-lg p-3">
-            <p className="text-sm">
-              <strong>Drag</strong> widgets by header to move. <strong>Resize</strong> by dragging edges. Click <strong>×</strong> to remove.
-            </p>
-          </div>
+      {/* Customize lives under the widgets so the grid starts level with the sidebar */}
+      {!isEditMode && !isStacked && (
+        <div className="mt-4 flex justify-end">
+          <Button variant="ghost" size="sm" className="rounded-full font-semibold text-muted-foreground hover:bg-card hover:text-foreground" onClick={() => setIsEditMode(true)}>
+            <Settings2Icon className="size-4 mr-1.5" />
+            Customize dashboard
+          </Button>
         </div>
       )}
     </div>
   );
 }
-

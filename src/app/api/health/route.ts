@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { AppInitializationService } from '@/lib/app-initialization'
+import packageJson from '../../../../package.json'
 
 export async function GET() {
   try {
@@ -11,7 +12,8 @@ export async function GET() {
     const health = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version || '1.0.0',
+      // package.json, not npm_package_version: Docker runs the server without npm
+      version: packageJson.version,
       environment: process.env.NODE_ENV || 'development'
     }
 

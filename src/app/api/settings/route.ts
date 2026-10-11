@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SettingsService } from '@/lib/settings-service';
 import { AppSettings } from '@/lib/types';
+import { withAuth, withAdminAuth, AuthUser } from '@/lib/auth-helpers';
 import { OnchainSettingsError } from '@/lib/onchain/settings-validation';
+import { OnchainScheduler } from '@/lib/onchain/onchain-scheduler';
+
+// NOTE: settings are currently a single server-wide row (not per-user).
+// Reads and user-facing sections (currency, display, notifications) require
+// any authenticated user; server-level sections and a full reset require an
+// admin. `onchain` is server-level: its endpoint receives every user's watched
+// addresses, so letting any account change it would let that account send
+// everyone's addresses to a server of its choosing.
+
+const ADMIN_ONLY_CATEGORIES = ['priceData', 'onchain'] as const;
 
 /** A rejected value, as opposed to a failure. Both handlers answer 400 for this. */
-function isValidationError(error: unknown): boolean {
+function isValidationError(error: unknown): error is Error {
   if (error instanceof OnchainSettingsError) {
     return true;
   }
@@ -12,10 +23,36 @@ function isValidationError(error: unknown): boolean {
 }
 
 /**
+ * Apply a changed `onchain` block to the running scheduler, so enabling it or
+ * changing the interval takes effect without a restart. Not awaited: the first
+ * pass of a newly started scheduler is a full sync and must not hold up the
+ * settings response.
+ */
+function applyOnchainSettings(body: unknown): void {
+  if (!body || typeof body !== 'object' || !('onchain' in body)) {
+    return;
+  }
+  OnchainScheduler.applySettings().catch((error) => {
+    console.error('[ONCHAIN] Could not apply the new settings to the scheduler:', error);
+  });
+}
+
+function adminRequired(): NextResponse {
+  return NextResponse.json({
+    success: false,
+    error: 'Admin access required to change server-level settings'
+  }, { status: 403 });
+}
+
+/**
  * GET /api/settings
  * Get current application settings
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getSettings());
+}
+
+async function getSettings(): Promise<NextResponse> {
   try {
     const settings = await SettingsService.getSettings();
     
@@ -36,11 +73,17 @@ export async function GET(): Promise<NextResponse> {
 
 /**
  * POST /api/settings
- * Create new settings (reset to defaults)
+ * Create new settings (reset to defaults) — admin only, affects all users
  */
-export async function POST(): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, () => resetSettings());
+}
+
+async function resetSettings(): Promise<NextResponse> {
   try {
     const settings = await SettingsService.resetToDefaults();
+    // The defaults disable on-chain watching: stop a running scheduler too.
+    applyOnchainSettings({ onchain: settings.onchain });
     
     return NextResponse.json({
       success: true,
@@ -61,7 +104,11 @@ export async function POST(): Promise<NextResponse> {
  * PATCH /api/settings
  * Update specific settings
  */
-export async function PATCH(request: NextRequest): Promise<NextResponse> {
+export async function PATCH(request: NextRequest) {
+  return withAuth(request, (_userId, user) => patchSettings(request, user));
+}
+
+async function patchSettings(request: NextRequest, user: AuthUser): Promise<NextResponse> {
   try {
     const body = await request.json();
     
@@ -69,6 +116,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (body.category && body.updates) {
       // Legacy category-based update
       const { category, updates } = body;
+
+      if ((ADMIN_ONLY_CATEGORIES as readonly string[]).includes(category) && !user.isAdmin) {
+        return adminRequired();
+      }
 
       let updatedSettings: AppSettings;
 
@@ -99,8 +150,14 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       });
     } else {
       // New direct update approach
+      if (!user.isAdmin && body && typeof body === 'object' &&
+          ADMIN_ONLY_CATEGORIES.some((key) => key in body)) {
+        return adminRequired();
+      }
+
       const currentSettings = await SettingsService.getSettings();
       const updatedSettings = await SettingsService.updateSettings(currentSettings.id, body);
+      applyOnchainSettings(body);
 
       return NextResponse.json({
         success: true,
@@ -131,9 +188,13 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
 /**
  * PUT /api/settings
- * Replace all settings
+ * Replace all settings (admin only — includes server-level sections)
  */
-export async function PUT(request: NextRequest): Promise<NextResponse> {
+export async function PUT(request: NextRequest) {
+  return withAdminAuth(request, () => replaceSettings(request));
+}
+
+async function replaceSettings(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const { currency, priceData, display, notifications, version } = body;
@@ -169,7 +230,7 @@ export async function PUT(request: NextRequest): Promise<NextResponse> {
     }
 
     console.error('Error replacing settings:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Failed to replace settings',

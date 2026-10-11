@@ -30,6 +30,7 @@ import { EncryptionService } from '@/lib/encryption-service';
 import { SettingsService } from '@/lib/settings-service';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { TransferFeeMode } from '@/lib/transfer-fees';
 import {
   deriveAddresses,
   parseXpub,
@@ -374,9 +375,10 @@ export class OnchainSyncService {
    * Turn one aggregated transaction into the row shape the portfolio expects.
    *
    * The amount recorded is the *net* change in the user's control, and the fee is
-   * recorded separately, because `BitcoinPriceService` subtracts `btcAmount` and
-   * then subtracts `fees`. Writing the net amount plus the fee therefore removes
-   * exactly the value that left, no more and no less.
+   * recorded separately with the `ON_TOP` fee mode (lib/transfer-fees): the
+   * recipients got `btcAmount` and `btcAmount + fees` left the wallet, so the
+   * portfolio removes exactly the value that left, no more and no less.
+   * Receives carry no fee (the sender paid it) and keep the default mode.
    *
    * A send to one of the user's own addresses is detected by both sides being
    * known wallets; the arithmetic collapses to zero on its own, which is the
@@ -387,6 +389,7 @@ export class OnchainSyncService {
     transferType: 'TRANSFER_IN' | 'TRANSFER_OUT';
     btcAmount: number;
     fees: number;
+    transferFeeMode: TransferFeeMode | null;
     selfTransfer: boolean;
   } {
     const net = agg.receivedSats - agg.spentSats;
@@ -397,6 +400,7 @@ export class OnchainSyncService {
         transferType: 'TRANSFER_IN',
         btcAmount: satsToBtc(net),
         fees: 0,
+        transferFeeMode: null,
         selfTransfer: false,
       };
     }
@@ -409,6 +413,7 @@ export class OnchainSyncService {
       transferType: 'TRANSFER_OUT',
       btcAmount,
       fees: satsToBtc(agg.feeSats),
+      transferFeeMode: 'ON_TOP',
       selfTransfer: false,
     };
   }
@@ -649,6 +654,7 @@ export class OnchainSyncService {
           btcAmount: true,
           fees: true,
           transferType: true,
+          transferFeeMode: true,
           fromWalletId: true,
           toWalletId: true,
           watchedAddressId: true,
@@ -686,7 +692,7 @@ export class OnchainSyncService {
         // address was also being watched. Comparing the shape we would write now
         // against what is stored repairs those rows instead of leaving a wrong
         // TRANSFER_OUT in the portfolio forever.
-        const { btcAmount, fees, transferType } = OnchainSyncService.classify(agg);
+        const { btcAmount, fees, transferType, transferFeeMode } = OnchainSyncService.classify(agg);
         const ownerId = touchedIds.length > 0 ? touchedIds[0] : null;
         const known = existingByTxid.get(agg.tx.txid);
 
@@ -701,6 +707,9 @@ export class OnchainSyncService {
             known.isReplaced ||
             (blockHeight !== null && known.blockHeight !== blockHeight) ||
             drifted ||
+            // Rows imported before fee modes existed have none; without the
+            // mode a send would no longer count its network fee.
+            (known.transferFeeMode ?? null) !== transferFeeMode ||
             known.fromWalletId !== agg.fromWalletId ||
             known.toWalletId !== agg.toWalletId ||
             known.watchedAddressId !== ownerId;
@@ -736,6 +745,7 @@ export class OnchainSyncService {
               }
             }
 
+            data.transferFeeMode = transferFeeMode;
             data.fromWalletId = agg.fromWalletId;
             data.toWalletId = agg.toWalletId;
             data.watchedAddressId = ownerId;
@@ -774,6 +784,7 @@ export class OnchainSyncService {
               originalTotalAmount: valuation.total,
               transactionDate: blockTime ?? new Date(),
               transferType,
+              transferFeeMode,
               fromWalletId: agg.fromWalletId,
               toWalletId: agg.toWalletId,
               source: 'onchain',

@@ -1,37 +1,11 @@
 import { prisma } from './prisma';
+import { btcArriving, btcLeaving, transferFeeBtc, transferHoldingsDelta } from './transfer-fees';
 
-/**
- * Shape of a transaction row as far as the acquisition pool is concerned.
- * Both the portfolio service and the parallel calculators inside the API
- * routes consume this, so the rule lives in one place.
- */
-export interface AcquisitionCandidate {
-  type: string;
-  source: string | null;
-  transferType: string | null;
-  originalTotalAmount: number | null;
-}
-
-/**
- * A transaction counts as an acquisition (money actually spent) when it is
- * either a real BUY or an on-chain receive valued by the importer.
- *
- * An on-chain TRANSFER_IN is the tracker's best guess of a purchase: the
- * blockchain shows BTC arriving but not the fiat side, so the row carries the
- * block-day close as an inferred cost basis. Rows without a stored basis
- * (originalTotalAmount <= 0) are excluded, as are manual/internal transfers,
- * which only move BTC that already belongs to the portfolio (counting them
- * would double-charge the invested amount).
- */
-export function isOnchainAcquisition(tx: AcquisitionCandidate): boolean {
-  return (
-    tx.type === 'TRANSFER' &&
-    tx.source === 'onchain' &&
-    tx.transferType === 'TRANSFER_IN' &&
-    tx.originalTotalAmount !== null &&
-    tx.originalTotalAmount > 0
-  );
-}
+// The acquisition rule lives in its own module so routes can use it without
+// loading (or, in tests, without depending on a mock of) this service.
+export { isOnchainAcquisition } from './acquisition';
+export type { AcquisitionCandidate } from './acquisition';
+import { isOnchainAcquisition } from './acquisition';
 
 export interface BitcoinPriceData {
   price: number;
@@ -591,6 +565,7 @@ export class BitcoinPriceService {
             fees: true,
             feesCurrency: true,
             transferType: true,
+            transferFeeMode: true,
             source: true,
             originalPricePerBtc: true,
             originalTotalAmount: true,
@@ -603,58 +578,40 @@ export class BitcoinPriceService {
       //
       // IMPORTANT: transfer semantics
       // ================================================================
-      // btcAmount conventions, applied consistently across the codebase:
+      // How much leaves and how much arrives depends on the transfer's fee
+      // mode (lib/transfer-fees, #168):
+      //   ON_TOP            btcAmount arrives, btcAmount + fee leaves
+      //   DEDUCTED / null   btcAmount leaves, btcAmount - fee arrives
       //
-      //   TRANSFER_IN  btcAmount = NET amount received. The network fee was
-      //                paid by the sender, so `fees` must stay 0 here.
-      //   TRANSFER_OUT btcAmount = NET amount that left our control
-      //                (gross sent minus our fee). `fees` holds the on-chain
-      //                fee, and the total formula subtracts it separately.
-      //   TO_COLD_WALLET / FROM_COLD_WALLET / BETWEEN_WALLETS
-      //                btcAmount = GROSS amount leaving the source wallet.
-      //                The destination receives btcAmount - fees, so these
-      //                only affect the total by the fee itself.
+      // Each transfer then moves the total by transferHoldingsDelta: + what
+      // arrives for TRANSFER_IN, - what leaves for TRANSFER_OUT, and - the fee
+      // for moves between the user's own wallets.
       //
-      // Resulting total: BUY - SELL + TRANSFER_IN - TRANSFER_OUT - BTC_FEES
+      // On-chain imports store TRANSFER_OUT as ON_TOP (btcAmount = what the
+      // recipients got, `fees` = the network fee we paid) and TRANSFER_IN
+      // with fees = 0, so both conventions land on the real balance.
+      //
+      // Resulting total: BUY - SELL + (sum of the transfer moves above).
+      // totalFeesBTC is reported separately and already included in the moves.
       let totalFeesBTC = 0;
       let coldWalletBTC = 0;
-      let totalBtcTransferredIn = 0;
-      let totalBtcTransferredOut = 0;
+      let netTransferBTC = 0;
 
       for (const tx of transferTransactions) {
-        const btcFee = tx.feesCurrency.toUpperCase() === 'BTC' ? tx.fees : 0;
+        // Fees paid in BTC are burned, whatever the transfer type
+        totalFeesBTC += transferFeeBtc(tx);
+        netTransferBTC += transferHoldingsDelta(tx);
 
-        // Fees paid in BTC reduce total holdings (burned, gone forever)
-        if (btcFee > 0) {
-          totalFeesBTC += btcFee;
-        }
-
-        switch (tx.transferType) {
-          case 'TRANSFER_IN':
-            totalBtcTransferredIn += tx.btcAmount;
-            break;
-          case 'TRANSFER_OUT':
-            totalBtcTransferredOut += tx.btcAmount;
-            break;
-          case 'TO_COLD_WALLET':
-            // Amount received in cold wallet = sent amount - fees
-            coldWalletBTC += (tx.btcAmount - btcFee);
-            break;
-          case 'FROM_COLD_WALLET':
-            // Amount left cold wallet = what was sent
-            coldWalletBTC -= tx.btcAmount;
-            break;
-          default:
-            // BETWEEN_WALLETS and unlabelled legacy transfers move BTC inside
-            // the portfolio: no effect on the total beyond the fee.
-            break;
+        if (tx.transferType === 'TO_COLD_WALLET') {
+          coldWalletBTC += btcArriving(tx);
+        } else if (tx.transferType === 'FROM_COLD_WALLET') {
+          coldWalletBTC -= btcLeaving(tx);
         }
       }
 
-      // Calculate total BTC (BUY - SELL + TRANSFER_IN - TRANSFER_OUT - BTC_FEES)
       const totalBuyBTC = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
       const totalSellBTC = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-      const totalBTC = totalBuyBTC - totalSellBTC + totalBtcTransferredIn - totalBtcTransferredOut - totalFeesBTC;
+      const totalBTC = totalBuyBTC - totalSellBTC + netTransferBTC;
       const hotWalletBTC = totalBTC - coldWalletBTC;
       const totalSatoshis = Math.round(totalBTC * 100000000);
       const totalFeesUSD = aggregateData._sum.fees || 0;
@@ -903,102 +860,6 @@ export class BitcoinPriceService {
     } catch (error) {
       console.error('Error storing portfolio summary:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Get portfolio summary from database
-   */
-  static async getPortfolioSummary(userId: number): Promise<PortfolioSummaryData | null> {
-    // For now, just trigger a recalculation to get current data
-    // This ensures we always have the most up-to-date portfolio with all currencies
-    try {
-      await this.calculateAndStorePortfolioSummary(userId);
-      
-      const record = await prisma.portfolioSummary.findUnique({
-        where: { userId }
-      });
-
-      if (record) {
-        // Get current settings for currency info
-        const { SettingsService } = await import('@/lib/settings-service');
-        const settings = await SettingsService.getSettings();
-        
-        // Calculate satoshis
-        const totalSatoshis = Math.round((record.totalBtc || 0) * 100000000);
-        
-        // Get exchange rates to convert stored main currency values to other currencies
-        const { ExchangeRateService } = await import('@/lib/exchange-rate-service');
-        const storedMainCurrency = record.mainCurrency || 'USD';
-        const storedSecondaryCurrency = record.secondaryCurrency || 'EUR';
-        
-        // Convert stored values if needed
-        let mainToUSDRate = 1;
-        let mainToSecondaryRate = 1;
-        if (storedMainCurrency !== 'USD') {
-          mainToUSDRate = await ExchangeRateService.getExchangeRate(storedMainCurrency, 'USD');
-        }
-        if (storedMainCurrency !== storedSecondaryCurrency) {
-          mainToSecondaryRate = await ExchangeRateService.getExchangeRate(storedMainCurrency, storedSecondaryCurrency);
-        }
-        
-        const btcPriceUSD = record.currentBtcPriceUsd || 0;
-        const btcPriceMain = btcPriceUSD * (await ExchangeRateService.getExchangeRate('USD', storedMainCurrency));
-        const btcPriceSecondary = btcPriceUSD * (await ExchangeRateService.getExchangeRate('USD', storedSecondaryCurrency));
-        
-        return {
-          totalBTC: record.totalBtc || 0,
-          totalSatoshis,
-          totalTransactions: record.totalTransactions || 0,
-          
-          // Cold/Hot Wallet Distribution
-          coldWalletBTC: record.coldWalletBtc || 0,
-          hotWalletBTC: record.hotWalletBtc || 0,
-          totalFeesBTC: record.totalFeesBtc || 0,
-          
-          // Main currency values (stored directly in DB)
-          mainCurrency: storedMainCurrency,
-          totalInvestedMain: record.totalInvested || 0,
-          totalFeesMain: record.totalFees || 0,
-          averageBuyPriceMain: record.averageBuyPrice || 0,
-          currentBTCPriceMain: btcPriceMain,
-          currentPortfolioValueMain: record.currentPortfolioValue || 0,
-          unrealizedPnLMain: record.unrealizedPnl || 0,
-          unrealizedPnLPercentage: record.unrealizedPnlPercent || 0,
-          portfolioChange24hMain: record.portfolioChange24h || 0,
-          portfolioChange24hPercentage: record.portfolioChange24hPercent || 0,
-          
-          // Secondary currency values
-          secondaryCurrency: storedSecondaryCurrency,
-          totalInvestedSecondary: (record.totalInvested || 0) * mainToSecondaryRate,
-          totalFeesSecondary: (record.totalFees || 0) * mainToSecondaryRate,
-          averageBuyPriceSecondary: (record.averageBuyPrice || 0) * mainToSecondaryRate,
-          currentBTCPriceSecondary: btcPriceSecondary,
-          currentPortfolioValueSecondary: record.currentValueSecondary || 0,
-          unrealizedPnLSecondary: (record.unrealizedPnl || 0) * mainToSecondaryRate,
-          portfolioChange24hSecondary: (record.portfolioChange24h || 0) * mainToSecondaryRate,
-          
-          // Legacy USD fields (convert from main currency)
-          totalInvestedUSD: (record.totalInvested || 0) * mainToUSDRate,
-          totalFeesUSD: (record.totalFees || 0) * mainToUSDRate,
-          averageBuyPriceUSD: (record.averageBuyPrice || 0) * mainToUSDRate,
-          currentBTCPriceUSD: btcPriceUSD,
-          currentPortfolioValueUSD: (record.currentPortfolioValue || 0) * mainToUSDRate,
-          unrealizedPnLUSD: (record.unrealizedPnl || 0) * mainToUSDRate,
-          unrealizedPnLPercent: record.unrealizedPnlPercent || 0,
-          portfolioChange24hUSD: (record.portfolioChange24h || 0) * mainToUSDRate,
-          portfolioChange24hPercent: record.portfolioChange24hPercent || 0,
-          currentValueEUR: record.currentValueSecondary || 0, // Assuming EUR is secondary
-          currentValuePLN: 0, // Deprecated
-          
-          lastUpdated: typeof record.lastUpdated === 'string' ? record.lastUpdated : record.lastUpdated?.toISOString() || new Date().toISOString(),
-          lastPriceUpdate: typeof record.lastPriceUpdate === 'string' ? record.lastPriceUpdate : record.lastPriceUpdate?.toISOString() || new Date().toISOString()
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error('Error getting portfolio summary:', error);
-      return null;
     }
   }
 

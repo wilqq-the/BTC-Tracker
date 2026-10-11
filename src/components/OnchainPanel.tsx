@@ -113,7 +113,16 @@ function truncate(value: string, head = 12, tail = 8): string {
   return `${value.slice(0, head)}…${value.slice(-tail)}`;
 }
 
-export function OnchainPanel() {
+interface OnchainPanelProps {
+  /**
+   * The on-chain settings are server-wide: the endpoint receives every user's
+   * addresses, so only an admin may change them (the API enforces it too).
+   * Everyone can still watch and sync their own addresses.
+   */
+  isAdmin: boolean;
+}
+
+export function OnchainPanel({ isAdmin }: OnchainPanelProps) {
   const [config, setConfig] = useState<OnchainConfig | null>(null);
   const [watched, setWatched] = useState<WatchedAddress[]>([]);
   const [wallets, setWallets] = useState<WalletOption[]>([]);
@@ -413,15 +422,15 @@ export function OnchainPanel() {
               <Switch
                 checked={config.enabled}
                 onCheckedChange={(checked) => saveConfig({ enabled: checked })}
-                disabled={saving}
+                disabled={saving || !isAdmin}
                 aria-label="Enable on-chain tracking"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-start gap-3 rounded-md border border-warning/40 bg-warning/5 p-3">
-            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-warning" />
+          <div className="flex items-start gap-3 rounded-2xl bg-tint-orange p-3">
+            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-primary-strong" />
             <p className="text-sm text-muted-foreground">
               Every address you add is sent to whichever Esplora endpoint is configured here. The
               default is a public third-party service, so your addresses and balances become
@@ -429,6 +438,14 @@ export function OnchainPanel() {
             </p>
           </div>
 
+          {!isAdmin && (
+            <p className="text-sm text-muted-foreground">
+              These settings apply to the whole server, so only an admin can change them. You can
+              still watch and sync your own addresses below.
+            </p>
+          )}
+
+          <fieldset disabled={!isAdmin} className="space-y-4 disabled:opacity-60">
           <div className="space-y-2">
             <Label htmlFor="esplora-endpoint">Esplora endpoint</Label>
             <div className="flex gap-2">
@@ -458,7 +475,7 @@ export function OnchainPanel() {
               <p
                 className={cn(
                   'flex items-center gap-1.5 text-xs',
-                  status.connection.reachable ? 'text-profit' : 'text-loss'
+                  status.connection.reachable ? 'text-tint-green-fg' : 'text-tint-red-fg'
                 )}
               >
                 {status.connection.reachable ? (
@@ -537,6 +554,7 @@ export function OnchainPanel() {
               disabled={saving}
             />
           </div>
+          </fieldset>
 
           {status && (
             <div className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
@@ -646,7 +664,7 @@ export function OnchainPanel() {
                 </Select>
               </div>
             </div>
-            {formError && <p className="text-sm text-loss">{formError}</p>}
+            {formError && <p className="text-sm text-tint-red-fg">{formError}</p>}
             <Button type="submit" disabled={adding}>
               {adding ? <Loader2Icon className="size-4 animate-spin" /> : <WalletIcon className="size-4" />}
               Add
@@ -692,7 +710,7 @@ export function OnchainPanel() {
                         {formatDate(entry.lastSyncAt)}
                       </p>
                       {entry.lastSyncError && (
-                        <p className="text-xs text-loss">Last error: {entry.lastSyncError}</p>
+                        <p className="text-xs text-tint-red-fg">Last error: {entry.lastSyncError}</p>
                       )}
                     </div>
                     <div className="flex gap-2">
@@ -719,7 +737,7 @@ export function OnchainPanel() {
                         {busyId === entry.id ? (
                           <Loader2Icon className="size-4 animate-spin" />
                         ) : (
-                          <Trash2Icon className="size-4 text-loss" />
+                          <Trash2Icon className="size-4 text-tint-red-fg" />
                         )}
                       </Button>
                     </div>

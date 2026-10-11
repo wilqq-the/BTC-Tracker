@@ -125,7 +125,7 @@ export async function POST(
       const stableScenario = {
         id: 'stable',
         name: 'Current Price',
-        icon: '📊',
+        icon: 'minus',
         description: 'Based on current market price',
         annualGrowthRate: 0.00,
         color: 'text-gray-600',
@@ -194,10 +194,10 @@ export async function POST(
           recommendations: {
             action: isOnTrack ? 'stay_course' : 'increase_investment',
             message: isOnTrack 
-              ? '✅ You are on track to meet your goal!' 
+              ? 'You are on track to meet your goal!' 
               : monthlyChange > 0
-                ? `⚠️ Consider increasing monthly investment by ${Math.abs(currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain).toFixed(0)} ${displayCurrency} or extending timeline`
-                : '✅ BTC price drop means you can invest less and still meet your goal',
+                ? `Consider increasing monthly investment by ${Math.abs(currentPriceProjection.averageMonthlyFiat - originalMonthlyInMain).toFixed(0)} ${displayCurrency} or extending timeline`
+                : 'BTC price drop means you can invest less and still meet your goal',
             suggested_monthly: currentPriceProjection.averageMonthlyFiat
           }
         }

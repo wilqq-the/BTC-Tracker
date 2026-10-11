@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { BitcoinPriceService, isOnchainAcquisition } from '@/lib/bitcoin-price-service';
+import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { isOnchainAcquisition } from '@/lib/acquisition';
 import { ExchangeRateService } from '@/lib/exchange-rate-service';
 import { SettingsService } from '@/lib/settings-service';
 import { withAuth } from '@/lib/auth-helpers';
+import { btcArriving, btcLeaving, transferFeeBtc, transferHoldingsDelta } from '@/lib/transfer-fees';
 
 // Unified portfolio metrics that can be used by both sidebar and analytics
 export async function GET(request: NextRequest) {
@@ -60,45 +62,40 @@ export async function GET(request: NextRequest) {
     const onchainAcquisitions = transferTransactions.filter(isOnchainAcquisition);
     const onchainInBtc = onchainAcquisitions.reduce((sum, tx) => sum + tx.btcAmount, 0);
 
-    // Calculate BTC fees from transfer transactions
-    // IMPORTANT: btcAmount = total LEAVING source wallet, fees = network fee
-    // Amount arriving at destination = btcAmount - fees
+    // Calculate BTC fees from transfer transactions. How much leaves and how
+    // much arrives depends on the transfer's fee mode (see lib/transfer-fees)
     let totalFeesBTC = 0;
 
     // Legacy cold wallet tracking (for transactions WITHOUT wallet IDs)
     let legacyColdWalletBTC = 0;
 
     for (const tx of internalTransfers) {
-      // If fees are paid in BTC, reduce total holdings (burned, gone forever)
-      if (tx.feesCurrency.toUpperCase() === 'BTC') {
-        totalFeesBTC += tx.fees;
-      }
-
       // Only apply legacy calculation for transactions without wallet IDs
       if (!tx.fromWalletId && !tx.toWalletId) {
         if (tx.transferType === 'TO_COLD_WALLET') {
-          legacyColdWalletBTC += (tx.btcAmount - tx.fees);
+          legacyColdWalletBTC += btcArriving(tx);
         } else if (tx.transferType === 'FROM_COLD_WALLET') {
-          legacyColdWalletBTC -= tx.btcAmount;
+          legacyColdWalletBTC -= btcLeaving(tx);
         }
       }
     }
 
-    // Handle external transfer fees
-    for (const tx of [...transfersIn, ...transfersOut]) {
-      if (tx.feesCurrency.toUpperCase() === 'BTC') {
-        totalFeesBTC += tx.fees;
-      }
+    // Fees paid in BTC are burned, whatever the transfer type
+    for (const tx of transferTransactions) {
+      totalFeesBTC += transferFeeBtc(tx);
     }
 
-    // Calculate external transfer amounts (adds/removes from portfolio without affecting P&L)
+    // External transfer amounts, for display (adds/removes from portfolio
+    // without affecting P&L)
     const totalBtcTransferredIn = transfersIn.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcTransferredOut = transfersOut.reduce((sum, tx) => sum + tx.btcAmount, 0);
 
-    // Calculate total BTC (BUY - SELL + TRANSFER_IN - TRANSFER_OUT - BTC_FEES)
+    // Total BTC = BUY - SELL + every transfer's effect on the total, fee mode
+    // included. Same rule as BitcoinPriceService (transferHoldingsDelta).
     const totalBtcBought = buyTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
     const totalBtcSold = sellTransactions.reduce((sum, tx) => sum + tx.btcAmount, 0);
-    const currentHoldings = totalBtcBought - totalBtcSold + totalBtcTransferredIn - totalBtcTransferredOut - totalFeesBTC;
+    const netTransferBTC = transferTransactions.reduce((sum, tx) => sum + transferHoldingsDelta(tx), 0);
+    const currentHoldings = totalBtcBought - totalBtcSold + netTransferBTC;
 
     // --- Per-wallet breakdown (new multi-wallet system) ---
     const userWallets = await prisma.wallet.findMany({
@@ -115,18 +112,17 @@ export async function GET(request: NextRequest) {
 
       let balance = 0;
       for (const tx of incoming) {
-        const btcFee = tx.feesCurrency.toUpperCase() === 'BTC' ? tx.fees : 0;
         if (tx.type === 'BUY') {
           balance += tx.btcAmount;
         } else if (tx.type === 'TRANSFER') {
-          balance += tx.btcAmount - btcFee;
+          balance += btcArriving(tx);
         }
       }
       for (const tx of outgoing) {
         if (tx.type === 'SELL') {
           balance -= tx.btcAmount;
         } else if (tx.type === 'TRANSFER') {
-          balance -= tx.btcAmount;
+          balance -= btcLeaving(tx);
         }
       }
       balance = Math.max(0, balance);
@@ -331,6 +327,8 @@ export async function GET(request: NextRequest) {
           sells: 0,
           totalBought: 0,
           totalSold: 0,
+          transferredIn: 0,
+          transferredOut: 0,
           avgBuyPrice: 0,
           avgSellPrice: 0,
           pnl: 0,
@@ -341,7 +339,7 @@ export async function GET(request: NextRequest) {
           data.buys++;
           data.totalBought += tx.btcAmount;
           data.avgBuyPrice = ((data.avgBuyPrice * (data.totalBought - tx.btcAmount)) + (convertedPrice * tx.btcAmount)) / data.totalBought;
-        } else if (tx.type === 'SELL' || (tx.type === 'TRANSFER' && tx.source === 'onchain' && tx.transferType === 'TRANSFER_OUT')) {
+        } else if (tx.type === 'SELL') {
           data.sells++;
           data.totalSold += tx.btcAmount;
           data.avgSellPrice = ((data.avgSellPrice * (data.totalSold - tx.btcAmount)) + (convertedPrice * tx.btcAmount)) / data.totalSold;
@@ -350,13 +348,21 @@ export async function GET(request: NextRequest) {
           data.pnl += (sellValue - costBasis);
         }
         
+        // External transfers change holdings; moves between your own wallets
+        // don't. An on-chain receive with a cost basis is already counted as a
+        // buy above, so it is not counted again as a transfer in.
+        if (tx.type === 'TRANSFER' && !isOnchainAcquisition(tx)) {
+          if (tx.transferType === 'TRANSFER_IN') data.transferredIn += btcArriving(tx);
+          else if (tx.transferType === 'TRANSFER_OUT') data.transferredOut += btcLeaving(tx);
+        }
+
         monthlyData.set(monthKey, data);
       });
       
       const monthlyBreakdown = Array.from(monthlyData.entries()).map(([month, data]) => ({
         month,
         ...data,
-        netBtc: data.totalBought - data.totalSold
+        netBtc: data.totalBought - data.totalSold + data.transferredIn - data.transferredOut
       }));
       
       // Calculate additional analytics

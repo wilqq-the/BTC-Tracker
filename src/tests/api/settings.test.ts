@@ -3,6 +3,10 @@
  * Tests for settings CRUD operations and validation
  */
 
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+import { authedRequest } from '../mock-auth-helpers'
+
 import { testDb, setupTestDatabase, cleanTestDatabase, seedTestDatabase } from '../test-db'
 import { NextRequest } from 'next/server'
 import { AppSettings, MainCurrency, SupportedCurrency } from '../../lib/types'
@@ -39,7 +43,7 @@ describe('Settings API', () => {
   describe('GET /api/settings', () => {
     it('should retrieve default settings when database is fresh', async () => {
       const mockRequest = createMockRequest('GET', '/api/settings')
-      const response = await settingsGET()
+      const response = await settingsGET(authedRequest())
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -55,7 +59,7 @@ describe('Settings API', () => {
     })
 
     it('should include all required settings categories', async () => {
-      const response = await settingsGET()
+      const response = await settingsGET(authedRequest())
       const data = await response.json()
 
       expect(data.data.currency).toBeDefined()
@@ -95,7 +99,7 @@ describe('Settings API', () => {
 
       // Then reset to defaults
       const resetRequest = createMockRequest('POST', '/api/settings')
-      const response = await settingsPOST()
+      const response = await settingsPOST(authedRequest())
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -105,11 +109,11 @@ describe('Settings API', () => {
     })
 
     it('should maintain settings ID when resetting', async () => {
-      const initialResponse = await settingsGET()
+      const initialResponse = await settingsGET(authedRequest())
       const initialData = await initialResponse.json()
       const initialId = initialData.data.id
 
-      const resetResponse = await settingsPOST()
+      const resetResponse = await settingsPOST(authedRequest())
       const resetData = await resetResponse.json()
 
       // Settings should always use ID 1 (singleton pattern)
@@ -280,9 +284,9 @@ describe('Settings API', () => {
 
     it('should preserve unchanged settings during direct update', async () => {
       // First, reset to defaults to ensure consistent state
-      await settingsPOST()
+      await settingsPOST(authedRequest())
       
-      const initialResponse = await settingsGET()
+      const initialResponse = await settingsGET(authedRequest())
       const initialData = await initialResponse.json()
 
       const partialUpdate = {
@@ -487,7 +491,7 @@ describe('Settings API', () => {
       await settingsPATCH(updateRequest)
 
       // Retrieve settings again
-      const getResponse = await settingsGET()
+      const getResponse = await settingsGET(authedRequest())
       const getData = await getResponse.json()
 
       expect(getData.data.display.theme).toBe('light')
@@ -495,7 +499,7 @@ describe('Settings API', () => {
     })
 
     it('should update lastUpdated timestamp on changes', async () => {
-      const initialResponse = await settingsGET()
+      const initialResponse = await settingsGET(authedRequest())
       const initialData = await initialResponse.json()
       const initialTimestamp = new Date(initialData.data.lastUpdated).getTime()
 

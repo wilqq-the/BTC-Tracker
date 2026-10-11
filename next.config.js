@@ -3,6 +3,12 @@ const nextConfig = {
   output: 'standalone',
   // Enable output file tracing to reduce bundle size
   outputFileTracingRoot: process.cwd(),
+  // The Profile page was merged into Settings — redirect old links.
+  async redirects() {
+    return [
+      { source: '/profile', destination: '/settings', permanent: true },
+    ];
+  },
   // Enable polling for WSL file watching
   webpack: (config, { isServer }) => {
     if (!isServer) {

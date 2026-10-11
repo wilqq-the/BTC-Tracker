@@ -39,13 +39,11 @@ export class OnchainScheduler {
    * Start polling, if the user enabled on-chain watching.
    *
    * Safe to call more than once: a second call is a no-op unless the configured
-   * interval actually changed, in which case the timer is rescheduled.
+   * interval actually changed, in which case the timer is rescheduled. Nothing
+   * between reading the settings and arming the timer awaits, so two concurrent
+   * calls cannot both arm one and leak the other.
    */
   static async start(): Promise<void> {
-    if (OnchainScheduler.inProgress) {
-      return;
-    }
-
     let settings;
     try {
       settings = await SettingsService.loadSettings();
@@ -70,22 +68,18 @@ export class OnchainScheduler {
       return;
     }
 
-    if (OnchainScheduler.isRunning) {
-      // The interval changed in Settings: reschedule instead of leaking the old
-      // timer, which would keep polling at the previous rate forever.
-      OnchainScheduler.stopTimer();
+    const wasRunning = OnchainScheduler.isRunning;
+    if (wasRunning) {
       console.log(
         `[ONCHAIN] Sync interval changed ${OnchainScheduler.currentIntervalMinutes} -> ${intervalMinutes} minutes`
       );
     }
 
+    // Always clear first: rescheduling must never leave the old timer polling
+    // at the previous rate forever.
+    OnchainScheduler.stopTimer();
     OnchainScheduler.isRunning = true;
     OnchainScheduler.currentIntervalMinutes = intervalMinutes;
-
-    // Sync once on start so a fresh install shows history without waiting a
-    // full interval, then poll.
-    await OnchainScheduler.runOnce();
-
     OnchainScheduler.interval = setInterval(() => {
       void OnchainScheduler.runOnce();
     }, intervalMinutes * 60 * 1000);
@@ -93,6 +87,28 @@ export class OnchainScheduler {
     console.log(
       `[ONCHAIN] Scheduler started - polling ${config.esploraEndpoint} every ${intervalMinutes} min`
     );
+
+    // Sync once on a fresh start so a new install shows history without
+    // waiting a full interval. A reschedule keeps the data it already has.
+    if (!wasRunning) {
+      await OnchainScheduler.runOnce();
+    }
+  }
+
+  /**
+   * Bring the scheduler in line with the saved settings: stop it when on-chain
+   * watching was disabled, start or reschedule it otherwise. Called after the
+   * settings change, so none of these needs a restart.
+   */
+  static async applySettings(): Promise<void> {
+    const settings = await SettingsService.loadSettings();
+    if (!settings.onchain || !settings.onchain.enabled) {
+      if (OnchainScheduler.isRunning) {
+        OnchainScheduler.stop();
+      }
+      return;
+    }
+    await OnchainScheduler.start();
   }
 
   private static stopTimer(): void {

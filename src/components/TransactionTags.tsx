@@ -38,7 +38,7 @@ export default function TransactionTags({ tags, transactionId, onAddTag, onRemov
       {tagList.map((tag, idx) => (
         <span
           key={idx}
-          className="inline-flex items-center gap-1 px-2 py-0.5 bg-bitcoin/10 text-bitcoin text-xs rounded-full border border-bitcoin/20"
+          className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full border border-primary/20"
         >
           {tag}
           <button
@@ -69,7 +69,7 @@ export default function TransactionTags({ tags, transactionId, onAddTag, onRemov
           }}
           placeholder="Tag name..."
           autoFocus
-          className="w-20 px-2 py-0.5 text-xs border border-bitcoin/30 rounded bg-btc-bg-tertiary text-btc-text-primary focus:outline-none focus:ring-1 focus:ring-bitcoin"
+          className="w-20 px-2 py-0.5 text-xs border border-primary/30 rounded-md bg-muted text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
         />
       ) : (
         <button
@@ -77,7 +77,7 @@ export default function TransactionTags({ tags, transactionId, onAddTag, onRemov
             e.stopPropagation();
             setShowInput(true);
           }}
-          className="text-xs text-btc-text-muted hover:text-bitcoin transition-colors"
+          className="text-xs text-muted-foreground hover:text-primary transition-colors"
           title="Add tag"
         >
           + tag

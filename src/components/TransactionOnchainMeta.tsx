@@ -53,7 +53,7 @@ export function TransactionOnchainMeta({
     <div className={cn('flex flex-wrap items-center gap-1', className)}>
       <Badge
         variant="outline"
-        className="border-btc-500/40 text-btc-500 bg-btc-500/5 font-normal"
+        className="rounded-full border-transparent px-2 py-0.5 text-[11px] font-semibold bg-tint-orange text-primary-strong"
         title="Imported from the Bitcoin blockchain"
       >
         <Link2Icon className="size-3" />
@@ -63,7 +63,7 @@ export function TransactionOnchainMeta({
       {pending && (
         <Badge
           variant="outline"
-          className="border-amber-500/50 text-amber-500 bg-amber-500/10 font-normal"
+          className="rounded-full border-transparent px-2 py-0.5 text-[11px] font-semibold bg-tint-blue text-tint-blue-fg"
           title="Counted in your portfolio, but not confirmed yet"
         >
           <ClockIcon className="size-3" />
@@ -74,7 +74,7 @@ export function TransactionOnchainMeta({
       {isReplaced && (
         <Badge
           variant="outline"
-          className="border-loss/50 text-loss bg-loss/10 font-normal"
+          className="rounded-full border-transparent px-2 py-0.5 text-[11px] font-semibold bg-tint-red text-tint-red-fg"
           title="Dropped from the mempool, most likely replaced by a conflicting transaction"
         >
           <XCircleIcon className="size-3" />

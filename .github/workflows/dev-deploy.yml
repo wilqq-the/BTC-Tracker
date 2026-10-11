@@ -8,41 +8,53 @@ on:
     types: [ completed ]
     branches: [ dev ]
 
+env:
+  IMAGE: thewilqq/btc-tracker
+
 jobs:
-  deploy-dev:
-    runs-on: ubuntu-latest
+  # Each platform builds on its own native runner. arm64 used to be built
+  # under QEMU emulation, where `prisma generate` could hang indefinitely.
+  build:
     # Only run on push to dev branch and if CI passed
     if: github.ref == 'refs/heads/dev' && (github.event.workflow_run.conclusion == 'success' || github.event_name == 'push')
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    
+
     - name: Extract commit info
       id: commit
       run: |
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
-        echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-    
-    - name: Build and push Docker image (dev)
+        platform=${{ matrix.platform }}
+        echo "pair=${platform//\//-}" >> $GITHUB_OUTPUT
+
+    - name: Build and push by digest (${{ matrix.platform }})
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
-        push: true
-        tags: |
-          thewilqq/btc-tracker:dev
-          thewilqq/btc-tracker:dev-${{ steps.commit.outputs.date }}
-          thewilqq/btc-tracker:dev-${{ steps.commit.outputs.sha_short }}
+        platforms: ${{ matrix.platform }}
+        provenance: false
+        outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
         labels: |
           org.opencontainers.image.title=BTC Tracker (Dev)
           org.opencontainers.image.description=Development build of BTC Tracker
@@ -50,19 +62,76 @@ jobs:
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
           org.opencontainers.image.url=https://hub.docker.com/r/thewilqq/btc-tracker
           org.opencontainers.image.revision=${{ github.sha }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+        cache-from: type=gha,scope=dev-${{ steps.commit.outputs.pair }}
+        cache-to: type=gha,mode=max,scope=dev-${{ steps.commit.outputs.pair }}
         build-args: |
           VERSION=dev-${{ steps.commit.outputs.sha_short }}
           BUILD_DATE=${{ steps.commit.outputs.date }}
           COMMIT_SHA=${{ steps.commit.outputs.sha_short }}
-    
+
+    - name: Export digest
+      run: |
+        mkdir -p ${{ runner.temp }}/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      uses: actions/upload-artifact@v4
+      with:
+        name: digests-dev-${{ steps.commit.outputs.pair }}
+        path: ${{ runner.temp }}/digests/*
+        if-no-files-found: error
+        retention-days: 1
+
+  # Stitch the per-platform images into one multi-arch image and tag it
+  merge:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download digests
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ runner.temp }}/digests
+        pattern: digests-dev-*
+        merge-multiple: true
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Extract commit info
+      id: commit
+      run: |
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+        echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+    - name: Create and push multi-arch manifest
+      working-directory: ${{ runner.temp }}/digests
+      run: |
+        docker buildx imagetools create \
+          -t ${{ env.IMAGE }}:dev \
+          -t ${{ env.IMAGE }}:dev-${{ steps.commit.outputs.date }} \
+          -t ${{ env.IMAGE }}:dev-${{ steps.commit.outputs.sha_short }} \
+          $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+    - name: Inspect image
+      run: docker buildx imagetools inspect ${{ env.IMAGE }}:dev-${{ steps.commit.outputs.sha_short }}
+
     - name: Create deployment summary
       run: |
         echo "## 🚀 Dev Deployment Summary" >> $GITHUB_STEP_SUMMARY
         echo "- **Environment**: Development" >> $GITHUB_STEP_SUMMARY
         echo "- **Docker Tags**: dev, dev-${{ steps.commit.outputs.date }}, dev-${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platforms**: linux/amd64, linux/arm64 (native runners)" >> $GITHUB_STEP_SUMMARY
         echo "- **Registry**: https://hub.docker.com/r/thewilqq/btc-tracker" >> $GITHUB_STEP_SUMMARY
         echo "- **Commit**: ${{ steps.commit.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Branch**: ${{ steps.commit.outputs.branch }}" >> $GITHUB_STEP_SUMMARY

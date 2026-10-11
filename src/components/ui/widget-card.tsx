@@ -12,6 +12,7 @@ export interface WidgetCardProps {
   // Header
   title?: string;
   description?: string;
+  /** @deprecated headers are text-only in the current design; kept for compatibility */
   icon?: LucideIcon;
   badge?: string | React.ReactNode;
   
@@ -60,7 +61,6 @@ export interface WidgetCardProps {
 export function WidgetCard({
   title,
   description,
-  icon: Icon,
   badge,
   loading = false,
   error = null,
@@ -98,14 +98,13 @@ export function WidgetCard({
   };
 
   return (
-    <Card ref={containerRef} className={cn("h-full flex flex-col overflow-hidden", className)}>
+    <Card ref={containerRef} className={cn("rounded-2xl h-full flex flex-col gap-4 overflow-hidden", className)}>
       {/* Header */}
       {(title || onRefresh) && (
         <CardHeader className="pb-2 space-y-0 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              {Icon && <Icon className="size-4 text-btc-500 shrink-0" />}
-              <CardTitle className="text-base truncate">{title}</CardTitle>
+              <CardTitle className="text-[17px] font-bold tracking-tight truncate">{title}</CardTitle>
               {badge && (
                 typeof badge === 'string' ? (
                   <Badge variant="secondary" className="ml-auto shrink-0">{badge}</Badge>
@@ -120,9 +119,9 @@ export function WidgetCard({
                 size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing || loading}
-                className="shrink-0 size-7"
+                className="shrink-0 size-8 rounded-full text-muted-foreground hover:text-foreground"
               >
-                <RefreshCwIcon className={cn("size-3.5", refreshing && "animate-spin")} />
+                <RefreshCwIcon className={cn("size-4", refreshing && "animate-spin")} />
                 <span className="sr-only">Refresh</span>
               </Button>
             )}
@@ -190,7 +189,7 @@ export function WidgetError({ error, onRetry }: { error: string; onRetry?: () =>
       <p className="text-sm text-muted-foreground mb-3">{error}</p>
       {onRetry && (
         <Button variant="outline" size="sm" onClick={onRetry}>
-          Try Again
+          Try again
         </Button>
       )}
     </div>
@@ -213,11 +212,11 @@ export function WidgetStats({ stats }: WidgetStatsProps) {
   const getColorClass = (color?: string) => {
     switch (color) {
       case 'profit':
-        return 'text-green-600 dark:text-green-400';
+        return 'text-tint-green-fg';
       case 'loss':
-        return 'text-red-600 dark:text-red-400';
+        return 'text-tint-red-fg';
       case 'btc':
-        return 'text-btc-500';
+        return 'text-primary-strong';
       default:
         return 'text-foreground';
     }
@@ -266,8 +265,8 @@ export function WidgetListItem({
     <Component
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg transition-colors",
-        onClick && "hover:bg-muted cursor-pointer w-full text-left",
+        "flex items-center gap-3 p-3 rounded-2xl transition-colors hover:bg-secondary/70",
+        onClick && "cursor-pointer w-full text-left",
         className
       )}
     >
@@ -311,11 +310,11 @@ export function WidgetEmptyState({
   action,
 }: WidgetEmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center flex-1 p-6 text-center">
-      {Icon && <Icon className="size-12 text-muted-foreground/50 mb-3" />}
-      <h4 className="text-sm font-medium mb-1">{title}</h4>
+    <div className="flex flex-col items-center justify-center flex-1 p-2 text-center">
+      {Icon && <Icon className="size-8 text-muted-foreground/50 mb-2" />}
+      <h4 className="text-sm font-semibold mb-1">{title}</h4>
       {description && (
-        <p className="text-xs text-muted-foreground mb-4">{description}</p>
+        <p className="text-[13px] text-muted-foreground mb-3 max-w-[36ch]">{description}</p>
       )}
       {action}
     </div>

@@ -2,15 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { WidgetCard } from '@/components/ui/widget-card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { formatCurrency, formatPercentage } from '@/lib/theme';
 import { WidgetProps } from '@/lib/dashboard-types';
 import { BitcoinPriceClient } from '@/lib/bitcoin-price-client';
 import { useDisplayCurrency } from '@/hooks/use-display-currency';
-import { HistoryIcon, ExternalLinkIcon, ArrowUpRightIcon, ArrowDownRightIcon } from 'lucide-react';
+import { onTransactionsChanged } from '@/lib/app-events';
 import Link from 'next/link';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
+import { emitHighlightTransaction, transactionDay } from '@/lib/app-events';
 
 interface Transaction {
   id: number;
@@ -32,6 +31,7 @@ interface Transaction {
  * Shows recent transactions with P&L
  */
 export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps) {
+  const { formatBtc } = useBtcUnit();
   const [latestTransactions, setLatestTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +48,12 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
       setCurrentBtcPrice(newPrice.price);
     });
 
-    return unsubscribe;
+    const unsubscribeTx = onTransactionsChanged(loadLatestTransactions);
+
+    return () => {
+      unsubscribe();
+      unsubscribeTx();
+    };
   }, []);
 
   const loadCurrentPrice = async () => {
@@ -87,64 +92,59 @@ export default function LatestTransactionsWidget({ id, onRefresh }: WidgetProps)
     onRefresh?.();
   };
 
+  const typeBadge = (type: string) =>
+    type === 'BUY' ? { label: 'Buy', tone: 'bg-tint-green text-tint-green-fg' }
+      : type === 'SELL' ? { label: 'Sell', tone: 'bg-tint-red text-tint-red-fg' }
+        : { label: 'Transfer', tone: 'bg-tint-blue text-tint-blue-fg' };
+
   return (
     <WidgetCard
-      title="Latest Transactions"
-      icon={HistoryIcon}
-      badge={latestTransactions.length > 0 && <Badge variant="secondary">{latestTransactions.length}</Badge>}
+      title="Recent transactions"
+      badge={
+        <Link href="/transactions" className="ml-auto shrink-0 text-sm font-bold text-primary-strong hover:underline">
+          View all
+        </Link>
+      }
       loading={loading}
-      error={!latestTransactions.length ? "No transactions found" : null}
+      error={!latestTransactions.length ? "No transactions yet" : null}
       onRefresh={handleRefresh}
       refreshing={refreshing}
-      noPadding
       contentClassName="overflow-hidden"
-      footer={
-        <Button asChild variant="outline" size="sm" className="w-full">
-          <Link href="/transactions">
-            View All Transactions
-            <ExternalLinkIcon className="size-3.5 ml-2" />
-          </Link>
-        </Button>
-      }
     >
       {latestTransactions.length > 0 && (
-        <div className="divide-y overflow-auto flex-1">
+        <div className="-mx-2 flex flex-1 flex-col overflow-auto">
           {latestTransactions.map((transaction) => {
             const pricePerBtc = transaction.main_currency_price_per_btc || transaction.original_price_per_btc;
             const currentValue = transaction.current_value_main || 0;
             const pnl = transaction.pnl_main || 0;
             const originalValue = transaction.main_currency_total_amount || transaction.original_total_amount;
             const pnlPercent = originalValue > 0 ? (pnl / originalValue) * 100 : 0;
-            const isBuy = transaction.type === 'BUY';
+            const badge = typeBadge(transaction.type);
+            const pnlTone = pnl > 0 ? 'text-tint-green-fg' : pnl < 0 ? 'text-tint-red-fg' : 'text-muted-foreground';
 
             return (
-              <div key={transaction.id} className="px-3 py-2.5 hover:bg-accent transition-colors">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant={isBuy ? "default" : "destructive"} className="gap-1">
-                      {isBuy ? <ArrowDownRightIcon className="size-3" /> : <ArrowUpRightIcon className="size-3" />}
-                      {transaction.type}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(transaction.transaction_date).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-xs font-medium text-foreground">
-                      {transaction.btc_amount.toFixed(6)} ₿
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      @ {formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
-                    </div>
+              <div
+                key={transaction.id}
+                className="group flex items-center gap-3 rounded-2xl px-2 py-3 transition-colors hover:bg-secondary/70"
+                onMouseEnter={() => emitHighlightTransaction(transactionDay(transaction.transaction_date))}
+                onMouseLeave={() => emitHighlightTransaction(null)}
+              >
+                <span className={`w-[72px] shrink-0 rounded-full py-1.5 text-center text-[13px] font-bold transition-transform duration-300 ease-[cubic-bezier(0.3,1.4,0.5,1)] group-hover:scale-110 ${badge.tone}`}>
+                  {badge.label}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[15px] font-bold tabular-nums">{formatBtc(transaction.btc_amount)}</div>
+                  <div className="truncate text-[13px] text-muted-foreground">
+                    {new Date(transaction.transaction_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {', at '}{formatCurrency(pricePerBtc * exchangeRate, secondaryCurrency)}
                   </div>
                 </div>
-                
                 {currentValue > 0 && (
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="text-muted-foreground">P&L:</span>
-                    <span className={`font-medium ${pnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {pnl >= 0 ? '+' : ''}{formatCurrency(pnl * exchangeRate, secondaryCurrency)} ({formatPercentage(pnlPercent)})
-                    </span>
+                  <div className="shrink-0 text-right">
+                    <div className={`text-[15px] font-bold tabular-nums ${pnlTone}`}>
+                      {pnl >= 0 ? '+' : '-'}{formatCurrency(Math.abs(pnl) * exchangeRate, secondaryCurrency)}
+                    </div>
+                    <div className={`text-[13px] tabular-nums ${pnlTone}`}>{formatPercentage(pnlPercent)}</div>
                   </div>
                 )}
               </div>

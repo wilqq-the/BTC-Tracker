@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CustomCurrencyService, CreateCustomCurrencyData } from '@/lib/custom-currency-service';
+import { withAuth, withAdminAuth } from '@/lib/auth-helpers';
+
+// Custom currencies are server-wide (shared by all users and used by the
+// exchange-rate service), so reads need any authenticated user and changes
+// are admin-only.
 
 /**
  * GET /api/custom-currencies
  * Get all active custom currencies
  */
-export async function GET(): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => listCustomCurrencies());
+}
+
+async function listCustomCurrencies(): Promise<NextResponse> {
   try {
     const customCurrencies = await CustomCurrencyService.getAllCustomCurrencies();
     
@@ -26,9 +35,13 @@ export async function GET(): Promise<NextResponse> {
 
 /**
  * POST /api/custom-currencies
- * Add a new custom currency
+ * Add a new custom currency (admin only)
  */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+export async function POST(request: NextRequest) {
+  return withAdminAuth(request, () => addCustomCurrency(request));
+}
+
+async function addCustomCurrency(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
     const { code, name, symbol } = body as CreateCustomCurrencyData;

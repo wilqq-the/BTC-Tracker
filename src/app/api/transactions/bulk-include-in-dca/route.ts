@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { BitcoinPriceService, isOnchainAcquisition } from '@/lib/bitcoin-price-service';
+import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
+import { isOnchainAcquisition } from '@/lib/acquisition';
 import { withAuth } from '@/lib/auth-helpers';
 
 /**

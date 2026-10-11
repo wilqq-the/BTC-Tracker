@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { SupportedCurrency } from '@/lib/types';
 import currencies from '@/data/currencies.json';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -24,8 +25,13 @@ import {
 import { DatePicker } from '@/components/ui/date-picker';
 import { TagsInput } from '@/components/ui/tags-input';
 import { CurrencySelector } from '@/components/ui/currency-selector';
-import { ArrowDownIcon, ArrowUpIcon, ArrowLeftRightIcon, CoinsIcon, ArrowDownToLineIcon, ArrowUpFromLineIcon, RefreshCwIcon, ChevronDownIcon, PlusIcon } from 'lucide-react';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { WalletLabel } from '@/components/ui/wallet-type-icon';
+import { DEFAULT_TRANSFER_FEE_MODE, type TransferFeeMode } from '@/lib/transfer-fees';
+import { ChevronDownIcon, PlusIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/theme';
+import { useBtcUnit } from '@/hooks/use-btc-unit';
 
 /**
  * Format a Date to YYYY-MM-DD string in LOCAL timezone (not UTC)
@@ -60,6 +66,7 @@ interface TransactionFormData {
   tags: string;
   transfer_type?: 'TO_COLD_WALLET' | 'FROM_COLD_WALLET' | 'BETWEEN_WALLETS' | 'TRANSFER_IN' | 'TRANSFER_OUT';
   transfer_category?: 'INTERNAL' | 'EXTERNAL'; // For two-step UI
+  transfer_fee_mode?: TransferFeeMode; // How a BTC network fee was paid (#168)
   destination_address?: string;
   from_wallet_id?: number | null;
   to_wallet_id?: number | null;
@@ -80,6 +87,8 @@ interface AddTransactionModalProps {
   onClose: () => void;
   onSuccess?: () => void;
   editingTransaction?: any;
+  /** Preselect BUY / SELL / TRANSFER when opening for a new transaction */
+  initialType?: 'BUY' | 'SELL' | 'TRANSFER';
 }
 
 const initialFormData: TransactionFormData = {
@@ -95,6 +104,7 @@ const initialFormData: TransactionFormData = {
   tags: '',
   transfer_type: 'TO_COLD_WALLET',
   transfer_category: 'INTERNAL',
+  transfer_fee_mode: DEFAULT_TRANSFER_FEE_MODE,
   destination_address: '',
   from_wallet_id: null,
   to_wallet_id: null,
@@ -104,8 +114,10 @@ export default function AddTransactionModal({
   isOpen, 
   onClose, 
   onSuccess,
-  editingTransaction 
+  editingTransaction,
+  initialType,
 }: AddTransactionModalProps) {
+  const { formatBtc } = useBtcUnit();
   // Helper to determine transfer category from transfer_type
   const getTransferCategory = (transferType?: string): 'INTERNAL' | 'EXTERNAL' => {
     if (transferType === 'TRANSFER_IN' || transferType === 'TRANSFER_OUT') {
@@ -128,6 +140,8 @@ export default function AddTransactionModal({
       tags: editingTransaction.tags || '',
       transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
       transfer_category: getTransferCategory(editingTransaction.transfer_type),
+      // Transfers saved before fee modes existed took the fee from the amount
+      transfer_fee_mode: editingTransaction.transfer_fee_mode || 'DEDUCTED',
       destination_address: editingTransaction.destination_address || '',
       from_wallet_id: editingTransaction.from_wallet_id || null,
       to_wallet_id: editingTransaction.to_wallet_id || null,
@@ -144,7 +158,9 @@ export default function AddTransactionModal({
   const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>(['USD', 'EUR', 'PLN', 'GBP']);
   const [customCurrencies, setCustomCurrencies] = useState<any[]>([]);
   const [allAvailableCurrencies, setAllAvailableCurrencies] = useState<Array<{code: string, name: string, symbol: string}>>([]);
+  // Current BTC price is always USD; usdRate converts it into the form's currency
   const [currentBtcPrice, setCurrentBtcPrice] = useState<number | null>(null);
+  const [usdRate, setUsdRate] = useState<{ currency: string; rate: number } | null>({ currency: 'USD', rate: 1 });
   const [wallets, setWallets] = useState<WalletOption[]>([]);
   
   // Helper function to get currency info from currencies.json
@@ -169,6 +185,7 @@ export default function AddTransactionModal({
         tags: editingTransaction.tags || '',
         transfer_type: editingTransaction.transfer_type || 'TO_COLD_WALLET',
         transfer_category: getTransferCategory(editingTransaction.transfer_type),
+        transfer_fee_mode: editingTransaction.transfer_fee_mode || 'DEDUCTED',
         destination_address: editingTransaction.destination_address || '',
         from_wallet_id: editingTransaction.from_wallet_id || null,
         to_wallet_id: editingTransaction.to_wallet_id || null,
@@ -291,6 +308,13 @@ export default function AddTransactionModal({
     }
   }, [isOpen]);
 
+  // Quick actions open the modal on a specific type
+  useEffect(() => {
+    if (isOpen && !editingTransaction && initialType) {
+      setFormData(prev => ({ ...prev, type: initialType }));
+    }
+  }, [isOpen, initialType, editingTransaction]);
+
   // Load current Bitcoin price
   const loadCurrentBitcoinPrice = async () => {
     try {
@@ -332,10 +356,40 @@ export default function AddTransactionModal({
     return Math.round(btcNum * 100000000);
   };
 
+  // Fetch the USD -> selected currency rate whenever the currency changes
+  useEffect(() => {
+    if (!isOpen) return;
+    const currency = formData.currency;
+    if (currency === 'USD') {
+      setUsdRate({ currency, rate: 1 });
+      return;
+    }
+    let cancelled = false;
+    setUsdRate(null);
+    (async () => {
+      try {
+        const response = await fetch(`/api/exchange-rates?from=USD&to=${encodeURIComponent(currency)}`);
+        const result = await response.json();
+        if (!cancelled && typeof result.rate === 'number' && result.rate > 0) {
+          setUsdRate({ currency, rate: result.rate });
+        }
+      } catch (error) {
+        console.error('Error loading exchange rate:', error);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, formData.currency]);
+
+  // Today's BTC price in the selected currency, rounded to cents (null until the rate is known)
+  const currentPriceInCurrency =
+    currentBtcPrice && usdRate && usdRate.currency === formData.currency
+      ? Math.round(currentBtcPrice * usdRate.rate * 100) / 100
+      : null;
+
   // Use current BTC price
   const useCurrentPrice = () => {
-    if (currentBtcPrice) {
-      setFormData(prev => ({ ...prev, price_per_btc: currentBtcPrice.toFixed(2) }));
+    if (currentPriceInCurrency) {
+      setFormData(prev => ({ ...prev, price_per_btc: currentPriceInCurrency.toFixed(2) }));
     }
   };
 
@@ -374,149 +428,121 @@ export default function AddTransactionModal({
         onSuccess?.();
         onClose();
       } else {
-        alert(`Error: ${result.error || result.message}`);
+        toast({ title: 'Error saving transaction', description: result.error || result.message, variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving transaction:', error);
-      alert('Failed to save transaction. Please try again.');
+      toast({ title: 'Failed to save transaction', description: 'Please try again.', variant: 'destructive' });
     }
   };
+
 
   const totals = calculateTotal();
   const sats = btcToSats(formData.btc_amount);
-  const currencyInfo = getCurrencyInfo(formData.currency);
+  const isInternalTransfer = formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL';
 
-  // Get icon and color for transaction type
-  const getTransactionTypeConfig = (type: 'BUY' | 'SELL' | 'TRANSFER') => {
-    switch (type) {
-      case 'BUY':
-        return { icon: ArrowDownIcon, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-200 dark:border-green-800' };
-      case 'SELL':
-        return { icon: ArrowUpIcon, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20', borderColor: 'border-red-200 dark:border-red-800' };
-      case 'TRANSFER':
-        return { icon: ArrowLeftRightIcon, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-200 dark:border-blue-800' };
-    }
+  const selectType = (type: 'BUY' | 'SELL' | 'TRANSFER') => {
+    const defaultHotWallet = wallets.find(w => w.type === 'hot');
+    setFormData(prev => ({
+      ...prev,
+      type,
+      fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency,
+      from_wallet_id: type === 'SELL' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.from_wallet_id : null),
+      to_wallet_id: type === 'BUY' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.to_wallet_id : null),
+    }));
   };
+
+  // Buttons without a type default to "submit" inside a form: SegmentedControl's
+  // options would submit (and trigger validation) on click, and pressing Enter
+  // in an input would "click" the first option. Make every untyped button plain.
+  const formRef = useRef<HTMLFormElement>(null);
+  useLayoutEffect(() => {
+    formRef.current?.querySelectorAll('button:not([type])').forEach((button) => {
+      (button as HTMLButtonElement).type = 'button';
+    });
+  });
+
+  const walletItems = (disabledId?: number | null) =>
+    wallets.map(w => (
+      <SelectItem key={w.id} value={w.id.toString()} disabled={disabledId != null && w.id === disabledId}>
+        <WalletLabel type={w.type} name={w.name} />
+      </SelectItem>
+    ));
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2">
-            <CoinsIcon className="size-5 text-btc-500" />
-            {editingTransaction ? 'Edit Transaction' : 'Add Transaction'}
+          <DialogTitle className="text-[17px] font-bold tracking-tight">
+            {editingTransaction ? 'Edit transaction' : 'Add transaction'}
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
-          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
-          {/* Transaction Type - Compact horizontal */}
-          <div className="flex items-center gap-2">
-              {(['BUY', 'SELL', 'TRANSFER'] as const).map((type) => {
-                const config = getTransactionTypeConfig(type);
-                const Icon = config.icon;
-                const isSelected = formData.type === type;
-                return (
-                  <Button
-                    key={type}
-                    type="button"
-                    variant={isSelected ? "default" : "outline"}
-                  size="sm"
-                    onClick={() => {
-                      const defaultHotWallet = wallets.find(w => w.type === 'hot');
-                      setFormData(prev => ({
-                        ...prev,
-                        type,
-                        fees_currency: type === 'TRANSFER' ? 'BTC' : prev.fees_currency,
-                        from_wallet_id: type === 'SELL' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.from_wallet_id : null),
-                        to_wallet_id: type === 'BUY' && defaultHotWallet ? defaultHotWallet.id : (type === 'TRANSFER' ? prev.to_wallet_id : null),
-                      }));
-                    }}
-                    className={cn(
-                    "gap-1.5",
-                      isSelected && type === 'BUY' && "bg-green-500 hover:bg-green-600",
-                      isSelected && type === 'SELL' && "bg-red-500 hover:bg-red-600",
-                      isSelected && type === 'TRANSFER' && "bg-blue-500 hover:bg-blue-600"
-                    )}
-                  >
-                  <Icon className={cn("size-4", isSelected ? "text-white" : config.color)} />
-                  <span className="font-medium">{type}</span>
-                  </Button>
-                );
-              })}
-          </div>
+        <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+          <div className="space-y-4 overflow-y-auto flex-1 px-1 pb-1">
+          {/* Transaction type */}
+          <SegmentedControl
+            aria-label="Transaction type"
+            options={[
+              { label: 'Buy', value: 'BUY' },
+              { label: 'Sell', value: 'SELL' },
+              { label: 'Transfer', value: 'TRANSFER' },
+            ]}
+            value={formData.type}
+            onChange={selectType}
+          />
 
-          {/* BTC Amount */}
+          {/* BTC amount */}
           <div className="space-y-1.5">
-            <Label htmlFor="btc_amount">BTC Amount</Label>
+            <Label htmlFor="btc_amount">BTC amount</Label>
             <Input
               id="btc_amount"
               type="number"
+              inputMode="decimal"
               step="0.00000001"
               value={formData.btc_amount}
               onChange={(e) => setFormData(prev => ({ ...prev, btc_amount: e.target.value }))}
               placeholder="0.00000000"
-              className="font-mono"
+              className="tabular-nums"
               required
             />
             {formData.btc_amount && parseFloat(formData.btc_amount) > 0 && (
-              <p className="text-xs text-muted-foreground font-mono">
-                = {sats.toLocaleString()} sats
+              <p className="text-[13px] text-muted-foreground tabular-nums">
+                {sats.toLocaleString()} sats
               </p>
             )}
           </div>
 
-          {/* Transfer Type (only for TRANSFER) - Compact */}
+          {/* Transfer type (only for TRANSFER) */}
           {formData.type === 'TRANSFER' && (
             <div className="space-y-3">
-              {/* Internal vs External */}
               <div className="space-y-1.5">
-                <Label>Transfer Type</Label>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={formData.transfer_category === 'INTERNAL' ? "default" : "outline"}
+                <Label>Transfer type</Label>
+                <div>
+                  <SegmentedControl
+                    aria-label="Transfer type"
                     size="sm"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      transfer_category: 'INTERNAL',
-                      transfer_type: 'TO_COLD_WALLET'
+                    options={[
+                      { label: 'Between my wallets', value: 'INTERNAL' },
+                      { label: 'In or out of my stack', value: 'EXTERNAL' },
+                    ]}
+                    value={formData.transfer_category || 'INTERNAL'}
+                    onChange={(category) => setFormData(prev => ({
+                      ...prev,
+                      transfer_category: category,
+                      transfer_type: category === 'INTERNAL' ? 'TO_COLD_WALLET' : 'TRANSFER_IN',
                     }))}
-                    className={cn(
-                      "gap-1.5",
-                      formData.transfer_category === 'INTERNAL' && "bg-blue-500 hover:bg-blue-600"
-                    )}
-                  >
-                    <RefreshCwIcon className="size-4" />
-                    Internal
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={formData.transfer_category === 'EXTERNAL' ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ 
-                      ...prev, 
-                      transfer_category: 'EXTERNAL',
-                      transfer_type: 'TRANSFER_IN'
-                    }))}
-                    className={cn(
-                      "gap-1.5",
-                      formData.transfer_category === 'EXTERNAL' && "bg-purple-500 hover:bg-purple-600"
-                    )}
-                  >
-                    <ArrowLeftRightIcon className="size-4" />
-                    External
-                  </Button>
+                  />
                 </div>
               </div>
 
-              {/* Wallet Selectors */}
+              {/* Wallet selectors */}
               {wallets.length > 0 ? (
                 <div className="space-y-3">
                   {formData.transfer_category === 'INTERNAL' ? (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
-                        <Label>From Wallet</Label>
+                        <Label>From wallet</Label>
                         <Select
                           value={formData.from_wallet_id?.toString() || ''}
                           onValueChange={v => {
@@ -530,20 +556,14 @@ export default function AddTransactionModal({
                             setFormData(prev => ({ ...prev, from_wallet_id: fromId, transfer_type: ttype }));
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select source" />
                           </SelectTrigger>
-                          <SelectContent>
-                            {wallets.map(w => (
-                              <SelectItem key={w.id} value={w.id.toString()} disabled={w.id === formData.to_wallet_id}>
-                                {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
+                          <SelectContent>{walletItems(formData.to_wallet_id)}</SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1.5">
-                        <Label>To Wallet</Label>
+                        <Label>To wallet</Label>
                         <Select
                           value={formData.to_wallet_id?.toString() || ''}
                           onValueChange={v => {
@@ -556,80 +576,54 @@ export default function AddTransactionModal({
                             setFormData(prev => ({ ...prev, to_wallet_id: toId, transfer_type: ttype }));
                           }}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select destination" />
                           </SelectTrigger>
-                          <SelectContent>
-                            {wallets.map(w => (
-                              <SelectItem key={w.id} value={w.id.toString()} disabled={w.id === formData.from_wallet_id}>
-                                {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
+                          <SelectContent>{walletItems(formData.from_wallet_id)}</SelectContent>
                         </Select>
                       </div>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN', from_wallet_id: null }))}
-                          className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600")}
-                        >
-                          <ArrowDownIcon className="size-4" />
-                          Transfer In
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT', to_wallet_id: null }))}
-                          className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600")}
-                        >
-                          <ArrowUpIcon className="size-4" />
-                          Transfer Out
-                        </Button>
-                      </div>
+                      <SegmentedControl
+                        aria-label="Direction"
+                        size="sm"
+                        options={[
+                          { label: 'Transfer in', value: 'TRANSFER_IN' },
+                          { label: 'Transfer out', value: 'TRANSFER_OUT' },
+                        ]}
+                        value={formData.transfer_type === 'TRANSFER_OUT' ? 'TRANSFER_OUT' : 'TRANSFER_IN'}
+                        onChange={(direction) => setFormData(prev => (
+                          direction === 'TRANSFER_IN'
+                            ? { ...prev, transfer_type: 'TRANSFER_IN', from_wallet_id: null }
+                            : { ...prev, transfer_type: 'TRANSFER_OUT', to_wallet_id: null }
+                        ))}
+                      />
                       {formData.transfer_type === 'TRANSFER_IN' && (
                         <div className="space-y-1.5">
-                          <Label>To Wallet</Label>
+                          <Label>To wallet</Label>
                           <Select
                             value={formData.to_wallet_id?.toString() || ''}
                             onValueChange={v => setFormData(prev => ({ ...prev, to_wallet_id: v ? parseInt(v) : null }))}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select destination wallet" />
                             </SelectTrigger>
-                            <SelectContent>
-                              {wallets.map(w => (
-                                <SelectItem key={w.id} value={w.id.toString()}>
-                                  {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                            <SelectContent>{walletItems()}</SelectContent>
                           </Select>
                         </div>
                       )}
                       {formData.transfer_type === 'TRANSFER_OUT' && (
                         <div className="space-y-1.5">
-                          <Label>From Wallet</Label>
+                          <Label>From wallet</Label>
                           <Select
                             value={formData.from_wallet_id?.toString() || ''}
                             onValueChange={v => setFormData(prev => ({ ...prev, from_wallet_id: v ? parseInt(v) : null }))}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="w-full">
                               <SelectValue placeholder="Select source wallet" />
                             </SelectTrigger>
-                            <SelectContent>
-                              {wallets.map(w => (
-                                <SelectItem key={w.id} value={w.id.toString()}>
-                                  {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                            <SelectContent>{walletItems()}</SelectContent>
                           </Select>
                         </div>
                       )}
@@ -637,143 +631,117 @@ export default function AddTransactionModal({
                   )}
                 </div>
               ) : (
-                // Fallback for users with no wallets yet: old direction buttons
+                // Fallback for users with no wallets yet: direction choice
                 <div className="space-y-1.5">
                   <Label>Direction</Label>
-                  {formData.transfer_category === 'INTERNAL' ? (
-                    <div className="flex gap-2">
-                      {[
-                        { type: 'TO_COLD_WALLET', icon: ArrowDownToLineIcon, label: 'To Cold' },
-                        { type: 'FROM_COLD_WALLET', icon: ArrowUpFromLineIcon, label: 'From Cold' },
-                        { type: 'BETWEEN_WALLETS', icon: RefreshCwIcon, label: 'Between' },
-                      ].map(({ type, icon: Icon, label }) => (
-                        <Button
-                          key={type}
-                          type="button"
-                          variant={formData.transfer_type === type ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setFormData(prev => ({ ...prev, transfer_type: type as any }))}
-                          className={cn("gap-1.5 flex-1", formData.transfer_type === type && "bg-blue-500 hover:bg-blue-600")}
-                        >
-                          <Icon className="size-4" />
-                          {label}
-                        </Button>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant={formData.transfer_type === 'TRANSFER_IN' ? "default" : "outline"}
+                  <div>
+                    {formData.transfer_category === 'INTERNAL' ? (
+                      <SegmentedControl
+                        aria-label="Direction"
                         size="sm"
-                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_IN' }))}
-                        className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_IN' && "bg-green-500 hover:bg-green-600")}
-                      >
-                        <ArrowDownIcon className="size-4" />
-                        Transfer In
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={formData.transfer_type === 'TRANSFER_OUT' ? "default" : "outline"}
+                        options={[
+                          { label: 'To cold storage', value: 'TO_COLD_WALLET' },
+                          { label: 'From cold storage', value: 'FROM_COLD_WALLET' },
+                          { label: 'Between wallets', value: 'BETWEEN_WALLETS' },
+                        ]}
+                        value={
+                          formData.transfer_type === 'FROM_COLD_WALLET' || formData.transfer_type === 'BETWEEN_WALLETS'
+                            ? formData.transfer_type
+                            : 'TO_COLD_WALLET'
+                        }
+                        onChange={(direction) => setFormData(prev => ({ ...prev, transfer_type: direction }))}
+                      />
+                    ) : (
+                      <SegmentedControl
+                        aria-label="Direction"
                         size="sm"
-                        onClick={() => setFormData(prev => ({ ...prev, transfer_type: 'TRANSFER_OUT' }))}
-                        className={cn("gap-1.5 flex-1", formData.transfer_type === 'TRANSFER_OUT' && "bg-red-500 hover:bg-red-600")}
-                      >
-                        <ArrowUpIcon className="size-4" />
-                        Transfer Out
-                      </Button>
-                    </div>
-                  )}
+                        options={[
+                          { label: 'Transfer in', value: 'TRANSFER_IN' },
+                          { label: 'Transfer out', value: 'TRANSFER_OUT' },
+                        ]}
+                        value={formData.transfer_type === 'TRANSFER_OUT' ? 'TRANSFER_OUT' : 'TRANSFER_IN'}
+                        onChange={(direction) => setFormData(prev => ({ ...prev, transfer_type: direction }))}
+                      />
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* Price/Amount Input (hidden for internal transfers) */}
-          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
+          {/* Price / amount input (hidden for internal transfers) */}
+          {!isInternalTransfer && (
             <div className="space-y-3">
-              {/* Input Mode Toggle (only for BUY/SELL) */}
+              {/* Input mode toggle (only for BUY/SELL) */}
               {formData.type !== 'TRANSFER' && (
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm text-muted-foreground">I know the:</Label>
-                  <div className="flex rounded-md border bg-muted/30 p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setInputMode('price')}
-                      className={cn(
-                        "px-3 py-1 text-xs font-medium rounded transition-all",
-                        inputMode === 'price' 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      BTC Price
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInputMode('fiat')}
-                      className={cn(
-                        "px-3 py-1 text-xs font-medium rounded transition-all",
-                        inputMode === 'fiat' 
-                          ? "bg-background shadow-sm text-foreground" 
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      Total Spent
-                    </button>
-              </div>
-            </div>
-          )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[13px] text-muted-foreground">I know the</span>
+                  <SegmentedControl<InputMode>
+                    aria-label="Enter price or total"
+                    size="sm"
+                    options={[
+                      { label: 'Price per BTC', value: 'price' },
+                      { label: formData.type === 'SELL' ? 'Total received' : 'Total spent', value: 'fiat' },
+                    ]}
+                    value={inputMode}
+                    onChange={setInputMode}
+                  />
+                </div>
+              )}
 
-              {/* Price per BTC Input (price mode or external transfers) */}
+              {/* Price per BTC input (price mode or external transfers) */}
               {(inputMode === 'price' || formData.type === 'TRANSFER') && (
                 <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <Label htmlFor="price_per_btc">
-                      {formData.transfer_category === 'EXTERNAL' ? 'Reference Price' : 'Price per BTC'}
-                </Label>
-                    {currentBtcPrice && formData.type !== 'TRANSFER' && (
+                      {formData.type === 'TRANSFER' ? 'Reference price' : 'Price per BTC'}
+                    </Label>
+                    {currentPriceInCurrency !== null && (
                       <button
-                    type="button"
-                    onClick={useCurrentPrice}
-                        className="text-xs text-btc-500 hover:text-btc-600 hover:underline"
-                  >
-                        Use ${currentBtcPrice.toLocaleString()}
+                        type="button"
+                        onClick={useCurrentPrice}
+                        className="rounded-full text-[13px] font-semibold text-primary-strong tabular-nums hover:underline"
+                      >
+                        Use {formatCurrency(currentPriceInCurrency, formData.currency)}
                       </button>
-                )}
-              </div>
-              <Input
-                id="price_per_btc"
-                type="number"
-                step="0.01"
-                value={formData.price_per_btc}
-                onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
-                placeholder="105000.00"
-                    className="font-mono"
+                    )}
+                  </div>
+                  <Input
+                    id="price_per_btc"
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    value={formData.price_per_btc}
+                    onChange={(e) => setFormData(prev => ({ ...prev, price_per_btc: e.target.value }))}
+                    placeholder="105000.00"
+                    className="tabular-nums"
                     required={formData.type !== 'TRANSFER' && inputMode === 'price'}
-              />
+                  />
                 </div>
               )}
 
-              {/* Total Fiat Amount Input (fiat mode) */}
+              {/* Total fiat amount input (fiat mode) */}
               {inputMode === 'fiat' && formData.type !== 'TRANSFER' && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="total_fiat_amount">Total Amount Spent</Label>
+                  <Label htmlFor="total_fiat_amount">{formData.type === 'SELL' ? 'Total received' : 'Total spent'}</Label>
                   <Input
                     id="total_fiat_amount"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={formData.total_fiat_amount}
                     onChange={(e) => setFormData(prev => ({ ...prev, total_fiat_amount: e.target.value }))}
                     placeholder="300.00"
-                    className="font-mono"
+                    className="tabular-nums"
                     required={inputMode === 'fiat'}
                   />
                   {parseFloat(formData.btc_amount) > 0 && parseFloat(formData.total_fiat_amount) > 0 && (
-                    <p className="text-xs text-muted-foreground">
-                      ≈ <span className="font-mono font-medium text-foreground">
-                        {currencyInfo.symbol}{(parseFloat(formData.total_fiat_amount) / parseFloat(formData.btc_amount)).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                      </span> per BTC
+                    <p className="text-[13px] text-muted-foreground">
+                      That&apos;s{' '}
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {formatCurrency(parseFloat(formData.total_fiat_amount) / parseFloat(formData.btc_amount), formData.currency)}
+                      </span>{' '}
+                      per BTC
                     </p>
                   )}
                 </div>
@@ -781,42 +749,40 @@ export default function AddTransactionModal({
             </div>
           )}
 
-          {/* Two-column: Currency + Date */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Currency (hidden for internal transfers) */}
-          {(formData.type !== 'TRANSFER' || formData.transfer_category === 'EXTERNAL') && (
+          {/* Currency + date */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {!isInternalTransfer && (
               <div className="space-y-1.5">
                 <Label htmlFor="currency">Currency</Label>
-              <CurrencySelector
-                id="currency"
-                value={formData.currency}
-                currencies={allAvailableCurrencies}
-                onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
+                <CurrencySelector
+                  id="currency"
+                  value={formData.currency}
+                  currencies={allAvailableCurrencies}
+                  onChange={(value) => setFormData(prev => ({ ...prev, currency: value }))}
                   placeholder="Select..."
                   searchPlaceholder="Search..."
+                />
+              </div>
+            )}
+
+            <div className={cn('space-y-1.5', isInternalTransfer && 'sm:col-span-2')}>
+              <Label htmlFor="transaction_date">Date</Label>
+              <DatePicker
+                id="transaction_date"
+                value={formData.transaction_date ? parseDateLocal(formData.transaction_date) : undefined}
+                onChange={(date) => setFormData(prev => ({
+                  ...prev,
+                  transaction_date: date ? formatDateLocal(date) : formatDateLocal(new Date())
+                }))}
+                placeholder="Select date"
               />
             </div>
-          )}
-
-          {/* Transaction Date */}
-            <div className={cn("space-y-1.5", formData.type === 'TRANSFER' && formData.transfer_category === 'INTERNAL' && "col-span-2")}>
-              <Label htmlFor="transaction_date">Date</Label>
-            <DatePicker
-              id="transaction_date"
-              value={formData.transaction_date ? parseDateLocal(formData.transaction_date) : undefined}
-              onChange={(date) => setFormData(prev => ({ 
-                ...prev, 
-                transaction_date: date ? formatDateLocal(date) : formatDateLocal(new Date())
-              }))}
-              placeholder="Select date"
-            />
-          </div>
           </div>
 
-          {/* Wallet Selector for BUY/SELL */}
+          {/* Wallet selector for BUY/SELL */}
           {formData.type !== 'TRANSFER' && wallets.length > 0 && (
             <div className="space-y-1.5">
-              <Label>{formData.type === 'BUY' ? 'To Wallet' : 'From Wallet'}</Label>
+              <Label>{formData.type === 'BUY' ? 'To wallet' : 'From wallet'}</Label>
               <Select
                 value={
                   formData.type === 'BUY'
@@ -832,38 +798,34 @@ export default function AddTransactionModal({
                   }
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder={formData.type === 'BUY' ? 'Select destination wallet' : 'Select source wallet'} />
                 </SelectTrigger>
-                <SelectContent>
-                  {wallets.map(w => (
-                    <SelectItem key={w.id} value={w.id.toString()}>
-                      {w.emoji || (w.type === 'cold' ? '❄️' : '🔥')} {w.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectContent>{walletItems()}</SelectContent>
               </Select>
             </div>
           )}
 
-          {/* Cost Summary - Compact inline */}
+          {/* Cost summary */}
           {formData.type !== 'TRANSFER' && totals.subtotal > 0 && (
-            <div className="flex items-center justify-between py-2 px-3 rounded-md bg-muted/50 border">
-              <span className="text-sm text-muted-foreground">Total</span>
-              <span className="font-mono font-bold text-btc-600 dark:text-btc-400">
-                {currencyInfo.symbol}{totals.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <div className="flex items-center justify-between rounded-2xl bg-secondary px-4 py-3">
+              <span className="text-[13px] font-semibold text-muted-foreground">
+                {totals.fees > 0 ? 'Total with fees' : 'Total'}
+              </span>
+              <span className="text-[15px] font-bold tabular-nums">
+                {formatCurrency(totals.total, formData.currency)}
               </span>
             </div>
           )}
 
-          {/* Fees Toggle (for BUY/SELL) */}
+          {/* Fees toggle (for BUY/SELL) */}
           {formData.type !== 'TRANSFER' && (
             <>
               {!showFees ? (
                 <button
                   type="button"
                   onClick={() => setShowFees(true)}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center gap-1.5 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   <PlusIcon className="size-4" />
                   Add fees
@@ -875,116 +837,148 @@ export default function AddTransactionModal({
                     <button
                       type="button"
                       onClick={() => { setShowFees(false); setFormData(prev => ({ ...prev, fees: '0' })); }}
-                      className="text-xs text-muted-foreground hover:text-foreground"
+                      className="rounded-full text-[13px] font-semibold text-muted-foreground hover:text-foreground"
                     >
-                      Remove
+                      Remove fees
                     </button>
                   </div>
                   <Input
                     id="fees"
                     type="number"
+                    inputMode="decimal"
                     step="0.01"
                     value={formData.fees}
                     onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
                     placeholder="0.00"
-                    className="font-mono"
+                    className="tabular-nums"
                   />
                 </div>
               )}
             </>
           )}
 
-          {/* Transfer-specific: Network Fees + Destination */}
+          {/* Transfer-specific: network fees */}
           {formData.type === 'TRANSFER' && (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="fees">Network Fees (BTC)</Label>
-                <Input
-                  id="fees"
-                  type="number"
-                  step="0.00000001"
-                  value={formData.fees}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
-                  placeholder="0.00001"
-                  className="font-mono"
-                />
-              </div>
-              {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Arrives: <span className="font-mono font-medium text-foreground">{(parseFloat(formData.btc_amount) - parseFloat(formData.fees)).toFixed(8)} BTC</span>
-                </p>
-              )}
+            <div className="space-y-1.5">
+              <Label htmlFor="fees">Network fee (BTC)</Label>
+              <Input
+                id="fees"
+                type="number"
+                inputMode="decimal"
+                step="0.00000001"
+                value={formData.fees}
+                onChange={(e) => setFormData(prev => ({ ...prev, fees: e.target.value }))}
+                placeholder="0.00001"
+                className="tabular-nums"
+              />
+              {parseFloat(formData.btc_amount || '0') > 0 && parseFloat(formData.fees || '0') > 0 && (() => {
+                const amount = parseFloat(formData.btc_amount);
+                const fee = parseFloat(formData.fees);
+                // Incoming transfers: the sender pays; BTC leaves one of your
+                // wallets otherwise, so ask how the fee was paid (#168)
+                const leavesYourWallet = formData.transfer_type !== 'TRANSFER_IN';
+                const onTop = leavesYourWallet && formData.transfer_fee_mode === 'ON_TOP';
+                return (
+                  <div className="space-y-2 pt-1">
+                    {leavesYourWallet && (
+                      <SegmentedControl<TransferFeeMode>
+                        size="sm"
+                        aria-label="How the network fee was paid"
+                        options={[
+                          { label: 'Paid on top', value: 'ON_TOP' },
+                          { label: 'Taken from amount', value: 'DEDUCTED' },
+                        ]}
+                        value={formData.transfer_fee_mode ?? DEFAULT_TRANSFER_FEE_MODE}
+                        onChange={(mode) => setFormData(prev => ({ ...prev, transfer_fee_mode: mode }))}
+                      />
+                    )}
+                    <p className="text-[13px] text-muted-foreground">
+                      {leavesYourWallet && (
+                        <>
+                          Leaves:{' '}
+                          <span className="font-semibold text-foreground tabular-nums">
+                            {formatBtc(onTop ? amount + fee : amount)}
+                          </span>
+                          {' · '}
+                        </>
+                      )}
+                      Arrives:{' '}
+                      <span className="font-semibold text-foreground tabular-nums">
+                        {formatBtc(onTop ? amount : amount - fee)}
+                      </span>
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
-          {/* More Options Toggle */}
+          {/* More options toggle */}
           <button
             type="button"
+            aria-expanded={showMoreOptions}
             onClick={() => setShowMoreOptions(!showMoreOptions)}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+            className="flex items-center gap-1.5 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ChevronDownIcon className={cn("size-4 transition-transform", showMoreOptions && "rotate-180")} />
-            {showMoreOptions ? 'Hide options' : 'More options'}
+            <ChevronDownIcon className={cn('size-4 transition-transform', showMoreOptions && 'rotate-180')} />
+            {showMoreOptions ? 'Fewer options' : 'More options'}
             {(formData.notes || formData.tags || (formData.type === 'TRANSFER' && formData.destination_address)) && !showMoreOptions && (
-              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">has data</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-xs font-semibold">Filled in</span>
             )}
           </button>
 
-          {/* Collapsible: Notes, Tags, Destination */}
+          {/* Collapsible: notes, tags, destination */}
           {showMoreOptions && (
             <div className="space-y-3 pt-1">
-              {/* Destination Address (only for TRANSFER) */}
               {formData.type === 'TRANSFER' && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="destination_address">Destination Address</Label>
+                  <Label htmlFor="destination_address">Destination address</Label>
                   <Input
                     id="destination_address"
                     type="text"
                     value={formData.destination_address}
                     onChange={(e) => setFormData(prev => ({ ...prev, destination_address: e.target.value }))}
                     placeholder="bc1q... (optional)"
-                    className="font-mono text-sm"
+                    className="text-sm"
                   />
                 </div>
               )}
 
-          {/* Notes */}
               <div className="space-y-1.5">
                 <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Optional notes..."
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Optional"
                   rows={2}
-              className="resize-none"
-            />
-          </div>
+                  className="resize-none"
+                />
+              </div>
 
-          {/* Tags */}
               <div className="space-y-1.5">
                 <Label htmlFor="tags">Tags</Label>
-            <TagsInput
-              id="tags"
-              value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
-              onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
-                  placeholder="Type and press Enter"
-            />
-          </div>
+                <TagsInput
+                  id="tags"
+                  value={formData.tags ? formData.tags.split(',').map(t => t.trim()).filter(Boolean) : []}
+                  onChange={(tags) => setFormData(prev => ({ ...prev, tags: tags.join(', ') }))}
+                  placeholder="Type a tag and press Enter"
+                />
+              </div>
             </div>
           )}
           </div>
 
           <DialogFooter className="mt-4 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" className="rounded-full" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" className="bg-btc-500 hover:bg-btc-600">
-              {editingTransaction ? 'Update' : 'Add Transaction'}
+            <Button type="submit" className="rounded-full font-semibold">
+              {editingTransaction ? 'Save changes' : 'Add transaction'}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
-} 
+}

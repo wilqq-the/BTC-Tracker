@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withAuth } from '@/lib/auth-helpers';
 
 interface HistoricalDataStatusResponse {
   success: boolean;
@@ -20,7 +21,11 @@ interface HistoricalDataStatusResponse {
 }
 
 // GET - Check historical data status
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getHistoricalDataStatus(request));
+}
+
+async function getHistoricalDataStatus(request: NextRequest): Promise<NextResponse> {
   try {
     // Get record count and date range using Prisma aggregation
     const [recordCount, dateRange] = await Promise.all([

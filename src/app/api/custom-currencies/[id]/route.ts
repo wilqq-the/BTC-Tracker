@@ -1,14 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CustomCurrencyService } from '@/lib/custom-currency-service';
+import { withAdminAuth } from '@/lib/auth-helpers';
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * PUT /api/custom-currencies/[id]
- * Update a custom currency
+ * Update a custom currency (admin only — custom currencies are server-wide)
  */
-export async function PUT(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, context: RouteContext) {
+  return withAdminAuth(request, () => updateCustomCurrency(request, context));
+}
+
+async function updateCustomCurrency(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
     const id = parseInt(params.id);
@@ -60,13 +64,14 @@ export async function PUT(
 
 /**
  * DELETE /api/custom-currencies/[id]
- * Delete (deactivate) a custom currency
+ * Delete (deactivate) a custom currency (admin only)
  * Query parameter: ?permanent=true for hard delete
  */
-export async function DELETE(
-  request: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  return withAdminAuth(request, () => deleteCustomCurrency(request, context));
+}
+
+async function deleteCustomCurrency(request: NextRequest, context: RouteContext) {
   try {
     const params = await context.params;
     const id = parseInt(params.id);

@@ -12,9 +12,16 @@ on:
         required: true
         default: 'v1.0.0'
 
+env:
+  IMAGE: thewilqq/btc-tracker
+
 jobs:
-  deploy-docker:
+  test:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha_short: ${{ steps.version.outputs.sha_short }}
+      date: ${{ steps.version.outputs.date }}
 
     steps:
     - name: Checkout code
@@ -49,9 +56,6 @@ jobs:
         NEXTAUTH_URL: "http://localhost:3000"
         NODE_ENV: production
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
     - name: Extract version info
       id: version
       run: |
@@ -65,46 +69,121 @@ jobs:
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
 
+  # Each platform builds on its own native runner. arm64 used to be built
+  # under QEMU emulation, where `prisma generate` could hang indefinitely.
+  build:
+    needs: test
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Build and push Docker image (release)
+    - name: Platform name
+      id: platform
+      run: |
+        platform=${{ matrix.platform }}
+        echo "pair=${platform//\//-}" >> $GITHUB_OUTPUT
+
+    - name: Build and push by digest (${{ matrix.platform }})
+      id: build
       uses: docker/build-push-action@v5
       with:
         context: .
-        push: true
         no-cache: true
         provenance: false
         sbom: false
-        platforms: linux/amd64,linux/arm64
-        tags: |
-          thewilqq/btc-tracker:latest
-          thewilqq/btc-tracker:${{ steps.version.outputs.version }}
-          thewilqq/btc-tracker:stable
+        platforms: ${{ matrix.platform }}
+        outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
         labels: |
           org.opencontainers.image.title=BTC Tracker
           org.opencontainers.image.description=Self-hosted Bitcoin portfolio tracker
-          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.version=${{ needs.test.outputs.version }}
           org.opencontainers.image.revision=${{ github.sha }}
-          org.opencontainers.image.created=${{ steps.version.outputs.date }}
+          org.opencontainers.image.created=${{ needs.test.outputs.date }}
           org.opencontainers.image.source=https://github.com/${{ github.repository }}
           org.opencontainers.image.url=https://hub.docker.com/r/thewilqq/btc-tracker
         build-args: |
-          VERSION=${{ steps.version.outputs.version }}
-          BUILD_DATE=${{ steps.version.outputs.date }}
-          COMMIT_SHA=${{ steps.version.outputs.sha_short }}
+          VERSION=${{ needs.test.outputs.version }}
+          BUILD_DATE=${{ needs.test.outputs.date }}
+          COMMIT_SHA=${{ needs.test.outputs.sha_short }}
+
+    - name: Export digest
+      run: |
+        mkdir -p ${{ runner.temp }}/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      uses: actions/upload-artifact@v4
+      with:
+        name: digests-release-${{ steps.platform.outputs.pair }}
+        path: ${{ runner.temp }}/digests/*
+        if-no-files-found: error
+        retention-days: 1
+
+  # Stitch the per-platform images into one multi-arch image and tag it
+  merge:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Download digests
+      uses: actions/download-artifact@v4
+      with:
+        path: ${{ runner.temp }}/digests
+        pattern: digests-release-*
+        merge-multiple: true
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Create and push multi-arch manifest
+      working-directory: ${{ runner.temp }}/digests
+      run: |
+        docker buildx imagetools create \
+          -t ${{ env.IMAGE }}:latest \
+          -t ${{ env.IMAGE }}:${{ needs.test.outputs.version }} \
+          -t ${{ env.IMAGE }}:stable \
+          $(printf '${{ env.IMAGE }}@sha256:%s ' *)
+
+    - name: Inspect image
+      run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ needs.test.outputs.version }}
 
     - name: Create deployment summary
       run: |
         echo "## Release Deployment Summary" >> $GITHUB_STEP_SUMMARY
-        echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Docker Tags**: latest, stable, ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "- **Platforms**: linux/amd64, linux/arm64" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ needs.test.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Docker Tags**: latest, stable, ${{ needs.test.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Platforms**: linux/amd64, linux/arm64 (native runners)" >> $GITHUB_STEP_SUMMARY
         echo "- **Registry**: https://hub.docker.com/r/thewilqq/btc-tracker" >> $GITHUB_STEP_SUMMARY
-        echo "- **Commit**: ${{ steps.version.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ needs.test.outputs.sha_short }}" >> $GITHUB_STEP_SUMMARY
+
+    - name: Checkout code (for the Docker Hub description)
+      uses: actions/checkout@v4
 
     - name: Update Docker Hub description
       uses: peter-evans/dockerhub-description@v3

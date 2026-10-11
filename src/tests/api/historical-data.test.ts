@@ -1,3 +1,7 @@
+// Route behaviour is tested as an authenticated admin; auth itself is covered in security-auth.test.ts
+jest.mock('@/lib/auth-helpers', () => require('../mock-auth-helpers').adminAuthMock())
+import { authedRequest } from '../mock-auth-helpers'
+
 import { NextRequest } from 'next/server';
 import { GET as getHistoricalData } from '@/app/api/historical-data/route';
 import { GET as getHistoricalDataStatus } from '@/app/api/historical-data/status/route';
@@ -281,7 +285,7 @@ describe('Historical Data API', () => {
     it('should return latest price status when data exists', async () => {
       mockHistoricalDataService.getLatestHistoricalPrice.mockResolvedValue(44000);
 
-      const response = await getUpdateStatus();
+      const response = await getUpdateStatus(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -294,7 +298,7 @@ describe('Historical Data API', () => {
     it('should return status when no data exists', async () => {
       mockHistoricalDataService.getLatestHistoricalPrice.mockResolvedValue(null);
 
-      const response = await getUpdateStatus();
+      const response = await getUpdateStatus(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -306,7 +310,7 @@ describe('Historical Data API', () => {
     it('should handle service errors gracefully', async () => {
       mockHistoricalDataService.getLatestHistoricalPrice.mockRejectedValue(new Error('Service error'));
 
-      const response = await getUpdateStatus();
+      const response = await getUpdateStatus(authedRequest());
       const data = await response.json();
 
       expect(response.status).toBe(500);

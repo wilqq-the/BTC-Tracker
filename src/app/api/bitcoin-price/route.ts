@@ -1,26 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BitcoinPriceService } from '@/lib/bitcoin-price-service';
-import { withAuth } from '@/lib/auth-helpers';
+import { withAuth, withAdminAuth } from '@/lib/auth-helpers';
 
-// GET current Bitcoin price or portfolio summary
+// GET current Bitcoin price (any authenticated user)
 export async function GET(request: NextRequest) {
-  return withAuth(request, async (userId) => {
+  return withAuth(request, async () => {
     try {
-      const { searchParams } = new URL(request.url);
-      const endpoint = searchParams.get('endpoint');
-
-      // Handle portfolio summary request
-      if (endpoint === 'portfolio') {
-        const portfolioSummary = await BitcoinPriceService.getPortfolioSummary(userId);
-
-        return NextResponse.json({
-          success: true,
-          data: portfolioSummary,
-          timestamp: new Date().toISOString()
-        });
-      }
-
-      // Default: return current Bitcoin price
       const priceData = await BitcoinPriceService.getCurrentPrice();
 
       return NextResponse.json({
@@ -46,9 +31,10 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// POST trigger manual price and portfolio update
+// POST trigger manual price refresh and portfolio recalculation (admin only:
+// it clears the server-wide price cache and recomputes every user's summary)
 export async function POST(request: NextRequest) {
-  return withAuth(request, async (userId) => {
+  return withAdminAuth(request, async () => {
     try {
       BitcoinPriceService.clearCache();
       const priceData = await BitcoinPriceService.getCurrentPrice();
@@ -62,10 +48,11 @@ export async function POST(request: NextRequest) {
         }, { status: 500 });
       }
 
-      // Try to recalculate portfolio summary, but don't fail if it errors
+      // Recalculate every user's portfolio summary (they are per-user rows and
+      // the price just changed for all of them), but don't fail if it errors
       let portfolioUpdateMessage = 'and portfolio updated';
       try {
-        await BitcoinPriceService.calculateAndStorePortfolioSummary(userId, priceData.price);
+        await BitcoinPriceService.calculateAndStorePortfolioSummaryForAllUsers(priceData.price);
       } catch (portfolioError) {
         console.error('Error updating portfolio after price refresh:', portfolioError);
         portfolioUpdateMessage = 'but portfolio update failed';

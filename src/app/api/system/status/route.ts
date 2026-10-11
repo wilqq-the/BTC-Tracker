@@ -3,6 +3,7 @@ import { AppInitializationService } from '@/lib/app-initialization';
 import { PriceScheduler } from '@/lib/price-scheduler';
 import { DCAScheduler } from '@/lib/dca-scheduler';
 import { prisma } from '@/lib/prisma';
+import { withAuth } from '@/lib/auth-helpers';
 
 export interface SubsystemStatus {
   name: string;
@@ -60,7 +61,11 @@ export interface SystemStatusResponse {
   error?: string;
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse<SystemStatusResponse>> {
+export async function GET(request: NextRequest) {
+  return withAuth(request, () => getSystemStatus());
+}
+
+async function getSystemStatus(): Promise<NextResponse<SystemStatusResponse>> {
   try {
     // Ensure app is initialized (this will be a no-op if already initialized)
     await AppInitializationService.initialize();
