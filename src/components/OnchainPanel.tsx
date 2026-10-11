@@ -43,6 +43,10 @@ import {
 
 const NO_WALLET = 'none';
 
+// How often the panel re-reads what the background scheduler has synced. The
+// call is local and cheap; it never reaches the Esplora endpoint.
+const REFRESH_INTERVAL_MS = 30 * 1000;
+
 interface WatchedAddress {
   id: number;
   walletId: number | null;
@@ -160,6 +164,50 @@ export function OnchainPanel() {
   useEffect(() => {
     loadAll();
   }, [loadAll]);
+
+  // The scheduler syncs server-side, so without this the panel would keep showing
+  // the snapshot from when it was opened. Only addresses and status are re-read:
+  // reloading settings would overwrite a config field the user is editing.
+  const refreshSyncedData = useCallback(async () => {
+    try {
+      const [watchedRes, statusRes] = await Promise.all([
+        fetch('/api/onchain/addresses'),
+        fetch('/api/onchain/status'),
+      ]);
+      if (watchedRes.ok) {
+        const body = await watchedRes.json();
+        if (body.success) setWatched(body.data || []);
+      }
+      if (statusRes.ok) {
+        const body = await statusRes.json();
+        // Keep the last connection probe, the plain status call does not return one.
+        if (body.success) setStatus((prev) => ({ ...body.data, connection: prev?.connection }));
+      }
+    } catch (error) {
+      // Background refresh: stay silent, the next tick will retry.
+      console.error('Error refreshing on-chain data:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void refreshSyncedData();
+      }
+    }, REFRESH_INTERVAL_MS);
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshSyncedData();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [refreshSyncedData]);
 
   const saveConfig = async (patch: Partial<OnchainConfig>) => {
     if (!config) return;
