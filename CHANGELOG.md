@@ -5,6 +5,29 @@ All notable changes to the BTC Tracker project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - this fork, on top of 0.8.0
+
+### ✨ New Features
+- **On-chain tracking (opt-in, read-only)** — watch an address or an xpub/ypub/zpub through an Esplora endpoint (your own Electrs, or mempool.space). Receives and sends are imported automatically on a schedule, unconfirmed ones are marked pending and replaced ones flagged. No private key is ever requested, stored or accepted; xpubs are encrypted at rest and never returned by the API
+- **Self-hosted mempool backends** — instances without the paged `/txs/chain` routes are read through `/address/:addr/txs?after_txid=` instead of looking empty
+- **Total invested includes on-chain receives**, valued at the closing price of the block's day (older days are backfilled from Yahoo on demand)
+- **Include / Exclude in DCA** — turn an on-chain receive that was really a purchase into a buy for the DCA analysis, one at a time or from the selection bar, and undo it
+- **DCA analysis** — purchase timing (best and worst entry), consistency (longest gap, missed months) and a month-by-month accumulation view
+
+### 🔒 Security
+- **On-chain settings are admin-only** — the endpoint receives every user's watched addresses, so a regular account can no longer point it at a server of its choosing
+- On-chain and DCA routes are covered by the API authentication tests
+
+### 🔧 Improvements
+- Changing the on-chain settings (turning it on, the interval) applies immediately, without a restart
+- The on-chain panel refreshes itself while the scheduler syncs in the background
+- On-chain sends use the "fee paid on top" transfer mode; existing sends are migrated so no balance changes
+
+### 🐛 Bug Fixes
+- **Portfolio summary per user** — the stored summary was computed from every account's transactions and ignored transfers in and out; it is now calculated per user
+- Monthly breakdown counts an on-chain receive once, as a buy, and never counts a send as a sale
+- The on-chain privacy warning had no colour
+
 ## [0.8.0] - 2026-10-09
 
 ### 🔒 Security

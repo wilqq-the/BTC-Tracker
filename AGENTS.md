@@ -10,7 +10,8 @@ Guide pour les agents et les développeurs qui travaillent sur ce dépôt.
 ses transactions (achats, ventes, transferts) et l'application calcule holdings, P&L, performance
 DCA et projections.
 
-- **Version** : 0.7.0 (`VERSION`, `package.json`)
+- **Version** : 0.8.0 (`VERSION`, `package.json`) — v0.8.0 officielle + les ajouts de ce fork
+  (on-chain, portfolio par utilisateur, Total invested on-chain, DCA). Voir §18 pour la fusion.
 - **Licence** : MIT
 - **Base** : Next.js App Router, React 18, TypeScript, Prisma, SQLite
 - **Langue de l'UI** : anglais uniquement. Ne pas introduire de texte en français dans les
@@ -49,7 +50,7 @@ uniquement via une API Esplora.** Cette section remplace l'affirmation précéde
   L'adresses vient de `WatchedAddress`, pas de `Wallet`.
 - `destination_address` reste du texte libre non validé côté import CSV.
 
-### Les trois règles à ne pas casser
+### Les quatre règles à ne pas casser
 
 1. **Confidentialité de l'endpoint.** `onchain.enabled` vaut `false` par défaut. Activé, chaque
    adresse suivie est demandée à l'endpoint configuré. Le défaut est `https://mempool.space/api`,
@@ -65,6 +66,12 @@ uniquement via une API Esplora.** Cette section remplace l'affirmation précéde
    reconnu que si les deux côtés sont connus : agréger adresse par adresse importerait le montant
    entier en `TRANSFER_OUT`, et l'index unique `[userId, txid]` figerait cette ligne erronée.
    C'est couvert par `src/tests/onchain/onchain-sync-batch.test.ts`.
+4. **Les réglages `onchain` sont réservés à l'admin.** `AppSettings` est une ligne globale (§9.3) :
+   l'endpoint configuré reçoit les adresses de **tous** les utilisateurs. `onchain` est donc dans
+   `ADMIN_ONLY_CATEGORIES` (`src/app/api/settings/route.ts`) au même titre que `priceData` ; un
+   non-admin reçoit 403 et voit le panneau en lecture seule (`OnchainPanel isAdmin`). Chacun peut
+   toujours suivre et synchroniser **ses** adresses (`/api/onchain/*`, filtré par `userId`).
+   Couvert par `src/tests/api/security-auth.test.ts` (« on-chain settings »).
 
 ### Précision ES5 qui a déjà coûté un bug
 
@@ -108,7 +115,7 @@ Puis ouvrir http://localhost:3000. **Le premier compte créé devient automatiqu
 | `DATABASE_URL` | oui | `file:./prisma/dev.db` | Chemin SQLite (voir §9 pour le piège de résolution) |
 | `NEXTAUTH_URL` | oui | `http://localhost:3000` | URL de callback auth |
 | `NODE_ENV` | non | `development` | — |
-| `ENCRYPTION_KEY` | non | dérivé | Chiffrement des clés API exchange (AES) |
+| `ENCRYPTION_KEY` | non | — | Repli **seulement si `NEXTAUTH_SECRET` est absent** : la clé AES est dérivée (PBKDF2) de `NEXTAUTH_SECRET` en priorité. Elle chiffre les clés API exchange **et les xpub** suivis |
 
 ### Commandes
 
@@ -119,11 +126,12 @@ npm run build            # next build (output: standalone)
 npm start                # migrate.js + next start
 npm run type-check       # tsc --noEmit
 npm run lint             # next lint (déprécié en Next 16)
-npm test                 # test-setup + jest (372 tests)
+npm test                 # test-setup + jest (693 tests)
 npm test:coverage
 npm exec prisma studio   # GUI BDD
 npm run db:reset         # reset + seed
 npm run electron:dev     # app desktop Electron
+npm run demo:seed        # compte de démo (captures du README)
 ```
 
 ---
@@ -136,27 +144,30 @@ src/
 │   ├── page.tsx            # Dashboard
 │   ├── transactions/       # Liste + filtres + import/export
 │   ├── analytics/          # Perf mensuelle + stats
-│   ├── goals/              # "Planning" : 5 onglets DCA
-│   ├── settings/           # Account / Currency / PriceData / Exchanges / Display / Admin
-│   ├── profile/            # Avatar, PIN, 2FA, API keys, wallets
+│   ├── goals/              # "Planning" (analyse DCA dans components/planning/)
+│   ├── settings/           # Account / Wallets / API access / Currency / Price data (admin) /
+│   │                       # Exchanges / On-chain / Display / Backup (admin) / Admin
 │   ├── auth/               # signin / signup
-│   ├── api/                # 58 fichiers route.ts (dont /api/onchain/*)
-│   └── instrumentation.ts  # point d'entrée des schedulers
-├── components/             # 62 composants
-│   ├── widgets/            # 9 widgets du dashboard
+│   └── api/                # 67 fichiers route.ts (dont /api/onchain/*)
+├── instrumentation.ts      # point d'entrée des schedulers
+├── middleware.ts           # auth de toutes les /api (sauf /api/auth/* et /api/health)
+├── components/             # 81 composants .tsx
+│   ├── widgets/            # 13 widgets du dashboard
+│   ├── planning/           # DCAAnalysisPanel, GoalCard
 │   ├── dashboard/          # DashboardGrid (react-grid-layout)
-│   └── ui/                 # shadcn/ui
-├── lib/                    # 36 modules métier
+│   └── ui/                 # shadcn/ui + composants du design v0.8.0
+├── lib/                    # 37 modules métier (+ exchanges/, onchain/)
 │   ├── exchanges/          # 5 adaptateurs (Kraken, Binance, Coinbase, Bybit, Gemini)
 │   ├── *-service.ts        # logique métier
 │   └── *-scheduler.ts      # tâches de fond
-├── hooks/                  # use-display-currency, use-toast, use-dark-theme-preset
-├── tests/                  # 19 fichiers de test + setup/helpers
+├── hooks/                  # use-btc-unit, use-display-currency, use-portfolio-metrics, use-toast…
+├── tests/                  # 38 suites + setup/helpers
 ├── data/currencies.json    # devises intégrées
 └── types/next-auth.d.ts
 ```
 
-**Environ 213 fichiers TS/TSX.** Les tests sont dans `src/tests/`, à côté du code, pas dans un
+**Environ 271 fichiers TS/TSX.** La page `profile/` n'existe plus depuis v0.8.0 : tout est dans
+Settings. Les tests sont dans `src/tests/`, à côté du code, pas dans un
 dossier racine `__tests__`.
 
 ### Démarrage à froid
@@ -169,18 +180,19 @@ calcule le portfolio. Les erreurs d'init sont **avalées** pour ne pas empêcher
 
 ## 5. Modèle de données
 
-`prisma/schema.prisma` — SQLite. 15 modèles.
+`prisma/schema.prisma` — SQLite. 16 modèles.
 
 | Modèle | Rôle |
 |---|---|
 | `User` | compte, `isAdmin`, `isActive`, PIN, secret 2FA, codes de backup |
-| `BitcoinTransaction` | BUY / SELL / TRANSFER, fees, tags CSV, wallets from/to, `destinationAddress` (texte libre) |
+| `BitcoinTransaction` | BUY / SELL / TRANSFER, fees, `transferFeeMode` (`ON_TOP`/`DEDUCTED`, §9.10), tags CSV, wallets from/to, `destinationAddress` (texte libre), métadonnées on-chain (`txid`, `source`, `confirmations`…) |
 | `Wallet` | étiquette utilisateur : `name`, `type` cold/hot, `emoji`, `includeInPortfolio` |
 | `Goal` | cible BTC, date, budget mensuel, scénario de prix (5°) |
 | `RecurringTransaction` | Auto-DCA : fréquence, montant, prochaine exécution |
 | `ExchangeConnection` | clé API **chiffrée**, wallet associé, statut de sync |
+| `WatchedAddress` | adresse ou xpub suivi (xpub **chiffré**), wallet optionnel, gap limit, curseur de sync |
 | `ApiKey` | hash + prefix + expiration, pour l'automatisation |
-| `AppSettings` | JSON blob (currency / priceData / display / notifications) |
+| `AppSettings` | JSON blob (currency / priceData / display / notifications / onchain), **ligne globale** (§9.3) |
 | `DashboardLayout` | positions des widgets (JSON) |
 | `CustomCurrency` | devises définies par l'utilisateur |
 | `PortfolioSummary` | holdings pré-calculés (cold/hot, P&L, 24h) |
@@ -228,6 +240,12 @@ export async function GET(request: NextRequest) {
 
 - `withAuth(request, cb)` — authentifie (session ou Bearer token)
 - `withAdminAuth(request, cb)` — idem + vérification admin
+- Depuis v0.8.0, `src/middleware.ts` couvre **toutes** les `/api/*` (publiques : `/api/auth/*`,
+  `/api/health`). Les routes vérifient quand même elles-mêmes (`withAuth`), le middleware n'est
+  qu'un premier filtre. **Toute nouvelle route doit entrer dans la matrice `ROUTES` de
+  `src/tests/api/security-auth.test.ts`** (401 sans auth, 403 si admin requis).
+- Opérations serveur (réglages `priceData`/`onchain`, reset/replace des réglages, devises
+  custom, refresh prix/historique, schedulers, backups, utilisateurs) : `withAdminAuth`.
 - Réponses : toujours `{ success: boolean, data?, error?, message? }`
 
 **Règle critique : toute requête Prisma sur une table par utilisateur DOIT filtrer par
@@ -244,7 +262,11 @@ Deux mécanismes coexistants, gérés par `src/lib/auth-helpers.ts` :
 
 ### Conventions UI
 - shadcn/ui dans `src/components/ui/`
-- Couleurs sémantiques : `text-profit` (vert), `text-loss` (rouge), `text-primary` (orange bitcoin)
+- Design v0.8.0 : teintes `bg-tint-{orange,green,red,blue,purple}` + `text-tint-*-fg`,
+  `text-primary-strong` pour l'orange lisible, cartes `rounded-2xl`. `text-profit` / `text-loss`
+  existent encore. **Il n'y a pas de couleur `warning`** : une classe `*-warning` ne produit rien
+  (c'était le cas de l'encadré de confidentialité on-chain avant la fusion).
+- Montants BTC : `useBtcUnit().formatBtc` (respecte le mode BTC/sats), pas de `toFixed(8)` en dur.
 - Utiliser `cn()` de `@/lib/utils` pour conditionner des classes
 - Widgets du dashboard : drag & drop via `react-grid-layout`, positions persistées dans
   `DashboardLayout`. Toute modification de la liste de widgets doit être répercutée dans
@@ -255,11 +277,11 @@ Deux mécanismes coexistants, gérés par `src/lib/auth-helpers.ts` :
 ### Parsers d'import CSV
 
 `src/app/api/transactions/import/parsers/`, pattern Strategy :
-`kraken.ts`, `binance.ts`, `coinbase.ts`, `strike.ts`, `bitcoin21.ts`, `river.ts`,
-`legacy.ts`, + `standard.ts` (fallback, toujours dernier dans `index.ts`).
+`kraken.ts`, `binance.ts`, `coinbase.ts`, `strike.ts`, `bitcoin21.ts`, `river.ts`, `cashapp.ts`,
+`revolutx.ts`, `legacy.ts`, + `standard.ts` (fallback, toujours dernier dans `index.ts`).
 
 `detectParser(headers)` choisit le meilleur selon un score de confiance ; sous 30 points → fallback
-`standard`. Voir `PARSER_DEVELOPMENT_GUIDE.md`.
+`standard`. Voir `src/app/api/transactions/import/parsers/PARSER_DEVELOPMENT_GUIDE.md`.
 
 ---
 
@@ -287,6 +309,13 @@ Tous lancés par `AppInitializationService`, pilotés par `setInterval` **en mé
 | Taux de change | 4 h | `src/lib/price-scheduler.ts:74` |
 | Historique | quotidien (6h00) | `src/lib/historical-data-service.ts:205` (setTimeout vers 6h00 puis `setInterval` 24 h) |
 | Auto-DCA | 1 h | `src/lib/dca-scheduler.ts:15` |
+| Sauvegardes auto | configurable (Settings → Backup) | `src/lib/backup-scheduler.ts` |
+| On-chain | `onchain.syncIntervalMinutes` (10 min par défaut, 1–1440) | `src/lib/onchain/onchain-scheduler.ts` |
+
+Le scheduler on-chain est le seul **réappliqué à chaud** : un PATCH `/api/settings` qui contient
+`onchain` appelle `OnchainScheduler.applySettings()` (démarre, replanifie ou arrête). `start()` ne
+fait aucun `await` entre la lecture des réglages et l'armement du timer : deux appels concurrents
+n'arment qu'un seul `setInterval`. Une replanification ne relance pas de sync complète.
 
 ---
 
@@ -330,7 +359,8 @@ Scripts de sauvegarde : se souvenir du chemin réel.
 - `src/app/api/settings/route.ts` ne passe jamais `userId`
 
 Conséquence : en multi-utilisateur, **tous partagent les mêmes réglages** (devise, display, données
-de prix), alors que leurs transactions sont bien isolées. Le schéma prévoit `AppSettings.userId`
+de prix, on-chain), alors que leurs transactions sont bien isolées. Depuis v0.8.0, les sections
+de niveau serveur (`priceData`, et `onchain` dans ce fork) sont réservées à l'admin. Le schéma prévoit `AppSettings.userId`
 mais il n'est pas utilisé. À corriger si le multi-user doit réellement isoler les préférences.
 
 ### 9.4 Tests série obligatoire
@@ -360,12 +390,44 @@ Avant d'écrire du code de calcul, **vérifier si l'UI les affiche déjà** — 
 `prisma/migrations/0001_initial_schema.sql` est un fichier SQL isolé, pas un dossier de migration.
 Prisma ne le reconnaît pas. À supprimer si jamais touché.
 
+### 9.10 Modes de frais des transferts : un seul calcul de solde
+v0.8.0 (#168) ajoute `transferFeeMode` : `ON_TOP` (le montant arrive, montant + frais partent) ou
+`DEDUCTED`/`null` (le montant part, montant − frais arrive). Les helpers sont dans
+`src/lib/transfer-fees.ts` (`btcArriving`, `btcLeaving`, `transferFeeBtc`).
+
+**Tout calcul du total BTC passe par `transferHoldingsDelta(tx)`** : + ce qui arrive pour
+`TRANSFER_IN`, − ce qui part pour `TRANSFER_OUT`, − les frais pour un mouvement entre ses propres
+wallets. `BitcoinPriceService` et `/api/portfolio-metrics` l'utilisent tous les deux ; un test
+vérifie qu'ils tombent sur le même total (`src/tests/onchain/onchain-fee-mode.test.ts`). Ne pas
+réécrire une somme `IN − OUT − fees` à la main : elle compte mal un `TRANSFER_OUT` en `DEDUCTED`.
+
+Conventions qui en découlent :
+- l'import on-chain écrit un envoi en **`ON_TOP`** (`btcAmount` = ce qu'ont reçu les destinataires,
+  `fees` = frais réseau payés) et une réception sans frais ni mode ; une ligne stockée sans le bon
+  mode est réparée au sync suivant (dérive détectée dans `onchain-sync-service.ts`) ;
+- la migration `20261011000000_backfill_transfer_out_fee_mode` passe en `ON_TOP` tous les
+  `TRANSFER_OUT` sans mode : c'est ainsi que ce fork les comptait déjà, aucun solde ne bouge
+  (vérifié avec `scripts/migrate.js` sur une copie de base) ;
+- l'API transactions force `transferFeeMode = null` sur un `TRANSFER_IN` (comportement upstream).
+
+### 9.11 Ne pas mettre de règle pure dans `bitcoin-price-service`
+Plusieurs tests upstream remplacent **tout** le module `bitcoin-price-service` par un mock. Une
+fonction pure exportée par ce module (ex. `isOnchainAcquisition`) devient alors `undefined` dans
+les routes testées. D'où `src/lib/acquisition.ts` : le service le ré-exporte pour compatibilité,
+mais les routes l'importent directement.
+
+### 9.12 Les tests de routes passent une requête
+Les routes upstream prennent toutes une `request` depuis v0.8.0. Avec `src/tests/**` inclus dans
+`tsc` (§13.4), appeler `GET()` sans argument ne compile pas : utiliser `authedRequest()` de
+`src/tests/mock-auth-helpers.ts`, avec `adminAuthMock()` pour les tests qui ne portent pas sur
+l'auth.
+
 ---
 
 ## 10. Tests
 
 ```bash
-npm test                  # 372 tests, 24 suites
+npm test                  # 693 tests, 38 suites
 npm run test:watch
 npm run test:coverage
 npm run test:ci           # coverage + --ci, pour la CI
@@ -378,7 +440,12 @@ npm run test:ci           # coverage + --ci, pour la CI
   (`src/tests/onchain/onchain-sync-*.test.ts`) : c'est ce qui permet d'affirmer que le paging,
   les 404 et le curseur se comportent comme en production.
 - `src/tests/setup.ts` : connexion à la BDD de test + nettoyage
-- `src/tests/test-utils.ts` : helpers (création d'utilisateurs, transactions factory)
+- `src/tests/test-helpers.ts` : helpers (création d'utilisateurs, `createTestUserWithToken`,
+  transactions factory)
+- `src/tests/mock-auth-helpers.ts` : `adminAuthMock()` (route exécutée en admin) et
+  `authedRequest()` (§9.12)
+- `src/tests/api/security-auth.test.ts` : matrice d'auth de toutes les routes, y compris
+  `/api/onchain/*` et les routes DCA de ce fork
 - La couverture exclut volontairement `src/app/**/*.tsx` et `src/components/**`
 
 Avant de soumettre une modification : `npm run type-check && npm run lint && npm test`.
@@ -406,16 +473,28 @@ local via polling HTTP avant d'afficher la fenêtre.
 Tout tient dans **un seul fichier SQLite** (`prisma/prisma/dev.db` en dev,
 `/app/data/bitcoin-tracker.db` en conteneur). Copier ce fichier = backup complet.
 
+Depuis v0.8.0 :
+- **Settings → Backup** (admin) : téléchargement, snapshots serveur, restauration, sauvegardes
+  planifiées ;
+- `scripts/migrate.js` copie la base en `…pre-upgrade-<date>.bak` (3 gardées) **avant** toute
+  migration, et n'applique plus jamais un `db push` destructif (il avertit et laisse les données) ;
+- les clés exchange **et les xpub suivis** sont chiffrés avec une clé dérivée de
+  `NEXTAUTH_SECRET` : une sauvegarde restaurée sur une instance avec un autre secret les rend
+  illisibles (les adresses simples et le reste des données ne sont pas touchés).
+
 ---
 
 ## 12. Règle d'or
 
 1. **Ne pas casser l'isolation `userId`.** Chaque requête sur une table par utilisateur filtre.
-2. **Ne pas introduire de lecture on-chain** sans demande explicite (§2).
+2. **Ne pas étendre la lecture on-chain** sans demande explicite (§2), et garder `onchain`
+   réservé à l'admin (§2, règle 4).
 3. **Ne pas modifier `package-lock.json`** en installant — `npm install` élague les paquets morts du
    lockfile. Restaurer le fichier si le diff n'est pas voulu.
 4. **Mettre à jour `ALL_MIGRATIONS`** dans `scripts/migrate.js` à chaque nouvelle migration.
 5. **Vérifier `type-check`, `lint` et `test`** avant de conclure.
+6. **Tout calcul de solde passe par `transferHoldingsDelta`** (§9.10).
+7. **Toute nouvelle route entre dans la matrice de `security-auth.test.ts`** (§6).
 
 ---
 
@@ -489,12 +568,28 @@ des transactions de **tous** les comptes et ignorait les transferts. Corrigé da
    par `syncBatch` (couvert par `src/tests/onchain/onchain-sync-batch.test.ts`).
 4. **Curseur** — `lastSyncedTxid` était stocké mais jamais lu : le service relisait tout à chaque
    tick. Il est maintenant utilisé (voir §13.2).
+5. **Backend sans `/txs/chain`** — un mempool self-hosted (électrum, comme celui
+   de l'utilisateur : `"electrum": true`) n'expose pas les routes esplora pagées
+   (`/address/:addr/txs/chain`, `/txs/mempool`) et répond 404. Le client lisait
+   ce 404 comme « historique vide » : sync OK (stats/UTXOs) mais **0 ligne
+   importée**. Corrigé dans `EsploraClient` : un 404/400 **sur la première page**
+   bascule sur la surface mempool-native — **marche paginée de `/address/:addr/txs`
+   avec `?after_txid=`** (page par page jusqu'à la fin), puis complément par les
+   funding-txs des UTXOs (`/tx/:txid`) pour les backends qui ignorent le curseur.
+   Sur page suivante, 404 = fin d'historique (inchangé). Validé à la main contre
+   l'instance locale de l'utilisateur (marche `after_txid` : 35/35 txs sur 4 pages,
+   puis 0 complément nécessaire) et par `src/tests/onchain/esplora-client.test.ts`
+   (suite *mempool subset fallback* : paging, complément UTXO, adresse inconnue,
+   propagation d'échec).
+   Note : l'URL `https://100.113.245.42:2102` d'electrs vue chez l'utilisateur est
+   la **page web Umbrel de l'app** (un SPA Express), pas une API Esplora — electrs
+   parle le protocole Electrum (socket), pas HTTP. L'app n'en a donc pas besoin.
 
 ### 13.4 Tests
 
-24 suites / 372 tests (dont 112 on-chain). Vérifié le 29/09/2026 : `npx tsc --noEmit`,
+25 suites / 380 tests (dont 116 on-chain). Vérifié le 29/09/2026 : `npx tsc --noEmit`,
 `npx next lint` et `npm test` passent. Comptes docs vérifiés : 58 `route.ts`, 213 TS/TSX,
-24 suites de test. Le `tsconfig.json` modifié inclut `src/tests/**` dans le type-check
+25 suites de test. Le `tsconfig.json` modifié inclut `src/tests/**` dans le type-check
 (`types: ["node","jest"]`, `ignoreDeprecations: "5.0"`) ; corollaires : la valeur `6.0` de
 `ignoreDeprecations` est invalide (seule `5.0` est acceptée), et deux tests ont dû être
 branchés compatibles ES5 (pas de BigInt literal).
@@ -513,14 +608,17 @@ Depuis ce changement, « Total invested » (et `averageBuyPrice`) du portfolio e
 - Une ligne importée sans base de coût (`originalTotalAmount == 0`) est exclue.
 - `averageBuyPriceUSD = weightedBuyPriceSumUSD / totalAcquiredBTC` (volume acquis, pas le
   solde courant).
-- **Calculateurs alignés sur le même pool** (helper partagé `isOnchainAcquisition` dans
-  `bitcoin-price-service.ts`) : `/api/portfolio-metrics` (widget Investment + page analytics
-  via `?detailed=true`) et `/api/analytics` comptent tous deux le pool dans « Total invested »
+- **Calculateurs alignés sur le même pool** (helper partagé `isOnchainAcquisition`, dans
+  `src/lib/acquisition.ts` depuis la fusion v0.8.0, §9.11) : `/api/portfolio-metrics` (widget Investment + page analytics
+  via `?detailed=true`) et `/api/analytics` (supprimée à la fusion v0.8.0, §18) comptent tous
+  deux le pool dans « Total invested »
   et `totalBtcAcquired` comme dénominateur d'`averageBuyPrice`. C'est le point de divergence
   qui causait un « Total invested = 0 » sur les vues analytics alors que `d543be3` avait déjà
   corrigé le calcul central. Le breakdown mensuel detaille bucket « buys » (BUY **ou**
   acquisition on-chain) vs « sells » (SELL **ou** `TRANSFER_OUT` on-chain), transferts internes
-  ignorés des deux côtés.
+  ignorés des deux côtés. **Remplacé à la fusion v0.8.0 (§18)** : un transfert n'est jamais une
+  vente ; un envoi on-chain va dans `transferredOut`, une réception on-chain valorisée reste un
+  achat et n'est pas recomptée en `transferredIn`.
 - **Backfill *gagé*** : `getOrFetchPriceForDate` ne laisse passer la demande Yahoo que si la
   table `bitcoin_price_history` contient **au moins un enregistrement** (une fenêtre locale
   existe). Sur une base vide (base neuve, tortues de test), il retourne `null` **sans toucher au
@@ -608,10 +706,10 @@ Cette série finalise la §13.5 (traitée « séparément » dans la §14). Elle
    `totalBtcAcquired` comme dénominateur d'`averageBuyPrice`, et un **monthly breakdown**
    corrigé : bucket « buys » = `BUY` ou acquisition on-chain, bucket « sells » = `SELL` ou
    `TRANSFER_OUT` on-chain, transferts internes ignorés (avant, tout non-`BUY` était compté
-   sell). C'est l'unique source du widget Investment **et** de la page analytics
+   sell). *Le bucket « sells » ne contient plus que `SELL` depuis la fusion v0.8.0 (§18).* C'est l'unique source du widget Investment **et** de la page analytics
    (`?detailed=true`).
-3. **`/api/analytics`** — aligné sur le même pool (route non consommée par l'UI, uniquement
-   référencée par `middleware.ts:59` ; garde pour la cohérence des futurs consommateurs).
+3. **`/api/analytics`** — aligné sur le même pool (route non consommée par l'UI). *Supprimée
+   par upstream dans v0.8.0 (#231), suppression acceptée à la fusion (§18).*
 4. **Backfill gagé** — `getOrFetchPriceForDate` ne tente `ensureDailyHistory()` que si
    `bitcoin_price_history` a au moins une ligne ; sinon `null` sans réseau. C'est ce qui a
    corrigé les 6 tests flakes de l'utilisateur (un import sur base de test vide partait en
@@ -629,7 +727,7 @@ Cette série finalise la §13.5 (traitée « séparément » dans la §14). Elle
 ## 17. Série §16 complétée le 29/09/2026 : Exclude from DCA + ajout groupé au DCA
 
 Suite directe de la §16 : rend la promotion réversible et la banalise en groupé.
-Validé (`tsc`, `next lint`, `npm test` : 24 suites, 372 tests).
+Validé (`tsc`, `next lint`, `npm test` : 25 suites, 380 tests).
 
 1. **Exclude from DCA** — `POST /api/transactions/[id]/exclude-from-dca/route.ts` (nov.) : revert
    `type → 'TRANSFER'` pour rattraper une promo par erreur. Garde `type='BUY' && source='onchain'
@@ -647,17 +745,69 @@ Validé (`tsc`, `next lint`, `npm test` : 24 suites, 372 tests).
 
 ---
 
+## 18. Fusion de la v0.8.0 officielle (11/10/2026)
+
+Branche `merge/upstream-v0.8.0`, commit de fusion `507633b` (`upstream/main` = `f7c63df`,
+PR #247 de `wilqq-the/BTC-Tracker`). Base commune avec le fork : `bffd293`. Validé : `tsc`,
+`next lint`, `npm test` (38 suites, 693 tests), `next build`, migration réelle sur une copie de
+base, et test manuel de l'app par l'utilisateur.
+
+### Récupéré de la v0.8.0
+- **Sécurité (#231)** : middleware sur toutes les `/api`, `withAuth`/`withAdminAuth` partout,
+  opérations serveur réservées à l'admin, wallets d'une transaction vérifiés par `userId`.
+- **Mises à jour sûres (#246)** : sauvegarde avant migration, plus de `db push` destructif (§11).
+- Nouveau design, mode BTC/sats, sauvegarde/restauration, imports Cash App / Revolut X, réceptions
+  Strike, export avec wallets et tags, modes de frais des transferts (#168), images ARM natives.
+
+### Conservé du fork
+Portfolio par utilisateur (§13.1, upstream calcule toujours sans `userId`), module on-chain
+(§13.2), « Total invested » on-chain (§13.5), Include / Exclude / Add to DCA (§16, §17), cartes
+timing / régularité / bilan mensuel de l'analyse DCA.
+
+### Décisions de fusion
+| Conflit | Décision |
+|---|---|
+| Calcul du solde (`bitcoin-price-service`, `portfolio-metrics`) | Modes de frais appliqués partout via `transferHoldingsDelta` (§9.10). Upstream ignorait encore `TRANSFER_IN`/`TRANSFER_OUT` dans le total. |
+| Envois on-chain | Écrits en `ON_TOP` ; migration de rattrapage `20261011000000` ; aucun solde ne bouge. |
+| Bilan mensuel | Règle upstream (#225) : un transfert n'est jamais une vente. En plus : une réception on-chain valorisée compte une seule fois, comme achat. |
+| `POST /api/bitcoin-price` | Admin seulement (upstream), mais recalcule le résumé de **chaque** utilisateur (`…ForAllUsers`) au lieu d'un résumé partagé. |
+| `GET /api/bitcoin-price?endpoint=portfolio`, `/api/analytics` | Supprimés comme upstream (aucun consommateur). |
+| `migrate.js` | Les trois migrations dans l'ordre : `20260928…onchain`, `20261009…transfer_fee_mode`, `20261011…backfill`. |
+| Page Planning | Page upstream reprise ; nos cartes portées dans `components/planning/DCAAnalysisPanel.tsx`. |
+| Page Transactions | Page upstream reprise ; badges on-chain et actions DCA réappliqués (menu de ligne commun desktop/mobile, barre d'actions groupées). |
+| `package-lock.json` | Lockfile upstream + `@scure/bip32` / `@noble/hashes` (`npm install --package-lock-only`). |
+
+### Durcissement ajouté pendant la fusion
+- **Réglages `onchain` réservés à l'admin** (§2, règle 4). Avant, n'importe quel compte pouvait
+  changer l'endpoint et donc recevoir les adresses de tous les utilisateurs.
+- **Réglages on-chain appliqués à chaud** (§7) ; `start()` ne peut plus armer deux timers.
+- **Panneau on-chain rafraîchi toutes les 30 s** quand l'onglet est visible (adresses + statut,
+  jamais les réglages en cours d'édition) — commit `cc3d7d0`, juste avant la fusion.
+- `isOnchainAcquisition` déplacé dans `src/lib/acquisition.ts` (§9.11).
+- Encadré de confidentialité et badges on-chain passés sur les teintes du design (§6).
+- Tests : routes on-chain et DCA ajoutées à la matrice d'auth, réglages on-chain 403/400,
+  `onchain-fee-mode.test.ts` (10 tests : delta par type et mode, `classify`, cohérence service /
+  route, bilan mensuel, scheduler à chaud et course au démarrage).
+
+### Ce qui change pour l'utilisateur
+- Un envoi on-chain n'apparaît plus comme une vente dans le bilan mensuel.
+- Un non-admin voit l'onglet On-chain en lecture seule pour les réglages serveur.
+- Activer l'on-chain ou changer l'intervalle ne demande plus de redémarrage.
+
+---
+
 ## 15. Todo — prochaines étapes
 
-1. **Commit des séries §16 (fait, `a5fdef7`) et §17** (messages `feat:`/`fix:`/`docs:` en
-   minuscule ; ne pas réécrire `47e769f`).
-2. **Endroit de `lastSyncBlock`** : il reflète le tip au dernier sync réussi, mais un
-   remplacement de clé le garde tel quel alors que le curseur est vidé — décider si on le
-   réinitialise aussi dans le PATCH xpub (actuellement volontairement conservé : c'est une
-   donnée de santé, pas une ancre de cursus).
-3. **Étendre le test xpub au change** : le scénario multi-adresses couvre receive + change
-   mais aucun changement de `gapLimit` ; ajouter un cas où le gap croît et où l'adresse
+1. **Fusionner `merge/upstream-v0.8.0` dans `main`** (PR), puis garder `upstream` comme remote
+   pour les prochaines versions : `git fetch https://github.com/wilqq-the/BTC-Tracker.git main:refs/remotes/upstream/main`.
+2. **Avertissements Tailwind** au build (`ease-[cubic-bezier(...)]` ambigu) : viennent d'upstream,
+   sans effet visible ; à remonter upstream plutôt qu'à corriger ici.
+3. **Réglages par utilisateur** (§9.3) : toujours globaux des deux côtés. Les sections serveur
+   sont protégées, mais devise / display restent partagés.
+4. **`lastSyncBlock`** : il reflète le tip au dernier sync réussi, mais un remplacement de clé le
+   garde tel quel alors que le curseur est vidé — décider si on le réinitialise aussi dans le
+   PATCH xpub (actuellement volontairement conservé : c'est une donnée de santé, pas une ancre).
+5. **Étendre le test xpub au change** : ajouter un cas où le `gapLimit` croît et où l'adresse
    primaire reste stable.
-4. **Classement des templates `[84h/0h/0h]zpub…`** : la détection bracket n'est que
-   documentée via le label « (bracketed export) » ; un re-match POST/PATCH est couvert par
-   tests, mais pas la validation du non-determinisme entre deux exports de la même clé.
+6. **Templates `[84h/0h/0h]zpub…`** : la détection bracket n'est que documentée via le label
+   « (bracketed export) » ; pas de test du non-déterminisme entre deux exports de la même clé.

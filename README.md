@@ -76,6 +76,19 @@ Settings → On-chain has a **Test** button that checks the endpoint and shows t
 reports. The feature is off by default; turn it on only once you have decided which trade-off you
 want.
 
+**Who can change what.** The endpoint and polling settings apply to the whole server, so every
+user's addresses go to the same endpoint: only an admin can change them. Every user watches and
+syncs their own addresses, and nobody sees anyone else's.
+
+**How often it syncs.** Every 10 minutes by default (1 to 1440 minutes, in Settings → On-chain),
+plus a **Sync** button for an immediate pass. Turning the feature on or changing the interval
+applies straight away, without restarting the app, and the panel updates by itself.
+
+**What gets imported.** Each receive is valued at the closing price of its block's day and counts
+in *Total invested*. Sends count their network fee on top of the amount sent. A receive that was
+really a purchase can be added to the DCA analysis from the transaction's menu (**Include in
+DCA**), or several at once from the selection bar (**Add to DCA**).
+
 ## Screenshots
 
 ![Dashboard](screenshots/dashboard.png)
@@ -210,7 +223,7 @@ you choose.
 
 ## Requirements
 
-- **Docker** (recommended) or Node.js 18+
+- **Docker** (recommended) or Node.js 22+
 - ~100MB disk space for the app
 - SQLite database (included, single file)
 
@@ -226,7 +239,7 @@ Your data lives in a single SQLite file. The easiest way to manage backups is fr
 
 A backup is the whole database (every user's data), so restoring is admin-only and replaces everything.
 
-> **Note:** Exchange API credentials are encrypted with a key derived from `NEXTAUTH_SECRET`. A backup restored on the **same** install decrypts them fine; restoring onto an install with a **different** `NEXTAUTH_SECRET` leaves those credentials unreadable (all other data is unaffected). After a restore you may need to sign in again.
+> **Note:** Exchange API credentials and watched xpubs are encrypted with a key derived from `NEXTAUTH_SECRET`. A backup restored on the **same** install decrypts them fine; restoring onto an install with a **different** `NEXTAUTH_SECRET` leaves them unreadable (re-enter the API keys and xpubs; all other data, including plain watched addresses, is unaffected). After a restore you may need to sign in again.
 
 You can still back up manually by copying the SQLite file:
 

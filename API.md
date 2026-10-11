@@ -38,7 +38,7 @@ Authorization: Bearer eyJhbGci...
 
 API keys created in **Settings → API Access** (`btct_...`) work the same way.
 
-Every endpoint except `/api/auth/*` (sign-in, registration) and `/api/health` requires authentication. Server-wide operations — changing price-data settings, resetting or replacing settings, managing custom currencies, refreshing price/historical data, scheduler control, backups and user administration — require an admin account and return `403` otherwise.
+Every endpoint except `/api/auth/*` (sign-in, registration) and `/api/health` requires authentication. Server-wide operations — changing price-data or on-chain settings, resetting or replacing settings, managing custom currencies, refreshing price/historical data, scheduler control, backups and user administration — require an admin account and return `403` otherwise.
 
 ---
 
@@ -75,6 +75,7 @@ curl -X POST http://your-btc-tracker:3000/api/transactions \
 | `notes` | No | Free text note |
 | `tags` | No | Free text tags |
 | `transfer_type` | For TRANSFER | `TO_COLD_WALLET`, `FROM_COLD_WALLET`, `TRANSFER_IN`, `TRANSFER_OUT` |
+| `transfer_fee_mode` | No | For transfers that leave a wallet: `ON_TOP` (the amount arrives, amount + fee leaves) or `DEDUCTED` (the amount leaves, amount − fee arrives). Omitted means `DEDUCTED`; the app's form defaults to `ON_TOP`. Ignored for `TRANSFER_IN` |
 | `destination_address` | No | Wallet address for transfers |
 
 **SELL example:**
@@ -165,6 +166,61 @@ Key fields in the response:
 ```
 
 Add `?detailed=true` for monthly breakdown and additional analytics.
+
+### Add on-chain receives to the DCA analysis
+
+On-chain receives are imported as `TRANSFER` rows valued at the block-day close. If one was really a purchase, promote it to a `BUY` so the DCA analysis counts it:
+
+```bash
+# One transaction (and its undo)
+curl -X POST http://your-btc-tracker:3000/api/transactions/42/include-in-dca -H "Authorization: Bearer <token>"
+curl -X POST http://your-btc-tracker:3000/api/transactions/42/exclude-from-dca -H "Authorization: Bearer <token>"
+
+# Several at once; ineligible or foreign ids are skipped, not an error
+curl -X POST http://your-btc-tracker:3000/api/transactions/bulk-include-in-dca \
+  -H "Authorization: Bearer <token>" -H "Content-Type: application/json" \
+  -d '{"ids": [42, 43, 44]}'
+```
+
+`bulk-exclude-from-dca` takes the same body. Bulk responses report `{ "included" | "excluded", "skipped", "totalSelected" }`.
+
+---
+
+## On-chain tracking
+
+Read-only and opt-in: an admin turns it on and sets the endpoint in **Settings → On-chain** (or `PATCH /api/settings` with an `onchain` block, admin only). Every user then manages their own watched addresses.
+
+### Watch an address or an xpub
+
+```bash
+curl -X POST http://your-btc-tracker:3000/api/onchain/addresses \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"xpub": "zpub6r...", "label": "Cold storage", "walletId": 3}'
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `address` | One of the two | A single Bitcoin address |
+| `xpub` | One of the two | Extended **public** key (`xpub`, `ypub`, `zpub`, `tpub`, `upub`, `vpub`). Private keys are refused |
+| `label` | No | Free text, up to 100 characters |
+| `walletId` | No | One of your wallets to attach imported transactions to |
+| `chain` | No | `mainnet` (default) or `testnet` |
+| `gapLimit` | No | Addresses derived per chain from an xpub, 1–200 (default `20`) |
+
+The xpub is stored encrypted and never returned: responses only say `hasXpub: true`.
+
+### Other endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/onchain/addresses` | Your watched addresses with balances and last sync |
+| `GET` | `/api/onchain/addresses/:id` | One watched address |
+| `PATCH` | `/api/onchain/addresses/:id` | Change `label`, `isActive`, `gapLimit`, `walletId` or replace the `xpub` |
+| `DELETE` | `/api/onchain/addresses/:id` | Stop watching; imported transactions are kept |
+| `POST` | `/api/onchain/addresses/:id/sync` | Sync one address now |
+| `POST` | `/api/onchain/sync` | Sync all your addresses now |
+| `GET` | `/api/onchain/status` | Scheduler state and counts; add `?test=1` to probe the endpoint |
 
 ---
 
