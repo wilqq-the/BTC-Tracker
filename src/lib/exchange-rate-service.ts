@@ -24,6 +24,9 @@ export interface ExchangeRateApiResponse {
 
 export class ExchangeRateService {
   private static readonly API_BASE_URL = 'https://api.exchangerate-api.com/v4/latest';
+  // Keyless fallback (ECB reference rates, ~30 currencies) used only when the primary API fails.
+  // Terms: https://allratestoday.com/open-api/ (attribution link is in the README)
+  private static readonly FALLBACK_API_BASE_URL = 'https://allratestoday.com/api/open/latest';
   private static readonly CACHE_DURATION = 60 * 60 * 1000; // 1 hour cache
   private static cachedRates: Map<string, { rate: number; timestamp: number }> = new Map();
 
@@ -52,33 +55,47 @@ export class ExchangeRateService {
   }
 
   /**
-   * Fetch exchange rates from API
+   * Fetch exchange rates from API.
+   * Tries the primary API first and, if that fails, the keyless fallback API.
    */
   static async fetchExchangeRatesFromAPI(baseCurrency: string = 'USD'): Promise<ExchangeRateApiResponse> {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/${baseCurrency}`);
-      
-      if (!response.ok) {
-        throw new Error(`Exchange rate API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      
-      // The API uses 'rates' not 'conversion_rates'
-      if (!data.rates) {
-        throw new Error('Exchange rate API returned unexpected response structure');
-      }
-
-      return {
-        result: 'success',
-        time_last_update_utc: new Date().toISOString(),
-        base_code: baseCurrency,
-        conversion_rates: data.rates
-      };
+      return await this.fetchRatesFrom(this.API_BASE_URL, baseCurrency);
     } catch (error) {
       console.error('Error fetching exchange rates from API:', error);
-      throw error;
+      try {
+        console.warn(`Trying fallback exchange rate API for ${baseCurrency}`);
+        return await this.fetchRatesFrom(this.FALLBACK_API_BASE_URL, baseCurrency);
+      } catch (fallbackError) {
+        console.error('Error fetching exchange rates from fallback API:', fallbackError);
+        throw error;
+      }
     }
+  }
+
+  /**
+   * Fetch rates for a base currency from an API that returns `{ rates: { ... } }`
+   */
+  private static async fetchRatesFrom(apiBaseUrl: string, baseCurrency: string): Promise<ExchangeRateApiResponse> {
+    const response = await fetch(`${apiBaseUrl}/${baseCurrency}`);
+
+    if (!response.ok) {
+      throw new Error(`Exchange rate API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Both APIs use 'rates' not 'conversion_rates'
+    if (!data.rates) {
+      throw new Error('Exchange rate API returned unexpected response structure');
+    }
+
+    return {
+      result: 'success',
+      time_last_update_utc: new Date().toISOString(),
+      base_code: baseCurrency,
+      conversion_rates: data.rates
+    };
   }
 
   /**
