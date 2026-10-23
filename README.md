@@ -229,6 +229,10 @@ Want to add support for another exchange? Check the [Parser Development Guide](s
 
 Want to automate transactions via n8n or scripts? Check the [API Documentation](API.md).
 
+## Data Sources
+
+Fiat exchange rates come from [exchangerate-api.com](https://www.exchangerate-api.com). If that API is unreachable, the app falls back to [Exchange rates by AllRatesToday](https://allratestoday.com) (ECB reference rates, keyless).
+
 ## License
 
 MIT - do what you want with it.
